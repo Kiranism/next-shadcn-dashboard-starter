@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import ThemeProvider from "@/components/layout/ThemeProvider";
 import { Sidebar } from "@/components/layout/Sidebar/Sidebar";
 import Header from "@/components/layout/Header/Header";
+import { MobileSidebar } from "@/components/layout/Sidebar/mobile-sidebar";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,9 +20,9 @@ export default function DashboardLayout({
   return (
     <>
       <Header />
-      <div className="flex h-screen overflow-hidden">
-        <Sidebar className="w-1/6" />
-        <main className="grow pt-16 ">{children}</main>
+      <div className="flex h-screen">
+        <Sidebar className="w-1/6 hidden md:block" />
+        <main className="grow pt-16">{children}</main>
       </div>
     </>
   );

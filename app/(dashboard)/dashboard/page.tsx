@@ -13,8 +13,8 @@ import React from "react";
 
 export default function page() {
   return (
-    <div>
-      <div className="flex-1 space-y-4 p-8 pt-6">
+    <>
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
         <div className="flex items-center justify-between space-y-2">
           <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
           <div className="flex items-center space-x-2">
@@ -28,16 +28,10 @@ export default function page() {
             <TabsTrigger value="analytics" disabled>
               Analytics
             </TabsTrigger>
-            <TabsTrigger value="reports" disabled>
-              Reports
-            </TabsTrigger>
-            <TabsTrigger value="notifications" disabled>
-              Notifications
-            </TabsTrigger>
           </TabsList>
           <TabsContent value="overview" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
+              <Card className="flex-wrap">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
                     Total Revenue
@@ -148,7 +142,7 @@ export default function page() {
                   <Overview />
                 </CardContent>
               </Card>
-              <Card className="col-span-3">
+              <Card className="col-span-4 md:col-span-3">
                 <CardHeader>
                   <CardTitle>Recent Sales</CardTitle>
                   <CardDescription>
@@ -163,6 +157,6 @@ export default function page() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </>
   );
 }
