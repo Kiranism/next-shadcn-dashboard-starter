@@ -10,7 +10,14 @@ export default function Page() {
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <BreadCrumb items={breadcrumbItems} />
-      <ProductForm categories={[]} initialData={null} key={null} />
+      <ProductForm
+        categories={[
+          { _id: "shirts", name: "shirts" },
+          { _id: "pants", name: "pants" },
+        ]}
+        initialData={null}
+        key={null}
+      />
     </div>
   );
 }

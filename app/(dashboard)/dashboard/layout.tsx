@@ -20,9 +20,9 @@ export default function DashboardLayout({
   return (
     <>
       <Header />
-      <div className="flex h-screen">
+      <div className="flex h-screen overflow-x-hidden">
         <Sidebar className="w-1/6 hidden md:block" />
-        <main className="grow pt-16">{children}</main>
+        <main className="flex-1 pt-16">{children}</main>
       </div>
     </>
   );
