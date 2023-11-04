@@ -22,7 +22,7 @@ export default function BreadCrumb({ items }: BreadCrumbPropsType) {
         Dashboard
       </Link>
       {items?.map((item: BreadCrumbType, index: number) => (
-        <>
+        <React.Fragment key={item.title}>
           <ChevronRightIcon className="h-4 w-4" />
           <Link
             href={item.link}
@@ -35,7 +35,7 @@ export default function BreadCrumb({ items }: BreadCrumbPropsType) {
           >
             {item.title}
           </Link>
-        </>
+        </React.Fragment>
       ))}
     </div>
   );

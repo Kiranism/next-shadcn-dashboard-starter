@@ -17,12 +17,8 @@ import {
 import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
-  username: z
-    .string()
-    .min(3, { message: "Product Name must be at least 3 characters" }),
-  password: z
-    .string()
-    .min(3, { message: "Product Name must be at least 3 characters" }),
+  email: z.string().email({ message: "Enter a valid email address" }),
+  password: z.string().min(3, { message: "Enter a strong password" }),
 });
 
 type UserFormValue = z.infer<typeof formSchema>;
@@ -31,7 +27,7 @@ export default function UserAuthForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const defaultValues = {
-    username: "",
+    email: "",
     password: "",
   };
   const form = useForm<UserFormValue>({
@@ -40,7 +36,7 @@ export default function UserAuthForm() {
   });
 
   const onSubmit = async (data: UserFormValue) => {
-    router.push(`/dashboard/products`);
+    router.push(`/dashboard`);
   };
 
   return (
@@ -52,12 +48,17 @@ export default function UserAuthForm() {
         >
           <FormField
             control={form.control}
-            name="username"
+            name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Username</FormLabel>
+                <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input type="text" disabled={loading} {...field} />
+                  <Input
+                    type="email"
+                    placeholder="Enter your email..."
+                    disabled={loading}
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -70,14 +71,19 @@ export default function UserAuthForm() {
               <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl>
-                  <Input type="password" disabled={loading} {...field} />
+                  <Input
+                    type="password"
+                    placeholder="Enter your password..."
+                    disabled={loading}
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <Button disabled={loading} className="ml-auto" type="submit">
-            Login
+          <Button disabled={loading} className="ml-auto w-full" type="submit">
+            Continue
           </Button>
         </form>
       </Form>

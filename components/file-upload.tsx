@@ -1,14 +1,13 @@
 "use client";
-import { UploadDropzone } from "@uploadthing/react";
 import { OurFileRouter } from "@/app/api/uploadthing/core";
-import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
-import { Loader2, Trash } from "lucide-react";
-import { Button } from "./ui/button";
+import { UploadDropzone } from "@uploadthing/react";
+import { Trash } from "lucide-react";
 import Image from "next/image";
-import { useToast } from "./ui/use-toast";
+import { useRouter } from "next/navigation";
 import { UploadFileResponse } from "uploadthing/client";
 import { IMG_MAX_LIMIT } from "./forms/product-form";
+import { Button } from "./ui/button";
+import { useToast } from "./ui/use-toast";
 
 interface ImageUploadProps {
   disabled?: boolean;

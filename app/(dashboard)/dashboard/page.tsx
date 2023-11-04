@@ -1,3 +1,4 @@
+import { CalendarDateRangePicker } from "@/components/date-range-picker";
 import { Overview } from "@/components/overview";
 import { RecentSales } from "@/components/recent-sales";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import React from "react";
 
 export default function page() {
   return (
@@ -20,7 +20,7 @@ export default function page() {
             Hi, Welcome back 👋
           </h2>
           <div className="flex items-center space-x-2">
-            {/* <CalendarDateRangePicker /> */}
+            <CalendarDateRangePicker />
             <Button>Download</Button>
           </div>
         </div>
