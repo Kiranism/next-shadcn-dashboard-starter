@@ -1,8 +1,6 @@
-import { cn } from "@/lib/utils";
-import { Button, buttonVariants } from "@/components/ui/button";
-import Link from "next/link";
 import { DashboardNav } from "@/components/dashboard-nav";
 import { navItems } from "@/constants/data";
+import { cn } from "@/lib/utils";
 
 // import { Playlist } from "../data/playlists";
 

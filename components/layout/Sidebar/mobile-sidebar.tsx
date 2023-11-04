@@ -1,18 +1,6 @@
-import { cn } from "@/lib/utils";
-import { Button, buttonVariants } from "@/components/ui/button";
-import Link from "next/link";
 import { DashboardNav } from "@/components/dashboard-nav";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { navItems } from "@/constants/data";
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
 import { MenuIcon } from "lucide-react";
 
 // import { Playlist } from "../data/playlists";
