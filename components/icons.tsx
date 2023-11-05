@@ -25,6 +25,7 @@ import {
   Trash,
   Twitter,
   User,
+  User2Icon,
   X,
 } from "lucide-react";
 
@@ -35,6 +36,7 @@ export const Icons = {
   logo: Command,
   login: LogIn,
   close: X,
+  profile: User2Icon,
   spinner: Loader2,
   chevronLeft: ChevronLeft,
   chevronRight: ChevronRight,
