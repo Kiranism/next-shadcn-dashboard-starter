@@ -136,7 +136,7 @@ export default function page() {
               </Card>
             </div>
             <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-7">
-              <Card>
+              <Card className="col-span-4">
                 <CardHeader>
                   <CardTitle>Overview</CardTitle>
                 </CardHeader>
@@ -144,7 +144,7 @@ export default function page() {
                   <Overview />
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="col-span-3">
                 <CardHeader>
                   <CardTitle>Recent Sales</CardTitle>
                   <CardDescription>
