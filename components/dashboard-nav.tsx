@@ -10,7 +10,7 @@ import { Dispatch, SetStateAction } from "react";
 
 interface DashboardNavProps {
   items: NavItem[];
-  setOpen?: Dispatch<SetStateAction<boolean | undefined>>;
+  setOpen?: Dispatch<SetStateAction<boolean>>;
 }
 
 export function DashboardNav({ items, setOpen }: DashboardNavProps) {
