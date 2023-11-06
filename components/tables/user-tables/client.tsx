@@ -18,7 +18,7 @@ export const UserClient: React.FC<ProductsClientProps> = ({ data }) => {
 
   return (
     <>
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         <Heading
           title={`Users (${data.length})`}
           description="Manage users for your business"

@@ -15,9 +15,11 @@ export default function DashboardLayout({
   return (
     <>
       <Header />
-      <div className="flex h-screen overflow-x-hidden overflow-y-hidden">
+      <div className="flex h-screen overflow-hidden">
         <Sidebar className="w-1/6 hidden md:block" />
-        <main className="flex-1 overflow-y-scroll pt-16">{children}</main>
+        <main className="flex-1 pt-16 overflow-x-hidden overflow-y-scroll">
+          {children}
+        </main>
       </div>
     </>
   );
