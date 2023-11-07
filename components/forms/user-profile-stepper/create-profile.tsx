@@ -149,7 +149,8 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
 
   const processForm: SubmitHandler<Inputs> = (data) => {
     console.log("data ==>", data);
-    form.reset();
+    // api call and reset
+    // form.reset();
   };
 
   type FieldName = keyof Inputs;
@@ -495,6 +496,11 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
                   )}
                 />
               </>
+            )}
+            {currentStep === 2 && (
+              <div>
+                <h1>Completed</h1>
+              </div>
             )}
           </div>
           {/* <Button disabled={loading} className="ml-auto" type="submit">
