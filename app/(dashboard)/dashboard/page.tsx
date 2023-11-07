@@ -144,7 +144,7 @@ export default function page() {
                   <Overview />
                 </CardContent>
               </Card>
-              <Card className="col-span-3">
+              <Card className="col-span-4 md:col-span-3">
                 <CardHeader>
                   <CardTitle>Recent Sales</CardTitle>
                   <CardDescription>
