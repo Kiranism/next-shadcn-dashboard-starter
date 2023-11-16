@@ -63,6 +63,7 @@
   },
   "devDependencies": {
     "@types/uuid": "^9.0.7",
+    "@typescript-eslint/eslint-plugin": "^6.11.0",
     "prettier": "3.0.3"
   }
 }

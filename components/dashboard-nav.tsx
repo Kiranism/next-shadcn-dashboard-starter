@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { NavItem, SidebarNavItem } from "@/types";
-import { cn } from "@/lib/utils";
 import { Icons } from "@/components/icons";
+import { cn } from "@/lib/utils";
+import { NavItem } from "@/types";
 import { Dispatch, SetStateAction } from "react";
 
 interface DashboardNavProps {

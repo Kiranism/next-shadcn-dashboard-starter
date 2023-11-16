@@ -1,7 +1,6 @@
 import BreadCrumb from "@/components/breadcrumb";
 import { EmployeeClient } from "@/components/tables/employee-tables/client";
-import { UserClient } from "@/components/tables/user-tables/client";
-import { Employee, users } from "@/constants/data";
+import { Employee } from "@/constants/data";
 
 const breadcrumbItems = [{ title: "User", link: "/dashboard/user" }];
 export default async function page() {
