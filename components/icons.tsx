@@ -4,6 +4,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  CircuitBoardIcon,
   Command,
   CreditCard,
   File,
@@ -26,6 +27,7 @@ import {
   Twitter,
   User,
   User2Icon,
+  UserX2Icon,
   X,
 } from "lucide-react";
 
@@ -38,9 +40,11 @@ export const Icons = {
   close: X,
   profile: User2Icon,
   spinner: Loader2,
+  kanban: CircuitBoardIcon,
   chevronLeft: ChevronLeft,
   chevronRight: ChevronRight,
   trash: Trash,
+  employee: UserX2Icon,
   post: FileText,
   page: File,
   media: Image,

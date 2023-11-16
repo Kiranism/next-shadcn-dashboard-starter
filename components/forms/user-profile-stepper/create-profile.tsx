@@ -114,9 +114,9 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues,
+    mode: "onChange",
   });
 
-  type Inputs = z.infer<typeof formSchema>;
   const onSubmit = async (data: ProfileFormValues) => {
     try {
       setLoading(true);
@@ -147,13 +147,13 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
     }
   };
 
-  const processForm: SubmitHandler<Inputs> = (data) => {
+  const processForm: SubmitHandler<ProfileFormValues> = (data) => {
     console.log("data ==>", data);
     // api call and reset
     // form.reset();
   };
 
-  type FieldName = keyof Inputs;
+  type FieldName = keyof ProfileFormValues;
 
   const next = async () => {
     const fields = steps[currentStep].fields;
