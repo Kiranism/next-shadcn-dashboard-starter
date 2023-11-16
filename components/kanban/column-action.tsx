@@ -1,7 +1,6 @@
 "use client";
-import * as React from "react";
-import { Dialog } from "@/components/ui/dialog";
 import { DotsHorizontalIcon } from "@radix-ui/react-icons";
+import * as React from "react";
 
 import {
   AlertDialog,
@@ -14,25 +13,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
-import { Input } from "../ui/input";
 import { useTaskStore } from "@/lib/store";
 import { UniqueIdentifier } from "@dnd-kit/core";
+import { Input } from "../ui/input";
 
 export function ColumnActions({
   title,
