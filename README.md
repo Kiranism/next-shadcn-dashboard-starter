@@ -31,13 +31,13 @@ This is a starter template using the following stack:
 
 | Pages                                                                             | Specifications                                           |
 | :-------------------------------------------------------------------------------- | :------------------------------------------------------- |
-| <a href="https://next-shadcn-dashboard-starter.vercel.app/" target="_blank">Signup</a> | Authentication with **NextAuth** supports Social logins. |
-| <a href="https://next-shadcn-dashboard-starter.vercel.app/dashboard" target="_blank">Dashboard</a> | Cards with recharts graphs for analytics. |
-| <a href="https://next-shadcn-dashboard-starter.vercel.app/dashboard/user" target="_blank">Users</a> | Tanstack tables with user details |
-| <a href="https://next-shadcn-dashboard-starter.vercel.app/dashboard/user/new" target="_blank">Users/new</a> | A User Form with Uploadthing to support file uploading. |
-| <a href="https://next-shadcn-dashboard-starter.vercel.app/dashboard/employee" target="_blank">Employee</a> | Tanstack tables with server side functionalites(tbd). |
-| <a href="https://next-shadcn-dashboard-starter.vercel.app/dashboard/profile" target="_blank">Profile</a> | Mutistep forms using react-hook-form and zod validation. |
-| <a href="https://next-shadcn-dashboard-starter.vercel.app/dashboard/kanban" target="_blank">Kanban Board</a> | A DnD task management board with dnd-kit. |              |
+| [Signup](https://next-shadcn-dashboard-starter.vercel.app/)                       | Authentication with **NextAuth** supports Social logins. |
+| [Dashboard](https://next-shadcn-dashboard-starter.vercel.app/dashboard)           | Cards with recharts graphs for analytics.                |
+| [Users](https://next-shadcn-dashboard-starter.vercel.app/dashboard/user)          | Tanstack tables with user details                        |
+| [Users/new](https://next-shadcn-dashboard-starter.vercel.app/dashboard/user/new)  | A User Form with Uploadthing to support file uploading.  |
+| [Employee](https://next-shadcn-dashboard-starter.vercel.app/dashboard/employee)   | Tanstack tables with server side functionalites(tbd).    |
+| [Profile](https://next-shadcn-dashboard-starter.vercel.app/dashboard/profile)     | Mutistep forms using react-hook-form and zod validation. |
+| [Kanban Board](https://next-shadcn-dashboard-starter.vercel.app/dashboard/kanban) | A DnD task management board with dnd-kit.                |
 | -                                                                                 | -                                                        |
 
 ## Getting Started
