@@ -27,6 +27,19 @@ This is a starter template using the following stack:
 - Linting - [ESLint](https://eslint.org)
 - Formatting - [Prettier](https://prettier.io)
 
+## Pages
+
+| Pages                                                                             | Specifications                                           |
+| :-------------------------------------------------------------------------------- | :------------------------------------------------------- |
+| [Signup](https://next-shadcn-dashboard-starter.vercel.app/)                       | Authentication with **NextAuth** supports Social logins. |
+| [Dashboard](https://next-shadcn-dashboard-starter.vercel.app/dashboard)           | Cards with recharts graphs for analytics.                |
+| [Users](https://next-shadcn-dashboard-starter.vercel.app/dashboard/user)          | Tanstack tables with user details                        |
+| [Users/new](https://next-shadcn-dashboard-starter.vercel.app/dashboard/user/new)  | A User Form with Uploadthing to support file uploading.  |
+| [Employee](https://next-shadcn-dashboard-starter.vercel.app/dashboard/employee)   | Tanstack tables with server side functionalites(tbd).    |
+| [Profile](https://next-shadcn-dashboard-starter.vercel.app/dashboard/profile)     | Mutistep forms using react-hook-form and zod validation. |
+| [Kanban Board](https://next-shadcn-dashboard-starter.vercel.app/dashboard/kanban) | A DnD task management board with dnd-kit.                |
+| -                                                                                 | -                                                        |
+
 ## Getting Started
 
 Clone this repo
