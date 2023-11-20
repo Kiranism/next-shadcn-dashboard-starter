@@ -1,4 +1,10 @@
 "use client";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -18,11 +24,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Trash } from "lucide-react";
+import { AlertTriangleIcon, Trash, Trash2Icon } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import { SubmitHandler, useForm } from "react-hook-form";
+import { SubmitHandler, useFieldArray, useForm } from "react-hook-form";
 import * as z from "zod";
 
 const formSchema = z.object({
@@ -38,20 +45,27 @@ const formSchema = z.object({
   contactno: z.coerce.number(),
   country: z.string().min(1, { message: "Please select a category" }),
   city: z.string().min(1, { message: "Please select a category" }),
-  jobcountry: z.string().min(1, { message: "Please select a category" }),
-  jobcity: z.string().min(1, { message: "Please select a category" }),
-  jobtitle: z
-    .string()
-    .min(3, { message: "Product Name must be at least 3 characters" }),
-  employer: z
-    .string()
-    .min(3, { message: "Product Name must be at least 3 characters" }),
-  startdate: z.string().refine((value) => /^\d{4}-\d{2}-\d{2}$/.test(value), {
-    message: "Start date should be in the format YYYY-MM-DD",
-  }),
-  enddate: z.string().refine((value) => /^\d{4}-\d{2}-\d{2}$/.test(value), {
-    message: "End date should be in the format YYYY-MM-DD",
-  }),
+  // jobs array is for the dynamic fields
+  jobs: z.array(
+    z.object({
+      jobcountry: z.string().min(1, { message: "Please select a category" }),
+      jobcity: z.string().min(1, { message: "Please select a category" }),
+      jobtitle: z
+        .string()
+        .min(3, { message: "Product Name must be at least 3 characters" }),
+      employer: z
+        .string()
+        .min(3, { message: "Product Name must be at least 3 characters" }),
+      startdate: z
+        .string()
+        .refine((value) => /^\d{4}-\d{2}-\d{2}$/.test(value), {
+          message: "Start date should be in the format YYYY-MM-DD",
+        }),
+      enddate: z.string().refine((value) => /^\d{4}-\d{2}-\d{2}$/.test(value), {
+        message: "End date should be in the format YYYY-MM-DD",
+      }),
+    }),
+  ),
 });
 
 type ProfileFormValues = z.infer<typeof formSchema>;
@@ -60,27 +74,6 @@ interface ProfileFormType {
   initialData: any | null;
   categories: any;
 }
-
-const steps = [
-  {
-    id: "Step 1",
-    name: "Personal Information",
-    fields: ["firstname", "lastname", "email", "contactno", "country", "city"],
-  },
-  {
-    id: "Step 2",
-    name: "Professional Informations",
-    fields: [
-      "jobtitle",
-      "employer",
-      "startdate",
-      "enddate",
-      "jobcountry",
-      "jobcity",
-    ],
-  },
-  { id: "Step 3", name: "Complete" },
-];
 
 export const CreateProfileOne: React.FC<ProfileFormType> = ({
   initialData,
@@ -99,22 +92,36 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
   const action = initialData ? "Save changes" : "Create";
   const [previousStep, setPreviousStep] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
+  const [data, setData] = useState({});
   const delta = currentStep - previousStep;
 
-  const defaultValues = initialData
-    ? initialData
-    : {
-        name: "",
-        description: "",
-        price: 0,
-        imgUrl: [],
-        category: "",
-      };
+  const defaultValues = {
+    jobs: [
+      {
+        jobtitle: "",
+        employer: "",
+        startdate: "",
+        enddate: "",
+        jobcountry: "",
+        jobcity: "",
+      },
+    ],
+  };
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues,
     mode: "onChange",
+  });
+
+  const {
+    control,
+    formState: { errors },
+  } = form;
+
+  const { append, remove, fields } = useFieldArray({
+    control,
+    name: "jobs",
   });
 
   const onSubmit = async (data: ProfileFormValues) => {
@@ -149,14 +156,48 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
 
   const processForm: SubmitHandler<ProfileFormValues> = (data) => {
     console.log("data ==>", data);
+    setData(data);
     // api call and reset
     // form.reset();
   };
 
   type FieldName = keyof ProfileFormValues;
 
+  const steps = [
+    {
+      id: "Step 1",
+      name: "Personal Information",
+      fields: [
+        "firstname",
+        "lastname",
+        "email",
+        "contactno",
+        "country",
+        "city",
+      ],
+    },
+    {
+      id: "Step 2",
+      name: "Professional Informations",
+      // fields are mapping and flattening for the error to be trigger  for the dynamic fields
+      fields: fields
+        ?.map((_, index) => [
+          `jobs.${index}.jobtitle`,
+          `jobs.${index}.employer`,
+          `jobs.${index}.startdate`,
+          `jobs.${index}.enddate`,
+          `jobs.${index}.jobcountry`,
+          `jobs.${index}.jobcity`,
+          // Add other field names as needed
+        ])
+        .flat(),
+    },
+    { id: "Step 3", name: "Complete" },
+  ];
+
   const next = async () => {
     const fields = steps[currentStep].fields;
+
     const output = await form.trigger(fields as FieldName[], {
       shouldFocus: true,
     });
@@ -235,7 +276,13 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
           onSubmit={form.handleSubmit(processForm)}
           className="space-y-8 w-full"
         >
-          <div className="md:grid md:grid-cols-3 gap-8">
+          <div
+            className={cn(
+              currentStep === 1
+                ? "md:inline-block w-full"
+                : "md:grid md:grid-cols-3 gap-8",
+            )}
+          >
             {currentStep === 0 && (
               <>
                 <FormField
@@ -377,132 +424,214 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
             )}
             {currentStep === 1 && (
               <>
-                <FormField
-                  control={form.control}
-                  name="jobtitle"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Job title</FormLabel>
-                      <FormControl>
-                        <Input type="text" disabled={loading} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="employer"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Employer</FormLabel>
-                      <FormControl>
-                        <Input type="text" disabled={loading} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="startdate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Start date</FormLabel>
-                      <FormControl>
-                        <Input type="date" disabled={loading} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="enddate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>End date</FormLabel>
-                      <FormControl>
-                        <Input type="date" disabled={loading} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="jobcountry"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Job country</FormLabel>
-                      <Select
-                        disabled={loading}
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        defaultValue={field.value}
+                {fields?.map((field, index) => (
+                  <Accordion
+                    type="single"
+                    collapsible
+                    defaultValue="item-1"
+                    key={field.id}
+                  >
+                    <AccordionItem value="item-1">
+                      <AccordionTrigger
+                        className={cn(
+                          "[&[data-state=closed]>button]:hidden [&[data-state=open]>.alert]:hidden relative !no-underline",
+                          errors?.jobs?.[index] && "text-red-700",
+                        )}
                       >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue
-                              defaultValue={field.value}
-                              placeholder="Select your job country"
-                            />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {/* @ts-ignore  */}
-                          {countries.map((country) => (
-                            <SelectItem key={country.id} value={country.id}>
-                              {country.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="jobcity"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Job city</FormLabel>
-                      <Select
-                        disabled={loading}
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue
-                              defaultValue={field.value}
-                              placeholder="Select your job city"
-                            />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {/* @ts-ignore  */}
-                          {cities.map((city) => (
-                            <SelectItem key={city.id} value={city.id}>
-                              {city.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        {`Work Experience ${index + 1}`}
+
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="absolute right-8"
+                          onClick={() => remove(index)}
+                        >
+                          <Trash2Icon className="h-4 w-4 " />
+                        </Button>
+                        {errors?.jobs?.[index] && (
+                          <span className="absolute alert right-8">
+                            <AlertTriangleIcon className="h-4 w-4   text-red-700" />
+                          </span>
+                        )}
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div
+                          className={cn(
+                            "md:grid md:grid-cols-3 gap-8 border p-4 rounded-md relative mb-4",
+                          )}
+                        >
+                          <FormField
+                            control={form.control}
+                            name={`jobs.${index}.jobtitle`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Job title</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="text"
+                                    disabled={loading}
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name={`jobs.${index}.employer`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Employer</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="text"
+                                    disabled={loading}
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name={`jobs.${index}.startdate`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Start date</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="date"
+                                    disabled={loading}
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name={`jobs.${index}.enddate`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>End date</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="date"
+                                    disabled={loading}
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name={`jobs.${index}.jobcountry`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Job country</FormLabel>
+                                <Select
+                                  disabled={loading}
+                                  onValueChange={field.onChange}
+                                  value={field.value}
+                                  defaultValue={field.value}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue
+                                        defaultValue={field.value}
+                                        placeholder="Select your job country"
+                                      />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {countries.map((country) => (
+                                      <SelectItem
+                                        key={country.id}
+                                        value={country.id}
+                                      >
+                                        {country.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name={`jobs.${index}.jobcity`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Job city</FormLabel>
+                                <Select
+                                  disabled={loading}
+                                  onValueChange={field.onChange}
+                                  value={field.value}
+                                  defaultValue={field.value}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue
+                                        defaultValue={field.value}
+                                        placeholder="Select your job city"
+                                      />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {cities.map((city) => (
+                                      <SelectItem key={city.id} value={city.id}>
+                                        {city.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                ))}
+
+                <div className="flex justify-center mt-4">
+                  <Button
+                    type="button"
+                    className="flex justify-center"
+                    size={"lg"}
+                    onClick={() =>
+                      append({
+                        jobtitle: "",
+                        employer: "",
+                        startdate: "",
+                        enddate: "",
+                        jobcountry: "",
+                        jobcity: "",
+                      })
+                    }
+                  >
+                    Add More
+                  </Button>
+                </div>
               </>
             )}
             {currentStep === 2 && (
               <div>
                 <h1>Completed</h1>
+                <pre className="whitespace-pre-wrap">
+                  {JSON.stringify(data)}
+                </pre>
               </div>
             )}
           </div>
+
           {/* <Button disabled={loading} className="ml-auto" type="submit">
             {action}
           </Button> */}
