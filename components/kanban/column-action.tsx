@@ -106,7 +106,7 @@ export function ColumnActions({
               variant="destructive"
               onClick={() => {
                 // yes, you have to set a timeout
-                setTimeout(() => (document.body.style.pointerEvents = ""), 500);
+                setTimeout(() => (document.body.style.pointerEvents = ""), 100);
 
                 setShowDeleteDialog(false);
                 removeCol(id);

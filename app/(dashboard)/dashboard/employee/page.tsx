@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 
-const breadcrumbItems = [{ title: "User", link: "/dashboard/user" }];
+const breadcrumbItems = [{ title: "Employee", link: "/dashboard/employee" }];
 
 type paramsProps = {
   searchParams: {
@@ -28,11 +28,9 @@ export default async function page({ searchParams }: paramsProps) {
       (country ? `&search=${country}` : ""),
   );
   const employeeRes = await res.json();
-  console.log("employeeRes", employeeRes);
   const totalUsers = employeeRes.total_users; //1000
   const pageCount = Math.ceil(totalUsers / pageLimit);
   const employee: Employee[] = employeeRes.users;
-  console.log("employee", employee);
   return (
     <>
       <div className="flex-1 space-y-4  p-4 md:p-8 pt-6">
@@ -41,7 +39,7 @@ export default async function page({ searchParams }: paramsProps) {
         <div className="flex items-start justify-between">
           <Heading
             title={`Employee (${totalUsers})`}
-            description="Manage users for your business"
+            description="Manage employees (Server side table functionalities.)"
           />
 
           <Link
@@ -52,6 +50,7 @@ export default async function page({ searchParams }: paramsProps) {
           </Link>
         </div>
         <Separator />
+
         <EmployeeTable
           searchKey="country"
           pageNo={page}

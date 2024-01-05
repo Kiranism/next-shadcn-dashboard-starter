@@ -3,26 +3,22 @@ import { OurFileRouter } from "@/app/api/uploadthing/core";
 import { UploadDropzone } from "@uploadthing/react";
 import { Trash } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { UploadFileResponse } from "uploadthing/client";
 import { IMG_MAX_LIMIT } from "./forms/product-form";
 import { Button } from "./ui/button";
 import { useToast } from "./ui/use-toast";
 
 interface ImageUploadProps {
-  disabled?: boolean;
   onChange?: any;
   onRemove: (value: UploadFileResponse[]) => void;
   value: UploadFileResponse[];
 }
 
 export default function FileUpload({
-  disabled,
   onChange,
   onRemove,
   value,
 }: ImageUploadProps) {
-  const router = useRouter();
   const { toast } = useToast();
   const onDeleteFile = (key: string) => {
     const files = value;
@@ -82,7 +78,6 @@ export default function FileUpload({
             }}
             onClientUploadComplete={(res) => {
               // Do something with the response
-              console.log("Files: ", res);
               const data: UploadFileResponse[] | undefined = res;
               if (data) {
                 onUpdateFile(data);
@@ -95,9 +90,8 @@ export default function FileUpload({
                 description: error.message,
               });
             }}
-            onUploadBegin={(name) => {
+            onUploadBegin={() => {
               // Do something once upload begins
-              console.log("Uploading: ", name);
             }}
           />
         )}

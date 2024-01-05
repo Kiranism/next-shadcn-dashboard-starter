@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/table";
 import { Input } from "./input";
 import { Button } from "./button";
+import { ScrollArea, ScrollBar } from "./scroll-area";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -48,11 +49,10 @@ export function DataTable<TData, TValue>({
         onChange={(event) =>
           table.getColumn(searchKey)?.setFilterValue(event.target.value)
         }
-        className="max-w-sm"
+        className="w-full md:max-w-sm"
       />
-
-      <div className="rounded-md border">
-        <Table>
+      <ScrollArea className="rounded-md border h-[50vh]">
+        <Table className="relative">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -100,7 +100,8 @@ export function DataTable<TData, TValue>({
             )}
           </TableBody>
         </Table>
-      </div>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
       <div className="flex items-center justify-end space-x-2 py-4">
         <div className="flex-1 text-sm text-muted-foreground">
           {table.getFilteredSelectedRowModel().rows.length} of{" "}

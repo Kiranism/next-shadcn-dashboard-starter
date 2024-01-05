@@ -1,15 +1,14 @@
-import { SortableContext, useSortable } from "@dnd-kit/sortable";
-import { useDndContext, type UniqueIdentifier } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
-import { useMemo } from "react";
-import { TaskCard } from "./task-card";
-import { cva } from "class-variance-authority";
-import { Card, CardContent, CardHeader } from "../ui/card";
-import { Button } from "../ui/button";
-import { GripVertical } from "lucide-react";
 import { Task } from "@/lib/store";
+import { useDndContext, type UniqueIdentifier } from "@dnd-kit/core";
+import { SortableContext, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { cva } from "class-variance-authority";
+import { GripVertical } from "lucide-react";
+import { useMemo } from "react";
+import { Button } from "../ui/button";
+import { Card, CardContent, CardHeader } from "../ui/card";
 import { ColumnActions } from "./column-action";
-import { Input } from "../ui/input";
+import { TaskCard } from "./task-card";
 
 export interface Column {
   id: UniqueIdentifier;
