@@ -39,15 +39,6 @@ export type Actions = {
   updateCol: (id: UniqueIdentifier, newName: string) => void;
 };
 
-const initialTasks: Task[] = [
-  {
-    id: "task1",
-    description: "Project initiation and planning",
-    status: "TODO",
-    title: "new",
-  },
-];
-
 export const useTaskStore = create<State & Actions>()(
   persist(
     (set) => ({

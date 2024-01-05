@@ -33,6 +33,7 @@ import {
 } from "@radix-ui/react-icons";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -126,7 +127,6 @@ export function EmployeeTable<TData, TValue>({
   });
 
   const searchValue = table.getColumn(searchKey)?.getFilterValue() as string;
-  console.log("searchValue", searchValue);
 
   // React.useEffect(() => {
   //   if (debounceValue.length > 0) {
@@ -194,11 +194,10 @@ export function EmployeeTable<TData, TValue>({
         onChange={(event) =>
           table.getColumn(searchKey)?.setFilterValue(event.target.value)
         }
-        className="max-w-sm"
+        className="w-full md:max-w-sm"
       />
-
-      <div className="rounded-md border">
-        <Table>
+      <ScrollArea className="rounded-md border h-[50vh]">
+        <Table className="relative">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -246,8 +245,10 @@ export function EmployeeTable<TData, TValue>({
             )}
           </TableBody>
         </Table>
-      </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
+
+      <div className="flex flex-col gap-2 md:flex-row items-center justify-end space-x-2 py-4">
         <div className="flex-1 text-sm text-muted-foreground">
           {table.getFilteredSelectedRowModel().rows.length} of{" "}
           {table.getFilteredRowModel().rows.length} row(s) selected.

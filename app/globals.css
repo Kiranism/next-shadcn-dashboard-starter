@@ -75,24 +75,13 @@
   }
 }
 
-/* width */
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
-
-/* Track */
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-/* Handle */
-::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 5px;
-}
-
-/* Handle on hover */
-::-webkit-scrollbar-thumb:hover {
-  background: #555;
+@layer utilities {
+  .min-h-screen {
+    min-height: 100vh; /* Fallback */
+    min-height: 100dvh;
+  }
+  .h-screen {
+    height: 100vh; /* Fallback */
+    height: 100dvh;
+  }
 }

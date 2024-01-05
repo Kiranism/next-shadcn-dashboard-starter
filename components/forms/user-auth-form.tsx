@@ -1,22 +1,21 @@
 "use client";
-import React, { useState } from "react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { useForm } from "react-hook-form";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useRouter, useSearchParams } from "next/navigation";
-import GoogleSignInButton from "../github-auth-button";
+import { Input } from "@/components/ui/input";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import GoogleSignInButton from "../github-auth-button";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Enter a valid email address" }),
@@ -25,12 +24,11 @@ const formSchema = z.object({
 type UserFormValue = z.infer<typeof formSchema>;
 
 export default function UserAuthForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl");
   const [loading, setLoading] = useState(false);
   const defaultValues = {
-    email: "",
+    email: "demo@gmail.com",
   };
   const form = useForm<UserFormValue>({
     resolver: zodResolver(formSchema),
