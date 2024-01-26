@@ -1,0 +1,92 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --gradient: #fff;
+    --background: 256 98.75% 93.75%;
+    --foreground: 256 12.5% 2.5%;
+
+    --muted: 256 73% 73%;
+    --muted-foreground: 256 12.5% 2.5%;
+
+    --popover: 256 98.75% 93.75%;
+    --popover-foreground: 256 12.5% 2.5%;
+
+    --card: 256 98.75% 93.75%;
+    --card-foreground: 256 12.5% 2.5%;
+
+    --border: 256 73% 73%;
+    --input: 256 73% 73%;
+
+    --primary: 256, 41%, 62%;
+    --primary-foreground: 256 12.5% 2.5%;
+
+    --secondary: 256 73% 73%;
+    --secondary-foreground: 256 12.5% 2.5%;
+
+    --accent: 255, 100%, 83%;
+    --accent-foreground: 256 12.5% 2.5%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 256 12.5% 2.5%;
+
+    --ring: 256 25% 25%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --gradient: #9796f0;
+
+    --background: 256 48.75% 6.08%;
+    --foreground: 256 7.5% 98.8%;
+
+    --muted: 256 27% 25.080000000000002%;
+    --muted-foreground: 256 7.5% 57.6%;
+
+    --popover: 256 50% 9.88%;
+    --popover-foreground: 256 7.5% 98.8%;
+
+    --card: 256 50% 9.88%;
+    --card-foreground: 256 7.5% 98.8%;
+
+    --border: 256 27% 25.080000000000002%;
+    --input: 256 27% 25.080000000000002%;
+
+    --primary: 256 75% 76%;
+    --primary-foreground: 256 7.5% 7.6%;
+
+    --secondary: 256 27% 25.080000000000002%;
+    --secondary-foreground: 256 7.5% 98.8%;
+
+    --accent: 256 27% 25.080000000000002%;
+    --accent-foreground: 256 7.5% 98.8%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 256 7.5% 98.8%;
+
+    --ring: 256 75% 76%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground box-border;
+  }
+}
+
+@layer utilities {
+  .min-h-screen {
+    min-height: 100vh; /* Fallback */
+    min-height: 100dvh;
+  }
+  .h-screen {
+    height: 100vh; /* Fallback */
+    height: 100dvh;
+  }
+}
