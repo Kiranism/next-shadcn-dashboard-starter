@@ -1,20 +1,11 @@
 import BreadCrumb from "@/components/breadcrumb";
 import { LogClient } from "@/components/tables/log-tables/client";
-
-import { faker } from '@faker-js/faker';
+import { getAllLogs } from "@/lib/collections/log.collection";
 
 const breadcrumbItems = [{ title: "Log", link: "/dashboard/log" }];
-export default function page() {
+export default async function page() {
 
-
-  const logs = Array.from({ length: 10 }).map(() => ({
-    _id: faker.string.uuid(),
-    phone: faker.phone.number(),
-    status: faker.helpers.arrayElement(["success", "failed"]),
-    timestamp: faker.date.recent(),
-    messageId: faker.number.int(),
-    imageId: faker.string.uuid(),
-  }));
+  const logs = await getAllLogs()
 
   return (
     <>

@@ -30,16 +30,3 @@ export interface FooterItem {
 export type MainNavItem = NavItemWithOptionalChildren;
 
 export type SidebarNavItem = NavItemWithChildren;
-
-
-// Mongdb data
-
-export interface SendMessageLog {
-  _id: string;
-  phone: string;
-  status: string;
-  timestamp: Date;
-  messageId: number;
-  imageId: string;
-
-}

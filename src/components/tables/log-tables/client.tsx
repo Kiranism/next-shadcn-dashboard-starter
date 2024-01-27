@@ -5,10 +5,10 @@ import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
 import { useRouter } from "next/navigation";
 import { columns } from "./columns";
-import { SendMessageLog } from "@/types";
+import Log from "@/lib/models/logs";
 
 interface ProductsClientProps {
-  data: SendMessageLog[];
+  data: Log[];
 }
 
 export const LogClient: React.FC<ProductsClientProps> = ({ data }) => {

@@ -33,3 +33,15 @@ if (IS_DEVELOPMENT) {
 // Export a module-scoped MongoClient promise. By doing this in a
 // separate module, the client can be shared across functions.
 export default clientPromise;
+
+export async function getClient(dbName?: string) {
+    const client = await clientPromise;
+    return client.db(dbName);
+}
+
+
+export async function getCollection(collectionName: string, dbName? : string) {
+    const db = await getClient(dbName);
+    const collection = db.collection(collectionName);
+    return collection;
+}

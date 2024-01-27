@@ -2,9 +2,9 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { CellAction } from "./cell-action";
 import { Checkbox } from "@/components/ui/checkbox";
-import { SendMessageLog } from "@/types";
+import Log from "@/lib/models/logs";
 
-export const columns: ColumnDef<SendMessageLog>[] = [
+export const columns: ColumnDef<Log>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -33,16 +33,20 @@ export const columns: ColumnDef<SendMessageLog>[] = [
     header: "STATUS",
   },
   {
+    accessorKey: "key",
+    header: "KEY",
+  },
+  {
     accessorKey: "timestamp",
     header: "TIMESTAMP",
   },
   {
-    accessorKey: "messageId",
-    header: "MESSAGE ID",
+    accessorKey: "message",
+    header: "MESSAGE",
   },
   {
     accessorKey: "imageId",
-    header: "IMAGE ID",
+    header: "IMAGE",
   },
   {
     id: "actions",

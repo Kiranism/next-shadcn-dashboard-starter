@@ -8,13 +8,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SendMessageLog } from "@/types";
+import Log from "@/lib/models/logs";
 import { MoreHorizontal } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 interface CellActionProps {
-  data: SendMessageLog;
+  data: Log;
 }
 
 export const CellAction: React.FC<CellActionProps> = ({ data }) => {
