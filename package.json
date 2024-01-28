@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "lint:fix": "next lint --fix",
     "prettier": "prettier . --write"
   },
   "dependencies": {
@@ -57,8 +58,8 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.8",
-    "@types/react": "18.2.21",
-    "@types/react-dom": "18.2.7",
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
     "@types/uuid": "^9.0.7",
     "@typescript-eslint/eslint-plugin": "^6.11.0",
     "autoprefixer": "^10.4.17",
