@@ -46,6 +46,25 @@ This is a starter template using the following stack:
 
 Clone this repo
 
+```
+git clone https://github.com/Kiranism/next-shadcn-dashboard-starter
+```
+
+Create `.env` file like as `env.example.txt`
+
+```
+UPLOADTHING_SECRET=
+UPLOADTHING_APP_ID=
+# Next auth 
+NEXTAUTH_URL = http://localhost:3000
+NEXTAUTH_SECRET= 
+# get this from github developer settings 
+GITHUB_ID = 
+GITHUB_SECRET = 
+```
+
+Update your `NEXTAUTH_SECRET` in your `.env` file
+
 Run the following commands to start the development server:
 
 ```
