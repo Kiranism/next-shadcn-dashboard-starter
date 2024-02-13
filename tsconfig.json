@@ -22,6 +22,6 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "app/(auth)/(signin)/page.jsx", "app/(dashboard)/dashboard/employee/[employeeId]/page.jsx", "app/(dashboard)/dashboard/employee/page.jsx", "app/(dashboard)/dashboard/kanban/page.jsx", "app/(dashboard)/dashboard/profile/page.jsx", "app/(dashboard)/dashboard/user/page.jsx", "app/(dashboard)/dashboard/user/[userId]/page.jsx", "app/(dashboard)/dashboard/layout.jsx", "app/(dashboard)/dashboard/page.jsx", "app/api/auth/[...nextauth]/route.js", "app/api/uploadthing/core.js", "app/api/uploadthing/route.js", "app/layout.jsx", "app/not-found.jsx", "lib/auth-options.ts", "lib/form-schema.ts", "lib/store.ts", "lib/utils.ts", "hooks/useMultistepForm.jsx", "constants/data.ts"],
   "exclude": ["node_modules"]
 }

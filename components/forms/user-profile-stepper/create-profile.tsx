@@ -182,8 +182,15 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
     }
   };
 
-  const countries = [{ id: "wow", name: "india" }];
-  const cities = [{ id: "2", name: "kerala" }];
+  const countries = [
+    { id: "wow1", name: "india" },
+    { id: "wow2", name: "Pakistan" },
+    { id: "wow3", name: "Turkey" },
+  ];
+  const cities = [
+    { id: "2", name: "kerala" },
+    { id: "3", name: "Karachi" },
+  ];
 
   return (
     <>

@@ -29,6 +29,8 @@ import {
   User2Icon,
   UserX2Icon,
   X,
+  ShoppingCart,
+  ShoppingBasket,
 } from "lucide-react";
 
 export type Icon = LucideIcon;
@@ -45,6 +47,8 @@ export const Icons = {
   chevronRight: ChevronRight,
   trash: Trash,
   employee: UserX2Icon,
+  orders: ShoppingCart,
+  products: ShoppingBasket,
   post: FileText,
   page: File,
   media: Image,
