@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 
-const breadcrumbItems = [{ title: "Employee", link: "/dashboard/employee" }];
+const breadcrumbItems = [{ title: "Product", link: "/dashboard/product" }];
 
 export default async function page({ searchParams }) {
   const page = Number(searchParams.page) || 1;
@@ -31,12 +31,12 @@ export default async function page({ searchParams }) {
 
         <div className="flex items-start justify-between">
           <Heading
-            title={`Employee (${totalUsers})`}
-            description="Manage employees (Server side table functionalities.)"
+            title={`Products (${totalUsers})`}
+            description="Manage products (Server side table functionalities.)"
           />
 
           <Link
-            href={"/dashboard/employee/new"}
+            href={"/dashboard/product/new"}
             className={cn(buttonVariants({ variant: "default" }))}
           >
             <Plus className="mr-2 h-4 w-4" /> Add New

@@ -22,6 +22,33 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "app/(auth)/(signin)/page.jsx", "app/(dashboard)/dashboard/employee/[employeeId]/page.jsx", "app/(dashboard)/dashboard/employee/page.jsx", "app/(dashboard)/dashboard/kanban/page.jsx", "app/(dashboard)/dashboard/profile/page.jsx", "app/(dashboard)/dashboard/user/page.jsx", "app/(dashboard)/dashboard/user/[userId]/page.jsx", "app/(dashboard)/dashboard/layout.jsx", "app/(dashboard)/dashboard/page.jsx", "app/api/auth/[...nextauth]/route.js", "app/api/uploadthing/core.js", "app/api/uploadthing/route.js", "app/layout.jsx", "app/not-found.jsx", "lib/auth-options.ts", "lib/form-schema.ts", "lib/store.ts", "lib/utils.ts", "hooks/useMultistepForm.jsx", "constants/data.ts"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "app/(auth)/(signin)/page.tsx",
+    "app/(dashboard)/dashboard/product/[productId]/page.tsx",
+    "app/(dashboard)/dashboard/product/page.jsx",
+    "app/(dashboard)/dashboard/order/[orderId]/page.jsx",
+    "app/(dashboard)/dashboard/order/page.jsx",
+    "app/(dashboard)/dashboard/kanban/page.jsx",
+    "app/(dashboard)/dashboard/profile/page.jsx",
+    "app/(dashboard)/dashboard/user/page.tsx",
+    "app/(dashboard)/dashboard/user/[userId]/page.tsx",
+    "app/(dashboard)/dashboard/layout.tsx",
+    "app/(dashboard)/dashboard/page.tsx",
+    "app/api/auth/[...nextauth]/route.js",
+    "app/api/uploadthing/core.js",
+    "app/api/uploadthing/route.js",
+    "app/layout.tsx",
+    "app/not-found.tsx",
+    "lib/auth-options.ts",
+    "lib/form-schema.ts",
+    "lib/store.ts",
+    "lib/utils.ts",
+    "hooks/useMultistepForm.jsx",
+    "constants/data.ts"
+  ],
   "exclude": ["node_modules"]
 }
