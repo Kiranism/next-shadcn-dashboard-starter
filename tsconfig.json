@@ -49,6 +49,6 @@
     "lib/utils.ts",
     "hooks/useMultistepForm.jsx",
     "constants/data.ts"
-  ],
+, "app/api/product.js", "models/product.js", "lib/mongoose.js", "lib/mongodb.js", "app/api/products/add.js"  ],
   "exclude": ["node_modules"]
 }

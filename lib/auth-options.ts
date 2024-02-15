@@ -2,6 +2,8 @@ import { NextAuthOptions } from "next-auth";
 import GithubProvider from "next-auth/providers/github";
 import CredentialProvider from "next-auth/providers/credentials";
 
+const adminEmails = ["admin@gmail.com", "hassan@gmail.com"];
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GithubProvider({
@@ -17,20 +19,19 @@ export const authOptions: NextAuthOptions = {
         },
       },
       async authorize(credentials, req) {
-        const user = { id: "1", name: "John", email: credentials?.email };
-        if (user) {
+        const user = { id: "1", name: "Admin", email: credentials?.email };
+        // Check if user exists and has an email
+        if (user && user.email && adminEmails.includes(user.email)) {
           // Any object returned will be saved in `user` property of the JWT
           return user;
         } else {
-          // If you return null then an error will be displayed advising the user to check their details.
+          // If the user or email is not in the adminEmails list, return null
           return null;
-
-          // You can also Reject this callback with an Error thus the user will be sent to the error page with the error message as a query parameter
         }
       },
     }),
   ],
   pages: {
-    signIn: "/", //sigin page
+    signIn: "/", // signin page
   },
 };

@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "Basic dashboard with Next.js and Shadcn",
 };
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;

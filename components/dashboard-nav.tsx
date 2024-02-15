@@ -7,6 +7,7 @@ import { Icons } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { NavItem } from "@/types";
 import { Dispatch, SetStateAction } from "react";
+import { signOut, useSession } from "next-auth/react";
 
 interface DashboardNavProps {
   items: NavItem[];
@@ -30,6 +31,7 @@ export function DashboardNav({ items, setOpen }: DashboardNavProps) {
               key={index}
               href={item.disabled ? "/" : item.href}
               onClick={() => {
+                item?.title === "Logout" && signOut();
                 if (setOpen) setOpen(false);
               }}
             >

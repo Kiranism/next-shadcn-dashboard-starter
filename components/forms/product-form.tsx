@@ -7,6 +7,7 @@ import { Trash } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import axios from "axios";
 import {
   Form,
   FormControl,
@@ -72,7 +73,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [imgLoading, setImgLoading] = useState(false);
-  const title = initialData ? "Edit product" : "Create product";
+  const headTitle = initialData ? "Edit product" : "Create product";
   const description = initialData ? "Edit a product." : "Add a new product";
   const toastMessage = initialData ? "Product updated." : "Product created.";
   const action = initialData ? "Save changes" : "Create";
@@ -95,18 +96,18 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   const onSubmit = async (data: ProductFormValues) => {
     try {
       setLoading(true);
-      if (initialData) {
-        // await axios.post(`/api/products/edit-product/${initialData._id}`, data);
-      } else {
-        // const res = await axios.post(`/api/products/create-product`, data);
-        // console.log("product", res);
-      }
+      const res = await axios.post(`/api/products/create-product`, data);
+      console.log("product", res);
+      // if (initialData) {
+      //   await axios.put(`/api/products/edit-product/${initialData._id}`, data);
+      // } else {
+      // }
       router.refresh();
       router.push(`/dashboard/products`);
       toast({
-        variant: "destructive",
-        title: "Uh oh! Something went wrong.",
-        description: "There was a problem with your request.",
+        variant: "default",
+        title: "Congratulations! Your product has been added",
+        description: "Now you can see your products.",
       });
     } catch (error: any) {
       toast({
@@ -143,7 +144,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         loading={loading}
       /> */}
       <div className="flex items-center justify-between">
-        <Heading title={title} description={description} />
+        <Heading headTitle={headTitle} description={description} />
         {initialData && (
           <Button
             disabled={loading}
