@@ -156,3 +156,28 @@ export default async function handler(req, res) {
     res.status(405).json({ success: false, message: "Method Not Allowed" });
   }
 }
+
+// #Add Uploadthing secret and appId to setup fileupload https://uploadthing.com/
+
+// UPLOADTHING_SECRET=sk_live_d0613bbfe38c1b54f235961aa0d8f749f92bf8b9d6aac795c2f2b360827e83b6
+// UPLOADTHING_APP_ID=mp3tr5khbn
+
+// # Next auth https://next-auth.js.org/configuration/options
+// # Run this command to generate a a new NEXTAUTH_SECRET
+// # $ openssl rand -base64 32
+
+// NEXTAUTH_URL = http://localhost:3000
+// NEXTAUTH_SECRET=XawcpxM+LlFxLuwieCFIH3OXeZhfz9ke37lqjG12CF8=
+
+// MONGODB_URI=mongodb+srv://mhassankhanmv:hassan@123@cluster0.jf9bphk.mongodb.net/
+
+// # Go to github and setup the oauth configuration
+// # https://next-auth.js.org/providers/github#configuration
+// # https://github.com/settings/developers
+
+// GITHUB_ID =
+// GITHUB_SECRET =
+// # hassan123
+
+// # mongodb+srv://mhassankhanmv:hassan@123@cluster0.jf9bphk.mongodb.net/?retryWrites=true&w=majority
+// # mongodb+srv://mhassankhanmv:hassan@123@cluster0.jf9bphk.mongodb.net/
