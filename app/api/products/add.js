@@ -16,6 +16,7 @@ export default async function handle(req, res) {
   if (method === "POST") {
     console.log("before post method");
     const { name, description, price } = req.body;
+    console.log("before creating newProduct");
     const productDoc = await Product.create({
       name,
       description,
@@ -23,7 +24,7 @@ export default async function handle(req, res) {
       // imgUrl,
       // category,
     });
-    console.log("productDoc", res.json(productDoc));
+    console.log("productDoc after productDoc", res.json(productDoc));
     res.json(productDoc);
   }
   if (method === "PUT") {

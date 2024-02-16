@@ -53,19 +53,19 @@ const formSchema = z.object({
     .string()
     .min(3, { message: "Product description must be at least 3 characters" }),
   price: z.coerce.number(),
-  category: z.string().min(1, { message: "Please select a category" }),
+  // category: z.string().min(1, { message: "Please select a category" }),
 });
 
 type ProductFormValues = z.infer<typeof formSchema>;
 
 interface ProductFormProps {
   initialData: any | null;
-  categories: any;
+  // categories: any;
 }
 
 export const ProductForm: React.FC<ProductFormProps> = ({
   initialData,
-  categories,
+  // categories,
 }) => {
   const params = useParams();
   const router = useRouter();
@@ -138,7 +138,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
     }
   };
 
-  const triggerImgUrlValidation = () => form.trigger("imgUrl");
+  // const triggerImgUrlValidation = () => form.trigger("imgUrl");
 
   return (
     <>
@@ -232,7 +232,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                 </FormItem>
               )}
             />
-            <FormField
+            {/* <FormField
               control={form.control}
               name="category"
               render={({ field }) => (
@@ -253,7 +253,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {/* @ts-ignore  */}
+                      // @ts-ignore 
                       {categories.map((category) => (
                         <SelectItem key={category._id} value={category._id}>
                           {category.name}
@@ -264,7 +264,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                   <FormMessage />
                 </FormItem>
               )}
-            />
+            /> */}
           </div>
           <Button disabled={loading} className="ml-auto" type="submit">
             {action}

@@ -133,20 +133,23 @@ export default async function handler(req, res) {
     try {
       // Connect to MongoDB
       await dbConnect();
+      consoel.log("databse connected!");
 
       // Extract product data from the request body
-      const { name, description, price, category } = req.body;
+      const { name, description, price } = req.body;
 
       // Create a new product instance
+      console.log("before creating newProduct");
       const newProduct = new Product({
         name,
         description,
         price,
-        category,
+        // category,
       });
-
+      console.log(newProduct, "newProductnewProduct");
       // Save the product to the database
       const savedProduct = await newProduct.save();
+      console.log(savedProduct, "savedProductsavedProduct");
 
       res.status(201).json({ success: true, data: savedProduct });
     } catch (error) {
