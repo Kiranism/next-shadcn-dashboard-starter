@@ -1,78 +1,114 @@
 "use client";
 
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, LineChart, Line} from "recharts";
 
 const data = [
   {
-    name: "Jan",
-    total: Math.floor(Math.random() * 5000) + 1000,
+    average: 400,
+    today: 240,
   },
   {
-    name: "Feb",
-    total: Math.floor(Math.random() * 5000) + 1000,
+    average: 300,
+    today: 139,
   },
   {
-    name: "Mar",
-    total: Math.floor(Math.random() * 5000) + 1000,
+    average: 200,
+    today: 980,
   },
   {
-    name: "Apr",
-    total: Math.floor(Math.random() * 5000) + 1000,
+    average: 278,
+    today: 390,
   },
   {
-    name: "May",
-    total: Math.floor(Math.random() * 5000) + 1000,
+    average: 189,
+    today: 480,
   },
   {
-    name: "Jun",
-    total: Math.floor(Math.random() * 5000) + 1000,
+    average: 239,
+    today: 380,
   },
   {
-    name: "Jul",
-    total: Math.floor(Math.random() * 5000) + 1000,
+    average: 349,
+    today: 430,
   },
-  {
-    name: "Aug",
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-  {
-    name: "Sep",
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-  {
-    name: "Oct",
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-  {
-    name: "Nov",
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-  {
-    name: "Dec",
-    total: Math.floor(Math.random() * 5000) + 1000,
-  },
-];
+]
+
 
 export function Overview() {
   return (
     <ResponsiveContainer width="100%" height={350}>
-      <BarChart data={data}>
-        <XAxis
-          dataKey="name"
-          stroke="#888888"
-          fontSize={12}
-          tickLine={false}
-          axisLine={false}
-        />
-        <YAxis
-          stroke="#888888"
-          fontSize={12}
-          tickLine={false}
-          axisLine={false}
-          tickFormatter={(value) => `$${value}`}
-        />
-        <Bar dataKey="total" fill="#adfa1d" radius={[4, 4, 0, 0]} />
-      </BarChart>
+         <LineChart
+              data={data}
+              margin={{
+                top: 5,
+                right: 10,
+                left: 10,
+                bottom: 0,
+              }}
+            >
+                                  <CartesianGrid strokeDasharray="3 3" />
+
+              <Tooltip
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <div className="rounded-lg border bg-background p-2 shadow-sm">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="flex flex-col">
+                            <span className="text-[0.70rem] uppercase text-muted-foreground">
+                              Average
+                            </span>
+                            <span className="font-bold text-muted-foreground">
+                              {payload[0].value}
+                            </span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[0.70rem] uppercase text-muted-foreground">
+                              Today
+                            </span>
+                            <span className="font-bold">
+                              {payload[1].value}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  }
+
+                  return null
+                }}
+              />
+              <Line
+                type="monotone"
+                strokeWidth={2}
+                dataKey="average"
+                activeDot={{
+                  r: 6,
+                  style: { fill: "var(--theme-primary)", opacity: 0.25 },
+                }}
+                style={
+                  {
+                    stroke: "grey",
+                    opacity: 0.25,                    
+                  } as React.CSSProperties
+                }
+              />
+              <Line
+                type="monotone"
+                dataKey="today"
+                strokeWidth={2}
+                activeDot={{
+                  r: 8,
+                  style: { fill: "var(--theme-primary)" },
+                }}
+                style={
+                  {
+                    stroke: "black",
+                  } as React.CSSProperties
+                }
+              />
+            </LineChart>
+        {/* <Bar dataKey="total" fill="#adfa1d" radius={[4, 4, 0, 0]} /> */}
     </ResponsiveContainer>
   );
 }

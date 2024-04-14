@@ -4,7 +4,7 @@ import React from "react";
 
 export default function Page() {
   const breadcrumbItems = [
-    { title: "Employee", link: "/dashboard/employee" },
+    { title: "Directory", link: "/dashboard/employee" },
     { title: "Create", link: "/dashboard/employee/create" },
   ];
   return (
