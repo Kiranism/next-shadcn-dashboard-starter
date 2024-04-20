@@ -30,6 +30,7 @@ import {
   UserX2Icon,
   X,
   Folder,
+  FolderTree,
   Search,
   PlugZapIcon
 } from "lucide-react";
@@ -83,6 +84,8 @@ export const Icons = {
   twitter: Twitter,
   check: Check,
   folder: Folder,
+  folderTree: FolderTree,
   search: Search,
-  plugZap: PlugZapIcon
+  plugZap: PlugZapIcon,
+
 };

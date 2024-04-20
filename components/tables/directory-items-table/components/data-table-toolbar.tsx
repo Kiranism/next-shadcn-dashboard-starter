@@ -1,22 +1,23 @@
-"use client"
+"use client";
 
-import { Cross2Icon } from "@radix-ui/react-icons"
-import { Table } from "@tanstack/react-table"
+import { Cross2Icon, UploadIcon } from "@radix-ui/react-icons";
+import { Table } from "@tanstack/react-table";
 
-import { priorities, statuses } from "../data/data"
-import { DataTableFacetedFilter } from "./data-table-faceted-filter"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { DataTableViewOptions } from "./data-table-view-options"
+import { priorities, statuses } from "../data/data";
+import { DataTableFacetedFilter } from "./data-table-faceted-filter";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { DataTableViewOptions } from "./data-table-view-options";
+import { UploadDialog } from "./data-table-upload-dialog";
 
 interface DataTableToolbarProps<TData> {
-  table: Table<TData>
+  table: Table<TData>;
 }
 
 export function DataTableToolbar<TData>({
   table,
 }: DataTableToolbarProps<TData>) {
-  const isFiltered = table.getState().columnFilters.length > 0
+  const isFiltered = table.getState().columnFilters.length > 0;
 
   return (
     <div className="flex items-center justify-between">
@@ -54,7 +55,17 @@ export function DataTableToolbar<TData>({
           </Button>
         )}
       </div>
-      <DataTableViewOptions table={table} />
+      <div className="flex items-center space-x-2">
+        <UploadDialog
+          categories={[
+            { _id: "shirts", name: "shirts" },
+            { _id: "pants", name: "pants" },
+          ]}
+          initialData={null}
+          key={null}
+        />
+        <DataTableViewOptions table={table} />
+      </div>
     </div>
-  )
+  );
 }

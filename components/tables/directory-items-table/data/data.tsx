@@ -1,3 +1,4 @@
+import { Icons } from "@/components/icons"
 import {
   ArrowDownIcon,
   ArrowRightIcon,
@@ -24,6 +25,18 @@ export const labels = [
   },
 ]
 
+export const itemType = [
+  {
+    value: "folder",
+    label: "Folder",
+    icon: Icons.folder,
+  },
+  {
+    value: "text",
+    label: "Text",
+    icon: Icons.post,
+  }
+]
 export const statuses = [
   {
     value: "backlog",

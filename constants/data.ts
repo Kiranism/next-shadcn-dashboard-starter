@@ -119,9 +119,9 @@ export const navItems: NavItem[] = [
     label: "Dashboard",
   },
   {
-    title: "Directory",
+    title: "Index Directory",
     href: "/dashboard/directory",
-    icon: "folder",
+    icon: "folderTree",
     label: "folder",
   },
   {

@@ -1,6 +1,7 @@
 [
   {
     "id": "TASK-8782",
+    "type": "folder",
     "title": "You can't compress the program without quantifying the open-source SSD pixel!",
     "status": "in progress",
     "label": "documentation",
@@ -8,6 +9,7 @@
   },
   {
     "id": "TASK-7878",
+    "type": "text",
     "title": "Try to calculate the EXE feed, maybe it will index the multi-byte pixel!",
     "status": "backlog",
     "label": "documentation",
@@ -15,6 +17,7 @@
   },
   {
     "id": "TASK-7839",
+    "type": "folder",
     "title": "We need to bypass the neural TCP card!",
     "status": "todo",
     "label": "bug",
@@ -22,6 +25,7 @@
   },
   {
     "id": "TASK-5562",
+    "type": "folder",
     "title": "The SAS interface is down, bypass the open-source pixel so we can back up the PNG bandwidth!",
     "status": "backlog",
     "label": "feature",
@@ -36,6 +40,7 @@
   },
   {
     "id": "TASK-1280",
+    "type": "folder",
     "title": "Use the digital TLS panel, then you can transmit the haptic system!",
     "status": "done",
     "label": "bug",

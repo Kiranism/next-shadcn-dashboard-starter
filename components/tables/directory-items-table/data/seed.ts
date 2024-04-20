@@ -3,6 +3,7 @@ import path from "path"
 
 const tasks = Array.from({ length: 100 }, () => ({
   id: `TASK-1`,
+  type: `folder`,
   title: "Title",
   status: "Todo",
   label: "Feature",
