@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -62,13 +63,6 @@ const ImgSchema = z.object({
 });
 
 const formSchema = z.object({
-  name: z
-    .string()
-    .min(3, { message: "Product Name must be at least 3 characters" }),
-  imgUrl: z
-    .array(ImgSchema)
-    .max(IMG_MAX_LIMIT, { message: "You can only add up to 3 images" })
-    .min(1, { message: "At least one image must be added." }),
   units: z.coerce.number(),
   overlap: z.coerce.number(),
   splitter: z.string().min(3, { message: "The chunker name must be valid" }),
@@ -99,7 +93,6 @@ export function UploadDialog({ initialData, categories }: ProductFormProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [imgLoading, setImgLoading] = useState(false);
-  const title = initialData ? "Edit product" : "Create product";
   const description = initialData ? "Edit a product." : "Add a new product";
   const toastMessage = initialData ? "Product updated." : "Product created.";
 
@@ -107,13 +100,19 @@ export function UploadDialog({ initialData, categories }: ProductFormProps) {
   const [failedFileNames, setFailedFileNames] = useState<string[]>([]);
 
   const [files, setFiles] = useState<File[]>([]);
-  const handleRemoveFile = (file: File) => {
-    const fs = files.filter((f) => f.name != file.name);
-    setFiles(fs);
-  };
-  const handleAddFiles = (newFiles: File[]) => {
-    setFiles(files.concat(newFiles));
-  };
+  const handleRemoveFile = useCallback(
+    (file: File) => {
+      const fs = files.filter((f) => f.name != file.name);
+      setFiles(fs);
+    },
+    [files],
+  );
+  const handleAddFiles = useCallback(
+    (newFiles: File[]) => {
+      setFiles(files.concat(newFiles));
+    },
+    [files, setFiles],
+  );
   const createDirItem = (
     request: CreateDirItemRequest,
   ): Promise<AxiosResponse> => {
@@ -131,6 +130,8 @@ export function UploadDialog({ initialData, categories }: ProductFormProps) {
     const config = {
       headers: {
         "content-type": "multipart/form-data",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET,PUT,POST,DELETE,PATCH,OPTIONS",
       },
     };
     const res = axios.post(endpoints.directory.item.root, formData, config);
@@ -164,75 +165,53 @@ export function UploadDialog({ initialData, categories }: ProductFormProps) {
   const isFailedFile = (fileName: string) => {
     return failedFileNames.includes(fileName);
   };
-  const handleUpload = async () => {
-    await Promise.all(
-      files.map(async (file) => {
-        await uploadFileMultipart(file)
-          .then(() => {
-            setSuccessFileNames([...sucessFileNames, file.name]);
-          })
-          .catch((error) => {
-            setFailedFileNames([...failedFileNames, file.name]);
-            throw error;
-          });
-      }),
-    )
-      .then(() => {
-        toast({
-          variant: "default",
-          title: "Upload success.",
-        });
-        // onUpload ? onUpload() : {};
-        // onClose();
-      })
-      .catch((error) => {
-        if (error.response.status == 415) {
-          toast({
-            variant: "destructive",
-            title: "File not supported.",
-          });
-        }
-        if (error.response.status == 409) {
-          toast({
-            variant: "destructive",
-            title: "File already exists",
-          });
-        } else {
-          toast({
-            variant: "destructive",
-            title: "Oh no! Something went wrong.",
-          });
-        }
-      });
-  };
 
-  const onSubmit = async (data: ProductFormValues) => {
-    console.log("units:" + data.units);
-    try {
-      setLoading(true);
-      if (initialData) {
-        // await axios.post(`/api/products/edit-product/${initialData._id}`, data);
-      } else {
-        // const res = await axios.post(`/api/products/create-product`, data);
-        // console.log("product", res);
-      }
-      router.refresh();
-      router.push(`/dashboard/products`);
-      toast({
-        variant: "destructive",
-        title: "Uh oh! Something went wrong.",
-        description: "There was a problem with your request.",
-      });
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Uh oh! Something went wrong.",
-        description: "There was a problem with your request.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const handleUpload = useCallback(
+    async (data: ProductFormValues) => {
+      await Promise.all(
+        files.map(async (file) => {
+          await uploadFileMultipart(file)
+            .then(() => {
+              setSuccessFileNames([...sucessFileNames, file.name]);
+            })
+            .catch((error) => {
+              setFailedFileNames([...failedFileNames, file.name]);
+              throw error;
+            });
+        }),
+      )
+        .then(() => {
+          toast({
+            variant: "default",
+            title: "Upload success",
+          });
+          setOpen(false);
+          // onUpload ? onUpload() : {};
+          // onClose();
+        })
+        .catch((error) => {
+          if (error?.response?.status == 415) {
+            toast({
+              variant: "destructive",
+              title: "File not supported.",
+            });
+          }
+          if (error?.response?.status == 409) {
+            toast({
+              variant: "destructive",
+              title: "File already exists",
+            });
+          } else {
+            console.log("unknwn error: " + error);
+            toast({
+              variant: "destructive",
+              title: "Oh no! Something went wrong.",
+            });
+          }
+        });
+    },
+    [files],
+  );
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(formSchema),
@@ -250,9 +229,13 @@ export function UploadDialog({ initialData, categories }: ProductFormProps) {
   }, [units, overlap, files]);
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={() => setFiles([])}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="ml-auto hidden h-8 lg:flex">
+        <Button
+          variant="outline"
+          className="ml-auto hidden h-8 lg:flex"
+          onClick={() => setOpen(true)}
+        >
           <UploadIcon className="mr-2 h-4 w-4" />
           Upload
         </Button>
@@ -267,7 +250,7 @@ export function UploadDialog({ initialData, categories }: ProductFormProps) {
         </DialogHeader>
         <Form {...form}>
           <form
-            onSubmit={form.handleSubmit(onSubmit)}
+            // onSubmit={form.handleSubmit(handleUpload)}
             className="space-y-8 w-full"
           >
             <FormField
@@ -350,34 +333,6 @@ export function UploadDialog({ initialData, categories }: ProductFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Index</FormLabel>
-                  {/* <Select
-                    disabled={loading}
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    defaultValue={field.value}
-                  >
-                    <SelectTrigger
-                      className="w-full color-primary-500 overflow-hidden"
-                      style={{ width: "100%" }}
-                    >
-                      <SelectValue
-                        defaultValue={field.value}
-                        className="w-full color-primary-500 overflow-hidden"
-                        placeholder="Select index..."
-                      />
-                    </SelectTrigger>
-                    <SelectContent className="w-full hover:opacity-100 hover:bg-primary-100">
-                      {/* @ts-ignore  */}
-                  {/* {categories.map((category) => (
-                        <SelectItem
-                          className="w-full hover:opacity-100 hover:bg-primary-100"
-                          key={category._id}
-                          value={category._id}
-                        >
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent> */}
                   <FormControl>
                     <IndexSelector
                       value={field.value}
@@ -392,7 +347,11 @@ export function UploadDialog({ initialData, categories }: ProductFormProps) {
           </form>
         </Form>
         <DialogFooter>
-          <Button disabled={!isValid} type="submit">
+          <Button
+            onClick={async () => {
+              await handleUpload(form.getValues());
+            }}
+          >
             Upload
           </Button>
         </DialogFooter>

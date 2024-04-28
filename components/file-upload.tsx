@@ -51,6 +51,9 @@ export const CustomDropzone = (props: CustomDropzoneProps) => {
         clearInterval(progressInterval);
         setUploadProgress(100);
       }}
+      accept={{
+        "application/pdf": [".pdf"],
+      }}
     >
       {({ getRootProps, getInputProps, acceptedFiles }) => (
         <div
@@ -62,43 +65,45 @@ export const CustomDropzone = (props: CustomDropzoneProps) => {
               htmlFor="dropzone-file"
               className="flex flex-col items-center justify-center w-full h-full rounded-lg cursor-poitner bg-gray-50 hover:bg-gray-100"
             >
-              <div className="flex flex-col items-center justify-center pt-5 pb-6 w-full">
+              <div className="flex flex-col items-center justify-center pt-5 pb-4 w-full">
                 <Cloud className="h-8 w-8 mb-2" />
                 <div className="mb-2 text-sm text-zinc-700">
                   <span className="font-semibold">Click to upload</span> or drag
                   and drop
                 </div>
               </div>
-              <div className="max-h-48 flex flex-col items-center py-1 overflow-scroll w-full">
-                {props.files.map((file) => {
-                  return (
-                    <div
-                      key={file.name}
-                      className="mb-2 w-full max-w-xs bg-white flex items-center justify-between rounded-md overflow-hidden outline outline-[1px] outline-zinc-200 divide-x divide-zinc-200"
-                    >
-                      <div className="px-3 py-2 h-full grid place-items-center">
-                        <FileIcon className="h-4 w-4 text-blue-500"></FileIcon>
-                      </div>
+              <div className="max-h-48 overflow-scroll mb-3 px-4 w-full">
+                <div className="flex flex-col items-center py-1">
+                  {props.files.map((file) => {
+                    return (
+                      <div
+                        key={file.name}
+                        className="mb-2 w-full max-w-xs bg-white flex items-center justify-between rounded-md overflow-hidden outline outline-[1px] outline-zinc-200 divide-x divide-zinc-200"
+                      >
+                        <div className="px-2 py-1 h-full grid place-items-center">
+                          <FileIcon className="h-4 w-4 text-blue-500"></FileIcon>
+                        </div>
 
-                      <div className="px-3 py-2 h-full w-full text-sm truncate">
-                        {file.name}
+                        <div className="px-3 py-2 h-full w-full text-sm truncate">
+                          {file.name}
+                        </div>
+                        <div className="flex items-center flex justify-end hover:bg-gray-50">
+                          <Button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation(); //  <------ Here is the magic
+                              props.onRemove(file);
+                            }}
+                            variant="null"
+                            size="sm"
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center flex justify-end">
-                        <Button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation(); //  <------ Here is the magic
-                            props.onRemove(file);
-                          }}
-                          variant="null"
-                          size="sm"
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
               {/* {isUploading && (
                 <div className="w-full mt-1 max-w-xs mx-auto pb-3">

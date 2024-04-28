@@ -4,7 +4,9 @@ import axios, { AxiosRequestConfig } from "axios";
 
 // ----------------------------------------------------------------------
 
-const axiosInstance = axios.create({ baseURL: "localhost:8080" });
+const axiosInstance = axios.create({
+  baseURL: process.env.RAGMAN_API_HOST ?? "http://localhost:8000",
+});
 
 axiosInstance.interceptors.response.use(
   (res) => res,

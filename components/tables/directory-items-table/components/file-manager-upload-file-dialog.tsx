@@ -55,6 +55,8 @@ export default function FileManagerUploadFileDialog({
     }
   }, [open]);
 
+  const [files, setFiles] = useState<File[]>([]);
+
   const [sucessFileNames, setSuccessFileNames] = useState<string[]>([]);
   const [failedFileNames, setFailedFileNames] = useState<string[]>([]);
 
@@ -70,8 +72,6 @@ export default function FileManagerUploadFileDialog({
     },
     [files],
   );
-
-  const [files, setFiles] = useState<File[]>([]);
 
   const createDirItem = (
     request: CreateDirItemRequest,
