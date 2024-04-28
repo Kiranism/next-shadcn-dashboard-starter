@@ -1,101 +1,117 @@
 "use client";
 import { OurFileRouter } from "@/app/api/uploadthing/core";
 import { UploadDropzone } from "@uploadthing/react";
-import { Trash } from "lucide-react";
+import { Cloud, FileIcon, Trash } from "lucide-react";
 import Image from "next/image";
 import { UploadFileResponse } from "uploadthing/client";
 import { IMG_MAX_LIMIT } from "./forms/product-form";
 import { Button } from "./ui/button";
 import { useToast } from "./ui/use-toast";
+import { Card } from "@tremor/react";
+import { CardContent, CardTitle } from "./ui/card";
+import Dropzone from "react-dropzone";
+import React from "react";
+import { Progress } from "@/components/ui/progress";
+import { set } from "date-fns";
+import { ScrollArea } from "@radix-ui/react-scroll-area";
 
-interface ImageUploadProps {
-  onChange?: any;
-  onRemove: (value: UploadFileResponse[]) => void;
-  value: UploadFileResponse[];
+interface CustomDropzoneProps {
+  files: File[];
+  onRemove: (file: File) => void;
+  onAdd: (file: File[]) => void;
 }
 
-export default function FileUpload({
-  onChange,
-  onRemove,
-  value,
-}: ImageUploadProps) {
-  const { toast } = useToast();
-  const onDeleteFile = (key: string) => {
-    const files = value;
-    let filteredFiles = files.filter((item) => item.key !== key);
-    onRemove(filteredFiles);
+export const CustomDropzone = (props: CustomDropzoneProps) => {
+  const [isUploading, setIsUploading] = React.useState<boolean>(true);
+  const [uploadProgress, setUploadProgress] = React.useState<number>(0);
+
+  const startSimulatedProgress = () => {
+    setUploadProgress(0);
+
+    const interval = setInterval(() => {
+      setUploadProgress((prev) => {
+        if (prev >= 95) {
+          clearInterval(interval);
+          return prev;
+        }
+        return prev + 5;
+      });
+    }, 500);
+    return interval;
   };
-  const onUpdateFile = (newFiles: UploadFileResponse[]) => {
-    onChange([...value, ...newFiles]);
-  };
+
   return (
-    <div>
-      <div className="mb-4 flex items-center gap-4">
-        {!!value.length &&
-          value?.map((item) => (
-            <div
-              key={item.key}
-              className="relative w-[200px] h-[200px] rounded-md overflow-hidden"
+    <Dropzone
+      multiple={false}
+      onDrop={async (acceptedFile) => {
+        props.onAdd(acceptedFile);
+        setIsUploading(true);
+        const progressInterval = startSimulatedProgress();
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        clearInterval(progressInterval);
+        setUploadProgress(100);
+      }}
+    >
+      {({ getRootProps, getInputProps, acceptedFiles }) => (
+        <div
+          {...getRootProps()}
+          className="border-dashed border-2 border-gray-300 rounded-lg"
+        >
+          <div className="flex items-center justify-center h-full w-full">
+            <label
+              htmlFor="dropzone-file"
+              className="flex flex-col items-center justify-center w-full h-full rounded-lg cursor-poitner bg-gray-50 hover:bg-gray-100"
             >
-              <div className="z-10 absolute top-2 right-2">
-                <Button
-                  type="button"
-                  onClick={() => onDeleteFile(item.key)}
-                  variant="destructive"
-                  size="sm"
-                >
-                  <Trash className="h-4 w-4" />
-                </Button>
+              <div className="flex flex-col items-center justify-center pt-5 pb-6 w-full">
+                <Cloud className="h-8 w-8 mb-2" />
+                <div className="mb-2 text-sm text-zinc-700">
+                  <span className="font-semibold">Click to upload</span> or drag
+                  and drop
+                </div>
               </div>
-              <div>
-                <Image
-                  fill
-                  className="object-cover"
-                  alt="Image"
-                  src={item.fileUrl || ""}
-                />
-              </div>
-            </div>
-          ))}
-      </div>
-      <div>
-        {value.length < IMG_MAX_LIMIT && (
-          <UploadDropzone<OurFileRouter>
-            className="dark:bg-zinc-800 py-2 ut-label:text-sm ut-allowed-content:ut-uploading:text-red-300"
-            endpoint="imageUploader"
-            config={{ mode: "auto" }}
-            content={{
-              allowedContent({ isUploading }) {
-                if (isUploading)
+              <div className="max-h-48 flex flex-col items-center py-1 overflow-scroll w-full">
+                {props.files.map((file) => {
                   return (
-                    <>
-                      <p className="mt-2 text-sm text-slate-400 animate-pulse">
-                        Img Uploading...
-                      </p>
-                    </>
+                    <div
+                      key={file.name}
+                      className="mb-2 w-full max-w-xs bg-white flex items-center justify-between rounded-md overflow-hidden outline outline-[1px] outline-zinc-200 divide-x divide-zinc-200"
+                    >
+                      <div className="px-3 py-2 h-full grid place-items-center">
+                        <FileIcon className="h-4 w-4 text-blue-500"></FileIcon>
+                      </div>
+
+                      <div className="px-3 py-2 h-full w-full text-sm truncate">
+                        {file.name}
+                      </div>
+                      <div className="flex items-center flex justify-end">
+                        <Button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation(); //  <------ Here is the magic
+                            props.onRemove(file);
+                          }}
+                          variant="null"
+                          size="sm"
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                   );
-              },
-            }}
-            onClientUploadComplete={(res) => {
-              // Do something with the response
-              const data: UploadFileResponse[] | undefined = res;
-              if (data) {
-                onUpdateFile(data);
-              }
-            }}
-            onUploadError={(error: Error) => {
-              toast({
-                title: "Error",
-                variant: "destructive",
-                description: error.message,
-              });
-            }}
-            onUploadBegin={() => {
-              // Do something once upload begins
-            }}
-          />
-        )}
-      </div>
-    </div>
+                })}
+              </div>
+              {/* {isUploading && (
+                <div className="w-full mt-1 max-w-xs mx-auto pb-3">
+                  <Progress
+                    value={50}
+                    className="h-1 w-full bg-zinc-200"
+                  ></Progress>
+                </div>
+              )} */}
+            </label>
+          </div>
+        </div>
+      )}
+    </Dropzone>
   );
-}
+};

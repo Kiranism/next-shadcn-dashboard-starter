@@ -6,8 +6,14 @@ const auth = () => ({ id: "fakeId" }); // Fake auth function
 
 // FileRouter for your app, can contain multiple FileRoutes
 export const ourFileRouter = {
-  // Define as many FileRoutes as you like, each with a unique routeSlug
-  imageUploader: f({ image: { maxFileSize: "4MB", maxFileCount: 3 } })
+  // Define as many FileRoutes as you like, each with a unique routeSlug "audio", "pdf", "text", "blob"
+  imageUploader: f({
+    image: { maxFileSize: "4MB", maxFileCount: 3 },
+    audio: { maxFileSize: "4MB", maxFileCount: 3 },
+    pdf: { maxFileSize: "4MB", maxFileCount: 3 },
+    text: { maxFileSize: "4MB", maxFileCount: 3 },
+    "application/dssc+xml": { maxFileSize: "4MB", maxFileCount: 3 },
+  })
     // Set permissions and file types for this FileRoute
     .middleware(async ({}) => {
       // This code runs on your server before upload

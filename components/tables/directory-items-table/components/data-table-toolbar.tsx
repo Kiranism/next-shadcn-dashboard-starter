@@ -58,8 +58,14 @@ export function DataTableToolbar<TData>({
       <div className="flex items-center space-x-2">
         <UploadDialog
           categories={[
-            { _id: "shirts", name: "shirts" },
-            { _id: "pants", name: "pants" },
+            {
+              _id: "1",
+              name: "45cc046b-a396-4e0b-98b5-42e042251b9345cc046b-a396-4e0b-98b5-42e042251b9345cc046b-a396-4e0b-98b5-42e042251b93",
+            },
+            {
+              _id: "3",
+              name: "1e3e6ebe-6984-4702-b161-7ba8ae66b949",
+            },
           ]}
           initialData={null}
           key={null}
