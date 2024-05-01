@@ -36,21 +36,27 @@ export function IntegrationCard({
   return (
     <Card>
       <CardHeader>
-        <div className="flex mt-1 flex-row items justify-between">
-          <div className="flex flex-col space-y-2">
-            <div>
-              <CardTitle>
-                {title}
-                <Badge className="ml-2" variant="outline">
+        <div
+          className={`grid grid-cols-2 justify-between ${
+            disabled && "opacity-50 pointer-events-none"
+          }`}
+        >
+          <div className="flex flex-col gap-y-1">
+            <div className="flex flex-row gap-x-1 items-center">
+              <div>
+                <CardTitle>{title}</CardTitle>
+              </div>
+              <div>
+                <Badge className="ml-1" variant="outline">
                   Free
                 </Badge>
-              </CardTitle>
+              </div>
             </div>
             <div>
               <CardDescription>{description}</CardDescription>
             </div>
           </div>
-          <div className="flex flex-col space-y-4">
+          <div className="flex flex-col space-y-4 items-end">
             <div className="flex flex-row justify-end">
               <Image alt="" src={img} width={60} height={60}></Image>
             </div>

@@ -32,7 +32,7 @@ import {
   Folder,
   FolderTree,
   Search,
-  PlugZapIcon
+  PlugZapIcon,
 } from "lucide-react";
 
 export type Icon = LucideIcon;
@@ -84,8 +84,8 @@ export const Icons = {
   twitter: Twitter,
   check: Check,
   folder: Folder,
+  pdf: File,
   folderTree: FolderTree,
   search: Search,
   plugZap: PlugZapIcon,
-
 };

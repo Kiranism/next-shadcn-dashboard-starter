@@ -53,6 +53,20 @@ export const CustomDropzone = (props: CustomDropzoneProps) => {
       }}
       accept={{
         "application/pdf": [".pdf"],
+        "application/xlsx": [".xlsx"],
+        "application/vnd.ms-excel": [".xls"],
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
+          ".xlsx",
+        ],
+        "application/msword": [".doc"],
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+          [".docx"],
+        "application/vnd.ms-powerpoint": [".ppt"],
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+          [".pptx"],
+        "text/plain": [".txt"],
+        "text/csv": [".csv"],
+        "text/html": [".html"],
       }}
     >
       {({ getRootProps, getInputProps, acceptedFiles }) => (
@@ -63,11 +77,11 @@ export const CustomDropzone = (props: CustomDropzoneProps) => {
           <div className="flex items-center justify-center h-full w-full">
             <label
               htmlFor="dropzone-file"
-              className="flex flex-col items-center justify-center w-full h-full rounded-lg cursor-poitner bg-gray-50 hover:bg-gray-100"
+              className="flex flex-col items-center justify-center w-full h-full rounded-lg cursor-poitner bg-gray-50 hover:bg-gray-100 dark:bg-zinc-900 dark:hover:bg-zinc-800"
             >
               <div className="flex flex-col items-center justify-center pt-5 pb-4 w-full">
                 <Cloud className="h-8 w-8 mb-2" />
-                <div className="mb-2 text-sm text-zinc-700">
+                <div className="mb-2 text-sm text-zinc-700 dark:text-zinc-300">
                   <span className="font-semibold">Click to upload</span> or drag
                   and drop
                 </div>
@@ -78,7 +92,10 @@ export const CustomDropzone = (props: CustomDropzoneProps) => {
                     return (
                       <div
                         key={file.name}
-                        className="mb-2 w-full max-w-xs bg-white flex items-center justify-between rounded-md overflow-hidden outline outline-[1px] outline-zinc-200 divide-x divide-zinc-200"
+                        onClick={(e) => {
+                          e.stopPropagation(); //  <------ Here is the magic
+                        }}
+                        className="mb-2 w-full max-w-xs bg-white dark:bg-zinc-900 flex items-center justify-between rounded-md overflow-hidden outline outline-[1px] outline-zinc-200 divide-x divide-zinc-200"
                       >
                         <div className="px-2 py-1 h-full grid place-items-center">
                           <FileIcon className="h-4 w-4 text-blue-500"></FileIcon>
@@ -87,11 +104,10 @@ export const CustomDropzone = (props: CustomDropzoneProps) => {
                         <div className="px-3 py-2 h-full w-full text-sm truncate">
                           {file.name}
                         </div>
-                        <div className="flex items-center flex justify-end hover:bg-gray-50">
+                        <div className="flex items-center flex justify-end hover:bg-gray-50 dark:hover:bg-zinc-700">
                           <Button
                             type="button"
                             onClick={(e) => {
-                              e.stopPropagation(); //  <------ Here is the magic
                               props.onRemove(file);
                             }}
                             variant="null"

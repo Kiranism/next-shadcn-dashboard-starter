@@ -23,12 +23,11 @@ export default function AuthenticationPage() {
         Login
       </Link>
       <div className="relative hidden h-full flex-col bg-muted p-10 text-white dark:border-r lg:flex">
-        <div className="absolute inset-0 bg-zinc-900" />
+        <div className="absolute inset-0 bg-zinc-900 dark:bg-zinc-100" />
         <div className="relative z-20 flex items-center text-lg font-medium">
-     
           <Image alt="" src={"/rag-dark.png"} width={50} height={50}></Image>
         </div>
-        <div className="relative z-20 mt-auto">
+        <div className="relative z-20 mt-auto dark:text-black">
           <blockquote className="space-y-2">
             <p className="text-lg">
               &ldquo;This library has saved me countless hours of work and

@@ -1,4 +1,4 @@
-import { Icons } from "@/components/icons"
+import { Icons } from "@/components/icons";
 import {
   ArrowDownIcon,
   ArrowRightIcon,
@@ -8,7 +8,10 @@ import {
   CrossCircledIcon,
   QuestionMarkCircledIcon,
   StopwatchIcon,
-} from "@radix-ui/react-icons"
+} from "@radix-ui/react-icons";
+import { Icon } from "@iconify-icon/react";
+import { ItemType, MediaType, MimeType } from "@/constants/directory";
+import { FileCode } from "lucide-react";
 
 export const labels = [
   {
@@ -23,7 +26,7 @@ export const labels = [
     value: "documentation",
     label: "Documentation",
   },
-]
+];
 
 export const itemType = [
   {
@@ -35,8 +38,100 @@ export const itemType = [
     value: "text",
     label: "Text",
     icon: Icons.post,
-  }
-]
+  },
+];
+
+export const mediaTypes: {
+  value: MimeType;
+  label: string;
+  icon: React.ReactNode;
+}[] = [
+  {
+    value: "application/pdf",
+    label: "Pdf",
+    icon: (
+      <Icon
+        icon="streamline:convert-pdf-2"
+        width={20}
+        height={20}
+        style={{ color: "#e13333" }}
+        className="color-red-500"
+      />
+    ),
+  },
+  {
+    value: "text/plain",
+    label: "Text",
+    icon: (
+      <Icon
+        icon="tabler:file-type-txt"
+        width={23}
+        height={23}
+        style={{ color: "#525050" }}
+        className="color-gray-500"
+      />
+    ),
+    // <iconify-icon icon="bxs:file-txt" width="24" height="24"  style="color: #e13333"></iconify-icon>
+  },
+  {
+    value: "text/html",
+    label: "HTML",
+    icon: (
+      <FileCode
+        width={22}
+        height={22}
+        style={{ color: "#525050" }}
+        className="color-gray-500"
+      />
+    ),
+  },
+
+  {
+    value: "text/csv",
+    label: "CSV",
+    icon: (
+      <Icon
+        icon="tabler:file-type-csv"
+        width={23}
+        height={23}
+        style={{ color: "#525050" }}
+        className="color-gray-500"
+      />
+    ),
+  },
+  {
+    value: "text/plain",
+    label: "Google Drive",
+    icon: (
+      <Icon
+        icon="logos:google-drive"
+        width={20}
+        height={20}
+        className="text-muted-foreground"
+        // style="width: 24px; height: 24px;"
+      />
+    ),
+  },
+  {
+    value: "text/plain",
+    label: "Google Drive",
+    icon: (
+      <Icon
+        icon="devicon:notion"
+        width={20}
+        height={20}
+        className="text-muted-foreground"
+        // style="width: 24px; height: 24px;"
+      />
+    ),
+  },
+  // {
+  //   value: "text",
+  //   label: "Text",
+  //   icon: Icons.post,
+  // },
+];
+
 export const statuses = [
   {
     value: "backlog",
@@ -63,7 +158,7 @@ export const statuses = [
     label: "Canceled",
     icon: CrossCircledIcon,
   },
-]
+];
 
 export const priorities = [
   {
@@ -81,4 +176,4 @@ export const priorities = [
     value: "high",
     icon: ArrowUpIcon,
   },
-]
+];

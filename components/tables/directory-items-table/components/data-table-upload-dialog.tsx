@@ -47,6 +47,8 @@ import { AxiosResponse } from "axios";
 import { CreateDirItemRequest } from "@/constants/directory";
 import React from "react";
 import { on } from "events";
+import { set } from "date-fns";
+import { directoryItemsApi } from "@/app/api/api";
 
 type ProductFormValues = z.infer<typeof formSchema>;
 export const IMG_MAX_LIMIT = 3;
@@ -65,6 +67,7 @@ const ImgSchema = z.object({
 const formSchema = z.object({
   units: z.coerce.number(),
   overlap: z.coerce.number(),
+  files: z.array(z.unknown()),
   splitter: z.string().min(3, { message: "The chunker name must be valid" }),
   category: z.string().min(1, { message: "Please select a category" }),
 });
@@ -113,31 +116,33 @@ export function UploadDialog({ initialData, categories }: ProductFormProps) {
     },
     [files, setFiles],
   );
-  const createDirItem = (
-    request: CreateDirItemRequest,
-  ): Promise<AxiosResponse> => {
-    const formData = new FormData();
-    request.file && formData.append("file", request.file);
-    request.name && formData.append("name", request.name);
-    request.description && formData.append("description", request.description);
-    request.parent_id && formData.append("parent_id", request.parent_id);
-    request.tags && formData.append("tags", request.tags.toString());
-    request.is_external_integration &&
-      formData.append(
-        "is_external_integration",
-        request.is_external_integration.toString(),
-      );
-    const config = {
-      headers: {
-        "content-type": "multipart/form-data",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET,PUT,POST,DELETE,PATCH,OPTIONS",
-      },
-    };
-    const res = axios.post(endpoints.directory.item.root, formData, config);
-    return res;
-  };
+  // const createDirItem = (
+  //   request: CreateDirItemRequest,
+  // ): Promise<AxiosResponse> => {
+  //   const formData = new FormData();
+  //   request.file && formData.append("file", request.file);
+  //   request.name && formData.append("name", request.name);
+  //   request.description && formData.append("description", request.description);
+  //   request.parent_id && formData.append("parent_id", request.parent_id);
+  //   request.tags && formData.append("tags", request.tags.toString());
+  //   request.is_external_integration &&
+  //     formData.append(
+  //       "is_external_integration",
+  //       request.is_external_integration.toString(),
+  //     );
+  //   const config = {
+  //     headers: {
+  //       "content-type": "multipart/form-data",
+  //       "Access-Control-Allow-Origin": "*",
+  //       "Access-Control-Allow-Methods": "GET,PUT,POST,DELETE,PATCH,OPTIONS",
+  //     },
+  //   };
+  //   const res = axios.post(endpoints.directory.item.root, formData, config);
+  //   return res;
+  // };
 
+  const [createDirItem, { isLoading }] =
+    directoryItemsApi.useCreateDirectoryItemMutation();
   const uploadFileMultipart = useCallback(async (file: File) => {
     const request: CreateDirItemRequest = {
       name: file.name,
@@ -147,7 +152,7 @@ export function UploadDialog({ initialData, categories }: ProductFormProps) {
       tags: ["test"],
       //is_external_integration: false
     };
-    const response = await createDirItem(request);
+    await createDirItem(request);
   }, []);
 
   const getFileState = useCallback(
@@ -229,7 +234,15 @@ export function UploadDialog({ initialData, categories }: ProductFormProps) {
   }, [units, overlap, files]);
 
   return (
-    <Dialog open={open} onOpenChange={() => setFiles([])}>
+    <Dialog
+      open={open}
+      onOpenChange={() => {
+        setFiles([]);
+        if (open) {
+          setOpen(false);
+        }
+      }}
+    >
       <DialogTrigger asChild>
         <Button
           variant="outline"
@@ -255,7 +268,7 @@ export function UploadDialog({ initialData, categories }: ProductFormProps) {
           >
             <FormField
               control={form.control}
-              name="imgUrl"
+              name="files"
               render={({ field }) => (
                 <FormItem>
                   <FormControl>

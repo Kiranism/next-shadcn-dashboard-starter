@@ -28,3 +28,31 @@ export type DirItem = {
   totalFiles?: number;
   isFavorited?: boolean;
 };
+
+export type ItemType =
+  | "folder"
+  | "file"
+  | "link"
+  | "note"
+  | "image"
+  | "video"
+  | "audio"
+  | "pdf"
+  | "spreadsheet"
+  | "ppt"
+  | "text"
+  | "json"
+  | "other";
+
+export type MimeType =
+  | "application/pdf"
+  | "application/xlsx"
+  | "application/vnd.ms-excel"
+  | "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  | "application/msword"
+  | "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  | "application/vnd.ms-powerpoint"
+  | "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+  | "text/plain"
+  | "text/csv"
+  | "text/html";
