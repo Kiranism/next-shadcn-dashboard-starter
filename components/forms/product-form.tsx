@@ -28,7 +28,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 // import FileUpload from "@/components/FileUpload";
 import { useToast } from "../ui/use-toast";
-import FileUpload from "../file-upload";
+
 const ImgSchema = z.object({
   fileName: z.string(),
   name: z.string(),
@@ -87,7 +87,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         category: "",
       };
 
-  
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues,
@@ -169,11 +168,11 @@ export const ProductForm: React.FC<ProductFormProps> = ({
               <FormItem>
                 <FormLabel>Images</FormLabel>
                 <FormControl>
-                  <FileUpload
+                  {/* <FileUpload
                     onChange={field.onChange}
                     value={field.value}
                     onRemove={field.onChange}
-                  />
+                  /> */}
                 </FormControl>
                 <FormMessage />
               </FormItem>

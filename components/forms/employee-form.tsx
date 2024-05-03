@@ -24,7 +24,6 @@ import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import FileUpload from "../file-upload";
 import { useToast } from "../ui/use-toast";
 const ImgSchema = z.object({
   fileName: z.string(),
@@ -164,11 +163,11 @@ export const EmployeeForm: React.FC<ProductFormProps> = ({
               <FormItem>
                 <FormLabel>Images</FormLabel>
                 <FormControl>
-                  <FileUpload
+                  {/* <FileUpload
                     onChange={field.onChange}
                     value={field.value}
                     onRemove={field.onChange}
-                  />
+                  /> */}
                 </FormControl>
                 <FormMessage />
               </FormItem>

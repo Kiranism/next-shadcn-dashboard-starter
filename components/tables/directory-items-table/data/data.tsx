@@ -10,7 +10,7 @@ import {
   StopwatchIcon,
 } from "@radix-ui/react-icons";
 import { Icon } from "@iconify-icon/react";
-import { ItemType, MediaType, MimeType } from "@/constants/directory";
+import { MimeType } from "@/constants/directory";
 import { FileCode } from "lucide-react";
 
 export const labels = [
