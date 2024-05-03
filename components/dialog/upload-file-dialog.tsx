@@ -1,3 +1,4 @@
+"use client";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,36 +11,23 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { UploadIcon } from "@radix-ui/react-icons";
 import * as z from "zod";
 import { useCallback, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Trash } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Separator } from "@/components/ui/separator";
-import { Heading } from "@/components/ui/heading";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 // import FileUpload from "@/components/FileUpload";
-import { useToast } from "../../../ui/use-toast";
-import { CustomDropzone } from "../../../file-upload";
+import { useToast } from "../ui/use-toast";
+import { CustomDropzone } from "../file-upload";
 import { IndexSelector } from "@/components/select/index-selector";
 import { SplitterSelector } from "@/components/select/splitter-selector";
 import axios, { endpoints } from "@/lib/axios";
@@ -72,11 +60,16 @@ const formSchema = z.object({
   category: z.string().min(1, { message: "Please select a category" }),
 });
 interface ProductFormProps {
-  initialData: any | null;
-  categories: any;
+  initialData?: any;
+  buttonName?: string;
+  showIcon?: boolean;
 }
 
-export function UploadDialog({ initialData, categories }: ProductFormProps) {
+export function UploadDialog({
+  initialData,
+  buttonName,
+  showIcon,
+}: ProductFormProps) {
   const defaultValues = initialData
     ? initialData
     : {
@@ -246,11 +239,11 @@ export function UploadDialog({ initialData, categories }: ProductFormProps) {
       <DialogTrigger asChild>
         <Button
           variant="outline"
-          className="ml-auto hidden h-8 lg:flex"
+          className="ml-auto hidden h-9 lg:flex"
           onClick={() => setOpen(true)}
         >
-          <UploadIcon className="mr-2 h-4 w-4" />
-          Upload
+          {(showIcon ?? true) && <UploadIcon className="mr-2 h-4 w-4" />}
+          {buttonName ?? "Upload"}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">

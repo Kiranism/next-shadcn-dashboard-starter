@@ -108,7 +108,6 @@ export const mediaTypes: {
         width={20}
         height={20}
         className="text-muted-foreground"
-        // style="width: 24px; height: 24px;"
       />
     ),
   },

@@ -63,12 +63,12 @@ export const directoryItemsApi = api
             url: "/directory/item",
             method: "POST",
             body: formData,
-            headers: {
-              "content-type": "multipart/form-data",
-              "Access-Control-Allow-Origin": "*",
-              "Access-Control-Allow-Methods":
-                "GET,PUT,POST,DELETE,PATCH,OPTIONS",
-            },
+            // headers: {
+            //   "content-type": "multipart/form-data",
+            //   "Access-Control-Allow-Origin": "*",
+            //   "Access-Control-Allow-Methods":
+            //     "GET,PUT,POST,DELETE,PATCH,OPTIONS",
+            // },
           };
         },
         invalidatesTags: ["DirItems"],

@@ -87,6 +87,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         category: "",
       };
 
+  
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues,

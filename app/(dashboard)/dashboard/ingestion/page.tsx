@@ -22,7 +22,7 @@ export default function page() {
     <>
       <ScrollArea className="h-full">
         <div className="flex-1 space-y-4  p-4 md:p-8 pt-6">
-          <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl: grid-cols-4">
             <IntegrationCard
               img="/sources/ic_files.png"
               title="File Upload"

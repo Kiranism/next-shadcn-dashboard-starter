@@ -13,6 +13,7 @@ import { cva } from "class-variance-authority";
 import { GripVertical } from "lucide-react";
 import { Badge } from "../ui/badge";
 import Image from "next/image";
+import { UploadDialog } from "../dialog/upload-file-dialog";
 
 // export interface Task {
 //   id: UniqueIdentifier;
@@ -61,9 +62,7 @@ export function IntegrationCard({
               <Image alt="" src={img} width={60} height={60}></Image>
             </div>
             <div>
-              <Button variant={"outline"} disabled={disabled}>
-                Connect
-              </Button>
+              <UploadDialog showIcon={false} buttonName="Connect" />
             </div>
           </div>
         </div>

@@ -8,7 +8,7 @@ import { DataTableFacetedFilter } from "./data-table-faceted-filter";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { DataTableViewOptions } from "./data-table-view-options";
-import { UploadDialog } from "./data-table-upload-dialog";
+import { UploadDialog } from "@/components/dialog/upload-file-dialog";
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>;
