@@ -29,7 +29,7 @@ export default async function TaskPage() {
     <>
       <ScrollArea className="h-full">
         <div className="flex-1 space-y-4  p-4 md:p-8 pt-6">
-          <BreadCrumb items={breadcrumbItems} />
+          {/* <BreadCrumb items={breadcrumbItems} /> */}
 
           <div className="hidden h-full flex-1 flex-col space-y-8 md:flex">
             <ItemsTable />
