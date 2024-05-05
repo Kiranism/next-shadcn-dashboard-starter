@@ -67,8 +67,7 @@ export const mediaTypes: {
         icon="tabler:file-type-txt"
         width={23}
         height={23}
-        style={{ color: "#525050" }}
-        className="color-gray-500"
+        className="color-gray-500 dark:text-gray-200"
       />
     ),
     // <iconify-icon icon="bxs:file-txt" width="24" height="24"  style="color: #e13333"></iconify-icon>
@@ -80,8 +79,7 @@ export const mediaTypes: {
       <FileCode
         width={22}
         height={22}
-        style={{ color: "#525050" }}
-        className="color-gray-500"
+        className="color-gray-500 dark:text-gray-200"
       />
     ),
   },
@@ -94,8 +92,7 @@ export const mediaTypes: {
         icon="tabler:file-type-csv"
         width={23}
         height={23}
-        style={{ color: "#525050" }}
-        className="color-gray-500"
+        className="color-gray-500 dark:text-gray-200"
       />
     ),
   },

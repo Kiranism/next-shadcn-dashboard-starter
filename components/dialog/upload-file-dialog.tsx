@@ -227,141 +227,144 @@ export function UploadDialog({
   }, [units, overlap, files]);
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={() => {
-        setFiles([]);
-        if (open) {
-          setOpen(false);
-        }
-      }}
-    >
-      <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          className="ml-auto hidden h-9 lg:flex"
-          onClick={() => setOpen(true)}
-        >
-          {(showIcon ?? true) && <UploadIcon className="mr-2 h-4 w-4" />}
-          {buttonName ?? "Upload"}
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Upload file</DialogTitle>
-          <DialogDescription>
-            The files are indexed and splitted according to the selected
-            settings.
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form
-            // onSubmit={form.handleSubmit(handleUpload)}
-            className="space-y-8 w-full"
-          >
-            <FormField
-              control={form.control}
-              name="files"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <CustomDropzone
-                      files={files}
-                      onAdd={handleAddFiles}
-                      onRemove={handleRemoveFile}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="gap-10">
-              <div className="md:grid md:grid-cols-3 gap-8">
-                <FormField
-                  control={form.control}
-                  name="splitter"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Splitter</FormLabel>
-                      <FormControl>
-                        <SplitterSelector
-                          value={field.value}
-                          onChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="units"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Units</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step={10}
-                          disabled={loading}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="overlap"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Overlap</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step={10}
-                          disabled={loading}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Index</FormLabel>
-                  <FormControl>
-                    <IndexSelector
-                      value={field.value}
-                      onChange={field.onChange}
-                    />
-                  </FormControl>
-                  {/* // </Select> */}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </form>
-        </Form>
-        <DialogFooter>
+    <div>
+      <Dialog
+        open={open}
+        onOpenChange={() => {
+          setFiles([]);
+          if (open) {
+            setOpen(false);
+          }
+        }}
+      >
+        <DialogTrigger asChild>
           <Button
-            onClick={async () => {
-              await handleUpload(form.getValues());
-            }}
+            variant="outline"
+            className="ml-auto h-9 lg:flex"
+            onClick={() => setOpen(true)}
           >
-            Upload
+            {(showIcon ?? true) && <UploadIcon className="mr-2 h-4 w-4" />}
+            {buttonName ?? "Upload"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </DialogTrigger>
+
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Upload file</DialogTitle>
+            <DialogDescription>
+              The files are indexed and splitted according to the selected
+              settings.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form
+              // onSubmit={form.handleSubmit(handleUpload)}
+              className="space-y-8 w-full"
+            >
+              <FormField
+                control={form.control}
+                name="files"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <CustomDropzone
+                        files={files}
+                        onAdd={handleAddFiles}
+                        onRemove={handleRemoveFile}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="gap-10">
+                <div className="md:grid md:grid-cols-3 gap-8">
+                  <FormField
+                    control={form.control}
+                    name="splitter"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Splitter</FormLabel>
+                        <FormControl>
+                          <SplitterSelector
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="units"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Units</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step={10}
+                            disabled={loading}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="overlap"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Overlap</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step={10}
+                            disabled={loading}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Index</FormLabel>
+                    <FormControl>
+                      <IndexSelector
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
+                    </FormControl>
+                    {/* // </Select> */}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </form>
+          </Form>
+          <DialogFooter>
+            <Button
+              onClick={async () => {
+                await handleUpload(form.getValues());
+              }}
+            >
+              Upload
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

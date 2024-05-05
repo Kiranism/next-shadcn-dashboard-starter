@@ -65,8 +65,10 @@ export const columns: ColumnDef<DirItem>[] = [
     ),
     cell: ({ row }) => {
       return (
-        <div className="flex space-x-2">
-          <Badge variant="outline">{row.original.name}</Badge>
+        <div className="flex max-w-[200px] md:max-w-[500px]">
+          {/* <Badge className="flex overflow-hidden truncate" variant="outline"> */}
+          <p className={"truncate"}>{row.original.name}</p>
+          {/* </Badge> */}
         </div>
       );
     },

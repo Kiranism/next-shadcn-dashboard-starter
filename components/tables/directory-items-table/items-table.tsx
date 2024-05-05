@@ -12,8 +12,12 @@ export function ItemsTable() {
   });
 
   return (
-    <div className="hidden h-full flex-1 flex-col space-y-8 md:flex">
-      <DataTable data={data?.items ?? []} columns={columns} />
+    <div className="h-full flex-1 flex-col space-y-8 md:flex">
+      <DataTable
+        data={data?.items ?? []}
+        columns={columns}
+        isLoading={isLoading}
+      />
     </div>
   );
 }

@@ -110,6 +110,7 @@ export const CustomDropzone = (props: CustomDropzoneProps) => {
                             onClick={(e) => {
                               props.onRemove(file);
                             }}
+                            variant={null}
                             size="sm"
                           >
                             <Trash className="h-4 w-4" />
