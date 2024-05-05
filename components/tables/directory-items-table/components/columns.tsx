@@ -65,7 +65,7 @@ export const columns: ColumnDef<DirItem>[] = [
     ),
     cell: ({ row }) => {
       return (
-        <div className="flex max-w-[200px] md:max-w-[500px]">
+        <div className="flex max-w-[150px] sm:max-w-[250px] md:max-w-[500px]">
           {/* <Badge className="flex overflow-hidden truncate" variant="outline"> */}
           <p className={"truncate"}>{row.original.name}</p>
           {/* </Badge> */}

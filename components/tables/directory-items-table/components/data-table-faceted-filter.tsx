@@ -1,12 +1,12 @@
-import * as React from "react"
-import { CheckIcon, PlusCircledIcon } from "@radix-ui/react-icons"
-import { Column } from "@tanstack/react-table"
+import * as React from "react";
+import { CheckIcon, PlusCircledIcon } from "@radix-ui/react-icons";
+import { Column } from "@tanstack/react-table";
 
-import { cn } from "@/lib/utils"
-import { Badge } from "@/components/ui/badge"
-import { Popover, PopoverTrigger } from "@/components/ui/popover"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 // import { Badge } from "@/registry/new-york/ui/badge"
 // import { Button } from "@/registry/new-york/ui/button"
 // import {
@@ -22,13 +22,13 @@ import { Separator } from "@/components/ui/separator"
 // import { Separator } from "@/registry/new-york/ui/separator"
 
 interface DataTableFacetedFilterProps<TData, TValue> {
-  column?: Column<TData, TValue>
-  title?: string
+  column?: Column<TData, TValue>;
+  title?: string;
   options: {
-    label: string
-    value: string
-    icon?: React.ComponentType<{ className?: string }>
-  }[]
+    label: string;
+    value: string;
+    icon?: React.ComponentType<{ className?: string }>;
+  }[];
 }
 
 export function DataTableFacetedFilter<TData, TValue>({
@@ -36,8 +36,8 @@ export function DataTableFacetedFilter<TData, TValue>({
   title,
   options,
 }: DataTableFacetedFilterProps<TData, TValue>) {
-  const facets = column?.getFacetedUniqueValues()
-  const selectedValues = new Set(column?.getFilterValue() as string[])
+  const facets = column?.getFacetedUniqueValues();
+  const selectedValues = new Set(column?.getFilterValue() as string[]);
 
   return (
     <Popover>
@@ -143,5 +143,5 @@ export function DataTableFacetedFilter<TData, TValue>({
         </Command>
       </PopoverContent> */}
     </Popover>
-  )
+  );
 }

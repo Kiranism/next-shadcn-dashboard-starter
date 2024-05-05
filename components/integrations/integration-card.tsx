@@ -49,7 +49,7 @@ export function IntegrationCard({
               </div>
               <div>
                 <Badge className="ml-1" variant="outline">
-                  Free
+                  {disabled ? "Soon" : "Free"}
                 </Badge>
               </div>
             </div>

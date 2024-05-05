@@ -95,7 +95,7 @@ export function Overview() {
           }}
           style={
             {
-              stroke: "grey",
+              stroke: "gray",
               opacity: 0.25,
             } as React.CSSProperties
           }
