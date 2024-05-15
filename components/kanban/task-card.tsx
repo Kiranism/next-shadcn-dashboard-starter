@@ -1,11 +1,11 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Task } from "@/lib/store";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { cva } from "class-variance-authority";
-import { GripVertical } from "lucide-react";
-import { Badge } from "../ui/badge";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Task } from '@/lib/store';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { cva } from 'class-variance-authority';
+import { GripVertical } from 'lucide-react';
+import { Badge } from '../ui/badge';
 
 // export interface Task {
 //   id: UniqueIdentifier;
@@ -18,7 +18,7 @@ interface TaskCardProps {
   isOverlay?: boolean;
 }
 
-export type TaskType = "Task";
+export type TaskType = 'Task';
 
 export interface TaskDragData {
   type: TaskType;
@@ -32,30 +32,30 @@ export function TaskCard({ task, isOverlay }: TaskCardProps) {
     listeners,
     transform,
     transition,
-    isDragging,
+    isDragging
   } = useSortable({
     id: task.id,
     data: {
-      type: "Task",
-      task,
+      type: 'Task',
+      task
     } satisfies TaskDragData,
     attributes: {
-      roleDescription: "Task",
-    },
+      roleDescription: 'Task'
+    }
   });
 
   const style = {
     transition,
-    transform: CSS.Translate.toString(transform),
+    transform: CSS.Translate.toString(transform)
   };
 
-  const variants = cva("", {
+  const variants = cva('', {
     variants: {
       dragging: {
-        over: "ring-2 opacity-30",
-        overlay: "ring-2 ring-primary",
-      },
-    },
+        over: 'ring-2 opacity-30',
+        overlay: 'ring-2 ring-primary'
+      }
+    }
   });
 
   return (
@@ -63,24 +63,24 @@ export function TaskCard({ task, isOverlay }: TaskCardProps) {
       ref={setNodeRef}
       style={style}
       className={variants({
-        dragging: isOverlay ? "overlay" : isDragging ? "over" : undefined,
+        dragging: isOverlay ? 'overlay' : isDragging ? 'over' : undefined
       })}
     >
-      <CardHeader className="px-3 py-3 space-between flex flex-row border-b-2 border-secondary relative">
+      <CardHeader className="space-between relative flex flex-row border-b-2 border-secondary px-3 py-3">
         <Button
-          variant={"ghost"}
+          variant={'ghost'}
           {...attributes}
           {...listeners}
-          className="p-1 text-secondary-foreground/50 -ml-2 h-auto cursor-grab"
+          className="-ml-2 h-auto cursor-grab p-1 text-secondary-foreground/50"
         >
           <span className="sr-only">Move task</span>
           <GripVertical />
         </Button>
-        <Badge variant={"outline"} className="ml-auto font-semibold">
+        <Badge variant={'outline'} className="ml-auto font-semibold">
           Task
         </Badge>
       </CardHeader>
-      <CardContent className="px-3 pt-3 pb-6 text-left whitespace-pre-wrap">
+      <CardContent className="whitespace-pre-wrap px-3 pb-6 pt-3 text-left">
         {task.title}
       </CardContent>
     </Card>

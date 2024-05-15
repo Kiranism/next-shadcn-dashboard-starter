@@ -1,12 +1,12 @@
-"use client";
-import { OurFileRouter } from "@/app/api/uploadthing/core";
-import { UploadDropzone } from "@uploadthing/react";
-import { Trash } from "lucide-react";
-import Image from "next/image";
-import { UploadFileResponse } from "uploadthing/client";
-import { IMG_MAX_LIMIT } from "./forms/product-form";
-import { Button } from "./ui/button";
-import { useToast } from "./ui/use-toast";
+'use client';
+import { OurFileRouter } from '@/app/api/uploadthing/core';
+import { UploadDropzone } from '@uploadthing/react';
+import { Trash } from 'lucide-react';
+import Image from 'next/image';
+import { UploadFileResponse } from 'uploadthing/client';
+import { IMG_MAX_LIMIT } from './forms/product-form';
+import { Button } from './ui/button';
+import { useToast } from './ui/use-toast';
 
 interface ImageUploadProps {
   onChange?: any;
@@ -17,7 +17,7 @@ interface ImageUploadProps {
 export default function FileUpload({
   onChange,
   onRemove,
-  value,
+  value
 }: ImageUploadProps) {
   const { toast } = useToast();
   const onDeleteFile = (key: string) => {
@@ -35,9 +35,9 @@ export default function FileUpload({
           value?.map((item) => (
             <div
               key={item.key}
-              className="relative w-[200px] h-[200px] rounded-md overflow-hidden"
+              className="relative h-[200px] w-[200px] overflow-hidden rounded-md"
             >
-              <div className="z-10 absolute top-2 right-2">
+              <div className="absolute right-2 top-2 z-10">
                 <Button
                   type="button"
                   onClick={() => onDeleteFile(item.key)}
@@ -52,7 +52,7 @@ export default function FileUpload({
                   fill
                   className="object-cover"
                   alt="Image"
-                  src={item.fileUrl || ""}
+                  src={item.fileUrl || ''}
                 />
               </div>
             </div>
@@ -61,20 +61,20 @@ export default function FileUpload({
       <div>
         {value.length < IMG_MAX_LIMIT && (
           <UploadDropzone<OurFileRouter>
-            className="dark:bg-zinc-800 py-2 ut-label:text-sm ut-allowed-content:ut-uploading:text-red-300"
+            className="ut-label:text-sm ut-allowed-content:ut-uploading:text-red-300 py-2 dark:bg-zinc-800"
             endpoint="imageUploader"
-            config={{ mode: "auto" }}
+            config={{ mode: 'auto' }}
             content={{
               allowedContent({ isUploading }) {
                 if (isUploading)
                   return (
                     <>
-                      <p className="mt-2 text-sm text-slate-400 animate-pulse">
+                      <p className="mt-2 animate-pulse text-sm text-slate-400">
                         Img Uploading...
                       </p>
                     </>
                   );
-              },
+              }
             }}
             onClientUploadComplete={(res) => {
               // Do something with the response
@@ -85,9 +85,9 @@ export default function FileUpload({
             }}
             onUploadError={(error: Error) => {
               toast({
-                title: "Error",
-                variant: "destructive",
-                description: error.message,
+                title: 'Error',
+                variant: 'destructive',
+                description: error.message
               });
             }}
             onUploadBegin={() => {
