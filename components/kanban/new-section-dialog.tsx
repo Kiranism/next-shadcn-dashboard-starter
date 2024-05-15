@@ -1,5 +1,5 @@
-"use client";
-import { Button } from "@/components/ui/button";
+'use client';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -7,11 +7,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+  DialogTrigger
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 
-import { useTaskStore } from "@/lib/store";
+import { useTaskStore } from '@/lib/store';
 
 export default function NewSectionDialog() {
   const addCol = useTaskStore((state) => state.addCol);
@@ -23,7 +23,7 @@ export default function NewSectionDialog() {
     const formData = new FormData(form);
     const { title } = Object.fromEntries(formData);
 
-    if (typeof title !== "string") return;
+    if (typeof title !== 'string') return;
     addCol(title);
   };
 

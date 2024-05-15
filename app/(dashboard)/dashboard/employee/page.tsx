@@ -1,15 +1,15 @@
-import BreadCrumb from "@/components/breadcrumb";
-import { columns } from "@/components/tables/employee-tables/columns";
-import { EmployeeTable } from "@/components/tables/employee-tables/employee-table";
-import { buttonVariants } from "@/components/ui/button";
-import { Heading } from "@/components/ui/heading";
-import { Separator } from "@/components/ui/separator";
-import { Employee } from "@/constants/data";
-import { cn } from "@/lib/utils";
-import { Plus } from "lucide-react";
-import Link from "next/link";
+import BreadCrumb from '@/components/breadcrumb';
+import { columns } from '@/components/tables/employee-tables/columns';
+import { EmployeeTable } from '@/components/tables/employee-tables/employee-table';
+import { buttonVariants } from '@/components/ui/button';
+import { Heading } from '@/components/ui/heading';
+import { Separator } from '@/components/ui/separator';
+import { Employee } from '@/constants/data';
+import { cn } from '@/lib/utils';
+import { Plus } from 'lucide-react';
+import Link from 'next/link';
 
-const breadcrumbItems = [{ title: "Employee", link: "/dashboard/employee" }];
+const breadcrumbItems = [{ title: 'Employee', link: '/dashboard/employee' }];
 
 type paramsProps = {
   searchParams: {
@@ -25,7 +25,7 @@ export default async function page({ searchParams }: paramsProps) {
 
   const res = await fetch(
     `https://api.slingacademy.com/v1/sample-data/users?offset=${offset}&limit=${pageLimit}` +
-      (country ? `&search=${country}` : ""),
+      (country ? `&search=${country}` : '')
   );
   const employeeRes = await res.json();
   const totalUsers = employeeRes.total_users; //1000
@@ -33,7 +33,7 @@ export default async function page({ searchParams }: paramsProps) {
   const employee: Employee[] = employeeRes.users;
   return (
     <>
-      <div className="flex-1 space-y-4  p-4 md:p-8 pt-6">
+      <div className="flex-1 space-y-4  p-4 pt-6 md:p-8">
         <BreadCrumb items={breadcrumbItems} />
 
         <div className="flex items-start justify-between">
@@ -43,8 +43,8 @@ export default async function page({ searchParams }: paramsProps) {
           />
 
           <Link
-            href={"/dashboard/employee/new"}
-            className={cn(buttonVariants({ variant: "default" }))}
+            href={'/dashboard/employee/new'}
+            className={cn(buttonVariants({ variant: 'default' }))}
           >
             <Plus className="mr-2 h-4 w-4" /> Add New
           </Link>

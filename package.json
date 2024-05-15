@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "prettier": "prettier . --write"
+    "format": "prettier . --write"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",
@@ -66,6 +66,7 @@
   "devDependencies": {
     "@types/uuid": "^9.0.7",
     "@typescript-eslint/eslint-plugin": "^6.11.0",
-    "prettier": "3.0.3"
+    "prettier": "3.0.3",
+    "prettier-plugin-tailwindcss": "^0.5.14"
   }
 }

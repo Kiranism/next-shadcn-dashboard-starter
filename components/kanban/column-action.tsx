@@ -1,6 +1,6 @@
-"use client";
-import { DotsHorizontalIcon } from "@radix-ui/react-icons";
-import * as React from "react";
+'use client';
+import { DotsHorizontalIcon } from '@radix-ui/react-icons';
+import * as React from 'react';
 
 import {
   AlertDialog,
@@ -9,24 +9,24 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useToast } from "@/components/ui/use-toast";
-import { useTaskStore } from "@/lib/store";
-import { UniqueIdentifier } from "@dnd-kit/core";
-import { Input } from "../ui/input";
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import { useToast } from '@/components/ui/use-toast';
+import { useTaskStore } from '@/lib/store';
+import { UniqueIdentifier } from '@dnd-kit/core';
+import { Input } from '../ui/input';
 
 export function ColumnActions({
   title,
-  id,
+  id
 }: {
   title: string;
   id: UniqueIdentifier;
@@ -48,16 +48,16 @@ export function ColumnActions({
           setIsEditDisable(!editDisable);
           updateCol(id, name);
           toast({
-            title: "Name Updated",
-            variant: "default",
-            description: `${title} updated to ${name}`,
+            title: 'Name Updated',
+            variant: 'default',
+            description: `${title} updated to ${name}`
           });
         }}
       >
         <Input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="text-base !mt-0 mr-auto disabled:opacity-100 disabled:cursor-pointer disabled:border-none"
+          className="!mt-0 mr-auto text-base disabled:cursor-pointer disabled:border-none disabled:opacity-100"
           disabled={editDisable}
           ref={inputRef}
         />
@@ -106,12 +106,12 @@ export function ColumnActions({
               variant="destructive"
               onClick={() => {
                 // yes, you have to set a timeout
-                setTimeout(() => (document.body.style.pointerEvents = ""), 100);
+                setTimeout(() => (document.body.style.pointerEvents = ''), 100);
 
                 setShowDeleteDialog(false);
                 removeCol(id);
                 toast({
-                  description: "This column has been deleted.",
+                  description: 'This column has been deleted.'
                 });
               }}
             >
