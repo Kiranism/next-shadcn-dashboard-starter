@@ -33,6 +33,7 @@ import {
   FolderTree,
   Search,
   PlugZapIcon,
+  Box,
 } from "lucide-react";
 
 export type Icon = LucideIcon;
@@ -64,6 +65,7 @@ export const Icons = {
   sun: SunMedium,
   moon: Moon,
   laptop: Laptop,
+  box: Box,
   gitHub: ({ ...props }: LucideProps) => (
     <svg
       aria-hidden="true"

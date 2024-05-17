@@ -31,18 +31,7 @@ const Messages = ({ fileId }: MessagesProps) => {
     text: "Hello, how can I help you today? I am a test message. I do have nothing else to say, sorry for being dummy. ",
   };
 
-  const messages: ExtendedMessage[] = [
-    testMessage,
-    testMessage,
-    testMessage,
-    testMessage,
-    testMessage,
-    testMessage,
-    testMessage,
-    testMessage,
-    testMessage,
-    testMessage,
-  ]; //data?.pages.flatMap((page) => page.messages);
+  const messages: ExtendedMessage[] = [testMessage]; //data?.pages.flatMap((page) => page.messages);
 
   const combinedMessages = [
     ...(false ? [loadingMessage] : []),

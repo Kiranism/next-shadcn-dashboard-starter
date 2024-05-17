@@ -131,10 +131,10 @@ export const navItems: NavItem[] = [
     label: "ingestion",
   },
   {
-    title: "Search",
-    href: "/dashboard/search",
-    icon: "search",
-    label: "search",
+    title: "Playground",
+    href: "/dashboard/playground",
+    icon: "box",
+    label: "playground",
   },
   {
     title: "Kanban",

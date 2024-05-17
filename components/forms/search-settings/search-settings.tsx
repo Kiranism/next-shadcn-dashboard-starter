@@ -167,7 +167,7 @@ export function SearchSettings() {
                         <span className="font-medium text-foreground">
                           Keyword{" "}
                         </span>
-                        Search
+                        search
                       </p>
                       <p className="text-xs" data-description>
                         Keyword search using BM25.
@@ -181,9 +181,9 @@ export function SearchSettings() {
                     <div className="grid gap-0.5">
                       <p>
                         <span className="font-medium text-foreground">
-                          Dense{" "}
+                          Semantic{" "}
                         </span>
-                        Search
+                        search
                       </p>
                       <p className="text-xs" data-description>
                         Use vectors embeddings to perform semantic search.
@@ -199,7 +199,7 @@ export function SearchSettings() {
                         <span className="font-medium text-foreground">
                           Hybrid{" "}
                         </span>
-                        Search
+                        search
                       </p>
                       <p className="text-xs" data-description>
                         Combine both keyword and vector embeddings search.
@@ -290,7 +290,7 @@ export function SearchSettings() {
           <legend className="-ml-1 px-1 text-sm font-medium">Chat</legend>
           <div className="flex flex-row justify-end ">
             <div className="absolute">
-              <Switch id="airplane-mode" />
+              <Switch disabled id="airplane-mode" />
             </div>
           </div>
           <div className="grid gap-3 opacity-50">
@@ -312,7 +312,7 @@ export function SearchSettings() {
                         <span className="font-medium text-foreground">
                           Keyword{" "}
                         </span>
-                        Search
+                        search
                       </p>
                       <p className="text-xs" data-description>
                         Keyword search using BM25.
@@ -326,9 +326,9 @@ export function SearchSettings() {
                     <div className="grid gap-0.5">
                       <p>
                         <span className="font-medium text-foreground">
-                          Dense{" "}
+                          Semantic{" "}
                         </span>
-                        Search
+                        search
                       </p>
                       <p className="text-xs" data-description>
                         Use vectors embeddings to perform semantic search.
@@ -344,7 +344,7 @@ export function SearchSettings() {
                         <span className="font-medium text-foreground">
                           Hybrid{" "}
                         </span>
-                        Search
+                        search
                       </p>
                       <p className="text-xs" data-description>
                         Combine both keyword and vector embeddings search.

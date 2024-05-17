@@ -42,15 +42,20 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(
         </div>
 
         <div
-          className={cn("flex flex-col space-y-2 text-base max-w-md mx-2", {
-            "order-1 items-end": message.isUserMessage,
-            "order-2 items-start": !message.isUserMessage,
-          })}
+          className={cn(
+            "flex flex-col space-y-2 text-base max-w-md mx-2 border border-gray-300 dark:border-zinc-700 rounded-lg",
+            {
+              "order-1 items-end": message.isUserMessage,
+              "order-2 items-start": !message.isUserMessage,
+            },
+          )}
         >
           <div
             className={cn("px-4 py-2 rounded-lg inline-block", {
-              "bg-blue-600 text-white": message.isUserMessage,
-              "bg-gray-200 text-gray-900": !message.isUserMessage,
+              "bg-white dark:bg-zinc-900 dark:text-white outlined":
+                message.isUserMessage,
+              "bg-gray-200 text-gray-900 dark:text-white dark:bg-zinc-800":
+                !message.isUserMessage,
               "rounded-br-none":
                 !isNextMessageSamePerson && message.isUserMessage,
               "rounded-bl-none":
@@ -60,7 +65,7 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(
             {typeof message.text === "string" ? (
               <ReactMarkdown
                 className={cn("prose", {
-                  "text-zinc-50": message.isUserMessage,
+                  "dark:text-zinc-50": message.isUserMessage,
                 })}
               >
                 {message.text}
