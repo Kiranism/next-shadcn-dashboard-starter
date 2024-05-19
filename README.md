@@ -21,7 +21,7 @@ This is a starter template using the following stack:
 - Components - [Shadcn-ui](https://ui.shadcn.com)
 - Schema Validations - [Zod](https://zod.dev)
 - State Management - [Zustand](https://zustand-demo.pmnd.rs)
-- Auth - [Nextauth](https://next-auth.js.org)
+- Auth - [Auth.js](https://authjs.dev/)
 - File Uploading - [Uploadthing](https://uploadthing.com)
 - Tables - [Tanstack Tables](https://ui.shadcn.com/docs/components/data-table)
 - Forms - [React Hook Form](https://ui.shadcn.com/docs/components/form)
