@@ -1,3 +1,4 @@
+"use client";
 import BreadCrumb from "@/components/breadcrumb";
 import { CreateProfileOne } from "@/components/forms/user-profile-stepper/create-profile";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,8 +19,16 @@ import {
 import { Paperclip, Search } from "lucide-react";
 import { ChatTextarea } from "@/components/chat/ChatTextarea";
 import { SearchSettings } from "@/components/forms/search-settings/search-settings";
-import { ChatMessage, Message } from "@/components/chat/Message";
+import {
+  ChatMessage,
+  ExtendedMessage,
+  Message,
+} from "@/components/chat/Message";
 import Messages from "@/components/chat/Messages";
+import { v4 as uuid } from "uuid";
+import { useState } from "react";
+import { set } from "date-fns";
+import { queryApi } from "@/app/api/queryApi";
 
 const breadcrumbItems = [{ title: "Profile", link: "/dashboard/profile" }];
 export default function page() {
@@ -35,6 +44,16 @@ export default function page() {
     createdAt: "2021-09-01T00:00:00Z",
     text: "Hello, how can I help you today?",
     isUserMessage: true,
+  };
+
+  const session_id = "ccadd12d-6c1d-4339-bd88-5f0454cd8972"; //uuid();
+  const [lastMessage, setLastMessage] = useState<string | undefined>();
+  const [query, { isLoading }] = queryApi.useQueryMutation();
+
+  const handleOnSendMessage = (message: string) => {
+    console.log("handleOnSendMessage", message);
+    setLastMessage(message);
+    query({ query: message, top_k: 5, session_id: session_id });
   };
 
   return (
@@ -69,12 +88,20 @@ export default function page() {
                     message={message2}
                     isNextMessageSamePerson={false}
                   /> */}
-                  <Messages fileId="1" />
+                  <Messages
+                    fileId="1"
+                    session_id={session_id}
+                    lastMessage={lastMessage}
+                    isProcessing={isLoading}
+                  />
                 </div>
                 <ScrollArea className="h-full"></ScrollArea>
               </div>
               <div className={"p-4"}>
-                <ChatTextarea />
+                <ChatTextarea
+                  onSend={handleOnSendMessage}
+                  sessionId={session_id}
+                />
               </div>
             </div>
           </ResizablePanelGroup>

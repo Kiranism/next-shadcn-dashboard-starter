@@ -2,15 +2,26 @@
 // import { INFINITE_QUERY_LIMIT } from "@/config/infinite-query";
 import { Loader2, MessageSquare } from "lucide-react";
 import Skeleton from "react-loading-skeleton";
-import { useContext, useEffect, useRef } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useIntersection } from "@mantine/hooks";
 import { ChatMessage, ExtendedMessage } from "./Message";
+import { queryApi } from "@/app/api/queryApi";
+import { v4 as uuid } from "uuid";
+import { is } from "date-fns/locale";
 
 interface MessagesProps {
   fileId: string;
+  session_id: string;
+  isProcessing: boolean;
+  lastMessage?: string;
 }
 
-const Messages = ({ fileId }: MessagesProps) => {
+const Messages = ({
+  fileId,
+  session_id,
+  lastMessage,
+  isProcessing,
+}: MessagesProps) => {
   //   const { isLoading: isAiThinking } = useContext(ChatContext);
 
   const loadingMessage = {
@@ -24,14 +35,62 @@ const Messages = ({ fileId }: MessagesProps) => {
     ),
   };
 
+  const { data, isLoading } = queryApi.useListQueryLogsQuery({
+    session_id: session_id,
+    limit: 10,
+    offset: 0,
+    query_like: undefined,
+  });
+
   const testMessage = {
     createdAt: new Date().toISOString(),
-    id: "loading-message",
+    id: uuid(),
     isUserMessage: false,
     text: "Hello, how can I help you today? I am a test message. I do have nothing else to say, sorry for being dummy. ",
   };
 
-  const messages: ExtendedMessage[] = [testMessage]; //data?.pages.flatMap((page) => page.messages);
+  const messages: ExtendedMessage[] = useMemo(() => {
+    return [
+      ...(isProcessing
+        ? [
+            loadingMessage,
+            {
+              createdAt: new Date().toISOString(),
+              id: uuid(),
+              isUserMessage: true,
+              text: lastMessage,
+            },
+          ]
+        : []),
+      ...(data?.logs.flatMap((log) => {
+        const responseMessage = {
+          createdAt: new Date().toISOString(),
+          id: log.id + "1",
+          isUserMessage: false,
+          text: "Roger.",
+          documents: [
+            ...log.documents.map((doc) => {
+              return {
+                id: doc.id,
+                title: doc.meta?.title ?? doc.name,
+                mediaType: doc.meta?.media_type ?? "text/plain",
+              };
+            }),
+          ],
+        };
+        return [
+          responseMessage,
+          {
+            createdAt: log.timestamp as string,
+            id: log.id,
+            isUserMessage: true,
+            text: log.query,
+          },
+        ];
+      }) ?? []),
+      testMessage,
+    ]; //data?.pages.flatMap((page) => page.messages);
+  }, [data, lastMessage]);
 
   const combinedMessages = [
     ...(false ? [loadingMessage] : []),

@@ -21,6 +21,7 @@ import { queryApi } from "@/app/api/queryApi";
 
 export type ChatTextareaProps = {
   onSend: (message: string) => void;
+  sessionId: string;
 };
 
 const FormSchema = z.object({
@@ -34,29 +35,30 @@ const FormSchema = z.object({
     }),
 });
 
-export const ChatTextarea = () => {
+export const ChatTextarea = (props: ChatTextareaProps) => {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
   });
 
-  const [query, isLoading] = queryApi.useQueryMutation();
-
-  const onSubmit = useCallback(
-    async (message: string) => {
-      toast({
-        title: "You submitted the following values:",
-        description: (
-          <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-            <code className="text-white">
-              {JSON.stringify(message, null, 2)}
-            </code>
-          </pre>
-        ),
-      });
-      query({ query: message, top_k: 5 });
-    },
-    [form],
-  );
+  // const onSubmit = useCallback(
+  //   async (message: string) => {
+  //     console.log("message", message);
+  //     props.onSend(message);
+  //     console.log("onSent");
+  //     toast({
+  //       title: "You submitted the following values:",
+  //       description: (
+  //         <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
+  //           <code className="text-white">
+  //             {JSON.stringify(message, null, 2)}
+  //           </code>
+  //         </pre>
+  //       ),
+  //     });
+  //     query({ query: message, top_k: 5, session_id: props.sessionId });
+  //   },
+  //   [form],
+  // );
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [message, setMessage] = useState("");
@@ -77,7 +79,7 @@ export const ChatTextarea = () => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
 
-                    onSubmit(message);
+                    props.onSend(message);
 
                     setMessage("");
                     textareaRef.current?.focus();
@@ -92,7 +94,7 @@ export const ChatTextarea = () => {
                 className="absolute bottom-1.5 right-[8px]"
                 aria-label="send message"
                 onClick={() => {
-                  onSubmit(message);
+                  props.onSend(message);
                   setMessage("");
 
                   textareaRef.current?.focus();

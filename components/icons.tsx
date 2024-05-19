@@ -34,10 +34,20 @@ import {
   Search,
   PlugZapIcon,
   Box,
+  FileCode,
+  LucideFile,
 } from "lucide-react";
-
+import {
+  Icon,
+  IconifyIconHTMLElement,
+  IconifyIconProps,
+} from "@iconify-icon/react";
+import { HTMLAttributes } from "react";
 export type Icon = LucideIcon;
 
+type IconifyProps = React.ForwardRefExoticComponent<
+  Omit<IconifyIconProps, "ref"> & React.RefAttributes<IconifyIconHTMLElement>
+>;
 export const Icons = {
   dashboard: LayoutDashboardIcon,
   logo: Command,
@@ -90,4 +100,51 @@ export const Icons = {
   folderTree: FolderTree,
   search: Search,
   plugZap: PlugZapIcon,
+  fileCode: FileCode,
+  pdf2: (
+    <Icon
+      icon="streamline:convert-pdf-2"
+      width={20}
+      height={20}
+      style={{ color: "#e13333" }}
+      className="color-red-500"
+    />
+  ),
+  file: ({ ...props }: LucideProps) => (
+    <LucideFile width={22} height={22} style={{ color: "#525050" }} />
+  ),
+  txt: (props?: HTMLAttributes<HTMLImageElement>) => (
+    <Icon
+      icon="tabler:file-type-txt"
+      width={23}
+      height={23}
+      className="color-gray-500 dark:text-gray-200"
+      {...props}
+    />
+  ),
+  csv: (
+    <Icon
+      icon="tabler:file-type-csv"
+      width={23}
+      height={23}
+      className="color-gray-500 dark:text-gray-200"
+    />
+  ),
+  googleDrive: (
+    <Icon
+      icon="logos:google-drive"
+      width={20}
+      height={20}
+      className="text-muted-foreground"
+    />
+  ),
+  notion: (
+    <Icon
+      icon="devicon:notion"
+      width={20}
+      height={20}
+      className="text-muted-foreground"
+      // style="width: 24px; height: 24px;"
+    />
+  ),
 };

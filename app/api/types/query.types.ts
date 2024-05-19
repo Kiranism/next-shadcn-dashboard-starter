@@ -1,3 +1,5 @@
+import { UUID } from "crypto";
+
 export type QueryApiResult = {
   id: string;
   query: string;
@@ -9,6 +11,14 @@ export type QueryApiResult = {
 export type QueryApiRequest = {
   query: string;
   top_k: number;
+  session_id: string;
+};
+
+export type ListQueryLogsApiRequest = {
+  session_id: string;
+  limit: number;
+  offset: number;
+  query_like?: string;
 };
 
 export type ListQueryLogsApiResponse = {
@@ -22,6 +32,7 @@ export type DocumentMeta = {
   link: string;
   external_id: string;
   language: string;
+  media_type: string;
 };
 
 export type SearchDocument = {

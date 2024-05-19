@@ -11,40 +11,40 @@ import {
 } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card as TremorCard, AreaChart, Title, Text } from '@tremor/react';
+import { Card as TremorCard, AreaChart, Title, Text } from "@tremor/react";
 
 export default function page() {
   const data = [
     {
-      Month: 'Jan 21',
+      Month: "Jan 21",
       Sales: 2890,
-      Profit: 2400
+      Profit: 2400,
     },
     {
-      Month: 'Feb 21',
+      Month: "Feb 21",
       Sales: 1890,
-      Profit: 1398
+      Profit: 1398,
     },
     {
-      Month: 'Jan 22',
+      Month: "Jan 22",
       Sales: 3890,
-      Profit: 2980
+      Profit: 2980,
     },
     {
-      Month: 'Jan 21',
+      Month: "Jan 21",
       Sales: 2890,
-      Profit: 2400
+      Profit: 2400,
     },
     {
-      Month: 'Feb 21',
+      Month: "Feb 21",
       Sales: 1890,
-      Profit: 1398
+      Profit: 1398,
     },
     {
-      Month: 'Jan 22',
+      Month: "Jan 22",
       Sales: 3890,
-      Profit: 2980
-    }
+      Profit: 2980,
+    },
   ];
   return (
     <ScrollArea className="h-full">
