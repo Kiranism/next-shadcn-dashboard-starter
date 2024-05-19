@@ -1,23 +1,24 @@
-import { NextAuthOptions } from 'next-auth';
-import GithubProvider from 'next-auth/providers/github';
-import CredentialProvider from 'next-auth/providers/credentials';
+import { NextAuthConfig } from "next-auth";
+import CredentialProvider from "next-auth/providers/credentials";
+import GithubProvider from "next-auth/providers/github";
 
-export const authOptions: NextAuthOptions = {
+const authConfig = {
   providers: [
     GithubProvider({
       clientId: process.env.GITHUB_ID ?? '',
-      clientSecret: process.env.GITHUB_SECRET ?? ''
+      clientSecret: process.env.GITHUB_SECRET ?? '',
     }),
     CredentialProvider({
       credentials: {
         email: {
-          label: 'email',
           type: 'email',
-          placeholder: 'example@gmail.com'
+        },
+        password: {
+          type: 'password',
         }
       },
       async authorize(credentials, req) {
-        const user = { id: '1', name: 'John', email: credentials?.email };
+        const user = { id: '1', name: 'John', email: credentials?.email as string };
         if (user) {
           // Any object returned will be saved in `user` property of the JWT
           return user;
@@ -31,6 +32,8 @@ export const authOptions: NextAuthOptions = {
     })
   ],
   pages: {
-    signIn: '/' //sigin page
-  }
-};
+    signIn: "/", //sigin page
+  },
+} satisfies NextAuthConfig
+
+export default authConfig
