@@ -113,7 +113,7 @@ export function BoardContainer({ children }: { children: React.ReactNode }) {
     {
       variants: {
         dragging: {
-          default: 'snap-x snap-mandatory',
+          default: '',
           active: 'snap-none'
         }
       }

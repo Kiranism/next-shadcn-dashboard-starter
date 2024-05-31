@@ -22,7 +22,7 @@ export default function Sidebar({ className }: SidebarProps) {
   return (
     <nav
       className={cn(
-        `relative hidden h-screen border-r pt-20 md:block`,
+        `relative hidden h-screen flex-none border-r pt-20 md:block`,
         status && 'duration-500',
         !isMinimized ? 'w-72' : 'w-[72px]',
         className
@@ -31,7 +31,7 @@ export default function Sidebar({ className }: SidebarProps) {
       <ChevronLeft
         className={cn(
           'absolute -right-3 top-20 cursor-pointer rounded-full border bg-background text-3xl text-foreground',
-          !isMinimized && 'rotate-180'
+          isMinimized && 'rotate-180'
         )}
         onClick={handleToggle}
       />
