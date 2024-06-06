@@ -148,4 +148,11 @@ export const navItems: NavItem[] = [
     icon: 'login',
     label: 'login'
   }
+  ,
+  {
+    title: 'Photoshoot',
+    href: '/dashboard/photoshoot',
+    icon: 'login',
+    label: 'login'
+  }
 ];
