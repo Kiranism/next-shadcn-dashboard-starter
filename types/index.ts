@@ -30,3 +30,11 @@ export interface FooterItem {
 export type MainNavItem = NavItemWithOptionalChildren;
 
 export type SidebarNavItem = NavItemWithChildren;
+
+// types/index.ts
+export interface PhotoShoot {
+  id: string;
+  title: string;
+  author: string;
+  image: string;
+}

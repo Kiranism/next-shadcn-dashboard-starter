@@ -1,4 +1,5 @@
 "use client";
+
 import * as z from "zod";
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -20,31 +20,18 @@ import { Separator } from "@/components/ui/separator";
 import { Heading } from "@/components/ui/heading";
 import { useToast } from "../ui/use-toast";
 import FileUpload from "../file-upload";
-
-const ImgSchema = z.object({
-  fileName: z.string(),
-  name: z.string(),
-  fileSize: z.number(),
-  size: z.number(),
-  fileKey: z.string(),
-  key: z.string(),
-  fileUrl: z.string(),
-  url: z.string(),
-});
-
-export const IMG_MAX_LIMIT = 10;
+import { createPhotoShoot, updatePhotoShoot, deletePhotoShoot } from "@/app/api/photoShootApi";
 
 const formSchema = z.object({
-  modelName: z
-    .string()
-    .min(3, { message: "Model Name must be at least 3 characters" }),
-  photographer: z
-    .string()
-    .min(3, { message: "Photographer Name must be at least 3 characters" }),
-  images: z
-    .array(ImgSchema)
-    .max(IMG_MAX_LIMIT, { message: "You can only add up to 10 images" })
-    .min(1, { message: "At least one image must be added." }),
+  title: z.string().min(3, { message: "Title must be at least 3 characters" }),
+  type: z.string().min(3, { message: "Type must be at least 3 characters" }),
+  status: z.boolean(),
+  featured: z.boolean(),
+  performers: z.string().min(3, { message: "Performers must be at least 3 characters" }),
+  photographers: z.string().min(3, { message: "Photographers must be at least 3 characters" }),
+  category: z.string().min(3, { message: "Category must be at least 3 characters" }),
+  images: z.array(z.instanceof(File)).nonempty("At least one image is required"),
+  coverImage: z.instanceof(File).optional(),
 });
 
 type PhotoShootFormValues = z.infer<typeof formSchema>;
@@ -62,7 +49,7 @@ export const PhotoShootForm: React.FC<PhotoShootFormProps> = ({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const title = initialData ? "Edit Photo Shoot" : "Create Photo Shoot";
+  const titleText = initialData ? "Edit Photo Shoot" : "Create Photo Shoot";
   const description = initialData
     ? "Edit a photo shoot."
     : "Add a new photo shoot";
@@ -72,11 +59,18 @@ export const PhotoShootForm: React.FC<PhotoShootFormProps> = ({
   const action = initialData ? "Save changes" : "Create";
 
   const defaultValues = initialData
-    ? initialData
+    ? { ...initialData, images: [], coverImage: undefined }
     : {
-        modelName: "",
-        photographer: "",
+        title: "",
+        type: "",
+        status: true,
+        featured: true,
+        performers: "",
+        photographers: "",
+        category: "",
         images: [],
+        coverImage: undefined,
+        createdAt: new Date().toISOString(),
       };
 
   const form = useForm<PhotoShootFormValues>({
@@ -87,16 +81,16 @@ export const PhotoShootForm: React.FC<PhotoShootFormProps> = ({
   const onSubmit = async (data: PhotoShootFormValues) => {
     try {
       setLoading(true);
+
       if (initialData) {
-        // await axios.post(`/api/photoshoots/edit-photoshoot/${initialData._id}`, data);
+        await updatePhotoShoot(initialData._id, data);
       } else {
-        // const res = await axios.post(`/api/photoshoots/create-photoshoot`, data);
-        // console.log("photoshoot", res);
+        await createPhotoShoot(data);
       }
+
       router.refresh();
-      router.push(`/dashboard/photoshoots`);
+      router.push(`/dashboard/photoshoot`);
       toast({
-        variant: "destructive",
         title: toastMessage,
       });
     } catch (error) {
@@ -110,31 +104,19 @@ export const PhotoShootForm: React.FC<PhotoShootFormProps> = ({
     }
   };
 
-  const onDelete = async () => {
-    try {
-      setLoading(true);
-      // await axios.delete(`/api/${params.storeId}/photoshoots/${params.photoshootId}`);
-      router.refresh();
-      router.push(`/${params.storeId}/photoshoots`);
-    } catch (error) {
-    } finally {
-      setLoading(false);
-      setOpen(false);
-    }
+  const onRemoveFile = (fileName: string) => {
+    const updatedImages = form.getValues("images").filter((file) => file.name !== fileName);
+    form.setValue("images", updatedImages);
   };
 
-  const triggerImgUrlValidation = () => form.trigger("images");
+  const onRemoveCoverImage = () => {
+    form.setValue("coverImage", undefined);
+  };
 
   return (
     <>
-      {/* <AlertModal
-        isOpen={open}
-        onClose={() => setOpen(false)}
-        onConfirm={onDelete}
-        loading={loading}
-      /> */}
       <div className="flex items-center justify-between">
-        <Heading title={title} description={description} />
+        <Heading title={titleText} description={description} />
         {initialData && (
           <Button
             disabled={loading}
@@ -155,14 +137,14 @@ export const PhotoShootForm: React.FC<PhotoShootFormProps> = ({
           <div className="gap-8 md:grid md:grid-cols-1">
             <FormField
               control={form.control}
-              name="modelName"
+              name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Model Name</FormLabel>
+                  <FormLabel>Title</FormLabel>
                   <FormControl>
                     <Input
                       disabled={loading}
-                      placeholder="Model Name"
+                      placeholder="Title"
                       {...field}
                     />
                   </FormControl>
@@ -172,14 +154,14 @@ export const PhotoShootForm: React.FC<PhotoShootFormProps> = ({
             />
             <FormField
               control={form.control}
-              name="photographer"
+              name="type"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Photographer</FormLabel>
+                  <FormLabel>Type</FormLabel>
                   <FormControl>
                     <Input
                       disabled={loading}
-                      placeholder="Photographer"
+                      placeholder="Type"
                       {...field}
                     />
                   </FormControl>
@@ -187,7 +169,93 @@ export const PhotoShootForm: React.FC<PhotoShootFormProps> = ({
                 </FormItem>
               )}
             />
-
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status</FormLabel>
+                  <FormControl>
+                    <input
+                      type="checkbox"
+                      disabled={loading}
+                      checked={field.value}
+                      onChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="featured"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Featured</FormLabel>
+                  <FormControl>
+                    <input
+                      type="checkbox"
+                      disabled={loading}
+                      checked={field.value}
+                      onChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="performers"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Performers</FormLabel>
+                  <FormControl>
+                    <Input
+                      disabled={loading}
+                      placeholder="Performers"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="photographers"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Photographers</FormLabel>
+                  <FormControl>
+                    <Input
+                      disabled={loading}
+                      placeholder="Photographers"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <FormControl>
+                    <Input
+                      disabled={loading}
+                      placeholder="Category"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="images"
@@ -196,9 +264,27 @@ export const PhotoShootForm: React.FC<PhotoShootFormProps> = ({
                   <FormLabel>Images</FormLabel>
                   <FormControl>
                     <FileUpload
-                      onChange={field.onChange}
+                      multiple
                       value={field.value}
-                      onRemove={field.onChange}
+                      onChange={(files) => field.onChange(files)}
+                      onRemove={onRemoveFile}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="coverImage"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Cover Image</FormLabel>
+                  <FormControl>
+                    <FileUpload
+                      value={field.value ? [field.value] : []}
+                      onChange={(files) => field.onChange(files[0])}
+                      onRemove={onRemoveCoverImage}
                     />
                   </FormControl>
                   <FormMessage />
