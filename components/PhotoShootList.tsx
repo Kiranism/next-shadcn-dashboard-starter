@@ -13,10 +13,11 @@ import { Plus } from 'lucide-react';
 import Link from 'next/link';
 
 interface PhotoShoot {
-  id: string;
+  _id: string;
   title: string;
   author: string;
   coverImage: string;
+  photographers:string;
 }
 
 export default function PhotoShootList() {
@@ -63,7 +64,7 @@ export default function PhotoShootList() {
             description="Manage photo shoots (Server side table functionalities.)"
           />
           <Link
-            href="/dashboard/photoshoot/new"
+            href="/dashboard/photoshoot/new/edit"
             className={cn(buttonVariants({ variant: 'default' }))}
           >
             <Plus className="mr-2 h-4 w-4" /> Add New
@@ -72,13 +73,14 @@ export default function PhotoShootList() {
         <Separator />
         <div className="h-screen overflow-y-auto p-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {photoShoots.map((photoShoot) => (
+            {photoShoots.map((photoshoot) => (
               <PhotoShootCard
-                key={photoShoot.id}
-                title={photoShoot.title}
-                author={photoShoot.author}
-                coverImage={photoShoot.coverImage}
-              />
+              key={photoshoot._id}
+              id={photoshoot._id}
+              coverImage={photoshoot.coverImage}
+              title={photoshoot.title}
+              author={photoshoot.photographers}
+            />
             ))}
           </div>
         </div>

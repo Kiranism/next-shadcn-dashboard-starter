@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
 import * as z from "zod";
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Trash } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,7 +20,7 @@ import { Separator } from "@/components/ui/separator";
 import { Heading } from "@/components/ui/heading";
 import { useToast } from "../ui/use-toast";
 import FileUpload from "../file-upload";
-import { createPhotoShoot, updatePhotoShoot, deletePhotoShoot } from "@/app/api/photoShootApi";
+import { createPhotoShoot, updatePhotoShoot } from "@/app/api/photoShootApi";
 
 const formSchema = z.object({
   title: z.string().min(3, { message: "Title must be at least 3 characters" }),
@@ -30,7 +30,7 @@ const formSchema = z.object({
   performers: z.string().min(3, { message: "Performers must be at least 3 characters" }),
   photographers: z.string().min(3, { message: "Photographers must be at least 3 characters" }),
   category: z.string().min(3, { message: "Category must be at least 3 characters" }),
-  images: z.array(z.instanceof(File)).nonempty("At least one image is required"),
+  images: z.array(z.instanceof(File)).min(1, "At least one image is required"),
   coverImage: z.instanceof(File).optional(),
 });
 
@@ -43,10 +43,9 @@ interface PhotoShootFormProps {
 export const PhotoShootForm: React.FC<PhotoShootFormProps> = ({
   initialData,
 }) => {
-  const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
-  const [open, setOpen] = useState(false);
+  // const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const titleText = initialData ? "Edit Photo Shoot" : "Create Photo Shoot";
@@ -105,8 +104,8 @@ export const PhotoShootForm: React.FC<PhotoShootFormProps> = ({
   };
 
   const onRemoveFile = (fileName: string) => {
-    const updatedImages = form.getValues("images").filter((file) => file.name !== fileName);
-    form.setValue("images", updatedImages);
+    const updatedImages = form.getValues("images").filter((file) => file.name !== fileName) as File[];
+    form.setValue("images", updatedImages.length ? updatedImages : [] as unknown as [File]);
   };
 
   const onRemoveCoverImage = () => {
@@ -122,7 +121,7 @@ export const PhotoShootForm: React.FC<PhotoShootFormProps> = ({
             disabled={loading}
             variant="destructive"
             size="sm"
-            onClick={() => setOpen(true)}
+            // onClick={() => setOpen(true)}
           >
             <Trash className="h-4 w-4" />
           </Button>

@@ -22,7 +22,19 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
-  const onConfirm = async () => {};
+  const onConfirm = async () => {
+    // Add your delete logic here
+    setLoading(true);
+    try {
+      // await deleteUser(data.id);
+      // Refresh or update the UI after deletion
+    } catch (error) {
+      // console.error("Failed to delete user", error);
+    } finally {
+      setLoading(false);
+      setOpen(false);
+    }
+  };
 
   return (
     <>

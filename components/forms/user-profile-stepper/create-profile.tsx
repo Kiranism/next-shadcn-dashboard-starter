@@ -28,7 +28,6 @@ import { profileSchema, type ProfileFormValues } from '@/lib/form-schema';
 import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertTriangleIcon, Trash, Trash2Icon } from 'lucide-react';
-import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 
@@ -41,21 +40,12 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
   initialData,
   categories
 }) => {
-  const params = useParams();
-  const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [imgLoading, setImgLoading] = useState(false);
   const title = initialData ? 'Edit product' : 'Create Your Profile';
   const description = initialData
     ? 'Edit a product.'
     : 'To create your resume, we first need some basic information about you.';
-  const toastMessage = initialData ? 'Product updated.' : 'Product created.';
-  const action = initialData ? 'Save changes' : 'Create';
-  const [previousStep, setPreviousStep] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
   const [data, setData] = useState({});
-  const delta = currentStep - previousStep;
 
   const defaultValues = {
     jobs: [
@@ -86,41 +76,8 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
     name: 'jobs'
   });
 
-  const onSubmit = async (data: ProfileFormValues) => {
-    try {
-      setLoading(true);
-      if (initialData) {
-        // await axios.post(`/api/products/edit-product/${initialData._id}`, data);
-      } else {
-        // const res = await axios.post(`/api/products/create-product`, data);
-        // console.log("product", res);
-      }
-      router.refresh();
-      router.push(`/dashboard/products`);
-    } catch (error: any) {
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const onDelete = async () => {
-    try {
-      setLoading(true);
-      //   await axios.delete(`/api/${params.storeId}/products/${params.productId}`);
-      router.refresh();
-      router.push(`/${params.storeId}/products`);
-    } catch (error: any) {
-    } finally {
-      setLoading(false);
-      setOpen(false);
-    }
-  };
-
   const processForm: SubmitHandler<ProfileFormValues> = (data) => {
-    console.log('data ==>', data);
     setData(data);
-    // api call and reset
-    // form.reset();
   };
 
   type FieldName = keyof ProfileFormValues;
@@ -134,7 +91,6 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
     {
       id: 'Step 2',
       name: 'Professional Informations',
-      // fields are mapping and flattening for the error to be trigger  for the dynamic fields
       fields: fields
         ?.map((_, index) => [
           `jobs.${index}.jobtitle`,
@@ -143,7 +99,6 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
           `jobs.${index}.enddate`,
           `jobs.${index}.jobcountry`,
           `jobs.${index}.jobcity`
-          // Add other field names as needed
         ])
         .flat()
     },
@@ -163,14 +118,12 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
       if (currentStep === steps.length - 2) {
         await form.handleSubmit(processForm)();
       }
-      setPreviousStep(currentStep);
       setCurrentStep((step) => step + 1);
     }
   };
 
   const prev = () => {
     if (currentStep > 0) {
-      setPreviousStep(currentStep);
       setCurrentStep((step) => step - 1);
     }
   };
@@ -184,10 +137,8 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
         <Heading title={title} description={description} />
         {initialData && (
           <Button
-            disabled={loading}
             variant="destructive"
             size="sm"
-            onClick={() => setOpen(true)}
           >
             <Trash className="h-4 w-4" />
           </Button>
@@ -250,7 +201,6 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
                       <FormLabel>First Name</FormLabel>
                       <FormControl>
                         <Input
-                          disabled={loading}
                           placeholder="John"
                           {...field}
                         />
@@ -267,7 +217,6 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
                       <FormLabel>Last Name</FormLabel>
                       <FormControl>
                         <Input
-                          disabled={loading}
                           placeholder="Doe"
                           {...field}
                         />
@@ -284,7 +233,6 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
                       <FormLabel>Email</FormLabel>
                       <FormControl>
                         <Input
-                          disabled={loading}
                           placeholder="johndoe@gmail.com"
                           {...field}
                         />
@@ -303,7 +251,6 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
                         <Input
                           type="number"
                           placeholder="Enter you contact number"
-                          disabled={loading}
                           {...field}
                         />
                       </FormControl>
@@ -318,7 +265,6 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
                     <FormItem>
                       <FormLabel>Country</FormLabel>
                       <Select
-                        disabled={loading}
                         onValueChange={field.onChange}
                         value={field.value}
                         defaultValue={field.value}
@@ -351,7 +297,6 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
                     <FormItem>
                       <FormLabel>City</FormLabel>
                       <Select
-                        disabled={loading}
                         onValueChange={field.onChange}
                         value={field.value}
                         defaultValue={field.value}
@@ -426,7 +371,6 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
                                 <FormControl>
                                   <Input
                                     type="text"
-                                    disabled={loading}
                                     {...field}
                                   />
                                 </FormControl>
@@ -443,7 +387,6 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
                                 <FormControl>
                                   <Input
                                     type="text"
-                                    disabled={loading}
                                     {...field}
                                   />
                                 </FormControl>
@@ -460,7 +403,6 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
                                 <FormControl>
                                   <Input
                                     type="date"
-                                    disabled={loading}
                                     {...field}
                                   />
                                 </FormControl>
@@ -477,7 +419,6 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
                                 <FormControl>
                                   <Input
                                     type="date"
-                                    disabled={loading}
                                     {...field}
                                   />
                                 </FormControl>
@@ -492,7 +433,6 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
                               <FormItem>
                                 <FormLabel>Job country</FormLabel>
                                 <Select
-                                  disabled={loading}
                                   onValueChange={field.onChange}
                                   value={field.value}
                                   defaultValue={field.value}
@@ -527,7 +467,6 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
                               <FormItem>
                                 <FormLabel>Job city</FormLabel>
                                 <Select
-                                  disabled={loading}
                                   onValueChange={field.onChange}
                                   value={field.value}
                                   defaultValue={field.value}
@@ -583,15 +522,11 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
               <div>
                 <h1>Completed</h1>
                 <pre className="whitespace-pre-wrap">
-                  {JSON.stringify(data)}
+                  {JSON.stringify(data, null, 2)}
                 </pre>
               </div>
             )}
           </div>
-
-          {/* <Button disabled={loading} className="ml-auto" type="submit">
-            {action}
-          </Button> */}
         </form>
       </Form>
       {/* Navigation */}

@@ -1,6 +1,12 @@
 import { NextAuthConfig } from 'next-auth';
 import CredentialProvider from 'next-auth/providers/credentials';
 import GithubProvider from 'next-auth/providers/github';
+import { NextApiRequest } from 'next';
+
+interface Credentials {
+  email: string;
+  password: string;
+}
 
 const authConfig = {
   providers: [
@@ -11,13 +17,15 @@ const authConfig = {
     CredentialProvider({
       credentials: {
         email: {
-          type: 'email'
+          label: "Email",
+          type: 'text',
         },
         password: {
-          type: 'password'
+          label: "Password",
+          type: 'password',
         }
       },
-      async authorize(credentials, req) {
+      async authorize(credentials: Credentials, req: NextApiRequest) {
         const user = {
           id: '1',
           name: 'John',

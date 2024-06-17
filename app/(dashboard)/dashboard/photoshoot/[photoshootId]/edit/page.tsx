@@ -1,9 +1,9 @@
 'use client';
 import BreadCrumb from '@/components/breadcrumb';
+import { PhotoShootForm } from '@/components/forms/photo-shoot-form';
 import { useParams } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { fetchPhotoShootById } from '@/app/api/photoShootApi';
-import PhotoShootView from '@/components/PhotoShootView';
 
 interface PhotoShoot {
   title: string;
@@ -63,7 +63,7 @@ export default function Page() {
   return (
     <div className="flex-1 space-y-4 p-8">
       <BreadCrumb items={breadcrumbItems} />
-      {initialData && <PhotoShootView initialData={initialData} />}
+      <PhotoShootForm initialData={initialData} />
     </div>
   );
 }

@@ -5,7 +5,6 @@ import { useDropzone } from 'react-dropzone';
 import { Trash } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from './ui/button';
-import { useToast } from './ui/use-toast';
 
 interface ImageUploadProps {
   onChange: (files: File[]) => void;
@@ -15,7 +14,7 @@ interface ImageUploadProps {
 }
 
 export default function FileUpload({ onChange, onRemove, value, multiple = false }: ImageUploadProps) {
-  const { toast } = useToast();
+  // const { toast } = useToast();
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -55,7 +54,7 @@ export default function FileUpload({ onChange, onRemove, value, multiple = false
         {isDragActive ? (
           <p>Drop the files here ...</p>
         ) : (
-          <p>Drag 'n' drop some files here, or click to select files</p>
+          <p>Drag and drop some files here, or click to select files</p>
         )}
       </div>
     </div>
