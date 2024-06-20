@@ -62,7 +62,7 @@ export function ColumnActions({
           ref={inputRef}
         />
       </form>
-      <DropdownMenu>
+      <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <Button variant="secondary" className="ml-1">
             <span className="sr-only">Actions</span>
