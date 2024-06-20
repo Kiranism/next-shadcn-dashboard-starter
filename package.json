@@ -7,7 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "format": "prettier . --write"
+    "format": "prettier . --write",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "**/*": [
+      "prettier --write --ignore-unknown"
+    ]
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",
@@ -68,6 +74,8 @@
   "devDependencies": {
     "@types/uuid": "^9.0.7",
     "@typescript-eslint/eslint-plugin": "^6.11.0",
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.7",
     "prettier": "3.0.3",
     "prettier-plugin-tailwindcss": "^0.5.14"
   }
