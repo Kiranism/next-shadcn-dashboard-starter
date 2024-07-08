@@ -1,3 +1,6 @@
+import { AreaGraph } from '@/components/charts/area-graph';
+import { BarGraph } from '@/components/charts/bar-graph';
+import { PieGraph } from '@/components/charts/pie-graph';
 import { CalendarDateRangePicker } from '@/components/date-range-picker';
 import { Overview } from '@/components/overview';
 import { RecentSales } from '@/components/recent-sales';
@@ -137,14 +140,9 @@ export default function page() {
               </Card>
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-7">
-              <Card className="col-span-4">
-                <CardHeader>
-                  <CardTitle>Overview</CardTitle>
-                </CardHeader>
-                <CardContent className="pl-2">
-                  <Overview />
-                </CardContent>
-              </Card>
+              <div className="col-span-4">
+                <BarGraph />
+              </div>
               <Card className="col-span-4 md:col-span-3">
                 <CardHeader>
                   <CardTitle>Recent Sales</CardTitle>
@@ -156,6 +154,12 @@ export default function page() {
                   <RecentSales />
                 </CardContent>
               </Card>
+              <div className="col-span-4">
+                <AreaGraph />
+              </div>
+              <div className="col-span-4 md:col-span-3">
+                <PieGraph />
+              </div>
             </div>
           </TabsContent>
         </Tabs>
