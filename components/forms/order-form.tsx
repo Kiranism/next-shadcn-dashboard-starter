@@ -48,7 +48,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
   shippingCompanies,
   agents
 }) => {
-  const params = useParams();
+  // const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);

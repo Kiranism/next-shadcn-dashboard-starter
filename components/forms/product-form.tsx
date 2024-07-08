@@ -37,7 +37,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
     stock_qty: initialData?.stock_qty || 0,
     vendor: initialData?.vendor || ''
   });
-  console.log('initialData ==>', initialData);
 
   const title = initialData ? 'Edit product' : 'Create product';
   const description = initialData ? 'Edit a product.' : 'Add a new product';

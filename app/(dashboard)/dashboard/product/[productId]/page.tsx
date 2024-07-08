@@ -22,7 +22,6 @@ export default function Page() {
           const product = await getProduct(Number(productId));
           setInitialProduct(product);
         } catch (error) {
-          console.error('Failed to fetch product:', error);
           // Handle error (e.g., show error message to user)
         } finally {
           setIsLoading(false);

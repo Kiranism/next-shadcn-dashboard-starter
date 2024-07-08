@@ -13,12 +13,9 @@ export default function Page() {
   const orderId = params.orderid as string;
   const [initialOrder, setInitialOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  console.log('orderId from params:', orderId);
 
   useEffect(() => {
     async function loadOrder() {
-      console.log('orderId from params:', orderId);
-
       if (orderId) {
         try {
           setIsLoading(true);
@@ -26,7 +23,6 @@ export default function Page() {
 
           setInitialOrder(order);
         } catch (error) {
-          console.error('Failed to fetch order:', error);
           // Handle error (e.g., show error message to user)
         } finally {
           setIsLoading(false);

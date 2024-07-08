@@ -54,7 +54,7 @@ export default async function page({ searchParams }: paramsProps) {
         <Separator />
 
         <ProductTable
-          searchKey="country"
+          searchKey="product"
           pageNo={page}
           columns={columns}
           totalUsers={totalProducts}

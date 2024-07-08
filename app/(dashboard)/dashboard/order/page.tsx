@@ -25,7 +25,7 @@ export default async function OrdersPage({ searchParams }: ParamsProps) {
   const offset = (page - 1) * pageLimit;
 
   const ordersList = await getOrders(offset, pageLimit, searchTerm);
-  const totalOrders = 156 || 0;
+  const totalOrders = 100 || 0; //TODO
   const pageCount = Math.ceil(totalOrders / pageLimit);
   const orders: Order[] = ordersList || [];
 
