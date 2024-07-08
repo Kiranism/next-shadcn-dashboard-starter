@@ -1,112 +1,74 @@
 'use client';
-import * as z from 'zod';
+
 import { useState } from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
 import { Trash } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
-} from '@/components/ui/form';
 import { Separator } from '@/components/ui/separator';
 import { Heading } from '@/components/ui/heading';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-// import FileUpload from "@/components/FileUpload";
 import { useToast } from '../ui/use-toast';
-import FileUpload from '../file-upload';
-const ImgSchema = z.object({
-  fileName: z.string(),
-  name: z.string(),
-  fileSize: z.number(),
-  size: z.number(),
-  fileKey: z.string(),
-  key: z.string(),
-  fileUrl: z.string(),
-  url: z.string()
-});
-export const IMG_MAX_LIMIT = 3;
-const formSchema = z.object({
-  name: z
-    .string()
-    .min(3, { message: 'Product Name must be at least 3 characters' }),
-  imgUrl: z
-    .array(ImgSchema)
-    .max(IMG_MAX_LIMIT, { message: 'You can only add up to 3 images' })
-    .min(1, { message: 'At least one image must be added.' }),
-  description: z
-    .string()
-    .min(3, { message: 'Product description must be at least 3 characters' }),
-  price: z.coerce.number(),
-  category: z.string().min(1, { message: 'Please select a category' })
-});
+import { getProduct, createProduct, updateProduct } from '../../data/products';
 
-type ProductFormValues = z.infer<typeof formSchema>;
-
-interface ProductFormProps {
-  initialData: any | null;
-  categories: any;
+export interface Product {
+  id: number;
+  name: string;
+  cogs: number;
+  selling_price: number;
+  stock_qty: number;
+  vendor: string;
 }
 
-export const ProductForm: React.FC<ProductFormProps> = ({
-  initialData,
-  categories
-}) => {
+interface ProductFormProps {
+  initialData: Product | null;
+}
+
+export const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [imgLoading, setImgLoading] = useState(false);
+  const [formData, setFormData] = useState<Product>({
+    id: initialData?.id || 0,
+    name: initialData?.name || '',
+    cogs: initialData?.cogs || 0,
+    selling_price: initialData?.selling_price || 0,
+    stock_qty: initialData?.stock_qty || 0,
+    vendor: initialData?.vendor || ''
+  });
+  console.log('initialData ==>', initialData);
+
   const title = initialData ? 'Edit product' : 'Create product';
   const description = initialData ? 'Edit a product.' : 'Add a new product';
   const toastMessage = initialData ? 'Product updated.' : 'Product created.';
   const action = initialData ? 'Save changes' : 'Create';
 
-  const defaultValues = initialData
-    ? initialData
-    : {
-        name: '',
-        description: '',
-        price: 0,
-        imgUrl: [],
-        category: ''
-      };
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: name === 'name' || name === 'vendor' ? value : parseFloat(value)
+    }));
+  };
 
-  const form = useForm<ProductFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues
-  });
-
-  const onSubmit = async (data: ProductFormValues) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     try {
       setLoading(true);
       if (initialData) {
-        // await axios.post(`/api/products/edit-product/${initialData._id}`, data);
+        // await axios.put(`/api/products/${initialData.id}`, );
+        await updateProduct(formData.id, formData);
       } else {
-        // const res = await axios.post(`/api/products/create-product`, data);
+        // const res = await axios.post(`/api/products`, formData);
+        await createProduct(formData);
         // console.log("product", res);
       }
       router.refresh();
       router.push(`/dashboard/products`);
       toast({
-        variant: 'destructive',
-        title: 'Uh oh! Something went wrong.',
-        description: 'There was a problem with your request.'
+        title: 'Success',
+        description: toastMessage
       });
     } catch (error: any) {
       toast({
@@ -122,26 +84,23 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   const onDelete = async () => {
     try {
       setLoading(true);
-      //   await axios.delete(`/api/${params.storeId}/products/${params.productId}`);
+      // await axios.delete(`/api/products/${initialData?.id}`);
       router.refresh();
-      router.push(`/${params.storeId}/products`);
+      router.push(`/dashboard/products`);
     } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Uh oh! Something went wrong.',
+        description: 'There was a problem with your request.'
+      });
     } finally {
       setLoading(false);
       setOpen(false);
     }
   };
 
-  const triggerImgUrlValidation = () => form.trigger('imgUrl');
-
   return (
     <>
-      {/* <AlertModal
-        isOpen={open}
-        onClose={() => setOpen(false)}
-        onConfirm={onDelete}
-        loading={loading}
-      /> */}
       <div className="flex items-center justify-between">
         <Heading title={title} description={description} />
         {initialData && (
@@ -156,115 +115,69 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         )}
       </div>
       <Separator />
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="w-full space-y-8"
-        >
-          <FormField
-            control={form.control}
-            name="imgUrl"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Images</FormLabel>
-                <FormControl>
-                  <FileUpload
-                    onChange={field.onChange}
-                    value={field.value}
-                    onRemove={field.onChange}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <div className="gap-8 md:grid md:grid-cols-3">
-            <FormField
-              control={form.control}
+      <form onSubmit={handleSubmit} className="w-full space-y-8">
+        <div className="gap-8 md:grid md:grid-cols-2">
+          <div>
+            <label htmlFor="name">Name</label>
+            <Input
+              id="name"
               name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input
-                      disabled={loading}
-                      placeholder="Product name"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Input
-                      disabled={loading}
-                      placeholder="Product description"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="price"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Price</FormLabel>
-                  <FormControl>
-                    <Input type="number" disabled={loading} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Category</FormLabel>
-                  <Select
-                    disabled={loading}
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue
-                          defaultValue={field.value}
-                          placeholder="Select a category"
-                        />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {/* @ts-ignore  */}
-                      {categories.map((category) => (
-                        <SelectItem key={category._id} value={category._id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
+              disabled={loading}
+              placeholder="Product name"
+              value={formData.name}
+              onChange={handleChange}
+              required
             />
           </div>
-          <Button disabled={loading} className="ml-auto" type="submit">
-            {action}
-          </Button>
-        </form>
-      </Form>
+          <div>
+            <label htmlFor="cogs">Cost of Goods Sold (COGS)</label>
+            <Input
+              id="cogs"
+              name="cogs"
+              type="number"
+              disabled={loading}
+              value={formData.cogs}
+              onChange={handleChange}
+            />
+          </div>
+          <div>
+            <label htmlFor="selling_price">Selling Price</label>
+            <Input
+              id="selling_price"
+              name="selling_price"
+              type="number"
+              disabled={loading}
+              value={formData.selling_price}
+              onChange={handleChange}
+            />
+          </div>
+          <div>
+            <label htmlFor="stock_qty">Stock Quantity</label>
+            <Input
+              id="stock_qty"
+              name="stock_qty"
+              type="number"
+              disabled={loading}
+              value={formData.stock_qty}
+              onChange={handleChange}
+            />
+          </div>
+          <div>
+            <label htmlFor="vendor">Vendor</label>
+            <Input
+              id="vendor"
+              name="vendor"
+              disabled={loading}
+              placeholder="Vendor name"
+              value={formData.vendor}
+              onChange={handleChange}
+            />
+          </div>
+        </div>
+        <Button disabled={loading} className="ml-auto" type="submit">
+          {action}
+        </Button>
+      </form>
     </>
   );
 };
