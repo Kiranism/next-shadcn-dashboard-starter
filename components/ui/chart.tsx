@@ -58,7 +58,8 @@ const ChartContainer = React.forwardRef<
         {...props}
       >
         <ChartStyle id={chartId} config={config} />
-        <RechartsPrimitive.ResponsiveContainer>
+        {/* Debounce the chart to avoid laggy behavior on window resize */}
+        <RechartsPrimitive.ResponsiveContainer debounce={2000}>
           {children}
         </RechartsPrimitive.ResponsiveContainer>
       </div>
