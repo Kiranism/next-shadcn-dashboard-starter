@@ -14,10 +14,12 @@ export default function DashboardLayout({
 }) {
   return (
     <>
-      <Header />
       <div className="flex h-screen overflow-hidden">
         <Sidebar />
-        <main className="flex-1 overflow-hidden pt-16">{children}</main>
+        <main className="relative flex-1 overflow-hidden pt-10">
+          <Header />
+          {children}
+        </main>
       </div>
     </>
   );
