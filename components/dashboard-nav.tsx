@@ -55,7 +55,7 @@ export function DashboardNav({
                       if (setOpen) setOpen(false);
                     }}
                   >
-                    <Icon className={`ml-3 size-5`} />
+                    <Icon className={`ml-3 size-5 flex-none`} />
 
                     {isMobileNav || (!isMinimized && !isMobileNav) ? (
                       <span className="mr-2 truncate">{item.title}</span>

@@ -1,5 +1,6 @@
 import Header from '@/components/layout/header';
 import Sidebar from '@/components/layout/sidebar';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -13,14 +14,12 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
-      <div className="flex h-screen overflow-hidden">
-        <Sidebar />
-        <main className="w-full flex-1 overflow-hidden">
-          <Header />
-          <div className="h-[calc(100vh-50px)]">{children}</div>
-        </main>
-      </div>
-    </>
+    <div className="flex">
+      <Sidebar />
+      <main className="w-full flex-1 overflow-hidden">
+        <Header />
+        {children}
+      </main>
+    </div>
   );
 }
