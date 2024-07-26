@@ -13,18 +13,15 @@ type SidebarProps = {
 
 export default function Sidebar({ className }: SidebarProps) {
   const { isMinimized, toggle } = useSidebar();
-  const [status, setStatus] = useState(false);
 
   const handleToggle = () => {
-    setStatus(true);
     toggle();
-    setTimeout(() => setStatus(false), 500);
   };
+
   return (
     <nav
       className={cn(
-        `relative  hidden h-screen flex-none border-r bg-card md:block`,
-        status && 'duration-500',
+        `relative  hidden h-screen flex-none border-r bg-card transition-[width] duration-500 md:block`,
         !isMinimized ? 'w-72' : 'w-[72px]',
         className
       )}
