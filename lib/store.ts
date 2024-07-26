@@ -28,6 +28,19 @@ export type State = {
   draggedTask: string | null;
 };
 
+const initialTasks: Task[] = [
+  {
+    id: 'task1',
+    status: 'TODO',
+    title: 'Project initiation and planning'
+  },
+  {
+    id: 'task2',
+    status: 'TODO',
+    title: 'Gather requirements from stakeholders'
+  }
+];
+
 export type Actions = {
   addTask: (title: string, description?: string) => void;
   addCol: (title: string) => void;
@@ -42,7 +55,7 @@ export type Actions = {
 export const useTaskStore = create<State & Actions>()(
   persist(
     (set) => ({
-      tasks: [],
+      tasks: initialTasks,
       columns: defaultCols,
       draggedTask: null,
       addTask: (title: string, description?: string) =>
@@ -60,7 +73,10 @@ export const useTaskStore = create<State & Actions>()(
         })),
       addCol: (title: string) =>
         set((state) => ({
-          columns: [...state.columns, { id: uuid(), title }]
+          columns: [
+            ...state.columns,
+            { title, id: state.columns.length ? title.toUpperCase() : 'TODO' }
+          ]
         })),
       dragTask: (id: string | null) => set({ draggedTask: id }),
       removeTask: (id: string) =>
