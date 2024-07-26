@@ -1,4 +1,5 @@
 import { Breadcrumbs } from '@/components/breadcrumbs';
+import PageContainer from '@/components/layout/page-container';
 import { columns } from '@/components/tables/employee-tables/columns';
 import { EmployeeTable } from '@/components/tables/employee-tables/employee-table';
 import { buttonVariants } from '@/components/ui/button';
@@ -35,8 +36,8 @@ export default async function page({ searchParams }: paramsProps) {
   const pageCount = Math.ceil(totalUsers / pageLimit);
   const employee: Employee[] = employeeRes.users;
   return (
-    <>
-      <div className="flex-1 space-y-4  p-4 pt-6 md:p-8">
+    <PageContainer>
+      <div className="space-y-4">
         <Breadcrumbs items={breadcrumbItems} />
 
         <div className="flex items-start justify-between">
@@ -63,6 +64,6 @@ export default async function page({ searchParams }: paramsProps) {
           pageCount={pageCount}
         />
       </div>
-    </>
+    </PageContainer>
   );
 }

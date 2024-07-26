@@ -19,7 +19,7 @@ export default function Sidebar({ className }: SidebarProps) {
   };
 
   return (
-    <nav
+    <aside
       className={cn(
         `relative  hidden h-screen flex-none border-r bg-card transition-[width] duration-500 md:block`,
         !isMinimized ? 'w-72' : 'w-[72px]',
@@ -59,6 +59,6 @@ export default function Sidebar({ className }: SidebarProps) {
           </div>
         </div>
       </div>
-    </nav>
+    </aside>
   );
 }
