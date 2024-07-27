@@ -1,5 +1,6 @@
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { ProductForm } from '@/components/forms/product-form';
+import PageContainer from '@/components/layout/page-container';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import React from 'react';
 
@@ -10,8 +11,8 @@ const breadcrumbItems = [
 ];
 export default function Page() {
   return (
-    <ScrollArea className="h-full">
-      <div className="flex-1 space-y-4 p-5">
+    <PageContainer scrollable={true}>
+      <div className="space-y-4">
         <Breadcrumbs items={breadcrumbItems} />
         <ProductForm
           categories={[
@@ -22,6 +23,6 @@ export default function Page() {
           key={null}
         />
       </div>
-    </ScrollArea>
+    </PageContainer>
   );
 }
