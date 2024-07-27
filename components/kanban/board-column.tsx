@@ -9,6 +9,7 @@ import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader } from '../ui/card';
 import { ColumnActions } from './column-action';
 import { TaskCard } from './task-card';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 export interface Column {
   id: UniqueIdentifier;
@@ -57,7 +58,7 @@ export function BoardColumn({ column, tasks, isOverlay }: BoardColumnProps) {
   };
 
   const variants = cva(
-    'h-[70vh] max-h-[70vh] w-[350px] max-w-full bg-secondary flex flex-col flex-shrink-0 snap-center',
+    'h-[75vh] max-h-[75vh] w-[350px] max-w-full bg-secondary flex flex-col flex-shrink-0 snap-center',
     {
       variants: {
         dragging: {
@@ -94,12 +95,14 @@ export function BoardColumn({ column, tasks, isOverlay }: BoardColumnProps) {
         /> */}
         <ColumnActions id={column.id} title={column.title} />
       </CardHeader>
-      <CardContent className="flex flex-grow flex-col gap-4 overflow-y-auto overflow-x-hidden p-2">
-        <SortableContext items={tasksIds}>
-          {tasks.map((task) => (
-            <TaskCard key={task.id} task={task} />
-          ))}
-        </SortableContext>
+      <CardContent className="flex flex-grow flex-col gap-4 overflow-x-hidden p-2">
+        <ScrollArea className="h-full">
+          <SortableContext items={tasksIds}>
+            {tasks.map((task) => (
+              <TaskCard key={task.id} task={task} />
+            ))}
+          </SortableContext>
+        </ScrollArea>
       </CardContent>
     </Card>
   );
@@ -108,27 +111,27 @@ export function BoardColumn({ column, tasks, isOverlay }: BoardColumnProps) {
 export function BoardContainer({ children }: { children: React.ReactNode }) {
   const dndContext = useDndContext();
 
-  const variations = cva(
-    'overflow-x-auto px-2  pb-4 md:px-0 flex lg:justify-start',
-    {
-      variants: {
-        dragging: {
-          default: '',
-          active: 'snap-none'
-        }
+  const variations = cva('px-2  pb-4 md:px-0 flex lg:justify-start', {
+    variants: {
+      dragging: {
+        default: '',
+        active: 'snap-none'
       }
     }
-  );
+  });
 
   return (
-    <div
-      className={variations({
-        dragging: dndContext.active ? 'active' : 'default'
-      })}
-    >
-      <div className="flex flex-row items-start justify-center gap-4">
-        {children}
+    <ScrollArea className="w-full whitespace-nowrap rounded-md">
+      <div
+        className={variations({
+          dragging: dndContext.active ? 'active' : 'default'
+        })}
+      >
+        <div className="flex flex-row items-start justify-center gap-4">
+          {children}
+        </div>
       </div>
-    </div>
+      <ScrollBar orientation="horizontal" />
+    </ScrollArea>
   );
 }

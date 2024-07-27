@@ -1,6 +1,6 @@
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { CreateProfileOne } from '@/components/forms/user-profile-stepper/create-profile';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import PageContainer from '@/components/layout/page-container';
 
 const breadcrumbItems = [
   { title: 'Dashboard', link: '/dashboard' },
@@ -8,11 +8,11 @@ const breadcrumbItems = [
 ];
 export default function page() {
   return (
-    <ScrollArea className="h-full">
-      <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
+    <PageContainer scrollable={true}>
+      <div className="space-y-4">
         <Breadcrumbs items={breadcrumbItems} />
         <CreateProfileOne categories={[]} initialData={null} />
       </div>
-    </ScrollArea>
+    </PageContainer>
   );
 }

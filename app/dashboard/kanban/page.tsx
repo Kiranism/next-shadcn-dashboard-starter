@@ -1,6 +1,7 @@
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { KanbanBoard } from '@/components/kanban/kanban-board';
 import NewTaskDialog from '@/components/kanban/new-task-dialog';
+import PageContainer from '@/components/layout/page-container';
 import { Heading } from '@/components/ui/heading';
 
 const breadcrumbItems = [
@@ -10,8 +11,8 @@ const breadcrumbItems = [
 
 export default function page() {
   return (
-    <>
-      <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
+    <PageContainer>
+      <div className="space-y-4">
         <Breadcrumbs items={breadcrumbItems} />
         <div className="flex items-start justify-between">
           <Heading title={`Kanban`} description="Manage tasks by dnd" />
@@ -19,6 +20,6 @@ export default function page() {
         </div>
         <KanbanBoard />
       </div>
-    </>
+    </PageContainer>
   );
 }
