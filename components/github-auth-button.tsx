@@ -5,7 +5,7 @@ import { signIn } from 'next-auth/react';
 import { Button } from './ui/button';
 import { Icons } from './icons';
 
-export default function GoogleSignInButton() {
+export default function GithubSignInButton() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl');
 
