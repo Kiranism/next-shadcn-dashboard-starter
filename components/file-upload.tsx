@@ -52,7 +52,7 @@ export default function FileUpload({
                   fill
                   className="object-cover"
                   alt="Image"
-                  src={item.fileUrl || ''}
+                  src={item.url || ''}
                 />
               </div>
             </div>
