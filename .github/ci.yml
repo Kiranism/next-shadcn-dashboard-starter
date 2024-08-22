@@ -92,6 +92,8 @@ jobs:
           strict: true
           variables: |
             image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.get_next_version.outputs.nextVersion }}
+            supabase_url=${{ secrets.SUPABASE_URL }}
+            supabase_anon_key=${{ secrets.SUPABASE_ANON_KEY }}
 
       - name: Copy docker compose to target server
         uses: appleboy/scp-action@v0.1.7
