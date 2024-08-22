@@ -11,20 +11,25 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { signOut, useSession } from 'next-auth/react';
-export function UserNav() {
-  const { data: session } = useSession();
+// import { signOut, useSession } from 'next-auth/react';
+import { createClient } from '@/utils/supabase/client';
+export async function UserNav() {
+  const supabase = createClient();
+  const { data: session } = await supabase.auth.getUser();
+
+  const signOut = () => {
+    const supabase = createClient();
+    supabase.auth.signOut();
+  };
+
   if (session) {
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-8 w-8 rounded-full">
             <Avatar className="h-8 w-8">
-              <AvatarImage
-                src={session.user?.image ?? ''}
-                alt={session.user?.name ?? ''}
-              />
-              <AvatarFallback>{session.user?.name?.[0]}</AvatarFallback>
+              <AvatarImage src={session.user?.email ?? ''} />
+              <AvatarFallback>{session.user?.email?.[0]}</AvatarFallback>
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
@@ -32,7 +37,7 @@ export function UserNav() {
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
               <p className="text-sm font-medium leading-none">
-                {session.user?.name}
+                {session.user?.email}
               </p>
               <p className="text-xs leading-none text-muted-foreground">
                 {session.user?.email}
