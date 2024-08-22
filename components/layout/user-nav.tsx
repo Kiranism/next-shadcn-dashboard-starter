@@ -13,8 +13,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useEffect, useState } from 'react';
 import { Session } from '@supabase/supabase-js';
+
 // import { signOut, useSession } from 'next-auth/react';
 import { createClient } from '@/utils/supabase/client';
+import Link from 'next/link';
+
 export function UserNav() {
   const [user_session, setUserSession] = useState<Session | null>(null);
   const supabase = createClient();
@@ -62,10 +65,12 @@ export function UserNav() {
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-            <DropdownMenuItem>
-              Profile
-              <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
-            </DropdownMenuItem>
+            <Link href="/dashboard/profile">
+              <DropdownMenuItem>
+                Profile
+                <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </Link>
             <DropdownMenuItem>
               Billing
               <DropdownMenuShortcut>⌘B</DropdownMenuShortcut>

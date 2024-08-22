@@ -38,24 +38,16 @@ interface ProfileFormType {
 }
 
 export const CreateProfileOne: React.FC<ProfileFormType> = ({
-  initialData,
-  categories
+  initialData
 }) => {
   const params = useParams();
   const router = useRouter();
-  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [imgLoading, setImgLoading] = useState(false);
-  const title = initialData ? 'Edit product' : 'Create Your Profile';
-  const description = initialData
-    ? 'Edit a product.'
-    : 'To create your resume, we first need some basic information about you.';
-  const toastMessage = initialData ? 'Product updated.' : 'Product created.';
-  const action = initialData ? 'Save changes' : 'Create';
+  const title = 'Edit Your information';
+  const description = '';
   const [previousStep, setPreviousStep] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
   const [data, setData] = useState({});
-  const delta = currentStep - previousStep;
 
   const defaultValues = {
     jobs: [
