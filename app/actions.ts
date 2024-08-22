@@ -25,7 +25,7 @@ export async function login(formData: LoginSignUpData) {
   if (error) {
     redirect('/not-found');
   }
-  console.log(data);
+
   revalidatePath('/dashboard', 'layout');
   redirect('/dashboard');
 }

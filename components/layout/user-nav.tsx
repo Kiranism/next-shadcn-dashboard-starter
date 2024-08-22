@@ -11,25 +11,41 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import { useEffect, useState } from 'react';
+import { Session } from '@supabase/supabase-js';
 // import { signOut, useSession } from 'next-auth/react';
 import { createClient } from '@/utils/supabase/client';
-export async function UserNav() {
+export function UserNav() {
+  const [user_session, setUserSession] = useState<Session | null>(null);
   const supabase = createClient();
-  const { data: session } = await supabase.auth.getUser();
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+
+      if (session) {
+        setUserSession(session);
+      }
+    };
+
+    fetchUser();
+  });
 
   const signOut = () => {
     const supabase = createClient();
     supabase.auth.signOut();
   };
 
-  if (session) {
+  if (user_session) {
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-8 w-8 rounded-full">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={session.user?.email ?? ''} />
-              <AvatarFallback>{session.user?.email?.[0]}</AvatarFallback>
+              <AvatarImage src={user_session.user?.email ?? ''} />
+              <AvatarFallback>{user_session.user?.email?.[0]}</AvatarFallback>
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
@@ -37,10 +53,10 @@ export async function UserNav() {
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
               <p className="text-sm font-medium leading-none">
-                {session.user?.email}
+                {user_session.user?.email}
               </p>
               <p className="text-xs leading-none text-muted-foreground">
-                {session.user?.email}
+                {user_session.user?.email}
               </p>
             </div>
           </DropdownMenuLabel>
