@@ -1,0 +1,122 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches:
+      - main
+      - chore/github-action
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  get_next_version:
+    runs-on: ubuntu-latest
+    name: Generate release version and tag
+    outputs:
+      nextVersion: ${{ steps.semver.outputs.nextVersion }}
+      oldVersion: ${{ steps.semver.outputs.oldVersion }}
+      prerelease: ${{ steps.semver.outputs.prerelease }}
+    steps:
+      - name: Magic Semver Action
+        id: semver
+        uses: mehdi-ra/semversion@v0.1.1
+        with:
+          addDate: 'true'
+
+  build-and-publish-image:
+    runs-on: ubuntu-latest
+    needs: get_next_version
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        with:
+          context: .
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.get_next_version.outputs.nextVersion }}
+          labels: ${{ steps.meta.outputs.labels }}
+          file: Dockerfile
+
+  create_github_release:
+    runs-on: ubuntu-latest
+    needs: [get_next_version, build-and-publish-image]
+    permissions:
+      contents: write
+    if: needs.get_next_version.outputs.oldVersion != needs.get_next_version.outputs.nextVersion
+    steps:
+      - uses: actions/checkout@v2
+      - uses: softprops/action-gh-release@v1
+        with:
+          name:
+          tag_name: '${{ needs.get_next_version.outputs.nextVersion }}'
+          generate_release_notes: true
+          prerelease: '${{ needs.get_next_version.outputs.prerelease }}'
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: [build-and-publish-image, get_next_version]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate docker compose with version
+        uses: cuchi/jinja2-action@v1.2.2
+        with:
+          template: .docker/docker-compose.yml.j2
+          output_file: docker-compose.yml
+          strict: true
+          variables: |
+            image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.get_next_version.outputs.nextVersion }}
+            supabase_url=${{ secrets.SUPABASE_URL }}
+            supabase_anon_key=${{ secrets.SUPABASE_ANON_KEY }}
+
+      - name: Copy docker compose to target server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USERNAME }}
+          port: ${{ secrets.SSH_PORT }}
+          overwrite: true
+          key: ${{ secrets.DEPLOY_KEY }}
+          source: './docker-compose.yml'
+          target: '/opt/${{ github.repository }}/'
+
+      - name: remote docker-compose up via ssh
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          APPTOKEN: ${{ secrets.DEPLOY_TOKEN }}
+          USERNAME: ${{ github.actor }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USERNAME }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          envs: APPTOKEN,USERNAME
+          script: |
+            echo $APPTOKEN | sudo docker login ghcr.io -u $USERNAME --password-stdin
+            sudo docker compose -f /opt/${{ github.repository }}/docker-compose.yml up -d

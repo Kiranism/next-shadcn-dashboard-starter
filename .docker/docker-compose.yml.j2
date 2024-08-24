@@ -1,0 +1,19 @@
+services:
+  tas-panel:
+    image: {{ image }}
+    build: .
+    ports:
+      - "3000"
+
+    restart: unless-stopped
+    networks:
+      - nginx-public
+    
+    environment:
+      - NEXT_PUBLIC_SUPABASE_URL="{{ supabase_url }}"
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY="{{ supabase_anon_key }}"
+
+networks:
+  nginx-public:
+    external: true
+
