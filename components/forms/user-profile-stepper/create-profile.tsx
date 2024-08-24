@@ -29,25 +29,45 @@ import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertTriangleIcon, Trash, Trash2Icon } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 
+import { createClient } from '@/utils/supabase/client';
+import { Session } from '@supabase/supabase-js';
+import { useState, useEffect } from 'react';
+
 interface ProfileFormType {
-  initialData: any | null;
   categories: any;
 }
 
-export const CreateProfileOne: React.FC<ProfileFormType> = ({
-  initialData
-}) => {
+export const CreateProfileOne: React.FC<ProfileFormType> = ({ categories }) => {
   const params = useParams();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
   const title = 'Edit Your information';
   const description = '';
   const [previousStep, setPreviousStep] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
   const [data, setData] = useState({});
+
+  const [user_session, setUserSession] = useState<Session | null>(null);
+  const supabase = createClient();
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+
+      if (session) {
+        setUserSession(session);
+      }
+    };
+
+    fetchUser();
+  });
+
+  const initialData = user_session?.user;
 
   const defaultValues = {
     jobs: [
@@ -81,7 +101,7 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
   const onSubmit = async (data: ProfileFormValues) => {
     try {
       setLoading(true);
-      if (initialData) {
+      if (user_session?.user) {
         // await axios.post(`/api/products/edit-product/${initialData._id}`, data);
       } else {
         // const res = await axios.post(`/api/products/create-product`, data);
@@ -109,7 +129,7 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
   };
 
   const processForm: SubmitHandler<ProfileFormValues> = (data) => {
-    console.log('data ==>', data);
+    // console.log('data ==>', data);
     setData(data);
     // api call and reset
     // form.reset();

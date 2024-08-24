@@ -1,0 +1,14 @@
+services:
+  tas-panel:
+    image: tas-panel:1.0.0
+    build: .
+    ports:
+      - '3100:3000'
+
+    restart: unless-stopped
+    networks:
+      - nginx-public
+
+networks:
+  nginx-public:
+    external: true

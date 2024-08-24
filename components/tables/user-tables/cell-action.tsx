@@ -16,7 +16,6 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
 
   const onConfirm = async () => {};
 
-  console.log(data);
   return (
     <>
       <AlertModal

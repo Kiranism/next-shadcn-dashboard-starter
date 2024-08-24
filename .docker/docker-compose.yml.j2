@@ -3,7 +3,7 @@ services:
     image: {{ image }}
     build: .
     ports:
-      - "3000"
+      - "3100:3000"
 
     restart: unless-stopped
     networks:
