@@ -38,7 +38,9 @@ export function UserNav() {
 
   const signOut = () => {
     const supabase = createClient();
-    supabase.auth.signOut();
+    supabase.auth.signOut().then(() => {
+      window.location.reload();
+    });
   };
 
   if (user_session) {
