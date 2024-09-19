@@ -1,6 +1,6 @@
 'use client';
 import { Button } from '@/components/ui/button';
-import { DataTable } from '@/components/ui/data-table';
+import { DataTable } from '@/components/ui/table/data-table';
 import { Heading } from '@/components/ui/heading';
 import { Separator } from '@/components/ui/separator';
 import { User } from '@/constants/data';
@@ -30,7 +30,7 @@ export const UserClient: React.FC<ProductsClientProps> = ({ data }) => {
         </Button>
       </div>
       <Separator />
-      <DataTable searchKey="name" columns={columns} data={data} />
+      <DataTable columns={columns} totalItems={data.length} data={data} />
     </>
   );
 };
