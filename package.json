@@ -74,6 +74,7 @@
     "tailwindcss-animate": "^1.0.7",
     "typescript": "5.2.2",
     "uploadthing": "^5.7.4",
+    "use-debounce": "^10.0.3",
     "uuid": "^9.0.1",
     "zod": "^3.22.4",
     "zustand": "^4.4.6"

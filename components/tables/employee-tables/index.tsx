@@ -1,16 +1,16 @@
 'use client';
 
-import { FilterBox } from '@/components/filter-box';
+import { useState, useCallback, useMemo } from 'react';
+import { useQueryState, parseAsString } from 'nuqs';
 import { DataTable } from '@/components/ui/table/data-table';
-import { parseAsString, useQueryState } from 'nuqs';
-import { useCallback, useMemo } from 'react';
-
-import { Button } from '@/components/ui/button';
+import { FilterBox } from '@/components/filter-box';
+import { searchParams } from '@/lib/searchparams';
+import { Employee, users } from '@/constants/data';
 import { DataTableSearch } from '@/components/ui/table/data-table-search';
-import { Employee } from '@/constants/data';
+import { Button } from '@/components/ui/button';
 import { columns } from '../employee-tables/columns';
 
-const statusOptions = [
+export const statusOptions = [
   { value: 'active', label: 'Active' },
   { value: 'inactive', label: 'Inactive' },
   { value: 'pending', label: 'Pending' }
@@ -22,7 +22,7 @@ const roleOptions = [
   { value: 'editor', label: 'Editor' }
 ];
 
-export default function ProductTable({
+export default function EmployeeTable({
   data,
   totalData
 }: {
@@ -31,7 +31,7 @@ export default function ProductTable({
 }) {
   const [searchQuery, setSearchQuery] = useQueryState(
     'q',
-    parseAsString.withDefault('')
+    searchParams.q.withDefault('')
   );
   const [statusFilter, setStatusFilter] = useQueryState(
     'status',

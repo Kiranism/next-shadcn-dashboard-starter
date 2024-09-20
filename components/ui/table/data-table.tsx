@@ -1,13 +1,12 @@
-import React from 'react';
+import { Button } from '@/components/ui/button';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  useReactTable,
-  PaginationState
-} from '@tanstack/react-table';
-import { useQueryState, parseAsInteger } from 'nuqs';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -16,21 +15,20 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
   DoubleArrowLeftIcon,
   DoubleArrowRightIcon
 } from '@radix-ui/react-icons';
+import {
+  ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getPaginationRowModel,
+  PaginationState,
+  useReactTable
+} from '@tanstack/react-table';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import { parseAsInteger, useQueryState } from 'nuqs';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -47,34 +45,46 @@ export function DataTable<TData, TValue>({
 }: DataTableProps<TData, TValue>) {
   const [currentPage, setCurrentPage] = useQueryState(
     'page',
-    parseAsInteger.withDefault(1)
+    parseAsInteger.withOptions({ shallow: false }).withDefault(1)
   );
   const [pageSize, setPageSize] = useQueryState(
-    'pageSize',
-    parseAsInteger.withDefault(10)
+    'limit',
+    parseAsInteger
+      .withOptions({ shallow: false, history: 'push' })
+      .withDefault(10)
   );
 
-  const [pagination, setPagination] = React.useState<PaginationState>({
-    pageIndex: currentPage - 1,
+  const paginationState = {
+    pageIndex: currentPage - 1, // zero-based index for React Table
     pageSize: pageSize
-  });
+  };
 
-  React.useEffect(() => {
-    setCurrentPage(pagination.pageIndex + 1);
+  const handlePaginationChange = (
+    updaterOrValue:
+      | PaginationState
+      | ((old: PaginationState) => PaginationState)
+  ) => {
+    const pagination =
+      typeof updaterOrValue === 'function'
+        ? updaterOrValue(paginationState)
+        : updaterOrValue;
+
+    setCurrentPage(pagination.pageIndex + 1); // converting zero-based index to one-based
     setPageSize(pagination.pageSize);
-  }, [pagination.pageIndex, pagination.pageSize, setCurrentPage, setPageSize]);
+  };
 
   const table = useReactTable({
     data,
     columns,
-    pageCount: Math.ceil(totalItems / pagination.pageSize),
+    pageCount: Math.ceil(totalItems / paginationState.pageSize),
     state: {
-      pagination
+      pagination: paginationState
     },
-    onPaginationChange: setPagination,
+    onPaginationChange: handlePaginationChange,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    manualPagination: true
+    manualPagination: true,
+    manualFiltering: true
   });
 
   return (
@@ -132,9 +142,10 @@ export function DataTable<TData, TValue>({
       <div className="flex flex-col items-center justify-end gap-2 space-x-2 py-4 sm:flex-row">
         <div className="flex w-full items-center justify-between">
           <div className="flex-1 text-sm text-muted-foreground">
-            Showing {pagination.pageIndex * pagination.pageSize + 1} to{' '}
+            Showing {paginationState.pageIndex * paginationState.pageSize + 1}{' '}
+            to{' '}
             {Math.min(
-              (pagination.pageIndex + 1) * pagination.pageSize,
+              (paginationState.pageIndex + 1) * paginationState.pageSize,
               totalItems
             )}{' '}
             of {totalItems} entries
@@ -145,13 +156,13 @@ export function DataTable<TData, TValue>({
                 Rows per page
               </p>
               <Select
-                value={`${pagination.pageSize}`}
+                value={`${paginationState.pageSize}`}
                 onValueChange={(value) => {
                   table.setPageSize(Number(value));
                 }}
               >
                 <SelectTrigger className="h-8 w-[70px]">
-                  <SelectValue placeholder={pagination.pageSize} />
+                  <SelectValue placeholder={paginationState.pageSize} />
                 </SelectTrigger>
                 <SelectContent side="top">
                   {pageSizeOptions.map((pageSize) => (
@@ -165,8 +176,8 @@ export function DataTable<TData, TValue>({
           </div>
         </div>
         <div className="flex w-full items-center justify-between gap-2 sm:justify-end">
-          <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-            Page {pagination.pageIndex + 1} of {table.getPageCount()}
+          <div className="flex w-[150px] items-center justify-center text-sm font-medium">
+            Page {paginationState.pageIndex + 1} of {table.getPageCount()}
           </div>
           <div className="flex items-center space-x-2">
             <Button
