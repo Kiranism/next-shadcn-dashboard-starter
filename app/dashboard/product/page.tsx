@@ -4,7 +4,7 @@ import ProductTable from '@/components/tables/product-tables';
 import { buttonVariants } from '@/components/ui/button';
 import { Heading } from '@/components/ui/heading';
 import { Separator } from '@/components/ui/separator';
-import { Employee, users } from '@/constants/data';
+import { Employee, Product, users } from '@/constants/data';
 import { searchParamsCache } from '@/lib/searchparams';
 import { cn } from '@/lib/utils';
 import { Plus } from 'lucide-react';
@@ -13,19 +13,24 @@ import type { SearchParams } from 'nuqs/server';
 
 const breadcrumbItems = [
   { title: 'Dashboard', link: '/dashboard' },
-  { title: 'Product', link: '/dashboard/product' }
+  { title: 'Products', link: '/dashboard/product' }
 ];
 
 type pageProps = {
   searchParams: SearchParams;
 };
 
-async function fetchData(page: number, pageLimit: number, search: string) {
+async function fetchProductData(
+  page: number,
+  pageLimit: number,
+  search: string
+) {
+  const offset = (page - 1) * pageLimit; // Calculate the offset
+  const searchQuery = search ? `&search=${search}` : ''; // If there's a search query
   const res = await fetch(
-    `https://api.slingacademy.com/v1/sample-data/users?offset=${
-      page - 1
-    }&limit=${pageLimit}` + (search ? `&search=${search}` : '')
+    `https://api.slingacademy.com/v1/sample-data/products?offset=${offset}&limit=${pageLimit}${searchQuery}`
   );
+
   return res.json();
 }
 
@@ -39,10 +44,9 @@ export default async function page({ searchParams }: pageProps) {
 
   console.log('filters', page, pageLimit, search);
 
-  const data = await fetchData(page, pageLimit, search);
-  const totalUsers = data.total_users; //1000
-  const pageCount = Math.ceil(totalUsers / pageLimit);
-  const employee: Employee[] = data.users;
+  const data = await fetchProductData(page, pageLimit, search);
+  const totalProducts = data.total_products;
+  const products: Product[] = data.products;
 
   return (
     <PageContainer>
@@ -50,8 +54,8 @@ export default async function page({ searchParams }: pageProps) {
         <Breadcrumbs items={breadcrumbItems} />
         <div className="flex items-start justify-between">
           <Heading
-            title={`Users (${totalUsers})`}
-            description="Manage users (Client side table functionalities.)"
+            title={`Products (${totalProducts})`}
+            description="Manage products (Server side table functionalities.)"
           />
           <Link
             href={'/'}
@@ -61,7 +65,7 @@ export default async function page({ searchParams }: pageProps) {
           </Link>
         </div>
         <Separator />
-        <ProductTable data={employee} totalData={totalUsers} />
+        <ProductTable data={products} totalData={totalProducts} />
       </div>
     </PageContainer>
   );

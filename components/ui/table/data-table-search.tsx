@@ -19,11 +19,18 @@ export function DataTableSearch({ searchKey }: DataTableSearchProps) {
       .withDefault('')
   );
 
+  const [, setPage] = useQueryState('page', searchParams.page.withDefault(1));
+
+  const handleSearch = (value: string) => {
+    setSearchQuery(value || null);
+    setPage(1); // Reset page to 1 when search changes
+  };
+
   return (
     <Input
       placeholder={`Search ${searchKey}...`}
       value={searchQuery ?? ''}
-      onChange={(e) => setSearchQuery(e.target.value || null)}
+      onChange={(e) => handleSearch(e.target.value)}
       className={cn('w-full md:max-w-sm', isLoading && 'animate-pulse')}
     />
   );
