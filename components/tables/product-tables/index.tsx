@@ -7,8 +7,8 @@ import { useCallback, useMemo } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { DataTableSearch } from '@/components/ui/table/data-table-search';
-import { Employee } from '@/constants/data';
-import { columns } from '../employee-tables/columns';
+import { Product } from '@/constants/data';
+import { columns } from './columns';
 
 const statusOptions = [
   { value: 'active', label: 'Active' },
@@ -26,7 +26,7 @@ export default function ProductTable({
   data,
   totalData
 }: {
-  data: Employee[];
+  data: Product[];
   totalData: number;
 }) {
   const [searchQuery, setSearchQuery] = useQueryState(
@@ -55,7 +55,7 @@ export default function ProductTable({
   return (
     <div className="space-y-4 ">
       <div className="flex flex-wrap items-center gap-4">
-        <DataTableSearch searchKey="name" />
+        <DataTableSearch searchKey="Products" />
         <FilterBox filterKey="status" title="Status" options={statusOptions} />
         <FilterBox filterKey="role" title="Role" options={roleOptions} />
         {isAnyFilterActive && (
