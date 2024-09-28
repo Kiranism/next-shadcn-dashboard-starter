@@ -38,7 +38,9 @@ interface FilterBoxProps {
 export function FilterBox({ filterKey, title, options }: FilterBoxProps) {
   const [selectedValues, setSelectedValues] = useQueryState(
     filterKey,
-    parseAsString.withDefault('').withOptions({ history: 'push' })
+    parseAsString
+      .withDefault('')
+      .withOptions({ history: 'push', shallow: false })
   );
 
   const selectedValuesSet = React.useMemo(() => {

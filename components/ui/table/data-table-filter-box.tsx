@@ -1,10 +1,5 @@
 'use client';
 
-import React from 'react';
-import { useQueryState, parseAsString } from 'nuqs';
-import { cn } from '@/lib/utils';
-import { PlusCircledIcon } from '@radix-ui/react-icons';
-import { CheckIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +17,11 @@ import {
   PopoverTrigger
 } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
+import { PlusCircledIcon } from '@radix-ui/react-icons';
+import { CheckIcon } from 'lucide-react';
+import { Options } from 'nuqs';
+import React from 'react';
 
 interface FilterOption {
   value: string;
@@ -33,19 +33,25 @@ interface FilterBoxProps {
   filterKey: string;
   title: string;
   options: FilterOption[];
+  setFilterValue: (
+    value: string | ((old: string) => string | null) | null,
+    options?: Options<any> | undefined
+  ) => Promise<URLSearchParams>;
+  filterValue: string;
 }
 
-export function FilterBox({ filterKey, title, options }: FilterBoxProps) {
-  const [selectedValues, setSelectedValues] = useQueryState(
-    filterKey,
-    parseAsString.withDefault('').withOptions({ history: 'push' })
-  );
-
+export function DataTableFilterBox({
+  filterKey,
+  title,
+  options,
+  setFilterValue,
+  filterValue
+}: FilterBoxProps) {
   const selectedValuesSet = React.useMemo(() => {
-    if (!selectedValues) return new Set<string>();
-    const values = selectedValues.split('.');
+    if (!filterValue) return new Set<string>();
+    const values = filterValue.split('.');
     return new Set(values.filter((value) => value !== ''));
-  }, [selectedValues]);
+  }, [filterValue]);
 
   const handleSelect = (value: string) => {
     const newSet = new Set(selectedValuesSet);
@@ -54,10 +60,10 @@ export function FilterBox({ filterKey, title, options }: FilterBoxProps) {
     } else {
       newSet.add(value);
     }
-    setSelectedValues(Array.from(newSet).join('.') || null);
+    setFilterValue(Array.from(newSet).join('.') || null);
   };
 
-  const resetFilter = () => setSelectedValues(null);
+  const resetFilter = () => setFilterValue(null);
 
   return (
     <Popover>

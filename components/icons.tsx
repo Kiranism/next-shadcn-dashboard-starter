@@ -28,6 +28,7 @@ import {
   Twitter,
   User,
   User2Icon,
+  UserCircle2Icon,
   UserX2Icon,
   X
 } from 'lucide-react';
@@ -49,6 +50,7 @@ export const Icons = {
   employee: UserX2Icon,
   post: FileText,
   page: File,
+  user2: UserCircle2Icon,
   media: Image,
   settings: Settings,
   billing: CreditCard,
