@@ -83,6 +83,8 @@
     "zustand": "^4.4.6"
   },
   "devDependencies": {
+    "@faker-js/faker": "^9.0.3",
+    "@types/sort-by": "^1.2.3",
     "@types/uuid": "^9.0.7",
     "@typescript-eslint/eslint-plugin": "^6.11.0",
     "husky": "^9.0.11",

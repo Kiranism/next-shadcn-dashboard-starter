@@ -2,27 +2,32 @@
 
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { parseAsString, useQueryState } from 'nuqs';
+import { Options } from 'nuqs';
 import { useTransition } from 'react';
-import { searchParams } from '@/lib/searchparams';
 
 interface DataTableSearchProps {
   searchKey: string;
+  searchQuery: string;
+  setSearchQuery: (
+    value: string | ((old: string) => string | null) | null,
+    options?: Options<any> | undefined
+  ) => Promise<URLSearchParams>;
+  setPage: <Shallow>(
+    value: number | ((old: number) => number | null) | null,
+    options?: Options<Shallow> | undefined
+  ) => Promise<URLSearchParams>;
 }
 
-export function DataTableSearch({ searchKey }: DataTableSearchProps) {
+export function DataTableSearch({
+  searchKey,
+  searchQuery,
+  setSearchQuery,
+  setPage
+}: DataTableSearchProps) {
   const [isLoading, startTransition] = useTransition();
-  const [searchQuery, setSearchQuery] = useQueryState(
-    'q',
-    searchParams.q
-      .withOptions({ shallow: false, startTransition, throttleMs: 1000 })
-      .withDefault('')
-  );
-
-  const [, setPage] = useQueryState('page', searchParams.page.withDefault(1));
 
   const handleSearch = (value: string) => {
-    setSearchQuery(value || null);
+    setSearchQuery(value, { startTransition });
     setPage(1); // Reset page to 1 when search changes
   };
 

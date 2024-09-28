@@ -1,4 +1,3 @@
-import { statusOptions } from '@/components/tables/employee-tables';
 import {
   createSearchParamsCache,
   createSerializer,
@@ -6,12 +5,12 @@ import {
   parseAsString
 } from 'nuqs/server';
 
-export type StatusOptions = (typeof statusOptions)[number];
-
 export const searchParams = {
   page: parseAsInteger.withDefault(1),
   limit: parseAsInteger.withDefault(10),
-  q: parseAsString.withDefault('')
+  q: parseAsString,
+  gender: parseAsString,
+  categories: parseAsString
 };
 
 export const searchParamsCache = createSearchParamsCache(searchParams);
