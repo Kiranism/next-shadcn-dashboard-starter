@@ -4,7 +4,7 @@ import ProductTable from '@/components/tables/product-tables';
 import { buttonVariants } from '@/components/ui/button';
 import { Heading } from '@/components/ui/heading';
 import { Separator } from '@/components/ui/separator';
-import { Employee, Product, users } from '@/constants/data';
+import { Product } from '@/constants/data';
 import { fakeProducts } from '@/constants/mock-api';
 import { searchParamsCache } from '@/lib/searchparams';
 import { cn } from '@/lib/utils';
@@ -29,8 +29,6 @@ export default async function page({ searchParams }: pageProps) {
   const search = searchParamsCache.get('q');
   const pageLimit = searchParamsCache.get('limit');
   const categories = searchParamsCache.get('categories');
-
-  console.log('filters', page, pageLimit, search);
 
   const filters = {
     page,
