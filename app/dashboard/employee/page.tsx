@@ -30,8 +30,6 @@ export default async function Page({ searchParams }: pageProps) {
   const gender = searchParamsCache.get('gender');
   const pageLimit = searchParamsCache.get('limit');
 
-  console.log('filters', page, pageLimit, search, gender);
-
   const filters = {
     page,
     limit: pageLimit,
@@ -41,9 +39,6 @@ export default async function Page({ searchParams }: pageProps) {
 
   // mock api call
   const data = await fakeUsers.getUsers(filters);
-
-  console.log('response', data);
-
   const totalUsers = data.total_users;
   const employee: Employee[] = data.users;
 
