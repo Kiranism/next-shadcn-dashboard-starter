@@ -22,7 +22,6 @@ This is a starter template using the following stack:
 - Schema Validations - [Zod](https://zod.dev)
 - State Management - [Zustand](https://zustand-demo.pmnd.rs)
 - Auth - [Auth.js](https://authjs.dev/)
-- File Uploading - [Uploadthing](https://uploadthing.com)
 - Tables - [Tanstack Tables](https://ui.shadcn.com/docs/components/data-table)
 - Forms - [React Hook Form](https://ui.shadcn.com/docs/components/form)
 - Linting - [ESLint](https://eslint.org)
