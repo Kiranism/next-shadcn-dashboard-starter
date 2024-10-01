@@ -1,18 +1,14 @@
-import { Breadcrumbs } from '@/components/breadcrumbs';
-import { CreateProfileOne } from '@/components/forms/user-profile-stepper/create-profile';
-import PageContainer from '@/components/layout/page-container';
+import { ProfileViewPage } from '@/sections/profile/view';
+import { SearchParams } from 'nuqs/parsers';
 
-const breadcrumbItems = [
-  { title: 'Dashboard', link: '/dashboard' },
-  { title: 'Profile', link: '/dashboard/profile' }
-];
-export default function page() {
-  return (
-    <PageContainer scrollable={true}>
-      <div className="space-y-4">
-        <Breadcrumbs items={breadcrumbItems} />
-        <CreateProfileOne categories={[]} initialData={null} />
-      </div>
-    </PageContainer>
-  );
+type pageProps = {
+  searchParams: SearchParams;
+};
+
+export const metadata = {
+  title: 'Dashboard : Profile'
+};
+
+export default async function Page({ searchParams }: pageProps) {
+  return <ProfileViewPage />;
 }

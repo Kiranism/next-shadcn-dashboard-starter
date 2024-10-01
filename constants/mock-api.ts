@@ -72,8 +72,8 @@ export const fakeUsers = {
 
       return {
         id,
-        first_name: faker.name.firstName(),
-        last_name: faker.name.lastName(),
+        first_name: faker.person.firstName(),
+        last_name: faker.person.lastName(),
         email: `${faker.internet.email()}`,
         phone: `001-${Math.floor(Math.random() * 900) + 100}-${
           Math.floor(Math.random() * 900) + 100

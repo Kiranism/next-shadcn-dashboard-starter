@@ -5,7 +5,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cva } from 'class-variance-authority';
 import { GripVertical } from 'lucide-react';
-import { Badge } from '../ui/badge';
+import { Badge } from '@/components/ui/badge';
 
 // export interface Task {
 //   id: UniqueIdentifier;
