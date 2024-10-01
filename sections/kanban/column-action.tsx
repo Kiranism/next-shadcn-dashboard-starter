@@ -22,7 +22,7 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { useTaskStore } from '@/lib/store';
 import { UniqueIdentifier } from '@dnd-kit/core';
-import { Input } from '../ui/input';
+import { Input } from '@/components/ui/input';
 
 export function ColumnActions({
   title,

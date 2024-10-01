@@ -1,7 +1,6 @@
 'use client';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-
 import { Task, useTaskStore } from '@/lib/store';
 import { hasDraggableData } from '@/lib/utils';
 import {
@@ -45,7 +44,9 @@ export function KanbanBoard() {
   // const [columns, setColumns] = useState<Column[]>(defaultCols);
   const columns = useTaskStore((state) => state.columns);
   const setColumns = useTaskStore((state) => state.setCols);
-  const pickedUpTaskColumn = useRef<ColumnId | null>(null);
+  const pickedUpTaskColumn = useRef<ColumnId | 'TODO' | 'IN_PROGRESS' | 'DONE'>(
+    'TODO'
+  );
   const columnsId = useMemo(() => columns.map((col) => col.id), [columns]);
 
   // const [tasks, setTasks] = useState<Task[]>(initialTasks);
@@ -137,7 +138,7 @@ export function KanbanBoard() {
     },
     onDragEnd({ active, over }) {
       if (!hasDraggableData(active) || !hasDraggableData(over)) {
-        pickedUpTaskColumn.current = null;
+        pickedUpTaskColumn.current = 'TODO';
         return;
       }
       if (
@@ -168,10 +169,10 @@ export function KanbanBoard() {
           tasksInColumn.length
         } in column ${column?.title}`;
       }
-      pickedUpTaskColumn.current = null;
+      pickedUpTaskColumn.current = 'TODO';
     },
     onDragCancel({ active }) {
-      pickedUpTaskColumn.current = null;
+      pickedUpTaskColumn.current = 'TODO';
       if (!hasDraggableData(active)) return;
       return `Dragging ${active.data.current?.type} cancelled.`;
     }
