@@ -1,7 +1,5 @@
 import { Breadcrumbs } from '@/components/breadcrumbs';
-import { ProductForm } from '@/components/forms/product-form';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import React from 'react';
 import EmployeeForm from '../employee-form';
 
 const breadcrumbItems = [
