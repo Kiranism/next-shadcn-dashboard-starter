@@ -27,8 +27,8 @@ import {
   Trash,
   Twitter,
   User,
-  User2Icon,
   UserCircle2Icon,
+  UserPen,
   UserX2Icon,
   X
 } from 'lucide-react';
@@ -41,7 +41,6 @@ export const Icons = {
   login: LogIn,
   close: X,
   product: LucideShoppingBag,
-  profile: User2Icon,
   spinner: Loader2,
   kanban: CircuitBoardIcon,
   chevronLeft: ChevronLeft,
@@ -50,6 +49,7 @@ export const Icons = {
   employee: UserX2Icon,
   post: FileText,
   page: File,
+  userPen: UserPen,
   user2: UserCircle2Icon,
   media: Image,
   settings: Settings,

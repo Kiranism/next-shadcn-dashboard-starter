@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { signIn } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import GithubSignInButton from '../github-auth-button';
@@ -26,7 +26,7 @@ type UserFormValue = z.infer<typeof formSchema>;
 export default function UserAuthForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl');
-  const [loading, setLoading] = useState(false);
+  const [loading, startTransition] = useTransition();
   const defaultValues = {
     email: 'demo@gmail.com'
   };
@@ -36,9 +36,11 @@ export default function UserAuthForm() {
   });
 
   const onSubmit = async (data: UserFormValue) => {
-    signIn('credentials', {
-      email: data.email,
-      callbackUrl: callbackUrl ?? '/dashboard'
+    startTransition(() => {
+      signIn('credentials', {
+        email: data.email,
+        callbackUrl: callbackUrl ?? '/dashboard'
+      });
     });
   };
 

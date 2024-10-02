@@ -1,13 +1,12 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-
 import { Icons } from '@/components/icons';
+import { useSidebar } from '@/hooks/useSidebar';
 import { cn } from '@/lib/utils';
 import { NavItem } from '@/types';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Dispatch, SetStateAction } from 'react';
-import { useSidebar } from '@/hooks/useSidebar';
 import {
   Tooltip,
   TooltipContent,
@@ -37,7 +36,7 @@ export function DashboardNav({
     <nav className="grid items-start gap-2">
       <TooltipProvider>
         {items.map((item, index) => {
-          const Icon = Icons[item.icon || 'arrowRight'];
+          const Icon = item.icon ? Icons[item.icon] : Icons.logo;
           return (
             item.href && (
               <Tooltip key={index}>

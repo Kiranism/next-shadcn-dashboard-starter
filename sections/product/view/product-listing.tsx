@@ -1,6 +1,6 @@
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import PageContainer from '@/components/layout/page-container';
-import ProductTable from '@/components/tables/product-tables';
+import ProductTable from '../product-tables';
 import { buttonVariants } from '@/components/ui/button';
 import { Heading } from '@/components/ui/heading';
 import { Separator } from '@/components/ui/separator';
