@@ -1,5 +1,5 @@
 import { Breadcrumbs } from '@/components/breadcrumbs';
-import { CreateProfileOne } from '@/components/forms/user-profile-stepper/create-profile';
+import ProfileCreateForm from '../profile-create-form';
 import PageContainer from '@/components/layout/page-container';
 
 const breadcrumbItems = [
@@ -11,7 +11,7 @@ export default function ProfileViewPage() {
     <PageContainer scrollable={true}>
       <div className="space-y-4">
         <Breadcrumbs items={breadcrumbItems} />
-        <CreateProfileOne categories={[]} initialData={null} />
+        <ProfileCreateForm categories={[]} initialData={null} />
       </div>
     </PageContainer>
   );
