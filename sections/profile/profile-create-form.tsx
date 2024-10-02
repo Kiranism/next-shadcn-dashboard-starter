@@ -36,8 +36,7 @@ interface ProfileFormType {
   initialData: any | null;
   categories: any;
 }
-
-export const CreateProfileOne: React.FC<ProfileFormType> = ({
+const ProfileCreateForm: React.FC<ProfileFormType> = ({
   initialData,
   categories
 }) => {
@@ -644,3 +643,5 @@ export const CreateProfileOne: React.FC<ProfileFormType> = ({
     </>
   );
 };
+
+export default ProfileCreateForm;
