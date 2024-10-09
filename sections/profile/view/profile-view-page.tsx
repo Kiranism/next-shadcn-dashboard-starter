@@ -8,7 +8,7 @@ const breadcrumbItems = [
 ];
 export default function ProfileViewPage() {
   return (
-    <PageContainer scrollable>
+    <PageContainer>
       <div className="space-y-4">
         <Breadcrumbs items={breadcrumbItems} />
         <ProfileCreateForm categories={[]} initialData={null} />
