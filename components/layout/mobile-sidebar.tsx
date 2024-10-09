@@ -16,7 +16,7 @@ export function MobileSidebar({ className }: SidebarProps) {
   return (
     <>
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild>
+        <SheetTrigger asChild className="focus:outline-none">
           <MenuIcon />
         </SheetTrigger>
         <SheetContent side="left" className="!px-0">
