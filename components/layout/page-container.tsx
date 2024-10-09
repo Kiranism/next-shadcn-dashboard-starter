@@ -3,7 +3,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function PageContainer({
   children,
-  scrollable = false
+  scrollable = true
 }: {
   children: React.ReactNode;
   scrollable?: boolean;
