@@ -149,20 +149,24 @@ export function DashboardNav({
           <DropdownMenu key={item.title}>
             <DropdownMenuTrigger>{content}</DropdownMenuTrigger>
             <DropdownMenuContent
-              className="w-48"
+              className="w-48 space-y-1"
               align="start"
               side="right"
-              sideOffset={25}
+              sideOffset={20}
             >
               <DropdownMenuLabel>{item.title}</DropdownMenuLabel>
               {item.children &&
                 item.children.map((child) => (
-                  <DropdownMenuItem
-                    key={child.title}
-                    onClick={handleSetOpen}
-                    className="cursor-pointer"
-                  >
-                    {child.title}
+                  <DropdownMenuItem key={child.title} asChild>
+                    {child.href && (
+                      <Link
+                        href={child.href}
+                        onClick={handleSetOpen}
+                        className="cursor-pointer"
+                      >
+                        {child.title}
+                      </Link>
+                    )}
                   </DropdownMenuItem>
                 ))}
             </DropdownMenuContent>
