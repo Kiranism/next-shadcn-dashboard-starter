@@ -129,36 +129,16 @@ export const navItems: NavItem[] = [
     label: 'Dashboard'
   },
   {
-    title: 'Management',
+    title: 'Employee',
+    href: '/dashboard/employee',
     icon: 'user',
-    label: 'management',
-    children: [
-      {
-        title: 'Employee',
-        href: '/dashboard/employee',
-        icon: 'user',
-        label: 'employee'
-      },
-      {
-        title: 'Product',
-        href: '/dashboard/product',
-        icon: 'product',
-        label: 'product'
-      }
-    ]
+    label: 'employee'
   },
   {
-    title: 'Tools',
-    icon: 'user',
-    label: 'tools',
-    children: [
-      {
-        title: 'Kanban',
-        href: '/dashboard/kanban',
-        icon: 'kanban',
-        label: 'kanban'
-      }
-    ]
+    title: 'Product',
+    href: '/dashboard/product',
+    icon: 'product',
+    label: 'product'
   },
   {
     title: 'Account',
@@ -178,5 +158,11 @@ export const navItems: NavItem[] = [
         label: 'login'
       }
     ]
+  },
+  {
+    title: 'Kanban',
+    href: '/dashboard/kanban',
+    icon: 'kanban',
+    label: 'kanban'
   }
 ];

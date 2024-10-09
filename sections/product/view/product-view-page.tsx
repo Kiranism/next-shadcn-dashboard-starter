@@ -12,7 +12,7 @@ const breadcrumbItems = [
 
 export default function ProductViewPage() {
   return (
-    <PageContainer>
+    <PageContainer scrollable>
       <div className="flex-1 space-y-4">
         <Breadcrumbs items={breadcrumbItems} />
         <ProductForm />

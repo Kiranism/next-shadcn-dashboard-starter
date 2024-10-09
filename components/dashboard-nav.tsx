@@ -1,26 +1,27 @@
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Icons } from '@/components/icons';
-import { useSidebar } from '@/hooks/useSidebar';
 import { useBreakpoint } from '@/hooks/useBreakPoints';
+import { useSidebar } from '@/hooks/useSidebar';
 import { cn } from '@/lib/utils';
 import { NavItem } from '@/types';
+import { ChevronRight } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import React, { useCallback, useMemo, useState } from 'react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger
+} from './ui/dropdown-menu';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger
 } from './ui/tooltip';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from './ui/dropdown-menu';
 
 interface DashboardNavProps {
   items: NavItem[];
@@ -153,9 +154,14 @@ export function DashboardNav({
               side="right"
               sideOffset={25}
             >
+              <DropdownMenuLabel>{item.title}</DropdownMenuLabel>
               {item.children &&
                 item.children.map((child) => (
-                  <DropdownMenuItem key={child.title} onClick={handleSetOpen}>
+                  <DropdownMenuItem
+                    key={child.title}
+                    onClick={handleSetOpen}
+                    className="cursor-pointer"
+                  >
                     {child.title}
                   </DropdownMenuItem>
                 ))}
@@ -176,7 +182,7 @@ export function DashboardNav({
             </NavItemButton>
           )}
           {hasChildren && !isMinimized && isExpanded && (
-            <div className="ml-4 mt-1">
+            <div className="ml-4 mt-1 space-y-1">
               {item.children &&
                 item.children.map((child) => renderNavItem(child, depth + 1))}
             </div>

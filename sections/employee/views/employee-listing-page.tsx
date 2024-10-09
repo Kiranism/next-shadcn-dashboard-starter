@@ -38,7 +38,7 @@ export default async function EmployeeListingPage({}: TEmployeeListingPage) {
   const employee: Employee[] = data.users;
 
   return (
-    <PageContainer>
+    <PageContainer scrollable>
       <div className="space-y-4">
         <Breadcrumbs items={breadcrumbItems} />
 
