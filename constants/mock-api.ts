@@ -10,6 +10,8 @@ import { faker } from '@faker-js/faker';
 
 type Gender = 'male' | 'female';
 
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export type User = {
   id: number;
   first_name: string;
@@ -275,6 +277,7 @@ export const fakeProducts = {
     categories?: string;
     search?: string;
   }) {
+    await delay(5000);
     const categoriesArray = categories ? categories.split('.') : [];
     const allProducts = await this.getAll({
       categories: categoriesArray,
