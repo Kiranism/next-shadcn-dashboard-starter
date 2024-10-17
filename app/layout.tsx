@@ -1,6 +1,6 @@
 import { auth } from '@/auth';
 import Providers from '@/components/layout/providers';
-import { Toaster } from '@/components/ui/toaster';
+import { Toaster } from '@/components/ui/sonner';
 import { GeistMono } from 'geist/font/mono';
 import { GeistSans } from 'geist/font/sans';
 import type { Metadata } from 'next';
