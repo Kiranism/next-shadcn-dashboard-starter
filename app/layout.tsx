@@ -2,6 +2,8 @@ import Providers from '@/components/layout/providers';
 import { Toaster } from '@/components/ui/toaster';
 import type { Metadata } from 'next';
 import NextTopLoader from 'nextjs-toploader';
+import { GeistSans } from 'geist/font/sans';
+import { GeistMono } from 'geist/font/mono';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { auth } from '@/auth';
@@ -20,11 +22,11 @@ export default async function RootLayout({
 }) {
   const session = await auth();
   return (
-    <html lang="en">
-      <body
-        className={`${inter.className} overflow-hidden `}
-        suppressHydrationWarning={true}
-      >
+    <html
+      lang="en"
+      className={`${GeistSans.variable} ${GeistMono.variable} ${GeistSans.className}`}
+    >
+      <body className={'overflow-hidden'} suppressHydrationWarning={true}>
         <NextTopLoader showSpinner={false} />
         <Providers session={session}>
           <Toaster />
