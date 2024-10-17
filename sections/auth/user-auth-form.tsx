@@ -12,8 +12,9 @@ import { Input } from '@/components/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { signIn } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { useTransition } from 'react';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import * as z from 'zod';
 import GithubSignInButton from './github-auth-button';
 
@@ -41,6 +42,7 @@ export default function UserAuthForm() {
         email: data.email,
         callbackUrl: callbackUrl ?? '/dashboard'
       });
+      toast.success('Signed In Successfully!');
     });
   };
 
