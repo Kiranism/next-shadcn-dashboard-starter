@@ -1,7 +1,8 @@
 import { Product } from '@/constants/data';
 import { fakeProducts } from '@/constants/mock-api';
 import { searchParamsCache } from '@/lib/searchparams';
-import ProductTable from '../product-tables';
+import { columns } from '../product-tables/columns';
+import { DataTable as ProductTable } from '@/components/ui/table/data-table';
 
 type ProductListingPage = {};
 
@@ -23,5 +24,11 @@ export default async function ProductListingPage({}: ProductListingPage) {
   const totalProducts = data.total_products;
   const products: Product[] = data.products;
 
-  return <ProductTable data={products} totalData={totalProducts} />;
+  return (
+    <ProductTable
+      columns={columns}
+      data={products}
+      totalItems={totalProducts}
+    />
+  );
 }

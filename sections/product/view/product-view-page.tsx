@@ -1,22 +1,20 @@
-import { Breadcrumbs } from '@/components/breadcrumbs';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import React from 'react';
+import { fakeProducts, Product } from '@/constants/mock-api';
 import ProductForm from '../product-form';
-import PageContainer from '@/components/layout/page-container';
+import { notFound } from 'next/navigation';
 
-const breadcrumbItems = [
-  { title: 'Dashboard', link: '/dashboard' },
-  { title: 'Product', link: '/dashboard/product' },
-  { title: 'Create', link: '/dashboard/product/create' }
-];
+type TProductViewPageProps = {
+  productId: string;
+};
 
-export default function ProductViewPage() {
-  return (
-    <PageContainer scrollable>
-      <div className="flex-1 space-y-4">
-        <Breadcrumbs items={breadcrumbItems} />
-        <ProductForm />
-      </div>
-    </PageContainer>
-  );
+export default async function ProductViewPage({
+  productId
+}: TProductViewPageProps) {
+  const data = await fakeProducts.getProductById(Number(productId));
+  const product = data.product as Product;
+
+  if (!product) {
+    return notFound();
+  }
+
+  return <ProductForm initialData={product} />;
 }
