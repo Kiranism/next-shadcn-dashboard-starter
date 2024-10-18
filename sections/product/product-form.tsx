@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { FileUploader } from '@/components/file-uploader';
+import { Product } from '@/constants/mock-api';
 
 const MAX_FILE_SIZE = 5000000;
 const ACCEPTED_IMAGE_TYPES = [
@@ -49,26 +50,24 @@ const formSchema = z.object({
   name: z.string().min(2, {
     message: 'Product name must be at least 2 characters.'
   }),
-  category: z.array(z.string()).refine((value) => value.some((item) => item), {
-    message: 'You have to select at least one category.'
-  }),
-  price: z.string().refine((value) => !isNaN(parseFloat(value)), {
-    message: 'Price must be a valid number.'
-  }),
+  category: z.string(),
+  price: z.number(),
   description: z.string().min(10, {
     message: 'Description must be at least 10 characters.'
   })
 });
 
-export default function ProductForm() {
+export default function ProductForm({ initialData }: { initialData: Product }) {
+  const defaultValues = {
+    name: initialData?.name || '',
+    category: initialData?.category || '',
+    price: initialData?.price || 0,
+    description: initialData?.description || ''
+  };
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: '',
-      category: [],
-      price: '',
-      description: ''
-    }
+    values: defaultValues
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
@@ -132,9 +131,7 @@ export default function ProductForm() {
                   <FormItem>
                     <FormLabel>Category</FormLabel>
                     <Select
-                      onValueChange={(value) =>
-                        field.onChange([...field.value, value])
-                      }
+                      onValueChange={(value) => field.onChange(value)}
                       value={field.value[field.value.length - 1]}
                     >
                       <FormControl>
@@ -152,9 +149,6 @@ export default function ProductForm() {
                         </SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormDescription>
-                      Selected categories: {field.value.join(', ')}
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

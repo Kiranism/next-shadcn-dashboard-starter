@@ -302,6 +302,31 @@ export const fakeProducts = {
       limit,
       products: paginatedProducts
     };
+  },
+
+  // Get a specific product by its ID
+  async getProductById(id: number) {
+    await delay(2000); // Simulate a delay
+
+    // Find the product by its ID
+    const product = this.records.find((product) => product.id === id);
+
+    if (!product) {
+      return {
+        success: false,
+        message: `Product with ID ${id} not found`
+      };
+    }
+
+    // Mock current time
+    const currentTime = new Date().toISOString();
+
+    return {
+      success: true,
+      time: currentTime,
+      message: `Product with ID ${id} found`,
+      product
+    };
   }
 };
 
