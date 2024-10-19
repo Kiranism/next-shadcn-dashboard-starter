@@ -2,9 +2,8 @@
 // 🛑 Nothing in here has anything to do with Nextjs, it's just a fake database
 ////////////////////////////////////////////////////////////////////////////////
 
-import { matchSorter } from 'match-sorter'; // For filtering
-import sortBy from 'sort-by'; // For sorting
 import { faker } from '@faker-js/faker';
+import { matchSorter } from 'match-sorter'; // For filtering
 
 // Define the shape of User data
 
@@ -277,7 +276,7 @@ export const fakeProducts = {
     categories?: string;
     search?: string;
   }) {
-    await delay(5000);
+    await delay(1000);
     const categoriesArray = categories ? categories.split('.') : [];
     const allProducts = await this.getAll({
       categories: categoriesArray,
@@ -306,7 +305,7 @@ export const fakeProducts = {
 
   // Get a specific product by its ID
   async getProductById(id: number) {
-    await delay(2000); // Simulate a delay
+    await delay(1000); // Simulate a delay
 
     // Find the product by its ID
     const product = this.records.find((product) => product.id === id);
