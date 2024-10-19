@@ -1,4 +1,3 @@
-import { Breadcrumbs } from '@/components/breadcrumbs';
 import PageContainer from '@/components/layout/page-container';
 import { buttonVariants } from '@/components/ui/button';
 import { Heading } from '@/components/ui/heading';
@@ -12,11 +11,6 @@ import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import { SearchParams } from 'nuqs/parsers';
 import { Suspense } from 'react';
-
-const breadcrumbItems = [
-  { title: 'Dashboard', link: '/dashboard' },
-  { title: 'Products', link: '/dashboard/product' }
-];
 
 export const metadata = {
   title: 'Dashboard: Products'
@@ -36,7 +30,6 @@ export default async function Page({ searchParams }: pageProps) {
   return (
     <PageContainer>
       <div className="space-y-4">
-        <Breadcrumbs items={breadcrumbItems} />
         <div className="flex items-start justify-between">
           <Heading
             title="Products"
