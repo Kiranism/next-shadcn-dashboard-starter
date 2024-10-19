@@ -58,3 +58,8 @@ Follow these steps to clone the repository and start the development server:
 - `npm run dev`
 
 You should now be able to access the application at http://localhost:3000.
+
+> [!WARNING]  
+> After cloning or forking the repository, be cautious when pulling or syncing with the latest changes, as this may result in breaking conflicts.
+
+Cheers! 🥂

@@ -1,6 +1,4 @@
-import Header from '@/components/layout/header';
-import Sidebar from '@/components/layout/sidebar';
-import NewSidebar from '@/components/new-sidebar';
+import AppSidebar from '@/components/layout/app-sidebar';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -14,14 +12,8 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex">
-      {/* <Sidebar /> */}
-      <NewSidebar>
-        {/* <main className="w-full flex-1 overflow-hidden">
-          <Header />
-        </main> */}
-        {children}
-      </NewSidebar>
-    </div>
+    <>
+      <AppSidebar>{children}</AppSidebar>
+    </>
   );
 }

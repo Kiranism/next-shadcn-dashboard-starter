@@ -1,7 +1,7 @@
 import { searchParamsCache } from '@/lib/searchparams';
-import { EmployeeListingPage } from '@/sections/employee/views';
 import { SearchParams } from 'nuqs/parsers';
 import React from 'react';
+import EmployeeListingPage from './_components/employee-listing-page';
 
 type pageProps = {
   searchParams: SearchParams;

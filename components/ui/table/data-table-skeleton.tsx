@@ -38,7 +38,7 @@ export function DataTableSkeleton({
         </div>
       ) : null}
       <div className="rounded-md border">
-        <ScrollArea className="h-[calc(80vh-220px)] rounded-md border md:h-[calc(80dvh-200px)]">
+        <ScrollArea className="h-[calc(80vh-220px)] rounded-md border  md:h-[calc(90dvh-220px)]">
           <Table>
             <TableHeader>
               {Array.from({ length: 1 }).map((_, i) => (

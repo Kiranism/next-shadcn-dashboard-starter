@@ -2,13 +2,14 @@ import { Icons } from '@/components/icons';
 
 export interface NavItem {
   title: string;
-  href?: string;
+  url: string;
   disabled?: boolean;
   external?: boolean;
   icon?: keyof typeof Icons;
   label?: string;
   description?: string;
-  children?: NavItem[];
+  isActive?: boolean;
+  items?: NavItem[];
 }
 
 export interface NavItemWithChildren extends NavItem {
