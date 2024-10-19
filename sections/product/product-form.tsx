@@ -57,7 +57,13 @@ const formSchema = z.object({
   })
 });
 
-export default function ProductForm({ initialData }: { initialData: Product }) {
+export default function ProductForm({
+  initialData,
+  pageTitle
+}: {
+  initialData: Product | null;
+  pageTitle: string;
+}) {
   const defaultValues = {
     name: initialData?.name || '',
     category: initialData?.category || '',
@@ -78,7 +84,7 @@ export default function ProductForm({ initialData }: { initialData: Product }) {
     <Card className="mx-auto w-full">
       <CardHeader>
         <CardTitle className="text-left text-2xl font-bold">
-          Add New Product
+          {pageTitle}
         </CardTitle>
       </CardHeader>
       <CardContent>

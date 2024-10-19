@@ -9,12 +9,17 @@ type TProductViewPageProps = {
 export default async function ProductViewPage({
   productId
 }: TProductViewPageProps) {
-  const data = await fakeProducts.getProductById(Number(productId));
-  const product = data.product as Product;
+  let product = null;
+  let pageTitle = 'Create New Product';
 
-  if (!product) {
-    return notFound();
+  if (productId !== 'new') {
+    const data = await fakeProducts.getProductById(Number(productId));
+    product = data.product as Product;
+    if (!product) {
+      notFound();
+    }
+    pageTitle = `Edit Product`;
   }
 
-  return <ProductForm initialData={product} />;
+  return <ProductForm initialData={product} pageTitle={pageTitle} />;
 }

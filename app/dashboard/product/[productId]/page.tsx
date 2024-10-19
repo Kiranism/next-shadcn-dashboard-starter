@@ -20,7 +20,7 @@ export default function Page({ params }: PageProps) {
   return (
     <PageContainer scrollable>
       <div className="flex-1 space-y-4">
-        <Breadcrumbs items={breadcrumbItems} />
+        <Breadcrumbs />
         <Suspense fallback={<FormCardSkeleton />}>
           <ProductViewPage productId={params.productId} />
         </Suspense>

@@ -1,5 +1,6 @@
 import Header from '@/components/layout/header';
 import Sidebar from '@/components/layout/sidebar';
+import NewSidebar from '@/components/new-sidebar';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -14,11 +15,13 @@ export default function DashboardLayout({
 }) {
   return (
     <div className="flex">
-      <Sidebar />
-      <main className="w-full flex-1 overflow-hidden">
-        <Header />
+      {/* <Sidebar /> */}
+      <NewSidebar>
+        {/* <main className="w-full flex-1 overflow-hidden">
+          <Header />
+        </main> */}
         {children}
-      </main>
+      </NewSidebar>
     </div>
   );
 }
