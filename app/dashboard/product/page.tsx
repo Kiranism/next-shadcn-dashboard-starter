@@ -5,12 +5,12 @@ import { Separator } from '@/components/ui/separator';
 import { DataTableSkeleton } from '@/components/ui/table/data-table-skeleton';
 import { searchParamsCache, serialize } from '@/lib/searchparams';
 import { cn } from '@/lib/utils';
-import ProductTableAction from '@/sections/product/product-tables/product-table-action';
-import { ProductListingPage } from '@/sections/product/view';
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import { SearchParams } from 'nuqs/parsers';
 import { Suspense } from 'react';
+import ProductListingPage from './_components/product-listing';
+import ProductTableAction from './_components/product-tables/product-table-action';
 
 export const metadata = {
   title: 'Dashboard: Products'
@@ -46,7 +46,7 @@ export default async function Page({ searchParams }: pageProps) {
         <ProductTableAction />
         <Suspense
           key={key}
-          fallback={<DataTableSkeleton columnCount={5} rowCount={9} />}
+          fallback={<DataTableSkeleton columnCount={5} rowCount={10} />}
         >
           <ProductListingPage />
         </Suspense>

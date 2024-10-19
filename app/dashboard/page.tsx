@@ -1,9 +1,12 @@
-import { OverViewPageView } from '@/sections/overview/view';
+import { auth } from '@/auth';
+import { redirect } from 'next/navigation';
 
-export const metadata = {
-  title: 'Dashboard : Overview'
-};
+export default async function Dashboard() {
+  const session = await auth();
 
-export default function page() {
-  return <OverViewPageView />;
+  if (!session?.user) {
+    return redirect('/');
+  } else {
+    redirect('/dashboard/overview');
+  }
 }

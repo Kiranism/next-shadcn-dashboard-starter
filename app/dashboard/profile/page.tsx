@@ -1,5 +1,5 @@
-import { ProfileViewPage } from '@/sections/profile/view';
 import { SearchParams } from 'nuqs/parsers';
+import ProfileViewPage from './_components/profile-view-page';
 
 type pageProps = {
   searchParams: SearchParams;

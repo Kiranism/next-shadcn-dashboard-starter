@@ -1,4 +1,4 @@
-import { EmployeeViewPage } from '@/sections/employee/views';
+import EmployeeViewPage from '../_components/employee-view-page';
 
 export const metadata = {
   title: 'Dashboard : Employee View'
