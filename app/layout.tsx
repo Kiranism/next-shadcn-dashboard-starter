@@ -24,8 +24,12 @@ export default async function RootLayout({
 }) {
   const session = await auth();
   return (
-    <html lang="en" className={`${lato.className}`}>
-      <body className={'overflow-hidden'} suppressHydrationWarning={true}>
+    <html
+      lang="en"
+      className={`${lato.className}`}
+      suppressHydrationWarning={true}
+    >
+      <body className={'overflow-hidden'}>
         <NextTopLoader showSpinner={false} />
         <Providers session={session}>
           <Toaster />
