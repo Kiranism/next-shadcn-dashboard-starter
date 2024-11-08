@@ -52,6 +52,7 @@ import { Icons } from '../icons';
 import SearchInput from '../search-input';
 import ThemeToggle from './ThemeToggle/theme-toggle';
 import { UserNav } from './user-nav';
+import Header from './header';
 
 export const company = {
   name: 'Acme Inc',
@@ -238,22 +239,12 @@ export default function AppSidebar({
         <SidebarRail />
       </Sidebar>
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center justify-between gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <Breadcrumbs />
-          </div>
-          <div className=" hidden w-1/3 items-center gap-2 px-4 md:flex ">
-            <SearchInput />
-          </div>
-          <div className="flex items-center gap-2 px-4">
-            <UserNav />
-            <ThemeToggle />
-          </div>
-        </header>
+        <Header />
         {/* page main content */}
-        {children}
+        <div className="mx-auto flex w-full flex-1 flex-col p-6">
+          {children}
+        </div>
+        {/* page main content ends */}
       </SidebarInset>
     </SidebarProvider>
   );
