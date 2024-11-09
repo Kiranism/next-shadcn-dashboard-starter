@@ -14,10 +14,11 @@ export default function Header() {
         <Separator orientation="vertical" className="mr-2 h-4" />
         <Breadcrumbs />
       </div>
-      <div className=" hidden w-1/3 items-center gap-2 px-4 md:flex ">
-        <SearchInput />
-      </div>
+
       <div className="flex items-center gap-2 px-4">
+        <div className="hidden md:flex">
+          <SearchInput />
+        </div>
         <UserNav />
         <ThemeToggle />
       </div>

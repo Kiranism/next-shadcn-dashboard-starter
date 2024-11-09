@@ -49,11 +49,11 @@ export default function KBar({ children }: { children: React.ReactNode }) {
 
   return (
     <KBarProvider actions={actions}>
-      <ActualComponent>{children}</ActualComponent>
+      <KBarComponent>{children}</KBarComponent>
     </KBarProvider>
   );
 }
-const ActualComponent = ({ children }: { children: React.ReactNode }) => {
+const KBarComponent = ({ children }: { children: React.ReactNode }) => {
   useThemeSwitching();
 
   return (
