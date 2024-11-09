@@ -1,5 +1,5 @@
-import { useTheme } from 'next-themes';
 import { useRegisterActions } from 'kbar';
+import { useTheme } from 'next-themes';
 
 const useThemeSwitching = () => {
   const { theme, setTheme } = useTheme();
