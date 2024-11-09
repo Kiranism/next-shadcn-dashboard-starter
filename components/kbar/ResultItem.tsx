@@ -71,4 +71,6 @@ const ResultItem = React.forwardRef(
   }
 );
 
+ResultItem.displayName = 'KBarResultItem';
+
 export default ResultItem;
