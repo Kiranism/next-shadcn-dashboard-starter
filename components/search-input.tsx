@@ -1,37 +1,24 @@
 'use client';
 import { Input } from '@/components/ui/input';
+import { useKBar } from 'kbar';
 import { ArrowRight, Search } from 'lucide-react';
+import { Button } from './ui/button';
 
 export default function SearchInput() {
+  const { query } = useKBar();
   return (
     <div className="w-full space-y-2">
-      <div className="relative w-full">
-        <Input
-          className="peer w-full pl-9 pr-9"
-          placeholder="Search for anything..."
-          type="search"
-        />
-        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center justify-center pl-3 text-muted-foreground/80 peer-disabled:opacity-50">
-          <Search
-            size={16}
-            strokeWidth={2}
-            aria-hidden="true"
-            role="presentation"
-          />
-        </div>
-        <button
-          className="absolute inset-y-px right-px flex h-full w-9 items-center justify-center rounded-r-lg text-muted-foreground/80 ring-offset-background transition-shadow hover:text-foreground focus-visible:border focus-visible:border-ring focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50"
-          aria-label="Submit search"
-          type="submit"
-        >
-          <ArrowRight
-            size={16}
-            strokeWidth={2}
-            aria-hidden="true"
-            role="presentation"
-          />
-        </button>
-      </div>
+      <Button
+        variant="outline"
+        className="relative h-9 w-full justify-start rounded-[0.5rem] bg-background text-sm font-normal text-muted-foreground shadow-none sm:pr-12 md:w-40 lg:w-64"
+        onClick={query.toggle}
+      >
+        <Search className="mr-2 h-4 w-4" />
+        Search...
+        <kbd className="pointer-events-none absolute right-[0.3rem] top-[0.3rem] hidden h-6 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+          <span className="text-xs">⌘</span>K
+        </kbd>
+      </Button>
     </div>
   );
 }
