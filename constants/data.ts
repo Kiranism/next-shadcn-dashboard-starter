@@ -127,12 +127,14 @@ export const navItems: NavItem[] = [
     url: '/dashboard/overview',
     icon: 'dashboard',
     isActive: false,
+    shortcut: ['d', 'd'],
     items: [] // Empty array as there are no child items for Dashboard
   },
   {
     title: 'Employee',
     url: '/dashboard/employee',
     icon: 'user',
+    shortcut: ['e', 'e'],
     isActive: false,
     items: [] // No child items
   },
@@ -140,6 +142,7 @@ export const navItems: NavItem[] = [
     title: 'Product',
     url: '/dashboard/product',
     icon: 'product',
+    shortcut: ['p', 'p'],
     isActive: false,
     items: [] // No child items
   },
@@ -153,10 +156,12 @@ export const navItems: NavItem[] = [
       {
         title: 'Profile',
         url: '/dashboard/profile',
-        icon: 'userPen'
+        icon: 'userPen',
+        shortcut: ['p', 'p']
       },
       {
         title: 'Login',
+        shortcut: ['l', 'l'],
         url: '/',
         icon: 'login'
       }
@@ -166,6 +171,7 @@ export const navItems: NavItem[] = [
     title: 'Kanban',
     url: '/dashboard/kanban',
     icon: 'kanban',
+    shortcut: ['k', 'k'],
     isActive: false,
     items: [] // No child items
   }
