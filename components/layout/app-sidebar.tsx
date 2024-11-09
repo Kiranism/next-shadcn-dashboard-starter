@@ -52,17 +52,8 @@ export const company = {
 };
 
 export default function AppSidebar() {
-  const [mounted, setMounted] = React.useState(false);
   const { data: session } = useSession();
   const pathname = usePathname();
-  // Only render after first client-side mount
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return null; // or a loading skeleton
-  }
 
   return (
     <Sidebar collapsible="icon">
