@@ -1,4 +1,6 @@
 import AppSidebar from '@/components/layout/app-sidebar';
+import Header from '@/components/layout/header';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -12,8 +14,14 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
-      <AppSidebar>{children}</AppSidebar>
-    </>
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <Header />
+        {/* page main content */}
+        {children}
+        {/* page main content ends */}
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
