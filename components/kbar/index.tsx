@@ -14,37 +14,44 @@ import useThemeSwitching from './use-theme-switching';
 
 export default function KBar({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+
+  const navigateTo = (url: string) => {
+    router.push(url);
+  };
+
   const actions = useMemo(
     () =>
       navItems.flatMap((navItem) => {
-        const baseAction = {
-          id: `${navItem.title.toLowerCase()}Action`,
-          name: navItem.title,
-          shortcut: navItem.shortcut,
-          keywords: navItem.title.toLowerCase(),
-          section: 'Navigation',
-          subtitle: `Go to ${navItem.title}`,
-          perform: () => {
-            router.push(navItem.url);
-          }
-        };
+        // Only include base action if the navItem has a real URL and is not just a container
+        const baseAction =
+          navItem.url !== '#'
+            ? {
+                id: `${navItem.title.toLowerCase()}Action`,
+                name: navItem.title,
+                shortcut: navItem.shortcut,
+                keywords: navItem.title.toLowerCase(),
+                section: 'Navigation',
+                subtitle: `Go to ${navItem.title}`,
+                perform: () => navigateTo(navItem.url)
+              }
+            : null;
 
-        return [
-          baseAction,
-          ...(navItem?.items?.map((childItem) => ({
+        // Map child items into actions
+        const childActions =
+          navItem.items?.map((childItem) => ({
             id: `${childItem.title.toLowerCase()}Action`,
             name: childItem.title,
             shortcut: childItem.shortcut,
             keywords: childItem.title.toLowerCase(),
             section: navItem.title,
             subtitle: `Go to ${childItem.title}`,
-            perform: () => {
-              router.push(childItem.url);
-            }
-          })) ?? [])
-        ];
+            perform: () => navigateTo(childItem.url)
+          })) ?? [];
+
+        // Return only valid actions (ignoring null base actions for containers)
+        return baseAction ? [baseAction, ...childActions] : childActions;
       }),
-    [router]
+    []
   );
 
   return (
