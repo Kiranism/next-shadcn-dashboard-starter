@@ -19,6 +19,7 @@ export default function KBar({ children }: { children: React.ReactNode }) {
     router.push(url);
   };
 
+  // These action are for the navigation
   const actions = useMemo(
     () =>
       navItems.flatMap((navItem) => {
