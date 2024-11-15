@@ -1,4 +1,3 @@
-import { ScrollArea } from '@/components/ui/scroll-area';
 import EmployeeForm from './employee-form';
 import PageContainer from '@/components/layout/page-container';
 
