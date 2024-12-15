@@ -2,6 +2,8 @@
 import React from 'react';
 import ThemeProvider from './ThemeToggle/theme-provider';
 import { SessionProvider, SessionProviderProps } from 'next-auth/react';
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
+
 export default function Providers({
   session,
   children
@@ -11,9 +13,11 @@ export default function Providers({
 }) {
   return (
     <>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <SessionProvider session={session}>{children}</SessionProvider>
-      </ThemeProvider>
+      <NuqsAdapter>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <SessionProvider session={session}>{children}</SessionProvider>
+        </ThemeProvider>
+      </NuqsAdapter>
     </>
   );
 }
