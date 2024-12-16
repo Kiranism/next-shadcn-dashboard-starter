@@ -1,5 +1,5 @@
 import { searchParamsCache } from '@/lib/searchparams';
-import { SearchParams } from 'nuqs/parsers';
+import { SearchParams } from 'nuqs/server';
 import React from 'react';
 import EmployeeListingPage from './_components/employee-listing-page';
 
