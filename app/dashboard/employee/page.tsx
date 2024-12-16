@@ -4,7 +4,7 @@ import React from 'react';
 import EmployeeListingPage from './_components/employee-listing-page';
 
 type pageProps = {
-  searchParams: SearchParams;
+  searchParams: Promise<SearchParams>;
 };
 
 export const metadata = {

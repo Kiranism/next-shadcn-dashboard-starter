@@ -2,7 +2,7 @@ import { SearchParams } from 'nuqs/server';
 import ProfileViewPage from './_components/profile-view-page';
 
 type pageProps = {
-  searchParams: SearchParams;
+  searchParams: Promise<SearchParams>;
 };
 
 export const metadata = {
