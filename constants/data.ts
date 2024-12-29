@@ -91,6 +91,63 @@ export const users: User[] = [
   }
 ];
 
+export type Users = {
+  _id: string;
+  firstname: string;
+  lastname: string;
+  email: string;
+  phoneNumber: string;
+};
+
+export type Stores = {
+  _id: string;
+  storeName: string;
+  location: string;
+  description: string;
+};
+
+export type Listing = {
+  _id: string;
+  listingId: string;
+  listingName: string;
+  description: string;
+  price: number;
+  category: string;
+  sku: string;
+  upc: number;
+  listingImage: [ListingImage];
+  storeName: string;
+  createdAt: string;
+};
+
+export type ListingImage = {
+  _id: string;
+  url: string;
+};
+
+export type Orders = {
+  _id: string;
+  orderId: string;
+  item: [OrderItem];
+  userId: UserId;
+  storeId: [Store];
+  fulfilled: boolean;
+  createdAt: string;
+};
+
+export type UserId = {
+  _id: string;
+  firstname: string;
+  lastname: string;
+  email: string;
+};
+export type Store = {
+  _id: string;
+  storeName: string;
+};
+
+export type OrderItem = {};
+
 export type Employee = {
   id: number;
   first_name: string;
@@ -130,22 +187,54 @@ export const navItems: NavItem[] = [
     shortcut: ['d', 'd'],
     items: [] // Empty array as there are no child items for Dashboard
   },
+  // {
+  //   title: 'Employee',
+  //   url: '/dashboard/employee',
+  //   icon: 'user',
+  //   shortcut: ['e', 'e'],
+  //   isActive: false,
+  //   items: [] // No child items
+  // },
   {
-    title: 'Employee',
-    url: '/dashboard/employee',
+    title: 'Orders',
+    url: '/dashboard/orders',
+    icon: 'wallet',
+    shortcut: ['e', 'e'],
+    isActive: false,
+    items: [] // No child items
+  },
+  {
+    title: 'Users',
+    url: '/dashboard/users',
     icon: 'user',
     shortcut: ['e', 'e'],
     isActive: false,
     items: [] // No child items
   },
   {
-    title: 'Product',
-    url: '/dashboard/product',
-    icon: 'product',
-    shortcut: ['p', 'p'],
+    title: 'Stores',
+    url: '/dashboard/stores',
+    icon: 'store',
+    shortcut: ['e', 'e'],
     isActive: false,
     items: [] // No child items
   },
+  {
+    title: 'Listings',
+    url: '/dashboard/listings',
+    icon: 'product',
+    shortcut: ['e', 'e'],
+    isActive: false,
+    items: [] // No child items
+  },
+  // {
+  //   title: 'Product',
+  //   url: '/dashboard/product',
+  //   icon: 'product',
+  //   shortcut: ['p', 'p'],
+  //   isActive: false,
+  //   items: [] // No child items
+  // },
   {
     title: 'Account',
     url: '#', // Placeholder as there is no direct link for the parent
@@ -158,13 +247,13 @@ export const navItems: NavItem[] = [
         url: '/dashboard/profile',
         icon: 'userPen',
         shortcut: ['m', 'm']
-      },
-      {
-        title: 'Login',
-        shortcut: ['l', 'l'],
-        url: '/',
-        icon: 'login'
       }
+      // {
+      //   title: 'Login',
+      //   shortcut: ['l', 'l'],
+      //   url: '/',
+      //   icon: 'login'
+      // }
     ]
   },
   {

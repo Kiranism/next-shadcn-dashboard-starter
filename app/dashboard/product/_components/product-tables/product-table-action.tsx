@@ -20,12 +20,12 @@ export default function ProductTableAction() {
   } = useProductTableFilters();
   return (
     <div className="flex flex-wrap items-center gap-4">
-      <DataTableSearch
+      {/* <DataTableSearch
         searchKey="name"
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         setPage={setPage}
-      />
+      /> */}
       <DataTableFilterBox
         filterKey="categories"
         title="Categories"

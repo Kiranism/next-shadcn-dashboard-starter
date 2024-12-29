@@ -48,7 +48,7 @@ export default async function EmployeeListingPage({}: TEmployeeListingPage) {
           </Link>
         </div>
         <Separator />
-        <EmployeeTable data={employee} totalData={totalUsers} />
+        {/* <EmployeeTable data={employee} totalData={totalUsers} /> */}
       </div>
     </PageContainer>
   );

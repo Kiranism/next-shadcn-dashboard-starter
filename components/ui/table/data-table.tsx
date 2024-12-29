@@ -29,21 +29,40 @@ import {
   useReactTable
 } from '@tanstack/react-table';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { parseAsInteger, useQueryState } from 'nuqs';
 
-interface DataTableProps<TData, TValue> {
+interface DataTableProps<
+  TData extends { _id?: string; storeName?: string; orderId?: string },
+  TValue
+> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   totalItems: number;
   pageSizeOptions?: number[];
+  page: number;
+  limit: number;
+  url?: string;
+  setPage: React.Dispatch<React.SetStateAction<number>>;
+  setLimit: React.Dispatch<React.SetStateAction<number>>;
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<
+  TData extends { _id?: string; storeName?: string; orderId?: string },
+  TValue
+>({
   columns,
   data,
   totalItems,
-  pageSizeOptions = [10, 20, 30, 40, 50]
+  pageSizeOptions = [10, 20, 30, 40, 50],
+  page,
+  limit,
+  url,
+  setPage,
+  setLimit
 }: DataTableProps<TData, TValue>) {
+  const router = useRouter();
   const [currentPage, setCurrentPage] = useQueryState(
     'page',
     parseAsInteger.withOptions({ shallow: false }).withDefault(1)
@@ -72,8 +91,8 @@ export function DataTable<TData, TValue>({
         ? updaterOrValue(paginationState)
         : updaterOrValue;
 
-    setCurrentPage(pagination.pageIndex + 1); // converting zero-based index to one-based
-    setPageSize(pagination.pageSize);
+    setPage(pagination.pageIndex + 1); // converting zero-based index to one-based
+    setLimit(pagination.pageSize);
   };
 
   const table = useReactTable({
@@ -81,9 +100,13 @@ export function DataTable<TData, TValue>({
     columns,
     pageCount: pageCount,
     state: {
-      pagination: paginationState
+      pagination: { pageIndex: page - 1, pageSize: limit }
     },
     onPaginationChange: handlePaginationChange,
+    // onPaginationChange: (paginationState) => {
+    //   setPage(paginationState.pageIndex + 1); // Update page state
+    //   setLimit(paginationState.pageSize); // Update limit state
+    // },
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     manualPagination: true,
@@ -116,6 +139,18 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
+                  onClick={() => {
+                    if (url) {
+                      const slug = row.original.storeName
+                        ? row.original.storeName
+                        : row.original.orderId
+                          ? row.original.orderId
+                          : '';
+                      const query = `?id=${row.original._id}`; // Add query only if storeName is present
+                      router.push(`${url}/${slug}${query}`);
+                    }
+                  }}
+                  className="capitalize hover:cursor-pointer"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

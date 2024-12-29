@@ -44,21 +44,24 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import * as React from 'react';
 import { Icons } from '../icons';
+import { CurrentUserContextType } from '@/@types/user';
+import { UserContext } from '@/context/UserProvider';
 
 export const company = {
-  name: 'Acme Inc',
+  name: 'Mehchant',
   logo: GalleryVerticalEnd,
-  plan: 'Enterprise'
+  plan: 'Admin'
 };
 
 export default function AppSidebar() {
+  const { user } = React.useContext(UserContext) as CurrentUserContextType;
   const { data: session } = useSession();
   const pathname = usePathname();
 
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <div className="flex gap-2 py-2 text-sidebar-accent-foreground ">
+        <div className="flex gap-2 py-2 text-sidebar-accent-foreground">
           <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
             <company.logo className="size-4" />
           </div>
@@ -138,17 +141,17 @@ export default function AppSidebar() {
                   className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                 >
                   <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarImage
+                    {/* <AvatarImage
                       src={session?.user?.image || ''}
                       alt={session?.user?.name || ''}
-                    />
+                    /> */}
                     <AvatarFallback className="rounded-lg">
-                      {session?.user?.name?.slice(0, 2)?.toUpperCase() || 'CN'}
+                      {user?.firstName?.slice(0, 2)?.toUpperCase() || 'CN'}
                     </AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">
-                      {session?.user?.name || ''}
+                      {user?.firstName || ''}
                     </span>
                     <span className="truncate text-xs">
                       {session?.user?.email || ''}
@@ -177,11 +180,11 @@ export default function AppSidebar() {
                     </Avatar>
                     <div className="grid flex-1 text-left text-sm leading-tight">
                       <span className="truncate font-semibold">
-                        {session?.user?.name || ''}
+                        {user?.firstName || ''}
                       </span>
                       <span className="truncate text-xs">
                         {' '}
-                        {session?.user?.email || ''}
+                        {user?.email || ''}
                       </span>
                     </div>
                   </div>
@@ -193,10 +196,10 @@ export default function AppSidebar() {
                     <BadgeCheck />
                     Account
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  {/* <DropdownMenuItem>
                     <CreditCard />
                     Billing
-                  </DropdownMenuItem>
+                  </DropdownMenuItem> */}
                   <DropdownMenuItem>
                     <Bell />
                     Notifications

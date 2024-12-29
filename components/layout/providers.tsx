@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
 import ThemeProvider from './ThemeToggle/theme-provider';
+import UserProvider from '@/context/UserProvider';
 import { SessionProvider, SessionProviderProps } from 'next-auth/react';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
 
@@ -15,7 +16,9 @@ export default function Providers({
     <>
       <NuqsAdapter>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <SessionProvider session={session}>{children}</SessionProvider>
+          <SessionProvider session={session}>
+            <UserProvider>{children}</UserProvider>
+          </SessionProvider>
         </ThemeProvider>
       </NuqsAdapter>
     </>

@@ -24,12 +24,14 @@ import {
   Plus,
   Settings,
   SunMedium,
+  Store,
   Trash,
   Twitter,
   User,
   UserCircle2Icon,
   UserPen,
   UserX2Icon,
+  Wallet,
   X
 } from 'lucide-react';
 
@@ -63,7 +65,9 @@ export const Icons = {
   pizza: Pizza,
   sun: SunMedium,
   moon: Moon,
+  store: Store,
   laptop: Laptop,
+  wallet: Wallet,
   gitHub: ({ ...props }: LucideProps) => (
     <svg
       aria-hidden="true"

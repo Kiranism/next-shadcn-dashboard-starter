@@ -1,3 +1,5 @@
+'use client';
+
 import { AreaGraph } from './area-graph';
 import { BarGraph } from './bar-graph';
 import { PieGraph } from './pie-graph';
@@ -13,8 +15,44 @@ import {
   CardTitle
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { getMetrics } from '@/utils/metrics';
+import { useEffect, useState } from 'react';
+import { CurrentUserContextType, IMetrics } from '@/@types/user';
+import { UserContext } from '@/context/UserProvider';
+import React from 'react';
+import { RecentOrders } from './recent-orders';
+import { getAllOrders } from '@/utils/orders';
+import { Orders } from '@/constants/data';
 
 export default function OverViewPage() {
+  const { user } = React.useContext(UserContext) as CurrentUserContextType;
+  const [metrics, setMetrics] = useState<IMetrics>({
+    ordersCount: 0,
+    signupCount: 0,
+    totalSales: 0,
+    storesCount: 0
+  });
+  const [orders, setOrders] = useState<Orders[]>([]);
+  const [page, setPage] = useState<number>(1);
+  const [limit, setLimit] = useState<number>(10);
+
+  useEffect(() => {
+    if (user?.token) {
+      getMetrics(user?.token).then((res) => {
+        setMetrics(res?.data);
+      });
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user?.token) {
+      getAllOrders(page, limit, user?.token).then((res) => {
+        console.log(res?.orders);
+        setOrders(res?.orders);
+      });
+    }
+  }, [user, page]);
+
   return (
     <PageContainer scrollable>
       <div className="space-y-2">
@@ -39,7 +77,7 @@ export default function OverViewPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
-                    Total Revenue
+                    Total Sales
                   </CardTitle>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -55,7 +93,7 @@ export default function OverViewPage() {
                   </svg>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">$45,231.89</div>
+                  <div className="text-2xl font-bold">{`$${metrics?.totalSales}`}</div>
                   <p className="text-xs text-muted-foreground">
                     +20.1% from last month
                   </p>
@@ -64,7 +102,7 @@ export default function OverViewPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
-                    Subscriptions
+                    Total Orders
                   </CardTitle>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -82,7 +120,7 @@ export default function OverViewPage() {
                   </svg>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">+2350</div>
+                  <div className="text-2xl font-bold">{`+${metrics?.ordersCount}`}</div>
                   <p className="text-xs text-muted-foreground">
                     +180.1% from last month
                   </p>
@@ -90,7 +128,7 @@ export default function OverViewPage() {
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Sales</CardTitle>
+                  <CardTitle className="text-sm font-medium">Users</CardTitle>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 24 24"
@@ -106,7 +144,7 @@ export default function OverViewPage() {
                   </svg>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">+12,234</div>
+                  <div className="text-2xl font-bold">{`+${metrics?.signupCount}`}</div>
                   <p className="text-xs text-muted-foreground">
                     +19% from last month
                   </p>
@@ -114,9 +152,7 @@ export default function OverViewPage() {
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Active Now
-                  </CardTitle>
+                  <CardTitle className="text-sm font-medium">Stores</CardTitle>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 24 24"
@@ -131,7 +167,7 @@ export default function OverViewPage() {
                   </svg>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">+573</div>
+                  <div className="text-2xl font-bold">{`+${metrics?.storesCount}`}</div>
                   <p className="text-xs text-muted-foreground">
                     +201 since last hour
                   </p>
@@ -144,13 +180,13 @@ export default function OverViewPage() {
               </div>
               <Card className="col-span-4 md:col-span-3">
                 <CardHeader>
-                  <CardTitle>Recent Sales</CardTitle>
-                  <CardDescription>
+                  <CardTitle>Recent Orders</CardTitle>
+                  {/* <CardDescription>
                     You made 265 sales this month.
-                  </CardDescription>
+                  </CardDescription> */}
                 </CardHeader>
                 <CardContent>
-                  <RecentSales />
+                  <RecentOrders orders={orders} />
                 </CardContent>
               </Card>
               <div className="col-span-4">

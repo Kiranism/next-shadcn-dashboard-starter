@@ -13,10 +13,22 @@ import {
 
 export default function EmployeeTable({
   data,
-  totalData
+  totalData,
+  search,
+  page,
+  limit,
+  setSearch,
+  setPage,
+  setLimit
 }: {
   data: Employee[];
   totalData: number;
+  search: string;
+  page: number;
+  limit: number;
+  setSearch: React.Dispatch<React.SetStateAction<string>>;
+  setPage: React.Dispatch<React.SetStateAction<number>>;
+  setLimit: React.Dispatch<React.SetStateAction<number>>;
 }) {
   const {
     genderFilter,
@@ -24,7 +36,7 @@ export default function EmployeeTable({
     isAnyFilterActive,
     resetFilters,
     searchQuery,
-    setPage,
+    //setPage,
     setSearchQuery
   } = useEmployeeTableFilters();
 
@@ -35,7 +47,9 @@ export default function EmployeeTable({
           searchKey="name"
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
-          setPage={setPage}
+          //setPage={setPage}
+          search={search}
+          setSearch={setSearch}
         />
         <DataTableFilterBox
           filterKey="gender"
@@ -49,7 +63,14 @@ export default function EmployeeTable({
           onReset={resetFilters}
         />
       </div>
-      <DataTable columns={columns} data={data} totalItems={totalData} />
+      {/* <DataTable columns={columns} data={data} 
+        totalItems={totalData} 
+        page={page}
+        limit={limit}
+        setPage={setPage}
+        setLimit={setLimit}
+        // url="/dashboard/stores"
+        /> */}
     </div>
   );
 }

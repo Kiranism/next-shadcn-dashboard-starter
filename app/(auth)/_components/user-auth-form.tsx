@@ -9,27 +9,38 @@ import {
   FormMessage
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import Cookies from 'universal-cookie';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { signIn } from 'next-auth/react';
-import { useSearchParams } from 'next/navigation';
-import { useTransition } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
 import GithubSignInButton from './github-auth-button';
+import { login } from '@/utils/auth';
+import { CurrentUserContextType, IUser } from '@/@types/user';
+import { UserContext } from '@/context/UserProvider';
+import React from 'react';
 
 const formSchema = z.object({
-  email: z.string().email({ message: 'Enter a valid email address' })
+  email: z.string().email({ message: 'Enter a valid email address' }),
+  password: z.string({ message: 'Enter a valid password' })
 });
 
 type UserFormValue = z.infer<typeof formSchema>;
 
 export default function UserAuthForm() {
+  const { setUser } = React.useContext(UserContext) as CurrentUserContextType;
+  const router = useRouter();
+  const cookies = new Cookies();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl');
   const [loading, startTransition] = useTransition();
+  const [error, setError] = useState<String>('');
   const defaultValues = {
-    email: 'demo@gmail.com'
+    email: 'demo@gmail.com',
+    password: ''
   };
   const form = useForm<UserFormValue>({
     resolver: zodResolver(formSchema),
@@ -37,13 +48,34 @@ export default function UserAuthForm() {
   });
 
   const onSubmit = async (data: UserFormValue) => {
-    startTransition(() => {
-      signIn('credentials', {
-        email: data.email,
-        callbackUrl: callbackUrl ?? '/dashboard'
-      });
-      toast.success('Signed In Successfully!');
+    login(data.email, data.password).then((res: any) => {
+      console.log(res.status);
+      if (res.status === 200) {
+        cookies.set('user', JSON.stringify(res.data), {
+          path: '/'
+        });
+        const userData: IUser = {
+          firstName: res.data.firstName,
+          lastName: res.data.lastName,
+          email: res.data.email,
+          userId: res.data.userId,
+          token: res.data.token,
+          role: res.data.role
+        };
+        setUser(userData);
+        toast.success('Signed In Successfully!');
+        router.push('/dashboard/overview');
+      } else {
+        setError('Invalid Email address or Password');
+      }
     });
+    // startTransition(() => {
+    //   signIn('credentials', {
+    //     email: data.email,
+    //     callbackUrl: callbackUrl ?? '/dashboard'
+    //   });
+    //   toast.success('Signed In Successfully!');
+    // });
   };
 
   return (
@@ -72,12 +104,31 @@ export default function UserAuthForm() {
             )}
           />
 
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Password</FormLabel>
+                <FormControl>
+                  <Input
+                    type="password"
+                    placeholder="Enter your password..."
+                    disabled={loading}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          {error && <p className="text-sm text-destructive">{error}</p>}
           <Button disabled={loading} className="ml-auto w-full" type="submit">
-            Continue With Email
+            Login
           </Button>
         </form>
       </Form>
-      <div className="relative">
+      {/* <div className="relative">
         <div className="absolute inset-0 flex items-center">
           <span className="w-full border-t" />
         </div>
@@ -87,7 +138,7 @@ export default function UserAuthForm() {
           </span>
         </div>
       </div>
-      <GithubSignInButton />
+      <GithubSignInButton /> */}
     </>
   );
 }
