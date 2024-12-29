@@ -42,7 +42,7 @@ export const RecentOrders: React.FC<OrderProps> = ({ orders }) => {
               {item.subTotal ? `$${item.subTotal}` : '+$1,999.00'}
             </div>
           </div>
-          <Separator />
+          {/* <Separator /> */}
         </div>
       ))}
     </div>
