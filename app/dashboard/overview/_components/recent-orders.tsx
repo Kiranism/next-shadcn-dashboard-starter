@@ -38,7 +38,9 @@ export const RecentOrders: React.FC<OrderProps> = ({ orders }) => {
                 })}`}
               </p>
             </div>
-            <div className="ml-auto font-medium">+$1,999.00</div>
+            <div className="ml-auto font-medium">
+              {item.subTotal ? `$${item.subTotal}` : '+$1,999.00'}
+            </div>
           </div>
           <Separator />
         </div>

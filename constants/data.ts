@@ -133,6 +133,7 @@ export type Orders = {
   storeId: [Store];
   fulfilled: boolean;
   createdAt: string;
+  subTotal: number;
 };
 
 export type UserId = {

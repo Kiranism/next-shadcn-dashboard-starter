@@ -169,10 +169,10 @@ export default function OrderDetails() {
               </table>
               <div className="mt-5 flex justify-end">
                 <ul>
-                  <li>Subotal: $2,000</li>
+                  <li>{`Subotal: $${order.subTotal}`}</li>
                   <li>Shipping Fee: $5.99</li>
                   <li>Tax: $2.00</li>
-                  <li>Total: $2,070</li>
+                  <li>{`Total: $${(order.subTotal + 5.99 + 2.0).toFixed(2)}`}</li>
                 </ul>
               </div>
             </div>
