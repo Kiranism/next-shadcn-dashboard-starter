@@ -41,18 +41,18 @@ export const columns: ColumnDef<Orders>[] = [
       );
     }
   },
-  {
-    accessorKey: 'storeId',
-    header: 'STORE',
-    cell: ({ row }) => {
-      const storeName = row.getValue<Store>('storeId');
-      return (
-        <div>
-          <p>{`${storeName.storeName}`}</p>
-        </div>
-      );
-    }
-  },
+  // {
+  //   accessorKey: 'storeId',
+  //   header: 'STORE',
+  //   cell: ({ row }) => {
+  //     const storeName = row.getValue<Store>('storeId');
+  //     return (
+  //       <div>
+  //         <p>{`${storeName.storeName}`}</p>
+  //       </div>
+  //     );
+  //   }
+  // },
   {
     accessorKey: 'userId',
     header: 'CUSTOMER',
@@ -69,10 +69,10 @@ export const columns: ColumnDef<Orders>[] = [
       );
     }
   },
-  {
-    accessorKey: 'fulfilled',
-    header: 'Filfilled'
-  },
+  // {
+  //   accessorKey: 'fulfilled',
+  //   header: 'Filfilled'
+  // },
 
   {
     id: 'actions'

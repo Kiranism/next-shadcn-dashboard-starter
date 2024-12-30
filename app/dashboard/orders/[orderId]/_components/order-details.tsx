@@ -1,48 +1,15 @@
 'use client';
 import * as React from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import Image from 'next/image';
-import * as z from 'zod';
-import { Button, buttonVariants } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardDescription
-} from '@/components/ui/card';
-import { getStore, getStoreListing } from '@/utils/store';
+import { buttonVariants } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useSearchParams, useParams } from 'next/navigation';
-import { AreaGraph } from '@/app/dashboard/overview/_components/area-graph';
-import { BarGraph } from '@/app/dashboard/overview/_components/bar-graph';
-import { PieGraph } from '@/app/dashboard/overview/_components/pie-graph';
-import { RecentSales } from '@/app/dashboard/overview/_components/recent-sales';
-import EmployeeForm from '@/app/dashboard/employee/_components/employee-form';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Plus } from 'lucide-react';
 import { getOrder } from '@/utils/orders';
 import { CurrentUserContextType } from '@/@types/user';
 import { UserContext } from '@/context/UserProvider';
-import { Avatar, AvatarImage, AvatarFallback } from '@radix-ui/react-avatar';
+import { Avatar, AvatarFallback } from '@radix-ui/react-avatar';
 import CompleteOrderForm from './complete-order-form';
 
 interface IOrder {
@@ -238,12 +205,9 @@ export default function OrderDetails() {
         </div>
       </CardHeader>
       {visible && (
-        <CardHeader>
-          <CardTitle className="text-left text-2xl font-bold capitalize">
-            Complete Order
-          </CardTitle>
+        <>
           <CompleteOrderForm />
-        </CardHeader>
+        </>
       )}
     </Card>
   );

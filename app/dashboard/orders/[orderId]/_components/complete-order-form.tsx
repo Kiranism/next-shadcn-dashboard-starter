@@ -26,7 +26,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { completeOrder } from '@/utils/orders';
 import { CurrentUserContextType } from '@/@types/user';
 import { UserContext } from '@/context/UserProvider';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 
 const formSchema = z.object({
   tracking_number: z.string().min(5, {
@@ -44,6 +44,8 @@ const formSchema = z.object({
 export default function CompleteOrderForm() {
   const { user } = React.useContext(UserContext) as CurrentUserContextType;
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const id = searchParams.get('id');
   const params = useParams();
   const { orderId } = params;
 
@@ -64,7 +66,7 @@ export default function CompleteOrderForm() {
     const { tracking_number, ship_provider, shipDate, notes } = values;
     if (user?.token) {
       completeOrder(
-        orderId,
+        id,
         tracking_number,
         ship_provider,
         shipDate,

@@ -42,7 +42,8 @@ export const completeOrder = async (
   shippingProvider: string,
   shipmentDate: string,
   notes: string | any,
-  token: string
+  token: string,
+  storeId?: any
 ) => {
   try {
     const response = await axios({
@@ -54,6 +55,7 @@ export const completeOrder = async (
       method: 'POST',
       data: {
         orderId,
+        storeId,
         trackingNumber,
         shippingProvider,
         shipmentDate,
