@@ -27,7 +27,8 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-  SidebarRail
+  SidebarRail,
+  useSidebar
 } from '@/components/ui/sidebar';
 import { navItems } from '@/constants/data';
 import {
@@ -39,7 +40,7 @@ import {
   GalleryVerticalEnd,
   LogOut
 } from 'lucide-react';
-import { useSession } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import * as React from 'react';
@@ -54,6 +55,7 @@ export const company = {
 export default function AppSidebar() {
   const { data: session } = useSession();
   const pathname = usePathname();
+  const { state, isMobile } = useSidebar();
 
   return (
     <Sidebar collapsible='icon'>
@@ -203,7 +205,7 @@ export default function AppSidebar() {
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => signOut()}>
                   <LogOut />
                   Log out
                 </DropdownMenuItem>
