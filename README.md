@@ -3,7 +3,7 @@
   <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/9113740/201498152-b171abb8-9225-487a-821c-6ff49ee48579.png">
 </picture>
 
-<div align="center"><strong>Next.js 14 Admin Dashboard Starter Template With Shadcn-ui</strong></div>
+<div align="center"><strong>Next.js Admin Dashboard Starter Template With Shadcn-ui</strong></div>
 <div align="center">Built with the Next.js App Router</div>
 <br />
 <div align="center">
@@ -15,7 +15,7 @@
 
 This is a starter template using the following stack:
 
-- Framework - [Next.js 14](https://nextjs.org/13)
+- Framework - [Next.js (14 | 15) ](https://nextjs.org/13)
 - Language - [TypeScript](https://www.typescriptlang.org)
 - Styling - [Tailwind CSS](https://tailwindcss.com)
 - Components - [Shadcn-ui](https://ui.shadcn.com)
@@ -51,8 +51,21 @@ _If you are looking for a React admin dashboard starter, here is the [repo](http
 
 Follow these steps to clone the repository and start the development server:
 
-- `git clone https://github.com/Kiranism/next-shadcn-dashboard-starter.git`
-- `pnpm install`
+> [!NOTE]  
+> If you want to use the starter with **Next 15** with **React 19**, follow these steps:
+>
+> - Clone only the `next-15` branch:
+>   ```bash
+>   git clone --branch next-15 --single-branch https://github.com/Kiranism/next-shadcn-dashboard-starter.git
+>   ```
+
+- Clone the repo:
+
+```bash
+git clone https://github.com/Kiranism/next-shadcn-dashboard-starter.git
+```
+
+- `npm install`
 - Create a `.env.local` file by copying the example environment file:
   `cp env.example.txt .env.local`
 - Add the required environment variables to the `.env.local` file.
