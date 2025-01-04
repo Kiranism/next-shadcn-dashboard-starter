@@ -13,13 +13,13 @@
     "lint": "next lint",
     "lint:fix": "eslint src --fix && pnpm format",
     "lint:strict": "eslint --max-warnings=0 src",
-    "format": "prettier -w .",
+    "format": "prettier --write .",
     "format:check": "prettier -c -w .",
     "prepare": "husky"
   },
   "lint-staged": {
-    "**/*": [
-      "prettier -w"
+    "**/*.{js,jsx,tsx,ts,css,less,scss,sass}": [
+      "prettier --write --no-error-on-unmatched-pattern"
     ]
   },
   "dependencies": {
