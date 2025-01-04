@@ -11,12 +11,15 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "format": "prettier . --write",
+    "lint:fix": "eslint src --fix && pnpm format",
+    "lint:strict": "eslint --max-warnings=0 src",
+    "format": "prettier -w .",
+    "format:check": "prettier -c -w .",
     "prepare": "husky"
   },
   "lint-staged": {
     "**/*": [
-      "prettier --write --ignore-unknown"
+      "prettier -w"
     ]
   },
   "dependencies": {
@@ -93,5 +96,6 @@
     "lint-staged": "^15.2.7",
     "prettier": "3.0.3",
     "prettier-plugin-tailwindcss": "^0.5.14"
-  }
+  },
+  "packageManager": "pnpm@9.15.0+sha1.8bfdb6d72b4d5fdf87d21d27f2bfbe2b21dd2629"
 }

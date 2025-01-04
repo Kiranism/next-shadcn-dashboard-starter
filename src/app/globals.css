@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 20 66% 99%;
+    --foreground: 20 51% 4%;
+    --muted: 20 25% 86%;
+    --muted-foreground: 20 7% 25%;
+    --popover: 20 66% 98%;
+    --popover-foreground: 20 51% 3%;
+    --card: 20 66% 98%;
+    --card-foreground: 20 51% 3%;
+    --border: 20 15% 94%;
+    --input: 20 15% 94%;
+    --primary: 20 48% 72%;
+    --primary-foreground: 20 48% 12%;
+    --secondary: 20 12% 92%;
+    --secondary-foreground: 20 12% 32%;
+    --accent: 20 12% 92%;
+    --accent-foreground: 20 12% 32%;
+    --destructive: 11 80% 22%;
+    --destructive-foreground: 11 80% 82%;
+    --ring: 20 48% 72%;
+    --radius: 0.5rem;
+    --chart-1: 20 48% 72%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --sidebar-background: 20 66% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 20 25% 86%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+  .dark {
+    --background: 240 10% 2%; /* #080809 - Darker background */
+    --foreground: 0 0% 100%; /* #FFFFFF */
+    --muted: 240 5% 13%; /* #212124 - Slightly lighter for contrast */
+    --muted-foreground: 240 5% 64%; /* #A1A1A5 */
+    --popover: 240 6% 12%; /* #1D1D1F - Adjusted for dropdowns */
+    --popover-foreground: 0 0% 100%; /* #FFFFFF */
+    --card: 240 6% 10%; /* #19191A - Card background */
+    --card-foreground: 0 0% 100%; /* #FFFFFF */
+    --border: 240 3% 16%; /* #282829 - More visible borders */
+    --input: 240 3% 16%; /* #282829 */
+    --primary: 217 91% 60%; /* #3B82F6 - Accent blue */
+    --primary-foreground: 0 0% 100%; /* #FFFFFF */
+    --secondary: 240 5% 13%; /* #212124 */
+    --secondary-foreground: 0 0% 100%; /* #FFFFFF */
+    --accent: 240 5% 13%; /* #212124 */
+    --accent-foreground: 0 0% 100%; /* #FFFFFF */
+    --destructive: 0 84% 60%; /* #EF4444 */
+    --destructive-foreground: 0 0% 100%; /* #FFFFFF */
+    --ring: 217 91% 60%; /* #3B82F6 */
+    --chart-1: 217 91% 60%; /* #3B82F6 */
+    --chart-2: 262 83% 58%; /* #8B5CF6 - Purple */
+    --chart-3: 31 97% 44%; /* #E5562E - Orange */
+    --chart-4: 45 93% 47%; /* #EAB308 */
+    --chart-5: 142 71% 45%; /* #22C55E */
+    --sidebar-background: 240 10% 2%; /* #080809 */
+    --sidebar-foreground: 0 0% 100%; /* #FFFFFF */
+    --sidebar-primary: 217 91% 60%; /* #3B82F6 */
+    --sidebar-primary-foreground: 0 0% 100%; /* #FFFFFF */
+    --sidebar-accent: 240 5% 13%; /* #212124 */
+    --sidebar-accent-foreground: 0 0% 100%; /* #FFFFFF */
+    --sidebar-border: 240 3% 16%; /* #282829 */
+    --sidebar-ring: 217 91% 60%; /* #3B82F6 */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply box-border bg-background text-foreground;
+  }
+}
+
+/* Refined shadow utilities for better layering */
+@layer utilities {
+  .shadow-card-dark {
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.2),
+      0 1px 2px rgba(0, 0, 0, 0.4);
+  }
+
+  .shadow-elevation-dark {
+    box-shadow:
+      0 4px 6px rgba(0, 0, 0, 0.2),
+      0 5px 15px rgba(0, 0, 0, 0.4);
+  }
+
+  /* New utility for subtle hover states */
+  .hover-elevation-dark {
+    transition: background-color 0.2s ease;
+  }
+  .hover-elevation-dark:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+  }
+}
+@layer utilities {
+  .min-h-screen {
+    min-height: 100vh; /* Fallback */
+    min-height: 100dvh;
+  }
+  .h-screen {
+    height: 100vh; /* Fallback */
+    height: 100dvh;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
