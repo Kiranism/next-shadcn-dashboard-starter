@@ -51,7 +51,7 @@ import { UserContext } from '@/context/UserProvider';
 export const company = {
   name: 'Mehchant',
   logo: GalleryVerticalEnd,
-  plan: 'Admin'
+  plan: 'Store-Admin'
 };
 
 export default function AppSidebar() {

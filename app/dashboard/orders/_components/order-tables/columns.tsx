@@ -1,5 +1,6 @@
 'use client';
 import { Orders, Store, UserId, OrderItem, Fulfilled } from '@/constants/data';
+import { Row } from '@tanstack/react-table'; // Import Row type
 import { Checkbox } from '@/components/ui/checkbox';
 import { ColumnDef } from '@tanstack/react-table';
 import Cookies from 'universal-cookie';
@@ -78,7 +79,7 @@ export const columns: ColumnDef<Orders>[] = [
         {
           accessorKey: 'fulfilled',
           header: 'FULFILLED',
-          cell: ({ row }) => {
+          cell: ({ row }: { row: Row<any> }) => {
             const fulfilledArray = row.getValue<Array<Fulfilled>>('fulfilled');
             return (
               <div>
