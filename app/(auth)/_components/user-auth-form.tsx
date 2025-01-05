@@ -11,13 +11,11 @@ import {
 import { Input } from '@/components/ui/input';
 import Cookies from 'universal-cookie';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { signIn } from 'next-auth/react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
-import GithubSignInButton from './github-auth-button';
 import { login } from '@/utils/auth';
 import { CurrentUserContextType, IUser } from '@/@types/user';
 import { UserContext } from '@/context/UserProvider';

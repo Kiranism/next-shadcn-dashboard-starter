@@ -4,7 +4,7 @@ import PageContainer from '@/components/layout/page-container';
 import { Heading } from '@/components/ui/heading';
 import { Separator } from '@/components/ui/separator';
 import { Listing } from '@/constants/data';
-import ListingTable from './store-tables';
+import ListingTable from './listing-tables';
 import React, { useEffect, useState } from 'react';
 import { CurrentUserContextType } from '@/@types/user';
 import { UserContext } from '@/context/UserProvider';
