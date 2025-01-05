@@ -85,9 +85,7 @@ export const columns: ColumnDef<Orders>[] = [
               <div>
                 {fulfilledArray && fulfilledArray.length > 0 ? (
                   fulfilledArray.map((fulfilledItem: any, index: any) => (
-                    <p key={index}>
-                      {fulfilledItem.fulfilled ? 'True' : 'False'}
-                    </p>
+                    <p key={index}>{fulfilledItem.fulfilled ? 'Yes' : 'No'}</p>
                   ))
                 ) : (
                   <p>No Data</p>

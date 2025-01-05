@@ -11,6 +11,8 @@ interface OrderProps {
 export const RecentOrders: React.FC<OrderProps> = ({ orders }) => {
   const router = useRouter();
 
+  console.log(orders);
+
   return (
     <div className="space-y-8">
       {orders.slice(0, 4).map((item, index) => (
@@ -39,6 +41,18 @@ export const RecentOrders: React.FC<OrderProps> = ({ orders }) => {
                   month: 'long',
                   day: 'numeric'
                 })}`}
+              </p>
+              <p>
+                {' '}
+                {item.fulfilled.length > 0 ? (
+                  <span className="me-2 rounded bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900 dark:text-green-300">
+                    Shipped
+                  </span>
+                ) : (
+                  <span className="me-2 rounded bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900 dark:text-red-300">
+                    Not Shipped
+                  </span>
+                )}
               </p>
             </div>
             <div className="ml-auto font-medium">

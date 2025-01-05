@@ -27,6 +27,7 @@ import { completeOrder } from '@/utils/orders';
 import { CurrentUserContextType } from '@/@types/user';
 import { UserContext } from '@/context/UserProvider';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import ClipLoader from 'react-spinners/ClipLoader';
 
 const formSchema = z.object({
   tracking_number: z.string().min(5, {
@@ -61,8 +62,10 @@ export default function CompleteOrderForm() {
   });
 
   const [error, setError] = React.useState<string>('');
+  const [loading, setLoading] = React.useState<boolean>(false);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+    setLoading(true);
     const { tracking_number, ship_provider, shipDate, notes } = values;
     if (user?.token) {
       completeOrder(
@@ -75,8 +78,9 @@ export default function CompleteOrderForm() {
         user?.token
       )
         .then((res) => {
+          setLoading(false);
           console.log(res);
-          router.back();
+          router.push('/dashboard/orders');
         })
         .catch((e) => setError('There was an issue completing this order'));
     }
@@ -168,7 +172,17 @@ export default function CompleteOrderForm() {
             {error && (
               <p className="text-muted-foreground text-red-900">{error}</p>
             )}
-            <Button type="submit">Submit</Button>
+            <Button type="submit" disabled={loading}>
+              Submit
+              <ClipLoader
+                color="white"
+                loading={loading}
+                //cssOverride={override}
+                size={25}
+                aria-label="Loading Spinner"
+                data-testid="loader"
+              />
+            </Button>
           </form>
         </Form>
       </CardContent>

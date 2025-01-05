@@ -131,7 +131,7 @@ export type Orders = {
   item: [OrderItem];
   userId: UserId;
   storeId: Store;
-  fulfilled: Fulfilled;
+  fulfilled: [Fulfilled];
   createdAt: string;
   subTotal: number;
 };
