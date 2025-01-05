@@ -67,7 +67,7 @@ export default function ListingTable({
         limit={limit}
         setPage={setPage}
         setLimit={setLimit}
-        // url="/dashboard/stores"
+        url="/dashboard/listings/edit"
       />
     </div>
   );

@@ -9,6 +9,11 @@ import React, { useEffect, useState } from 'react';
 import { CurrentUserContextType } from '@/@types/user';
 import { UserContext } from '@/context/UserProvider';
 import { getAllListing } from '@/utils/listings';
+import { getStoreListing } from '@/utils/store';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { Plus } from 'lucide-react';
+import Link from 'next/link';
 
 type TUserListingPage = {};
 
@@ -23,8 +28,19 @@ export default function ListingsPage({}: TUserListingPage) {
   const [limit, setLimit] = useState<number>(10);
 
   useEffect(() => {
-    if (user?.token) {
+    if (user?.token && user?.role === 'admin') {
       getAllListing(page, limit).then((res) => {
+        console.log(res?.data);
+        setListings(res?.data);
+        setFilteredListings(res?.data);
+        setTotalListings(res?.meta.total);
+      });
+    }
+  }, [user, page]);
+
+  useEffect(() => {
+    if (user?.token && user?.role === 'store') {
+      getStoreListing(user?.storeId, page, limit).then((res) => {
         console.log(res?.data);
         setListings(res?.data);
         setFilteredListings(res?.data);
@@ -46,13 +62,14 @@ export default function ListingsPage({}: TUserListingPage) {
       <div className="space-y-4">
         <div className="flex items-start justify-between">
           <Heading title={`Listings (${totalListings})`} description="" />
-
-          {/* <Link
-            href={'/dashboard/employee/new'}
-            className={cn(buttonVariants({ variant: 'default' }))}
-          >
-            <Plus className="mr-2 h-4 w-4" /> Add New
-          </Link> */}
+          {user?.role === 'store' && (
+            <Link
+              href={'/dashboard/listings/create'}
+              className={cn(buttonVariants({ variant: 'default' }))}
+            >
+              <Plus className="mr-2 h-4 w-4" /> Add New
+            </Link>
+          )}
         </div>
         <Separator />
         <ListingTable

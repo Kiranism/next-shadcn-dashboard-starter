@@ -1,27 +1,5 @@
 'use client';
 import * as React from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import Image from 'next/image';
-import * as z from 'zod';
-import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Card,
   CardHeader,
@@ -29,8 +7,8 @@ import {
   CardContent,
   CardDescription
 } from '@/components/ui/card';
-import { getStore, getStoreListing } from '@/utils/store';
-import { useSearchParams, useParams } from 'next/navigation';
+import { getStore } from '@/utils/store';
+import { useParams } from 'next/navigation';
 
 interface IStore {
   _id: string;

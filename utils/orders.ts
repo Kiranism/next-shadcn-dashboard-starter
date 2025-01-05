@@ -36,14 +36,34 @@ export const getOrder = async (orderId: any, token: string) => {
   }
 };
 
+export const getStoreOrderDetails = async (
+  storeId: any,
+  orderId: any,
+  token: string
+) => {
+  try {
+    const response = await axios({
+      url: `${process.env.NEXT_PUBLIC_SERVER_URL}/order/store/get?storeId=${storeId}&orderId=${orderId}`,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      method: 'GET'
+    });
+    return response.data;
+  } catch (error) {
+    return error;
+  }
+};
+
 export const completeOrder = async (
   orderId: any,
+  storeId: any,
   trackingNumber: string,
   shippingProvider: string,
   shipmentDate: string,
   notes: string | any,
-  token: string,
-  storeId?: any
+  token: string
 ) => {
   try {
     const response = await axios({

@@ -1,7 +1,11 @@
 'use client';
-import { Orders, Store, UserId } from '@/constants/data';
+import { Orders, Store, UserId, OrderItem, Fulfilled } from '@/constants/data';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ColumnDef } from '@tanstack/react-table';
+import Cookies from 'universal-cookie';
+
+const cookies = new Cookies();
+const user = cookies.get('user');
 
 export const columns: ColumnDef<Orders>[] = [
   {
@@ -69,10 +73,30 @@ export const columns: ColumnDef<Orders>[] = [
       );
     }
   },
-  // {
-  //   accessorKey: 'fulfilled',
-  //   header: 'Filfilled'
-  // },
+  ...(user?.role === 'store'
+    ? [
+        {
+          accessorKey: 'fulfilled',
+          header: 'FULFILLED',
+          cell: ({ row }) => {
+            const fulfilledArray = row.getValue<Array<Fulfilled>>('fulfilled');
+            return (
+              <div>
+                {fulfilledArray && fulfilledArray.length > 0 ? (
+                  fulfilledArray.map((fulfilledItem: any, index: any) => (
+                    <p key={index}>
+                      {fulfilledItem.fulfilled ? 'True' : 'False'}
+                    </p>
+                  ))
+                ) : (
+                  <p>No Data</p>
+                )}
+              </div>
+            );
+          }
+        }
+      ]
+    : []),
 
   {
     id: 'actions'

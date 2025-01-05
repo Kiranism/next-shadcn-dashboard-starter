@@ -55,12 +55,14 @@ export default function UserAuthForm() {
           path: '/'
         });
         const userData: IUser = {
-          firstName: res.data.firstName,
-          lastName: res.data.lastName,
-          email: res.data.email,
-          userId: res.data.userId,
-          token: res.data.token,
-          role: res.data.role
+          firstName: res?.data?.firstName,
+          lastName: res?.data?.lastName,
+          email: res?.data?.email,
+          userId: res?.data?.userId,
+          token: res?.data?.token,
+          role: res?.data?.role,
+          storeId: res?.data?.storeId,
+          storeName: res?.data?.storeName
         };
         setUser(userData);
         toast.success('Signed In Successfully!');

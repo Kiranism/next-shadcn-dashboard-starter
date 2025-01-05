@@ -31,7 +31,7 @@ export default function StoreListingPage({}: TUserListingPage) {
   const [storeListing, setStoreListing] = React.useState<Listing[]>([]);
 
   React.useEffect(() => {
-    getStoreListing(id).then((res) => {
+    getStoreListing(id, page, limit).then((res) => {
       console.log(res.data);
       setStoreListing(res?.data);
       setFilteredListing(res?.data);

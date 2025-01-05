@@ -5,13 +5,25 @@ export interface IUser {
   userId: string;
   token: string;
   role: string;
+  storeId: string;
+  storeName: string;
 }
 
 export interface IMetrics {
-  ordersCount: number;
+  totalOrders: number;
   signupCount: number;
   totalSales: number;
   storesCount: number;
+}
+
+export interface IStoreData {
+  _id: string;
+  storeName: string;
+  description: string;
+  social: string;
+  website: string;
+  pending: numnber;
+  total: number;
 }
 
 export type CurrentUserContextType = {

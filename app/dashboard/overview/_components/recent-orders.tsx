@@ -1,8 +1,7 @@
 'use client';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Orders } from '@/constants/data';
-import { Separator } from '@/components/ui/separator';
 import { useRouter } from 'next/navigation';
 
 interface OrderProps {
@@ -18,7 +17,11 @@ export const RecentOrders: React.FC<OrderProps> = ({ orders }) => {
         <div key={index}>
           <div
             className="flex items-center hover:cursor-pointer"
-            onClick={() => router.push(`/dashboard/orders/${item.orderId}`)}
+            onClick={() =>
+              router.push(
+                `/dashboard/orders/${item.orderId}?id=${item._id}&storeId=${item?.item[0]?.storeId || ''}`
+              )
+            }
           >
             <Avatar className="h-9 w-9">
               <AvatarFallback className="uppercase">

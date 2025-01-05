@@ -17,17 +17,23 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getMetrics } from '@/utils/metrics';
 import { useEffect, useState } from 'react';
-import { CurrentUserContextType, IMetrics } from '@/@types/user';
+import { CurrentUserContextType, IMetrics, IStoreData } from '@/@types/user';
 import { UserContext } from '@/context/UserProvider';
 import React from 'react';
 import { RecentOrders } from './recent-orders';
 import { getAllOrders } from '@/utils/orders';
 import { Orders } from '@/constants/data';
+import {
+  getStore,
+  getStoreListing,
+  getStoreOrders,
+  getUserStore
+} from '@/utils/store';
 
 export default function OverViewPage() {
   const { user } = React.useContext(UserContext) as CurrentUserContextType;
   const [metrics, setMetrics] = useState<IMetrics>({
-    ordersCount: 0,
+    totalOrders: 0,
     signupCount: 0,
     totalSales: 0,
     storesCount: 0
@@ -35,9 +41,11 @@ export default function OverViewPage() {
   const [orders, setOrders] = useState<Orders[]>([]);
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(10);
+  const [totalStoreListing, setTotalStoreListing] = useState<number>(0);
+  const [pendingOrders, setPendingOrders] = useState<number>(0);
 
   useEffect(() => {
-    if (user?.token) {
+    if (user?.token && user.role === 'admin') {
       getMetrics(user?.token).then((res) => {
         setMetrics(res?.data);
       });
@@ -45,7 +53,41 @@ export default function OverViewPage() {
   }, [user]);
 
   useEffect(() => {
-    if (user?.token) {
+    if (user?.token && user.role === 'admin') {
+      getAllOrders(page, limit, user?.token).then((res) => {
+        console.log(res?.orders);
+        setOrders(res?.orders);
+      });
+    }
+  }, [user, page]);
+
+  useEffect(() => {
+    if (user?.token && user.role === 'store') {
+      getUserStore(user.userId).then((res) => {
+        setMetrics(res?.data?.metrics[0]);
+      });
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user?.token && user.role === 'store') {
+      getStoreOrders(user?.storeId, user.token).then((res) => {
+        setOrders(res?.data);
+        setPendingOrders(res?.meta?.pending);
+      });
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user?.token && user.role === 'store') {
+      getStoreListing(user?.storeId, page, limit).then((res) => {
+        setTotalStoreListing(res?.meta?.total);
+      });
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user?.token && user.role === 'admin') {
       getAllOrders(page, limit, user?.token).then((res) => {
         console.log(res?.orders);
         setOrders(res?.orders);
@@ -119,7 +161,7 @@ export default function OverViewPage() {
                   </svg>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{`+${metrics?.ordersCount}`}</div>
+                  <div className="text-2xl font-bold">{`+${metrics?.totalOrders}`}</div>
                   <p className="text-xs text-muted-foreground">
                     +180.1% from last month
                   </p>
@@ -127,7 +169,9 @@ export default function OverViewPage() {
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Users</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    {user.role === 'admin' ? 'Users' : 'Total Listings'}
+                  </CardTitle>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 24 24"
@@ -144,7 +188,11 @@ export default function OverViewPage() {
                   </svg>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{`+${metrics?.signupCount}`}</div>
+                  <div className="text-2xl font-bold">
+                    {user.role === 'admin'
+                      ? `+${metrics?.signupCount}`
+                      : `+${totalStoreListing}`}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     +19% from last month
                   </p>
@@ -152,7 +200,9 @@ export default function OverViewPage() {
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Stores</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    {user.role === 'admin' ? 'Stores' : 'Pending Orders'}
+                  </CardTitle>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 24 24"
@@ -171,9 +221,13 @@ export default function OverViewPage() {
                   </svg>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{`+${metrics?.storesCount}`}</div>
+                  <div className="text-2xl font-bold">
+                    {user.role === 'admin'
+                      ? `+${metrics.storesCount}`
+                      : `+${pendingOrders}`}
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    +201 since last hour
+                    +5 since last hour
                   </p>
                 </CardContent>
               </Card>

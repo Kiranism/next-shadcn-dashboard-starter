@@ -13,7 +13,9 @@ function UserProvider({ children }: { children: React.ReactNode }) {
     email: '',
     userId: '',
     token: '',
-    role: ''
+    role: '',
+    storeId: '',
+    storeName: ''
   });
   const [reRender, setReRender] = useState<Boolean>(false);
 

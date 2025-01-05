@@ -6,9 +6,10 @@ import { Separator } from '@/components/ui/separator';
 import { Listing, Orders } from '@/constants/data';
 import ListingTable from './order-tables';
 import React, { useEffect, useState } from 'react';
-import { CurrentUserContextType } from '@/@types/user';
+import { CurrentUserContextType, IStoreData } from '@/@types/user';
 import { UserContext } from '@/context/UserProvider';
 import { getAllOrders } from '@/utils/orders';
+import { getUserStore, getStoreOrders } from '@/utils/store';
 
 type TUserListingPage = {};
 
@@ -23,7 +24,7 @@ export default function OrdersPage({}: TUserListingPage) {
   const [limit, setLimit] = useState<number>(10);
 
   useEffect(() => {
-    if (user?.token) {
+    if (user?.token && user.role === 'admin') {
       getAllOrders(page, limit, user?.token).then((res) => {
         console.log(res?.orders);
         setOrders(res?.orders);
@@ -42,6 +43,16 @@ export default function OrdersPage({}: TUserListingPage) {
     );
     setFilteredOrders(filtered);
   }, [search, orders]);
+
+  useEffect(() => {
+    if (user?.token && user.role === 'store') {
+      getStoreOrders(user?.storeId, user.token).then((res) => {
+        setOrders(res?.data);
+        setFilteredOrders(res?.data);
+        setTotalOrders(res?.meta.total);
+      });
+    }
+  }, [user]);
 
   return (
     <PageContainer scrollable>

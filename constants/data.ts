@@ -115,7 +115,7 @@ export type Listing = {
   category: string;
   sku: string;
   upc: number;
-  listingImage: [ListingImage];
+  listingImage: ListingImage;
   storeName: string;
   createdAt: string;
 };
@@ -130,8 +130,8 @@ export type Orders = {
   orderId: string;
   item: [OrderItem];
   userId: UserId;
-  storeId: [Store];
-  fulfilled: boolean;
+  storeId: Store;
+  fulfilled: Fulfilled;
   createdAt: string;
   subTotal: number;
 };
@@ -147,7 +147,17 @@ export type Store = {
   storeName: string;
 };
 
-export type OrderItem = {};
+export type OrderItem = {
+  storeId: string;
+  fulfilled: boolean;
+};
+
+export type Fulfilled = {
+  _id: string;
+  storeId: string;
+  fulfilled: boolean;
+  fulfillmentDetails: string;
+};
 
 export type Employee = {
   id: number;
@@ -264,5 +274,47 @@ export const navItems: NavItem[] = [
     shortcut: ['k', 'k'],
     isActive: false,
     items: [] // No child items
+  }
+];
+
+export const storenavItems: NavItem[] = [
+  {
+    title: 'Dashboard',
+    url: '/dashboard/overview',
+    icon: 'dashboard',
+    isActive: false,
+    shortcut: ['d', 'd'],
+    items: [] // Empty array as there are no child items for Dashboard
+  },
+  {
+    title: 'Orders',
+    url: '/dashboard/orders',
+    icon: 'wallet',
+    shortcut: ['e', 'e'],
+    isActive: false,
+    items: [] // No child items
+  },
+  {
+    title: 'Listings',
+    url: '/dashboard/listings',
+    icon: 'product',
+    shortcut: ['e', 'e'],
+    isActive: false,
+    items: [] // No child items
+  },
+  {
+    title: 'Account',
+    url: '#', // Placeholder as there is no direct link for the parent
+    icon: 'billing',
+    isActive: true,
+
+    items: [
+      {
+        title: 'Profile',
+        url: '/dashboard/profile',
+        icon: 'userPen',
+        shortcut: ['m', 'm']
+      }
+    ]
   }
 ];

@@ -46,6 +46,7 @@ export default function CompleteOrderForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
+  const storeId = searchParams.get('storeId');
   const params = useParams();
   const { orderId } = params;
 
@@ -62,11 +63,11 @@ export default function CompleteOrderForm() {
   const [error, setError] = React.useState<string>('');
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
     const { tracking_number, ship_provider, shipDate, notes } = values;
     if (user?.token) {
       completeOrder(
         id,
+        storeId,
         tracking_number,
         ship_provider,
         shipDate,

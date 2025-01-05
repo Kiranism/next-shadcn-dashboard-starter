@@ -1,6 +1,6 @@
-import StoreDetails from '../[storeId]/_components/store-details';
+import StoreDetails from '../edit/_components/store-details';
 import PageContainer from '@/components/layout/page-container';
-import StoreListingPage from '../[storeId]/_components/store-listing-page';
+import StoreListingPage from '../edit/_components/store-listing-page';
 
 export default function StoreViewPage() {
   return (

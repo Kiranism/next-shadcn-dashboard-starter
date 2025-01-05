@@ -1,20 +1,12 @@
 'use client';
 
 import PageContainer from '@/components/layout/page-container';
-import { buttonVariants } from '@/components/ui/button';
 import { Heading } from '@/components/ui/heading';
 import { Separator } from '@/components/ui/separator';
-import { Listing, Stores } from '@/constants/data';
-import { fakeUsers } from '@/constants/mock-api';
-import { searchParamsCache } from '@/lib/searchparams';
-import { cn } from '@/lib/utils';
-import { Plus } from 'lucide-react';
-import Link from 'next/link';
+import { Listing } from '@/constants/data';
 import StoreTable from './store-tables';
 import React, { useEffect, useState } from 'react';
-import { CurrentUserContextType } from '@/@types/user';
-import { UserContext } from '@/context/UserProvider';
-import { getAllStores, getStoreListing } from '@/utils/store';
+import { getStoreListing } from '@/utils/store';
 import { useSearchParams } from 'next/navigation';
 
 type TUserListingPage = {};
@@ -31,7 +23,7 @@ export default function StoreListingPage({}: TUserListingPage) {
   const [storeListing, setStoreListing] = React.useState<Listing[]>([]);
 
   React.useEffect(() => {
-    getStoreListing(id).then((res) => {
+    getStoreListing(id, page, limit).then((res) => {
       console.log(res.data);
       setStoreListing(res?.data);
       setFilteredListing(res?.data);
