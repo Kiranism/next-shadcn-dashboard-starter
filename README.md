@@ -15,7 +15,7 @@
 
 This is a starter template using the following stack:
 
-- Framework - [Next.js 14](https://nextjs.org/13)
+- Framework - [Next.js 15](https://nextjs.org/13)
 - Language - [TypeScript](https://www.typescriptlang.org)
 - Styling - [Tailwind CSS](https://tailwindcss.com)
 - Components - [Shadcn-ui](https://ui.shadcn.com)
@@ -86,10 +86,15 @@ src/
 
 ## Getting Started
 
-Follow these steps to clone the repository and start the development server:
+> [!NOTE]  
+> If you want to use the starter with **Next 15** with **React 19**, follow these steps:
+>
+> - Clone only the `next-15` branch:
+>   ```bash
+>   git clone --branch next-15 --single-branch https://github.com/Kiranism/next-shadcn-dashboard-starter.git
+>   ```
 
-- `git clone https://github.com/Kiranism/next-shadcn-dashboard-starter.git`
-- `npm install`
+- `npm install` ( we have legacy-peer-deps=true added in the .npmrc)
 - Create a `.env.local` file by copying the example environment file:
   `cp env.example.txt .env.local`
 - Add the required environment variables to the `.env.local` file.
