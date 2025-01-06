@@ -1,5 +1,5 @@
 {
-  "name": "nextshcdndashboardstarter",
+  "name": "next-shadcn-dashboard-starter",
   "version": "1.0.0",
   "private": true,
   "author": {
@@ -11,12 +11,15 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "format": "prettier . --write",
+    "lint:fix": "eslint src --fix && pnpm format",
+    "lint:strict": "eslint --max-warnings=0 src",
+    "format": "prettier --write .",
+    "format:check": "prettier -c -w .",
     "prepare": "husky"
   },
   "lint-staged": {
-    "**/*": [
-      "prettier --write --ignore-unknown"
+    "**/*.{js,jsx,tsx,ts,css,less,scss,sass}": [
+      "prettier --write --no-error-on-unmatched-pattern"
     ]
   },
   "dependencies": {
