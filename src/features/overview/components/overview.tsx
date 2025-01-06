@@ -1,9 +1,4 @@
-import { AreaGraph } from './area-graph';
-import { BarGraph } from './bar-graph';
-import { PieGraph } from './pie-graph';
-import { CalendarDateRangePicker } from '@/components/date-range-picker';
 import PageContainer from '@/components/layout/page-container';
-import { RecentSales } from './recent-sales';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -13,6 +8,10 @@ import {
   CardTitle
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AreaGraph } from './area-graph';
+import { BarGraph } from './bar-graph';
+import { PieGraph } from './pie-graph';
+import { RecentSales } from './recent-sales';
 
 export default function OverViewPage() {
   return (
@@ -23,7 +22,6 @@ export default function OverViewPage() {
             Hi, Welcome back 👋
           </h2>
           <div className='hidden items-center space-x-2 md:flex'>
-            <CalendarDateRangePicker />
             <Button>Download</Button>
           </div>
         </div>
