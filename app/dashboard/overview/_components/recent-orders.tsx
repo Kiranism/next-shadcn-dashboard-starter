@@ -46,11 +46,11 @@ export const RecentOrders: React.FC<OrderProps> = ({ orders }) => {
           >
             <Avatar className="h-9 w-9">
               <AvatarFallback className="uppercase">
-                {item?.userId.firstname.slice(0, 2)}
+                {item?.userId?.firstname.slice(0, 2)}
               </AvatarFallback>
             </Avatar>
             <div className="ml-4 space-y-1">
-              <p className="text-sm font-medium leading-none">{`${item.userId.firstname} ${item.userId.lastname}`}</p>
+              <p className="text-sm font-medium leading-none">{`${item?.userId?.firstname} ${item?.userId.lastname}`}</p>
               <p className="text-sm text-muted-foreground">
                 {item.userId.email}
               </p>
@@ -80,11 +80,11 @@ export const RecentOrders: React.FC<OrderProps> = ({ orders }) => {
             </div>
             <div className="ml-auto font-medium">
               {user?.role === 'admin' &&
-                item.subTotal &&
-                `$${item.subTotal.toFixed(2)}`}
+                item?.subTotal &&
+                `$${item?.subTotal?.toFixed(2)}`}
               {user?.role === 'store' && (
                 <div key={index}>
-                  <p>{`$${totalPrice[index].toFixed(2)}`}</p>
+                  <p>{`$${totalPrice[index]?.toFixed(2)}`}</p>
                 </div>
               )}
             </div>
