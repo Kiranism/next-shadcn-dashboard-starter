@@ -27,10 +27,22 @@ import { Separator } from '@/components/ui/separator';
 import { profileSchema, type ProfileFormValues } from '../utils/form-schema';
 import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AlertTriangleIcon, Trash, Trash2Icon } from 'lucide-react';
+import {
+  AlertTriangleIcon,
+  CalendarIcon,
+  Trash,
+  Trash2Icon
+} from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { Calendar } from '@/components/ui/calendar';
 
 interface ProfileFormType {
   initialData: any | null;
@@ -454,15 +466,46 @@ const ProfileCreateForm: React.FC<ProfileFormType> = ({
                             control={form.control}
                             name={`jobs.${index}.startdate`}
                             render={({ field }) => (
-                              <FormItem>
+                              <FormItem className='mt-[6px] flex flex-col'>
                                 <FormLabel>Start date</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    type='date'
-                                    disabled={loading}
-                                    {...field}
-                                  />
-                                </FormControl>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <FormControl>
+                                      <Button
+                                        variant={'outline'}
+                                        className={cn(
+                                          'pl-3 text-left font-normal',
+                                          !field.value &&
+                                            'text-muted-foreground'
+                                        )}
+                                      >
+                                        {field.value ? (
+                                          format(new Date(field.value), 'PPP')
+                                        ) : (
+                                          <span>Pick a date</span>
+                                        )}
+                                        <CalendarIcon className='ml-auto h-4 w-4 opacity-50' />
+                                      </Button>
+                                    </FormControl>
+                                  </PopoverTrigger>
+                                  <PopoverContent
+                                    className='w-auto p-0'
+                                    align='start'
+                                  >
+                                    <Calendar
+                                      mode='single'
+                                      selected={new Date(field.value)}
+                                      onSelect={(date) => {
+                                        if (date) {
+                                          field.onChange(
+                                            format(date, 'yyyy-MM-dd')
+                                          );
+                                        }
+                                      }}
+                                      initialFocus
+                                    />
+                                  </PopoverContent>
+                                </Popover>
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -471,15 +514,46 @@ const ProfileCreateForm: React.FC<ProfileFormType> = ({
                             control={form.control}
                             name={`jobs.${index}.enddate`}
                             render={({ field }) => (
-                              <FormItem>
+                              <FormItem className='mt-[6px] flex flex-col'>
                                 <FormLabel>End date</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    type='date'
-                                    disabled={loading}
-                                    {...field}
-                                  />
-                                </FormControl>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <FormControl>
+                                      <Button
+                                        variant={'outline'}
+                                        className={cn(
+                                          'pl-3 text-left font-normal',
+                                          !field.value &&
+                                            'text-muted-foreground'
+                                        )}
+                                      >
+                                        {field.value ? (
+                                          format(new Date(field.value), 'PPP')
+                                        ) : (
+                                          <span>Pick a date</span>
+                                        )}
+                                        <CalendarIcon className='ml-auto h-4 w-4 opacity-50' />
+                                      </Button>
+                                    </FormControl>
+                                  </PopoverTrigger>
+                                  <PopoverContent
+                                    className='w-auto p-0'
+                                    align='start'
+                                  >
+                                    <Calendar
+                                      mode='single'
+                                      selected={new Date(field.value)}
+                                      onSelect={(date) => {
+                                        if (date) {
+                                          field.onChange(
+                                            format(date, 'yyyy-MM-dd')
+                                          );
+                                        }
+                                      }}
+                                      initialFocus
+                                    />
+                                  </PopoverContent>
+                                </Popover>
                                 <FormMessage />
                               </FormItem>
                             )}
