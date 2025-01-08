@@ -128,7 +128,7 @@ export type ListingImage = {
 export type Orders = {
   _id: string;
   orderId: string;
-  item: [OrderItem];
+  item: OrderItem[];
   userId: UserId;
   storeId: Store;
   fulfilled: [Fulfilled];
@@ -148,6 +148,8 @@ export type Store = {
 };
 
 export type OrderItem = {
+  price: number;
+  quantity: number;
   storeId: string;
   fulfilled: boolean;
 };

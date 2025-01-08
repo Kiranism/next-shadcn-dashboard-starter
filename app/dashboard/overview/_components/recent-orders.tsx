@@ -1,17 +1,36 @@
 'use client';
 
+import { CurrentUserContextType } from '@/@types/user';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Orders } from '@/constants/data';
+import { OrderItem, Orders } from '@/constants/data';
+import { UserContext } from '@/context/UserProvider';
 import { useRouter } from 'next/navigation';
+import React from 'react';
 
 interface OrderProps {
   orders: Orders[];
 }
 
 export const RecentOrders: React.FC<OrderProps> = ({ orders }) => {
+  const { user } = React.useContext(UserContext) as CurrentUserContextType;
   const router = useRouter();
 
-  console.log(orders);
+  const [totalPrice, setTotalPrice] = React.useState<any>([]);
+
+  console.log(totalPrice);
+
+  React.useEffect(() => {
+    const totalPrices = orders.map((order) =>
+      order.item.reduce(
+        (sum: number, item: OrderItem) => sum + item.price * item.quantity,
+        0
+      )
+    );
+
+    setTotalPrice(totalPrices);
+  }, [orders]); // This effect depends on `order`
+
+  console.log(totalPrice);
 
   return (
     <div className="space-y-8">
@@ -44,19 +63,30 @@ export const RecentOrders: React.FC<OrderProps> = ({ orders }) => {
               </p>
               <p>
                 {' '}
-                {item.fulfilled.length > 0 ? (
-                  <span className="me-2 rounded bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900 dark:text-green-300">
-                    Shipped
-                  </span>
-                ) : (
-                  <span className="me-2 rounded bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900 dark:text-red-300">
-                    Not Shipped
-                  </span>
+                {user?.role === 'store' && (
+                  <>
+                    {item.fulfilled[0].fulfilled != false ? (
+                      <span className="me-2 rounded bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900 dark:text-green-300">
+                        Shipped
+                      </span>
+                    ) : (
+                      <span className="me-2 rounded bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900 dark:text-red-300">
+                        Not Shipped
+                      </span>
+                    )}
+                  </>
                 )}
               </p>
             </div>
             <div className="ml-auto font-medium">
-              {item.subTotal ? `$${item.subTotal}` : '+$1,999.00'}
+              {user?.role === 'admin' &&
+                item.subTotal &&
+                `$${item.subTotal.toFixed(2)}`}
+              {user?.role === 'store' && (
+                <div key={index}>
+                  <p>{`$${totalPrice[index].toFixed(2)}`}</p>
+                </div>
+              )}
             </div>
           </div>
           {/* <Separator /> */}

@@ -32,11 +32,11 @@ export default function OrderDetails() {
   const [visible, setVisible] = React.useState<boolean>(false);
 
   const [order, setOrder] = React.useState<[] | any>([]);
+  const [totalPrice, setTotalPrice] = React.useState(0);
 
   React.useEffect(() => {
     if (user?.token && user?.role === 'admin') {
       getOrder(orderId, user?.token).then((res) => {
-        console.log(res?.data);
         setOrder(res?.data);
       });
     }
@@ -45,11 +45,22 @@ export default function OrderDetails() {
   React.useEffect(() => {
     if (user?.token && user?.role === 'store') {
       getStoreOrderDetails(user?.storeId, orderId, user?.token).then((res) => {
-        console.log(res);
         setOrder(res?.data);
+        console.log(res?.data);
       });
     }
   }, [user]);
+
+  // Calculate totalPrice whenever `order` changes
+  React.useEffect(() => {
+    if (order && order?.item?.length > 0) {
+      const calculatedTotalPrice = order?.item?.reduce(
+        (sum: number, item: any) => sum + item.price * item.quantity,
+        0
+      );
+      setTotalPrice(calculatedTotalPrice);
+    }
+  }, [order]); // This effect depends on `order`
 
   return (
     <Card className="mx-auto w-full">
@@ -149,10 +160,20 @@ export default function OrderDetails() {
                   </table>
                   <div className="mt-5 flex justify-end">
                     <ul>
-                      <li>{`Subotal: $${order.subTotal}`}</li>
+                      {user?.role === 'admin' && (
+                        <li>{`Subotal: $${order.subTotal.toFixed(2)}`}</li>
+                      )}
+                      {user?.role === 'store' && (
+                        <li>{`Subotal: $${totalPrice.toFixed(2)}`}</li>
+                      )}
                       <li>Shipping Fee: $5.99</li>
-                      <li>Tax: $2.00</li>
-                      <li>{`Total: $${(order.subTotal + 5.99 + 2.0).toFixed(2)}`}</li>
+                      {/* <li>Tax: $2.00</li> */}
+                      {user?.role === 'admin' && (
+                        <li>{`Total: $${(order.subTotal + 5.99).toFixed(2)}`}</li>
+                      )}
+                      {user?.role === 'store' && (
+                        <li>{`Total: $${(totalPrice + 5.99).toFixed(2)}`}</li>
+                      )}
                     </ul>
                   </div>
                 </div>
