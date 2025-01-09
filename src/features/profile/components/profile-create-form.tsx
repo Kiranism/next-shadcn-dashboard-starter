@@ -465,7 +465,6 @@ const ProfileCreateForm: React.FC<ProfileFormType> = ({
                           <FormField
                             control={form.control}
                             name={`jobs.${index}.startdate`}
-                            disabled={loading}
                             render={({ field }) => (
                               <FormItem className='mt-[6px] flex flex-col'>
                                 <FormLabel>Start date</FormLabel>
@@ -479,6 +478,7 @@ const ProfileCreateForm: React.FC<ProfileFormType> = ({
                                           !field.value &&
                                             'text-muted-foreground'
                                         )}
+                                        disabled={loading}
                                       >
                                         {field.value ? (
                                           format(new Date(field.value), 'PPP')
@@ -514,7 +514,6 @@ const ProfileCreateForm: React.FC<ProfileFormType> = ({
                           <FormField
                             control={form.control}
                             name={`jobs.${index}.enddate`}
-                            disabled={loading}
                             render={({ field }) => (
                               <FormItem className='mt-[6px] flex flex-col'>
                                 <FormLabel>End date</FormLabel>
@@ -528,6 +527,7 @@ const ProfileCreateForm: React.FC<ProfileFormType> = ({
                                           !field.value &&
                                             'text-muted-foreground'
                                         )}
+                                        disabled={loading}
                                       >
                                         {field.value ? (
                                           format(new Date(field.value), 'PPP')
