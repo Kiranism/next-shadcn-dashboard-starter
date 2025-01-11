@@ -1,8 +1,7 @@
 'use client';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Employee, Stores, Users } from '@/constants/data';
+import { Stores } from '@/constants/data';
 import { ColumnDef } from '@tanstack/react-table';
-import { CellAction } from './cell-action';
 
 export const columns: ColumnDef<Stores>[] = [
   {
@@ -35,6 +34,18 @@ export const columns: ColumnDef<Stores>[] = [
   {
     accessorKey: 'location',
     header: 'LOCATION'
+  },
+  {
+    accessorKey: 'active',
+    header: 'ACTIVE',
+    cell: ({ row }) => {
+      const active = row.getValue<boolean>('active');
+      return (
+        <div>
+          <p>{active === true ? 'Yes' : 'No'}</p>
+        </div>
+      );
+    }
   },
   {
     accessorKey: 'description',
