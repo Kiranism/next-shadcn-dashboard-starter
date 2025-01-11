@@ -63,7 +63,7 @@ export default function OverViewPage() {
   useEffect(() => {
     if (user?.token && user.role === 'store') {
       getUserStore(user.userId).then((res) => {
-        setMetrics(res?.data?.metrics[0]);
+        setMetrics(res?.data?.metrics);
       });
     }
   }, [user]);
