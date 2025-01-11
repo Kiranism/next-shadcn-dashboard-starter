@@ -55,7 +55,6 @@ export default function OverViewPage() {
   useEffect(() => {
     if (user?.token && user.role === 'admin') {
       getAllOrders(page, limit, user?.token).then((res) => {
-        console.log(res?.orders);
         setOrders(res?.orders);
       });
     }
@@ -89,7 +88,6 @@ export default function OverViewPage() {
   useEffect(() => {
     if (user?.token && user.role === 'admin') {
       getAllOrders(page, limit, user?.token).then((res) => {
-        console.log(res?.orders);
         setOrders(res?.orders);
       });
     }

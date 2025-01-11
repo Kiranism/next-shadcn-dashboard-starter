@@ -17,8 +17,6 @@ export const RecentOrders: React.FC<OrderProps> = ({ orders }) => {
 
   const [totalPrice, setTotalPrice] = React.useState<any>([]);
 
-  console.log(totalPrice);
-
   React.useEffect(() => {
     const totalPrices = orders.map((order) =>
       order.item.reduce(
@@ -29,8 +27,6 @@ export const RecentOrders: React.FC<OrderProps> = ({ orders }) => {
 
     setTotalPrice(totalPrices);
   }, [orders]); // This effect depends on `order`
-
-  console.log(totalPrice);
 
   return (
     <div className="space-y-8">
