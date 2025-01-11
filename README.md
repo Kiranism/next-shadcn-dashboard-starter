@@ -4,7 +4,7 @@
 </picture>
 
 <div align="center"><strong>Next.js Admin Dashboard Starter Template With Shadcn-ui</strong></div>
-<div align="center">Built with the Next.js App Router</div>
+<div align="center">Built with the Next.js 15 App Router</div>
 <br />
 <div align="center">
 <a href="https://next-shadcn-dashboard-starter.vercel.app">View Demo</a>
@@ -87,12 +87,10 @@ src/
 ## Getting Started
 
 > [!NOTE]  
-> If you want to use the starter with **Next 15** with **React 19**, follow these steps:
->
-> - Clone only the `next-15` branch:
->   ```bash
->   git clone --branch next-15 --single-branch https://github.com/Kiranism/next-shadcn-dashboard-starter.git
->   ```
+> We are using **Next 15** with **React 19**, follow these steps:
+
+Clone the repo:
+`git clone https://github.com/Kiranism/next-shadcn-dashboard-starter.git`
 
 - `npm install` ( we have legacy-peer-deps=true added in the .npmrc)
 - Create a `.env.local` file by copying the example environment file:
@@ -102,7 +100,11 @@ src/
 
 You should now be able to access the application at http://localhost:3000.
 
-> [!WARNING]  
+> [!WARNING]
 > After cloning or forking the repository, be cautious when pulling or syncing with the latest changes, as this may result in breaking conflicts.
 
 Cheers! 🥂
+
+```
+
+```
