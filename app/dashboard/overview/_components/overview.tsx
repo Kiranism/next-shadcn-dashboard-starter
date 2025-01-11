@@ -133,7 +133,9 @@ export default function OverViewPage() {
                   </svg>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{`$${(metrics?.totalSales).toLocaleString()}`}</div>
+                  <div className="text-2xl font-bold">
+                    {metrics ? `$${(metrics?.totalSales).toLocaleString()}` : 0}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     +20.1% from last month
                   </p>
@@ -159,7 +161,9 @@ export default function OverViewPage() {
                   </svg>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{`+${metrics?.totalOrders}`}</div>
+                  <div className="text-2xl font-bold">
+                    {metrics?.totalOrders ? `+${metrics?.totalOrders}` : 0}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     +180.1% from last month
                   </p>

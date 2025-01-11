@@ -88,6 +88,8 @@ export const RecentOrders: React.FC<OrderProps> = ({ orders }) => {
           {/* <Separator /> */}
         </div>
       ))}
+
+      {orders.length === 0 && <p>No orders yet.</p>}
     </div>
   );
 };
