@@ -4,7 +4,7 @@ import PageContainer from '@/components/layout/page-container';
 import { Heading } from '@/components/ui/heading';
 import { Separator } from '@/components/ui/separator';
 import { Listing, Orders } from '@/constants/data';
-import ListingTable from './order-tables';
+import OrdersTable from './order-tables';
 import React, { useEffect, useState } from 'react';
 import { CurrentUserContextType, IStoreData } from '@/@types/user';
 import { UserContext } from '@/context/UserProvider';
@@ -68,7 +68,7 @@ export default function OrdersPage({}: TUserListingPage) {
           </Link> */}
         </div>
         <Separator />
-        <ListingTable
+        <OrdersTable
           data={filteredOrders}
           totalData={totalOrders}
           search={search}

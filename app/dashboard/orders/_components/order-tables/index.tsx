@@ -7,7 +7,7 @@ import { Listing, Orders } from '@/constants/data';
 import { columns } from './columns';
 import { useEmployeeTableFilters } from './use-employee-table-filters';
 
-export default function ListingTable({
+export default function OrdersTable({
   data,
   totalData,
   search,

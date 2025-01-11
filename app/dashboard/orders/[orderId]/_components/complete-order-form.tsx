@@ -47,9 +47,7 @@ export default function CompleteOrderForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
-  const storeId = searchParams.get('storeId');
   const params = useParams();
-  const { orderId } = params;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -70,7 +68,7 @@ export default function CompleteOrderForm() {
     if (user?.token) {
       completeOrder(
         id,
-        storeId,
+        user?.storeId,
         tracking_number,
         ship_provider,
         shipDate,
@@ -82,7 +80,7 @@ export default function CompleteOrderForm() {
           console.log(res);
           router.push('/dashboard/orders');
         })
-        .catch((e) => setError('There was an issue completing this order'));
+        .catch(() => setError('There was an issue completing this order'));
     }
   }
 
