@@ -94,7 +94,7 @@ export function DataTable<TData, TValue>({
     <div className='flex flex-1 flex-col space-y-4'>
       <div className='relative flex flex-1'>
         <div className='absolute inset-0 flex overflow-scroll rounded-md border'>
-          <ScrollArea className='flex flex-1'>
+          <ScrollArea>
             <Table className='relative'>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
@@ -141,8 +141,6 @@ export function DataTable<TData, TValue>({
                 )}
               </TableBody>
             </Table>
-
-            <ScrollBar orientation='vertical' />
             <ScrollBar orientation='horizontal' />
           </ScrollArea>
         </div>
