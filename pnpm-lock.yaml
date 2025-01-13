@@ -85,6 +85,9 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.1.5
         version: 1.1.5(@types/react-dom@19.0.2(@types/react@19.0.1))(@types/react@19.0.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      '@react-oauth/google':
+        specifier: ^0.12.1
+        version: 0.12.1(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       '@tanstack/react-table':
         specifier: ^8.20.6
         version: 8.20.6(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -1409,6 +1412,15 @@ packages:
       {
         integrity: sha512-Ba7HmkFgfQxZqqaeIWWkNK0rEhpxVQHIoVyW1YDSkGsGIXzcaW4deC8B0pZrNSSyLTdIk7y+5olKt5+g0GmFIQ==
       }
+
+  '@react-oauth/google@0.12.1':
+    resolution:
+      {
+        integrity: sha512-qagsy22t+7UdkYAiT5ZhfM4StXi9PPNvw0zuwNmabrWyMKddczMtBIOARflbaIj+wHiQjnMAsZmzsUYuXeyoSg==
+      }
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
 
   '@rtsao/scc@1.1.0':
     resolution:
@@ -5857,6 +5869,11 @@ snapshots:
   '@radix-ui/rect@1.1.0': {}
 
   '@reach/observe-rect@1.2.0': {}
+
+  '@react-oauth/google@0.12.1(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
+    dependencies:
+      react: 19.0.0
+      react-dom: 19.0.0(react@19.0.0)
 
   '@rtsao/scc@1.1.0': {}
 
