@@ -16,10 +16,12 @@ import { useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
-import { login } from '@/utils/auth';
+import { login, googleLogin } from '@/utils/auth';
 import { CurrentUserContextType, IUser } from '@/@types/user';
 import { UserContext } from '@/context/UserProvider';
 import React from 'react';
+// import GithubSignInButton from './github-auth-button';
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Enter a valid email address' }),
@@ -49,7 +51,7 @@ export default function UserAuthForm() {
     login(data.email, data.password).then((res: any) => {
       console.log(res.status);
       if (res.status === 200) {
-        cookies.set('user', JSON.stringify(res.data), {
+        cookies.set('mechchant_admin_user', JSON.stringify(res.data), {
           path: '/'
         });
         const userData: IUser = {
@@ -77,6 +79,36 @@ export default function UserAuthForm() {
     //   toast.success('Signed In Successfully!');
     // });
   };
+
+  function handleGoogleLogin(token: string | undefined) {
+    googleLogin(token)
+      .then((res: any) => {
+        if (res.status === 200) {
+          cookies.set('mechchant_admin_user', JSON.stringify(res.data), {
+            path: '/'
+          });
+          const userData: IUser = {
+            firstName: res?.data?.firstName,
+            lastName: res?.data?.lastName,
+            email: res?.data?.email,
+            userId: res?.data?.userId,
+            token: res?.data?.token,
+            role: res?.data?.role,
+            storeId: res?.data?.storeId,
+            storeName: res?.data?.storeName
+          };
+          setUser(userData);
+          toast.success('Signed In Successfully!');
+          router.push('/dashboard/overview');
+        } else {
+          setError('There was a problem logging in with google ');
+        }
+      })
+      .catch((error) => {
+        console.log(error);
+        setError('There was a problem logging in with google');
+      });
+  }
 
   return (
     <>
@@ -128,7 +160,7 @@ export default function UserAuthForm() {
           </Button>
         </form>
       </Form>
-      {/* <div className="relative">
+      <div className="relative">
         <div className="absolute inset-0 flex items-center">
           <span className="w-full border-t" />
         </div>
@@ -138,7 +170,20 @@ export default function UserAuthForm() {
           </span>
         </div>
       </div>
-      <GithubSignInButton /> */}
+      <div className="flex justify-center">
+        <GoogleOAuthProvider
+          clientId={`${process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}`}
+        >
+          <GoogleLogin
+            onSuccess={(credentialResponse) => {
+              handleGoogleLogin(credentialResponse.credential);
+            }}
+            onError={() => {}}
+          />
+        </GoogleOAuthProvider>
+      </div>
+
+      {/* <GithubSignInButton /> */}
     </>
   );
 }

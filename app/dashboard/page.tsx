@@ -5,7 +5,7 @@ import { cookies } from 'next/headers'; // Import cookies
 export default async function Dashboard() {
   const session = await auth();
   const nextCookies = await cookies(); // Get cookies object
-  const loggedin = nextCookies.get('user');
+  const loggedin = nextCookies.get('mechchant_admin_user');
 
   if (!loggedin) {
     return redirect('/');

@@ -30,7 +30,6 @@ export default function ListingsPage({}: TUserListingPage) {
   useEffect(() => {
     if (user?.token && user?.role === 'admin') {
       getAllListing(page, limit).then((res) => {
-        console.log(res?.data);
         setListings(res?.data);
         setFilteredListings(res?.data);
         setTotalListings(res?.meta.total);
@@ -41,7 +40,6 @@ export default function ListingsPage({}: TUserListingPage) {
   useEffect(() => {
     if (user?.token && user?.role === 'store') {
       getStoreListing(user?.storeId, page, limit).then((res) => {
-        console.log(res?.data);
         setListings(res?.data);
         setFilteredListings(res?.data);
         setTotalListings(res?.meta.total);

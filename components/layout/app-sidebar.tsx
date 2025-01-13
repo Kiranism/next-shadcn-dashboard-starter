@@ -260,7 +260,9 @@ export default function AppSidebar() {
                 <DropdownMenuSeparator />
 
                 <DropdownMenuGroup>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => router.push('/dashboard/profile')}
+                  >
                     <BadgeCheck />
                     Account
                   </DropdownMenuItem>

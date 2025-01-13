@@ -20,7 +20,7 @@ function UserProvider({ children }: { children: React.ReactNode }) {
   const [reRender, setReRender] = useState<Boolean>(false);
 
   useEffect(() => {
-    const data = cookies.get('user');
+    const data = cookies.get('mechchant_admin_user');
     if (data) {
       setUser(data);
     }

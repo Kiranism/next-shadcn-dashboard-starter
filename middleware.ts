@@ -9,7 +9,7 @@ import authConfig from './auth.config';
 const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
-  const loggedin = req.cookies.get('user');
+  const loggedin = req.cookies.get('mechchant_admin_user');
   // if (!req.auth) {
   //   const url = req.url.replace(req.nextUrl.pathname, '/');
   //   return Response.redirect(url);

@@ -79,7 +79,11 @@ export default function CreateListingForm() {
       description: '',
       tags: '',
       type: undefined,
-      shipping: undefined
+      shipping: undefined,
+      price: 0,
+      quantity: 0,
+      sku: '',
+      upc: 0
     }
   });
 

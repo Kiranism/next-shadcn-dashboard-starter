@@ -91,6 +91,7 @@ export default function CreateListingForm() {
   const id = search.get('id');
 
   const [listing, setListing] = React.useState<IListing>();
+  const [variants, setVariants] = React.useState([{ option: '', value: '' }]);
   const [images, setImages] = React.useState([]);
   const [loading, setLoading] = React.useState<boolean>(true);
   const [updateLoading, setUpdateLoading] = React.useState<boolean>(false);
@@ -150,7 +151,21 @@ export default function CreateListingForm() {
         console.log(e);
       });
   }, [form.reset]);
-  console.log(listing);
+
+  React.useEffect(() => {
+    if (listing) {
+      const formatedData: { option: string; value: string }[] =
+        listing?.variation.flatMap((item: any) =>
+          item.value.map((val: any) => ({
+            option: item.option,
+            value: val
+          }))
+        ) || [];
+      setVariants(formatedData);
+    }
+  }, [listing]);
+
+  console.log(variants);
 
   React.useEffect(() => {
     document.body.style.overflow = 'auto'; // Ensure scrolling is enabled
@@ -163,8 +178,6 @@ export default function CreateListingForm() {
     setListingImages(images);
     setReRender((prevState) => !prevState);
   };
-
-  const [variants, setVariants] = React.useState([{ option: '', value: '' }]);
 
   const handleVariantChange = (
     index: number,
@@ -230,11 +243,7 @@ export default function CreateListingForm() {
     formData.append('sku', sku);
     formData.append('upc', upc.toString());
     formData.append('shipping', shipping);
-    if (listing?.variation && listing.variation.length > 0) {
-      formData.append('variation', JSON.stringify(listing?.variation));
-    } else {
-      formData.append('variation', JSON.stringify(variants));
-    }
+    formData.append('variation', JSON.stringify(variants));
 
     formData.append('userId', user?.userId);
     formData.append('storeId', user?.storeId);
@@ -245,7 +254,6 @@ export default function CreateListingForm() {
 
     updateListing(formData, user?.token, id)
       .then((res) => {
-        console.log(res);
         setUpdateLoading(false);
         router.back();
       })
@@ -262,9 +270,8 @@ export default function CreateListingForm() {
 
   function handleDelete(): void {
     deleteListing(user?.token, id).then((res) => {
+      router.back();
       setDeleteLoading(true);
-      console.log(res);
-      router.push('/dashboard/listings');
     });
   }
 
@@ -473,26 +480,26 @@ export default function CreateListingForm() {
                   </button>
                 </div>
 
-                {listing?.variation.map((item: any, index: number) => (
+                {/* {listing?.variation.map((item: any, index: number) => (
                   <div className="rounded-md p-4 shadow" key={index}>
                     <div>
                       <>
-                        <h5 className="ml-2 capitalize">{`${item?.option}`}</h5>
+                        <h5 className="capitalize">{`${item?.option}`}</h5>
                         {item.value.map((option: any, index: number) => (
-                          <Link
-                            href="#"
-                            className="mr-2 mt-2 inline-flex items-center rounded-md text-sm capitalize"
+                          <p
+                            
+                            className="mt-2 inline-flex items-center rounded-md text-sm capitalize"
                             key={index}
                           >
-                            <Tag className="mr-1" /> {option}
-                          </Link>
+                            <Tag className="mr-2" /> {option}
+                          </p>
                         ))}
                       </>
                     </div>
                   </div>
-                ))}
+                ))} */}
 
-                {listing?.variation && listing.variation.length > 0 && (
+                {/* {listing?.variation && listing.variation.length > 0 && (
                   <div className="mt-4">
                     <button
                       onClick={() => removeOptions()}
@@ -503,7 +510,7 @@ export default function CreateListingForm() {
                       Clear Variations
                     </button>
                   </div>
-                )}
+                )} */}
               </div>
 
               <Heading
@@ -654,8 +661,8 @@ export default function CreateListingForm() {
         </CardContent>
       )}
       {loading && (
-        <CardTitle className="text-left text-2xl font-bold">
-          Loading!!!
+        <CardTitle className="ms-6 text-left text-2xl font-bold">
+          Loading...
         </CardTitle>
       )}
     </Card>

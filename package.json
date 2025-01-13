@@ -46,6 +46,7 @@
     "@radix-ui/react-tabs": "^1.1.2",
     "@radix-ui/react-toast": "^1.2.3",
     "@radix-ui/react-tooltip": "^1.1.5",
+    "@react-oauth/google": "^0.12.1",
     "@tanstack/react-table": "^8.20.6",
     "@types/node": "22.10.2",
     "@types/react": "19.0.1",

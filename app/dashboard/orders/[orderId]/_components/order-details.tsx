@@ -249,7 +249,7 @@ export default function OrderDetails() {
             </div>
           </>
         ) : (
-          <CardTitle>Loading!!!</CardTitle>
+          <CardTitle>Loading...</CardTitle>
         )}
       </CardHeader>
       {visible && (
