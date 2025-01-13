@@ -7,7 +7,7 @@
 <div align="center">Built with the Next.js 15 App Router</div>
 <br />
 <div align="center">
-<a href="https://next-shadcn-dashboard-starter.vercel.app">View Demo</a>
+<a href="https://dub.sh/shadcn-dashboard">View Demo</a>
 <span>
 </div>
 
