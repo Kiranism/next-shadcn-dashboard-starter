@@ -124,6 +124,10 @@ const chartConfig = {
   mobile: {
     label: 'Mobile',
     color: 'hsl(var(--chart-2))'
+  },
+  error: {
+    label: 'Error',
+    color: 'hsl(var(--chart-2))'
   }
 } satisfies ChartConfig;
 
@@ -145,9 +149,16 @@ export function BarGraph() {
     setIsClient(true);
   }, []);
 
+  React.useEffect(() => {
+    if (activeChart === 'error') {
+      throw new Error('Mocking Error');
+    }
+  }, [activeChart]);
+
   if (!isClient) {
     return null;
   }
+
   return (
     <Card>
       <CardHeader className='flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row'>
@@ -158,8 +169,9 @@ export function BarGraph() {
           </CardDescription>
         </div>
         <div className='flex'>
-          {['desktop', 'mobile'].map((key) => {
+          {['desktop', 'mobile', 'error'].map((key) => {
             const chart = key as keyof typeof chartConfig;
+            if (!chart || total[key as keyof typeof total] === 0) return null;
             return (
               <button
                 key={chart}
@@ -171,7 +183,7 @@ export function BarGraph() {
                   {chartConfig[chart].label}
                 </span>
                 <span className='text-lg font-bold leading-none sm:text-3xl'>
-                  {total[key as keyof typeof total].toLocaleString()}
+                  {total[key as keyof typeof total]?.toLocaleString()}
                 </span>
               </button>
             );
