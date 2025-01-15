@@ -23,10 +23,12 @@ export default async function DashboardLayout({
       <SidebarProvider defaultOpen={defaultOpen}>
         <AppSidebar />
         <SidebarInset>
-          <Header />
-          {/* page main content */}
-          {children}
-          {/* page main content ends */}
+          <div className='bg-black p-3'>
+            <Header />
+            {/* page main content */}
+            {children}
+            {/* page main content ends */}
+          </div>
         </SidebarInset>
       </SidebarProvider>
     </KBar>
