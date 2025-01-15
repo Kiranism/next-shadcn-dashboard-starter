@@ -59,7 +59,7 @@ export default function SignInViewPage({ stars }: { stars: number }) {
               buttonVariants({
                 variant: 'ghost'
               }),
-              'inline-flex'
+              'group inline-flex hover:text-yellow-200'
             )}
             target='_blank'
             href={'https://github.com/kiranism/next-shadcn-dashboard-starter'}
@@ -69,7 +69,10 @@ export default function SignInViewPage({ stars }: { stars: number }) {
               <span className='ml-1 inline'>Star on GitHub</span>{' '}
             </div>
             <div className='ml-2 flex items-center gap-1 text-sm md:flex'>
-              <StarIcon className='size-4 text-gray-500 transition-all duration-300 group-hover:text-yellow-300' />
+              <StarIcon
+                className='size-4 text-gray-500 transition-all duration-300 group-hover:text-yellow-300'
+                fill='currentColor'
+              />
               <span className='font-display font-medium'>{stars}</span>
             </div>
           </Link>
