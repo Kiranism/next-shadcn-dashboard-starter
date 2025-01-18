@@ -34,6 +34,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 import ClipLoader from 'react-spinners/ClipLoader';
 
+import MDEditor from '@uiw/react-md-editor';
+
 interface IListing {
   name: string;
   category: string;
@@ -55,9 +57,9 @@ const formSchema = z.object({
   category: z.string({
     required_error: 'Please select a category.'
   }),
-  description: z.string().min(1, {
-    message: 'Please enter a description'
-  }),
+  // description: z.string().min(1, {
+  //   message: 'Please enter a description'
+  // }),
   tags: z.string().min(1, {
     message: 'Please enter tags associated with the listing.'
   }),
@@ -87,6 +89,9 @@ export default function CreateListingForm() {
 
   const search = useSearchParams();
   const id = search.get('id');
+  const [markdown, setMarkdown] = React.useState('');
+
+  //console.log(markdown)
 
   const [listing, setListing] = React.useState<IListing>();
   const [variants, setVariants] = React.useState([{ option: '', value: '' }]);
@@ -100,7 +105,7 @@ export default function CreateListingForm() {
     defaultValues: {
       name: '',
       category: '',
-      description: '',
+      //description: '',
       tags: '',
       type: '',
       shipping: '',
@@ -120,7 +125,7 @@ export default function CreateListingForm() {
           form.reset({
             name: res?.data?.listing?.listingName,
             category: res?.data?.listing?.category,
-            description: res?.data?.listing?.description,
+            //description: res?.data?.listing?.description,
             tags: Array.isArray(res?.data?.listing?.tags)
               ? res?.data?.listing.tags.join(', ')
               : res?.data?.listing.tags,
@@ -131,6 +136,7 @@ export default function CreateListingForm() {
             sku: String(res?.data?.listing?.sku),
             upc: res?.data?.listing?.upc
           });
+          setMarkdown(res?.data?.listing?.description);
           const images = res.data.listing.listingImage.map(
             (item: any) => item.url
           );
@@ -162,8 +168,6 @@ export default function CreateListingForm() {
       setVariants(formatedData);
     }
   }, [listing]);
-
-  console.log(variants);
 
   React.useEffect(() => {
     document.body.style.overflow = 'auto'; // Ensure scrolling is enabled
@@ -218,7 +222,7 @@ export default function CreateListingForm() {
     const {
       name,
       category,
-      description,
+      //description,
       tags,
       type,
       price,
@@ -233,7 +237,7 @@ export default function CreateListingForm() {
     const formData = new FormData();
     formData.append('listingName', name);
     formData.append('category', category);
-    formData.append('description', description);
+    formData.append('description', markdown);
     formData.append('type', type);
     formData.append('tags', tags);
     formData.append('price', price.toString());
@@ -336,7 +340,7 @@ export default function CreateListingForm() {
                     </FormItem>
                   )}
                 />
-                <FormField
+                {/* <FormField
                   control={form.control}
                   name="description"
                   render={({ field }) => (
@@ -348,13 +352,28 @@ export default function CreateListingForm() {
                       <FormMessage />
                     </FormItem>
                   )}
+                /> */}
+              </div>
+              <div data-color-mode="light">
+                <Heading
+                  title={'Description'}
+                  description=" Please write a detailed description of your listing."
                 />
+                <MDEditor
+                  value={markdown}
+                  onChange={(val) => setMarkdown(val || '')}
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <FormField
                   control={form.control}
                   name="tags"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tags</FormLabel>
+                      <Heading
+                        title={'Tags'}
+                        description="Enter tags associated with the listing."
+                      />
                       <FormControl>
                         <Textarea placeholder="Enter tags" {...field} />
                       </FormControl>
@@ -362,48 +381,51 @@ export default function CreateListingForm() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <Heading
+                        title={'Type'}
+                        description=" Choose the type of listing you want."
+                      />
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          className="flex space-x-4"
+                        >
+                          <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                              <RadioGroupItem value="physical" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              Physical
+                            </FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                              <RadioGroupItem value="digital" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              Digital
+                            </FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                              <RadioGroupItem value="other" />
+                            </FormControl>
+                            <FormLabel className="font-normal">Other</FormLabel>
+                          </FormItem>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
-              <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
-                  <FormItem className="space-y-3">
-                    <Heading
-                      title={'Type'}
-                      description=" Choose the type of listing you want."
-                    />
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        className="flex space-x-4"
-                      >
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <RadioGroupItem value="physical" />
-                          </FormControl>
-                          <FormLabel className="font-normal">
-                            Physical
-                          </FormLabel>
-                        </FormItem>
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <RadioGroupItem value="digital" />
-                          </FormControl>
-                          <FormLabel className="font-normal">Digital</FormLabel>
-                        </FormItem>
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <RadioGroupItem value="other" />
-                          </FormControl>
-                          <FormLabel className="font-normal">Other</FormLabel>
-                        </FormItem>
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+
               <div>
                 <Heading
                   title={'Photos'}
