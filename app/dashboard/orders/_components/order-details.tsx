@@ -28,7 +28,7 @@ export default function StoreDetailsPage() {
 
   React.useEffect(() => {
     getStore(storeId).then((res) => {
-      console.log(res);
+      // console.log(res);
       setStore(res?.store);
     });
   }, []);

@@ -46,7 +46,7 @@ export default function OrderDetails() {
     if (user?.token && user?.role === 'store') {
       getStoreOrderDetails(user?.storeId, orderId, user?.token).then((res) => {
         setOrder(res?.data);
-        console.log(res?.data);
+        // console.log(res?.data);
       });
     }
   }, [user]);

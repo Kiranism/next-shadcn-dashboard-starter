@@ -31,7 +31,6 @@ export default function UserListingPage({}: TUserListingPage) {
   useEffect(() => {
     if (user?.token) {
       getAllUsers(page, user?.token, limit).then((res) => {
-        console.log(res.users);
         setUsers(res?.users);
         setTotalUsers(res?.meta.total);
       });

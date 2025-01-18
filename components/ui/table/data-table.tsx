@@ -32,9 +32,15 @@ import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { parseAsInteger, useQueryState } from 'nuqs';
+import { useEffect } from 'react';
 
 interface DataTableProps<
-  TData extends { _id?: string; storeName?: string; orderId?: string },
+  TData extends {
+    _id?: string;
+    storeName?: string;
+    orderId?: string;
+    firstname?: string;
+  },
   TValue
 > {
   columns: ColumnDef<TData, TValue>[];
@@ -49,7 +55,12 @@ interface DataTableProps<
 }
 
 export function DataTable<
-  TData extends { _id?: string; storeName?: string; orderId?: string },
+  TData extends {
+    _id?: string;
+    storeName?: string;
+    orderId?: string;
+    firstname?: string;
+  },
   TValue
 >({
   columns,
@@ -74,8 +85,10 @@ export function DataTable<
       .withDefault(10)
   );
 
+  //console.log(page)
+
   const paginationState = {
-    pageIndex: currentPage - 1, // zero-based index for React Table
+    pageIndex: page - 1, // zero-based index for React Table
     pageSize: pageSize
   };
 
@@ -93,6 +106,8 @@ export function DataTable<
 
     setPage(pagination.pageIndex + 1); // converting zero-based index to one-based
     setLimit(pagination.pageSize);
+    console.log(page);
+    console.log(currentPage);
   };
 
   const table = useReactTable({
@@ -145,7 +160,9 @@ export function DataTable<
                         ? row.original.storeName
                         : row.original.orderId
                           ? row.original.orderId
-                          : '';
+                          : row.original.firstname
+                            ? row.original.firstname
+                            : '';
                       const query = `?id=${row.original._id}`; // Add query only if storeName is present
                       router.push(`${url}/${slug}${query}`);
                     }

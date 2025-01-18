@@ -26,7 +26,7 @@ export default function OrdersPage({}: TUserListingPage) {
   useEffect(() => {
     if (user?.token && user.role === 'admin') {
       getAllOrders(page, limit, user?.token).then((res) => {
-        console.log(res?.orders);
+        // console.log(res?.orders);
         setOrders(res?.orders);
         setFilteredOrders(res?.orders);
         setTotalOrders(res?.meta.total);

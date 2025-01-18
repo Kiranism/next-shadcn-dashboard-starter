@@ -24,15 +24,13 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Heading } from '@/components/ui/heading';
-import { Plus, Trash, Tag } from 'lucide-react';
-import FileUploadFour from '@/components/file-upload-four';
+import { Plus, Trash } from 'lucide-react';
 import FileUpload from './fileUpload';
 import { cn } from '@/lib/utils';
 import { updateListing, getListing, deleteListing } from '@/utils/listings';
 import { CurrentUserContextType } from '@/@types/user';
 import { UserContext } from '@/context/UserProvider';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 
 import ClipLoader from 'react-spinners/ClipLoader';
 

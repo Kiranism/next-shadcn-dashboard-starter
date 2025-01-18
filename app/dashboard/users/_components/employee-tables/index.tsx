@@ -71,6 +71,7 @@ export default function EmployeeTable({
         limit={limit}
         setPage={setPage}
         setLimit={setLimit}
+        url="/dashboard/users"
       />
     </div>
   );
