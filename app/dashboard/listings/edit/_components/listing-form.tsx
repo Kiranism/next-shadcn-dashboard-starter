@@ -271,7 +271,7 @@ export default function CreateListingForm() {
   }
 
   function handleDelete(): void {
-    deleteListing(user?.token, id).then((res) => {
+    deleteListing(user?.token, id, user?.userId).then((res) => {
       router.back();
       setDeleteLoading(true);
     });

@@ -66,10 +66,14 @@ export const updateListing = async (
   }
 };
 
-export const deleteListing = async (token: string, listingId: any) => {
+export const deleteListing = async (
+  token: string,
+  listingId: any,
+  userId: string
+) => {
   try {
     const response = await axios({
-      url: `${process.env.NEXT_PUBLIC_SERVER_URL}/listing/delete?id=${listingId}`,
+      url: `${process.env.NEXT_PUBLIC_SERVER_URL}/listing/delete?id=${listingId}&userId=${userId}`,
       headers: {
         Authorization: `Bearer ${token}`
       },
