@@ -266,7 +266,7 @@ export default function CreateListingForm() {
                 )}
               /> */}
             </div>
-            <div>
+            <div data-color-mode="light">
               <Heading
                 title={'Description'}
                 description=" Please write a detailed description of your listing."

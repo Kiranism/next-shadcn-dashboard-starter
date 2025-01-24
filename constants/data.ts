@@ -120,6 +120,15 @@ export type Listing = {
   createdAt: string;
 };
 
+export type Blogs = {
+  _id: string;
+  title: string;
+  tag: string;
+  author: UserId;
+  content: string;
+  createdAt: string;
+};
+
 export type ListingImage = {
   _id: string;
   url: string;
@@ -236,6 +245,14 @@ export const navItems: NavItem[] = [
     title: 'Listings',
     url: '/dashboard/listings',
     icon: 'product',
+    shortcut: ['e', 'e'],
+    isActive: false,
+    items: [] // No child items
+  },
+  {
+    title: 'Blogs',
+    url: '/dashboard/blogs',
+    icon: 'post',
     shortcut: ['e', 'e'],
     isActive: false,
     items: [] // No child items
