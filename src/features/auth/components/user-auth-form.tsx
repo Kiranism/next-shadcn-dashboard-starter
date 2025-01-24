@@ -12,14 +12,15 @@ import { Input } from '@/components/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { signIn } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
-import { useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
 import GithubSignInButton from './github-auth-button';
 
 const formSchema = z.object({
-  email: z.string().email({ message: 'Enter a valid email address' })
+  username: z.string().min(3, { message: 'Username must be at least 3 characters' }),
+  password: z.string().min(6, { message: 'Password must be at least 6 characters' })
 });
 
 type UserFormValue = z.infer<typeof formSchema>;
@@ -28,21 +29,63 @@ export default function UserAuthForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl');
   const [loading, startTransition] = useTransition();
+  const [isRegister, setIsRegister] = useState(false);
+  
   const defaultValues = {
-    email: 'demo@gmail.com'
+    username: '',
+    password: ''
   };
+  
   const form = useForm<UserFormValue>({
     resolver: zodResolver(formSchema),
     defaultValues
   });
 
   const onSubmit = async (data: UserFormValue) => {
-    startTransition(() => {
-      signIn('credentials', {
-        email: data.email,
-        callbackUrl: callbackUrl ?? '/dashboard'
-      });
-      toast.success('Signed In Successfully!');
+    startTransition(async () => {
+      if (isRegister) {
+        try {
+          const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+          });
+
+          if (!response.ok) {
+            const error = await response.text();
+            throw new Error(error);
+          }
+
+          await signIn('credentials', {
+            username: data.username,
+            password: data.password,
+            callbackUrl: callbackUrl ?? '/dashboard'
+          });
+          toast.success('Registered and signed in successfully!');
+        } catch (error) {
+          toast.error(error instanceof Error ? error.message : 'Registration failed');
+        }
+      } else {
+        try {
+          const result = await signIn('credentials', {
+            username: data.username,
+            password: data.password,
+            redirect: false
+          });
+
+          if (result?.error) {
+            toast.error('Invalid credentials');
+            return;
+          }
+
+          toast.success('Signed in successfully!');
+          window.location.href = callbackUrl ?? '/dashboard';
+        } catch (error) {
+          toast.error('Sign in failed');
+        }
+      }
     });
   };
 
@@ -55,14 +98,14 @@ export default function UserAuthForm() {
         >
           <FormField
             control={form.control}
-            name='email'
+            name='username'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel>Username</FormLabel>
                 <FormControl>
                   <Input
-                    type='email'
-                    placeholder='Enter your email...'
+                    type='text'
+                    placeholder='Enter your username'
                     disabled={loading}
                     {...field}
                   />
@@ -71,9 +114,26 @@ export default function UserAuthForm() {
               </FormItem>
             )}
           />
-
-          <Button disabled={loading} className='ml-auto w-full' type='submit'>
-            Continue With Email
+          <FormField
+            control={form.control}
+            name='password'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Password</FormLabel>
+                <FormControl>
+                  <Input
+                    type='password'
+                    placeholder='Enter your password'
+                    disabled={loading}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Button type='submit' className='w-full' disabled={loading}>
+            {isRegister ? 'Register' : 'Sign In'}
           </Button>
         </form>
       </Form>
@@ -88,6 +148,15 @@ export default function UserAuthForm() {
         </div>
       </div>
       <GithubSignInButton />
+      <Button
+        variant='link'
+        className='w-full'
+        onClick={() => setIsRegister(!isRegister)}
+      >
+        {isRegister
+          ? 'Already have an account? Sign In'
+          : "Don't have an account? Register"}
+      </Button>
     </>
   );
 }

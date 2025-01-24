@@ -14,49 +14,52 @@ export type Product = {
 //Info: The following data is used for the sidebar navigation and Cmd K bar.
 export const navItems: NavItem[] = [
   {
-    title: 'Dashboard',
-    url: '/dashboard/overview',
+    title: '概览',
+    url: '/dashboard',
     icon: 'dashboard',
     isActive: false,
     shortcut: ['d', 'd'],
-    items: [] // Empty array as there are no child items for Dashboard
+    items: []
   },
   {
-    title: 'Product',
-    url: '/dashboard/product',
-    icon: 'product',
-    shortcut: ['p', 'p'],
+    title: '视频',
+    url: '/dashboard/videos',
+    icon: 'video',
+    shortcut: ['v', 'v'],
     isActive: false,
-    items: [] // No child items
+    items: []
   },
   {
-    title: 'Account',
-    url: '#', // Placeholder as there is no direct link for the parent
-    icon: 'billing',
-    isActive: true,
-
-    items: [
-      {
-        title: 'Profile',
-        url: '/dashboard/profile',
-        icon: 'userPen',
-        shortcut: ['m', 'm']
-      },
-      {
-        title: 'Login',
-        shortcut: ['l', 'l'],
-        url: '/',
-        icon: 'login'
-      }
-    ]
+    title: '任务队列',
+    url: '/dashboard/tasks',
+    icon: 'clipboardList',
+    shortcut: ['t', 't'],
+    isActive: false,
+    items: []
   },
   {
-    title: 'Kanban',
+    title: '我的任务',
+    url: '/dashboard/my-tasks',
+    icon: 'clipboardCheck',
+    shortcut: ['m', 't'],
+    isActive: false,
+    items: []
+  },
+  {
+    title: '个人信息',
+    url: '/dashboard/profile',
+    icon: 'userPen',
+    shortcut: ['u', 'p'],
+    isActive: false,
+    items: []
+  },
+  {
+    title: '日程表',
     url: '/dashboard/kanban',
     icon: 'kanban',
     shortcut: ['k', 'k'],
     isActive: false,
-    items: [] // No child items
+    items: []
   }
 ];
 

@@ -5,6 +5,8 @@ import {
   ChevronLeft,
   ChevronRight,
   CircuitBoardIcon,
+  ClipboardCheck,
+  ClipboardList,
   Command,
   CreditCard,
   File,
@@ -30,6 +32,7 @@ import {
   UserCircle2Icon,
   UserPen,
   UserX2Icon,
+  Video,
   X
 } from 'lucide-react';
 
@@ -49,6 +52,9 @@ export const Icons = {
   employee: UserX2Icon,
   post: FileText,
   page: File,
+  clipboardList: ClipboardList,
+  clipboardCheck: ClipboardCheck,
+  video: Video,
   userPen: UserPen,
   user2: UserCircle2Icon,
   media: Image,
