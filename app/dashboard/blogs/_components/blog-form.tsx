@@ -76,7 +76,6 @@ export default function CreateListingForm() {
     formData.append('tag', tag);
     formData.append('content', markdown);
     formData.append('author', user?.userId);
-    formData.append('author', user?.userId);
 
     for (const image of listingImages) {
       formData.append('blogImage', image);
