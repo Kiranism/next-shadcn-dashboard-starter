@@ -11,97 +11,43 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { videoData, platformCategories, productCategories } from '@/data/videos'
-
-interface Video {
-  id: number
-  title: string
-  filename: string
-  likes: number
-  platformCategory: '抖音' | '蝉妈妈'
-  productCategory: '洗面奶' | '护肤品' | '牙具'
-}
+import { getVideoList, Video, platformCategories, productCategories } from '@/data/videos'
+import { toast } from 'sonner'
 
 export default function VideosPage() {
   const [selectedPlatform, setSelectedPlatform] = useState<string>('全部')
   const [selectedProduct, setSelectedProduct] = useState<string>('全部')
   const [sortByLikes, setSortByLikes] = useState(false)
   const [isGridView, setIsGridView] = useState(true)
+  const [videos, setVideos] = useState<Video[]>([])
+  const [loading, setLoading] = useState(true)
   const [thumbnails, setThumbnails] = useState<{[key: string]: string}>({})
-  const [debug, setDebug] = useState<string[]>([])
-  const [loadingThumbnails, setLoadingThumbnails] = useState<{[key: string]: boolean}>({})
 
-  // 从 localStorage 加载缩略图
+  // 从OSS加载视频列表
   useEffect(() => {
-    const savedThumbnails = localStorage.getItem('videoThumbnails')
-    if (savedThumbnails) {
-      setThumbnails(JSON.parse(savedThumbnails))
-    }
-  }, [])
-
-  // 保存缩略图到 localStorage
-  useEffect(() => {
-    if (Object.keys(thumbnails).length > 0) {
-      localStorage.setItem('videoThumbnails', JSON.stringify(thumbnails))
-    }
-  }, [thumbnails])
-
-  // 批量生成缩略图
-  useEffect(() => {
-    const generateAllThumbnails = async () => {
-      for (const video of videoData) {
-        const key = video.filename.replace('.mp4', '')
-        // 如果已经有缩略图或正在加载，则跳过
-        if (thumbnails[key] || loadingThumbnails[key]) continue
-
-        try {
-          setLoadingThumbnails(prev => ({ ...prev, [key]: true }))
-          
-          const videoElement = document.createElement('video')
-          videoElement.src = `/video/${video.filename}`
-          videoElement.preload = 'metadata'
-          videoElement.muted = true
-          videoElement.playsInline = true
-
-          await new Promise((resolve) => {
-            videoElement.onloadeddata = resolve
-            videoElement.onerror = resolve // 如果加载失败也继续处理下一个
-          })
-
-          videoElement.currentTime = 0
-          
-          await new Promise((resolve) => {
-            videoElement.onseeked = resolve
-          })
-
-          const canvas = document.createElement('canvas')
-          canvas.width = 320
-          canvas.height = 568
-          
-          const ctx = canvas.getContext('2d')
-          if (ctx) {
-            ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height)
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.8)
-            setThumbnails(prev => ({ ...prev, [key]: dataUrl }))
-          }
-        } catch (error) {
-          console.error('生成缩略图失败:', video.filename, error)
-        } finally {
-          setLoadingThumbnails(prev => ({ ...prev, [key]: false }))
-        }
+    const loadVideos = async () => {
+      try {
+        setLoading(true)
+        const videoList = await getVideoList()
+        setVideos(videoList)
+      } catch (error) {
+        console.error('加载视频列表失败:', error)
+        toast.error('加载视频列表失败')
+      } finally {
+        setLoading(false)
       }
     }
 
-    generateAllThumbnails()
-  }, []) // 只在组件挂载时运行一次
+    loadVideos()
+  }, [])
 
   // 过滤和排序视频
-  const filteredAndSortedVideos = videoData
+  const filteredAndSortedVideos = videos
     .filter(video => 
       (selectedPlatform === '全部' || video.platformCategory === selectedPlatform) &&
       (selectedProduct === '全部' || video.productCategory === selectedProduct)
     )
-    .sort((a, b) => sortByLikes ? b.likes - a.likes : a.id - b.id)
+    .sort((a, b) => sortByLikes ? b.likes - a.likes : 0)
 
   return (
     <div className="p-0 space-y-6 max-h-[calc(100vh-4rem)] overflow-y-auto">
@@ -179,31 +125,37 @@ export default function VideosPage() {
         </div>
       </div>
 
-      {isGridView ? (
+      {loading ? (
+        // 加载状态
+        <div className={isGridView ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" : "space-y-2"}>
+          {[1, 2, 3, 4, 5, 6].map((n) => (
+            <Card key={n} className={isGridView ? "overflow-hidden" : "p-4"}>
+              <div className={isGridView ? "aspect-[9/16] bg-gray-100 animate-pulse" : "h-16 bg-gray-100 animate-pulse"} />
+            </Card>
+          ))}
+        </div>
+      ) : isGridView ? (
         // 网格视图
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {filteredAndSortedVideos.map(video => (
             <Card key={video.id} className="overflow-hidden">
               <div className="aspect-[9/16] relative">
-                {/* 视频缩略图或加载状态 */}
-                {thumbnails[video.filename.replace('.mp4', '')] ? (
+                {video.thumbnailUrl ? (
                   <img 
-                    src={thumbnails[video.filename.replace('.mp4', '')]} 
+                    src={video.thumbnailUrl}
                     alt={video.title}
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gray-200 animate-pulse flex items-center justify-center">
-                    <span className="text-gray-400">
-                      {loadingThumbnails[video.filename.replace('.mp4', '')] 
-                        ? '生成缩略图...' 
-                        : '加载中...'}
-                    </span>
-                  </div>
+                  <video
+                    src={video.ossUrl}
+                    className="w-full h-full object-cover"
+                    preload="metadata"
+                  />
                 )}
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
                   <Link 
-                    href={`/dashboard/videos/${video.id}`}
+                    href={`/dashboard/videos/${encodeURIComponent(video.id)}`}
                     className="text-white hover:text-blue-300 transition-colors block font-medium text-sm line-clamp-2"
                   >
                     {video.title}
@@ -235,7 +187,7 @@ export default function VideosPage() {
               <div className="flex justify-between items-center">
                 <div className="space-y-1">
                   <Link 
-                    href={`/dashboard/videos/${video.id}`}
+                    href={`/dashboard/videos/${encodeURIComponent(video.id)}`}
                     className="text-lg font-medium hover:text-blue-500 transition-colors"
                   >
                     {video.title}
@@ -254,9 +206,12 @@ export default function VideosPage() {
           ))}
         </div>
       )}
-      
-      {/* 调试信息 */}
-      
+
+      {!loading && filteredAndSortedVideos.length === 0 && (
+        <div className="text-center py-10 text-gray-500">
+          没有找到符合条件的视频
+        </div>
+      )}
     </div>
   )
 }
