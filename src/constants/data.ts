@@ -16,50 +16,47 @@ export const navItems: NavItem[] = [
   {
     title: '概览',
     url: '/dashboard',
-    icon: 'dashboard',
+    icon: 'home',
     isActive: false,
     shortcut: ['d', 'd'],
-    items: []
+    items: [],
+    adminOnly: true
   },
   {
     title: '视频',
     url: '/dashboard/videos',
-    icon: 'video',
+    icon: 'play',
     shortcut: ['v', 'v'],
     isActive: false,
-    items: []
+    items: [],
+    adminOnly: false
   },
   {
     title: '任务队列',
     url: '/dashboard/tasks',
-    icon: 'clipboardList',
+    icon: 'list',
     shortcut: ['t', 't'],
     isActive: false,
-    items: []
+    items: [],
+    adminOnly: true
   },
   {
     title: '我的任务',
     url: '/dashboard/my-tasks',
-    icon: 'clipboardCheck',
+    icon: 'check',
     shortcut: ['m', 't'],
     isActive: false,
-    items: []
+    items: [],
+    adminOnly: false
   },
   {
     title: '个人信息',
     url: '/dashboard/profile',
-    icon: 'userPen',
-    shortcut: ['u', 'p'],
+    icon: 'user',
+    shortcut: ['p', 'p'],
     isActive: false,
-    items: []
-  },
-  {
-    title: '日程表',
-    url: '/dashboard/kanban',
-    icon: 'kanban',
-    shortcut: ['k', 'k'],
-    isActive: false,
-    items: []
+    items: [],
+    adminOnly: false
   }
 ];
 

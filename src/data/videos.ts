@@ -1,6 +1,7 @@
 import { OSSClient, OSSVideo } from '@/lib/oss'
 
 export interface Video {
+  [x: string]: string | undefined
   id: string
   title: string
   filename: string

@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { signOut, useSession } from 'next-auth/react';
+
 export function UserNav() {
   const { data: session } = useSession();
   if (session) {
@@ -22,9 +23,9 @@ export function UserNav() {
             <Avatar className='h-8 w-8'>
               <AvatarImage
                 src={session.user?.image ?? ''}
-                alt={session.user?.name ?? ''}
+                alt={session.user?.username ?? ''}
               />
-              <AvatarFallback>{session.user?.name?.[0]}</AvatarFallback>
+              <AvatarFallback>{session.user?.username?.[0]}</AvatarFallback>
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
@@ -32,36 +33,34 @@ export function UserNav() {
           <DropdownMenuLabel className='font-normal'>
             <div className='flex flex-col space-y-1'>
               <p className='text-sm font-medium leading-none'>
-                {session.user?.name}
+                {session.user?.username}
               </p>
               <p className='text-xs leading-none text-muted-foreground'>
-                {session.user?.email}
+                {session.user?.isAdmin ? '管理员' : '普通用户'}
               </p>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuItem>
-              Profile
-              <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
+              个人资料
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              Billing
-              <DropdownMenuShortcut>⌘B</DropdownMenuShortcut>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              Settings
-              <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
-            </DropdownMenuItem>
-            <DropdownMenuItem>New Team</DropdownMenuItem>
+            {session.user?.isAdmin && (
+              <DropdownMenuItem>
+                系统设置
+              </DropdownMenuItem>
+            )}
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => signOut()}>
-            Log out
-            <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
+          <DropdownMenuItem
+            className='text-red-600'
+            onClick={() => signOut()}
+          >
+            退出登录
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     );
   }
+  return null;
 }

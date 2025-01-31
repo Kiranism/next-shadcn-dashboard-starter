@@ -2,6 +2,7 @@ import { NextAuthConfig } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { prisma } from './db'
 import bcrypt from 'bcryptjs'
+import { z } from 'zod'
 
 // 定义凭证类型
 interface Credentials {
@@ -12,9 +13,9 @@ interface Credentials {
 // 定义会话用户类型
 interface SessionUser {
   id: string
-  name: string
-  email: string
+  username: string
   image: string | null
+  isAdmin: boolean
 }
 
 export const authConfig = {
@@ -36,13 +37,13 @@ export const authConfig = {
       },
       async authorize(credentials): Promise<SessionUser | null> {
         try {
-          console.log('Auth attempt for username:', credentials?.username)
-
+          // 验证输入
           if (!credentials?.username || !credentials?.password) {
-            console.log('Missing credentials')
-            return null
+            console.error('Missing credentials');
+            return null;
           }
 
+          // 查找用户
           const user = await prisma.user.findUnique({
             where: {
               username: credentials.username
@@ -51,35 +52,34 @@ export const authConfig = {
               id: true,
               username: true,
               password: true,
-              image: true
+              image: true,
+              isAdmin: true
             }
-          })
-
-          console.log('Found user:', user ? 'Yes' : 'No')
+          });
 
           if (!user || !user.password) {
-            console.log('User not found or no password')
-            return null
+            console.error('User not found');
+            return null;
           }
 
-          const isValid = await bcrypt.compare(credentials.password, user.password)
-          console.log('Password valid:', isValid)
+          // 验证密码
+          const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
 
-          if (!isValid) {
-            console.log('Invalid password')
-            return null
+          if (!isPasswordValid) {
+            console.error('Invalid password');
+            return null;
           }
 
-          console.log('Authentication successful')
+          // 返回用户信息（不包含密码）
           return {
             id: user.id,
-            name: user.username,
-            email: user.username,
-            image: user.image
-          }
+            username: user.username,
+            image: user.image,
+            isAdmin: user.isAdmin
+          };
         } catch (error) {
-          console.error('Auth error:', error)
-          return null
+          console.error('Auth error:', error);
+          return null;
         }
       }
     })
@@ -89,37 +89,46 @@ export const authConfig = {
     error: '/auth/error'
   },
   session: {
-    strategy: 'jwt' as const
+    strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
     async jwt({ token, user }) {
-      console.log('JWT Callback - Token:', token)
-      console.log('JWT Callback - User:', user)
-      
       if (user) {
-        token.id = user.id
-        token.name = user.name
-        token.email = user.email
-        token.picture = user.image
+        token.id = user.id;
+        token.username = user.username;
+        token.image = user.image;
+        token.isAdmin = user.isAdmin;
       }
-      return token
+      return token;
     },
     async session({ session, token }) {
-      console.log('Session Callback - Session:', session)
-      console.log('Session Callback - Token:', token)
+      return {
+        ...session,
+        user: {
+          id: token.id,
+          username: token.username,
+          image: token.image,
+          isAdmin: token.isAdmin
+        }
+      };
+    },
+    authorized({ auth, request: { nextUrl } }) {
+      const isLoggedIn = !!auth?.user;
+      const isOnDashboard = nextUrl.pathname.startsWith('/dashboard');
       
-      if (token && session.user) {
-        session.user.id = token.id as string
-        session.user.name = token.name as string
-        session.user.email = token.email as string
-        session.user.image = token.picture as string | null
+      if (isOnDashboard) {
+        if (isLoggedIn) return true;
+        return false; // 重定向到登录页
+      } else if (isLoggedIn) {
+        return true;
       }
-      return session
+      return true;
     }
   },
-  trustHost: true,
+  debug: process.env.NODE_ENV === 'development',
   secret: process.env.AUTH_SECRET || 'your-secret-key',
-  debug: true
+  trustHost: true
 } satisfies NextAuthConfig
 
 export default authConfig

@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs'
 
 export async function POST(req: Request) {
   try {
-    const { username, password } = await req.json()
+    const { username, password, adminCode } = await req.json()
 
     if (!username || !password) {
       return new NextResponse('Missing username or password', { status: 400 })
@@ -34,11 +34,15 @@ export async function POST(req: Request) {
     // 加密密码
     const hashedPassword = await bcrypt.hash(password, 10)
 
+    // 检查是否是管理员
+    const isAdmin = adminCode === '888'
+
     // 创建用户
     const user = await prisma.user.create({
       data: {
         username,
         password: hashedPassword,
+        isAdmin,
         image: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}` // 基于用户名生成头像
       }
     })

@@ -18,6 +18,7 @@ model User {
   username      String    @unique
   password      String
   image         String?
+  isAdmin       Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
