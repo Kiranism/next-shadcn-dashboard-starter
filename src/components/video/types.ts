@@ -1,9 +1,6 @@
 export interface Video {
   id: number
   url: string
-  duration: number
-  startTime: number
-  script: string
   title: string
   lastModified: Date
   size: number

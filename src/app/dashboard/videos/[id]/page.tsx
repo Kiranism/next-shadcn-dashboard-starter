@@ -184,7 +184,7 @@ const VideoCard = ({
           </Dialog>
           <div className="text-sm">
             <div>时长：{duration?.toFixed(2)}秒</div>
-            <div>总时长：{startTime?.toFixed(2)}秒 ~ {(startTime + duration)?.toFixed(2)}秒</div>
+            <div>总时长：{startTime?.toFixed(2)}秒 ~ {(startTime! + duration!)?.toFixed(2)}秒</div>
           </div>
         </div>
 
@@ -202,10 +202,10 @@ const VideoCard = ({
               size="sm"
               className="mt-1"
               onClick={() => {
-                setInputText(script);
+                setInputText(script!);
                 onStateChange?.({
                   status,
-                  inputText: script,
+                  inputText: script!,
                   selectedUser,
                   isInQueue
                 });
@@ -234,7 +234,7 @@ const VideoCard = ({
                   />
                   <div className="text-sm">
                     <div>时长：{duration?.toFixed(2)}秒</div>
-                    <div>总时长：{startTime?.toFixed(2)}秒 ~ {(startTime + duration)?.toFixed(2)}秒</div>
+                    <div>总时长：{startTime?.toFixed(2)}秒 ~ {(startTime! + duration!)?.toFixed(2)}秒</div>
                   </div>
                   <Button
                     variant="outline"
@@ -465,11 +465,13 @@ const saveVideoState = (videoId: string, startTime: number, state: any) => {
   }
 }
 
+
+
 export default function VideoDetailPage() {
   const router = useRouter()
   const params = useParams()
   const videoId = decodeURIComponent(params.id as string)
-  const [video, setVideo] = useState<Video | undefined>()
+  const [video, setVideo] = useState<OSSVideo | undefined>()
   const [selectedItems, setSelectedItems] = useState<number[]>([])
   const [publishedItems, setPublishedItems] = useState<number[]>([])
   const [loading, setLoading] = useState(true)
@@ -500,15 +502,18 @@ export default function VideoDetailPage() {
     loadVideo()
   }, [videoId, router])
 
+  
+
   // 加载test_result目录下的视频
   useEffect(() => {
     const loadTestVideos = async () => {
       try {
         const client = OSSClient.getInstance()
+        const anotherParam = {}; // 补充缺少的参数
         const result = await client.list({
-          prefix: 'test_result/',
-          'max-keys': 1000
-        })
+            prefix: 'test_result/',
+            'max-keys': 1000
+        }, anotherParam);
 
         // Filter for MP4 files and sort by scene number
         const mp4Files = result.objects

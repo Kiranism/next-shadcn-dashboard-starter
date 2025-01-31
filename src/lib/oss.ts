@@ -17,7 +17,7 @@ export interface OSSVideo {
 export class OSSClient {
   private static instance: OSS | null = null;
 
-  private static getInstance(): OSS {
+  public static getInstance(): OSS {
     if (!this.instance) {
       if (!ossConfig.accessKeyId || !ossConfig.accessKeySecret || !ossConfig.bucket || !ossConfig.region) {
         throw new Error('OSS配置不完整，请检查环境变量');
