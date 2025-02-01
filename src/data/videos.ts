@@ -18,7 +18,7 @@ export interface Video {
   platformCategory: '抖音' | '蝉妈妈'
   productCategory: '洗面奶' | '护肤品' | '牙具'
   uploadDate: string
-  duration: string | number | Date; 
+  duration: string | number ; 
   tags: string[]
 }
 
@@ -50,7 +50,7 @@ export async function getVideoList(): Promise<Video[]> {
         platformCategory: Math.random() > 0.5 ? '抖音' : '蝉妈妈',
         productCategory: Math.random() > 0.66 ? '洗面奶' : Math.random() > 0.5 ? '护肤品' : '牙具',
         uploadDate: ossVideo.lastModified.toISOString().split('T')[0],
-        duration: ossVideo.duration || '00:00', // 使用OSS视频的时长
+        duration: String(ossVideo.duration || '00:00'), // 使用OSS视频的时长
         tags: ['产品展示', '使用教程'].sort(() => Math.random() - 0.5).slice(0, Math.random() > 0.5 ? 2 : 1)
       };
     });
