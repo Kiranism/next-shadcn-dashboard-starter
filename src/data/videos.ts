@@ -18,7 +18,7 @@ export interface Video {
   platformCategory: '抖音' | '蝉妈妈'
   productCategory: '洗面奶' | '护肤品' | '牙具'
   uploadDate: string
-  duration: string
+  duration: string | number | Date; 
   tags: string[]
 }
 
