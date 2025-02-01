@@ -7,7 +7,7 @@ export interface NavItem {
   disabled?: boolean;
   external?: boolean;
   shortcut?: [string, string];
-  icon?: keyof typeof Icons;
+  icon: "list" |"play" | "video" | "close" | "media" | "user" | "check" | "dashboard" | "logo" | "login" | "product" | "spinner" | "kanban" | "chevronLeft" | "chevronRight" | "trash" | "employee" | "post";
   label?: string;
   description?: string;
   isActive?: boolean;
