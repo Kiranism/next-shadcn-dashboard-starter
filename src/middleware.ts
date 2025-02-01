@@ -19,7 +19,7 @@ export default auth((req) => {
   
   // 如果未登录，重定向到登录页
   if (!isLoggedIn) {
-    return Response.redirect(new URL('/auth/signin', nextUrl));
+    return Response.redirect(new URL('/', nextUrl));
   }
 
   // 检查用户权限

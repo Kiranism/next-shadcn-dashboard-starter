@@ -1,4 +1,4 @@
-import { NextAuthConfig } from 'next-auth'
+import { NextAuthConfig, Session } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { prisma } from './db'
 import bcrypt from 'bcryptjs'
@@ -35,18 +35,29 @@ export const authConfig = {
           placeholder: 'Enter your password'
         }
       },
-      async authorize(credentials): Promise<SessionUser | null> {
+      async authorize(credentials: Partial<Record<"username" | "password", unknown>>): Promise<SessionUser | null> {
         try {
           // 验证输入
-          if (!credentials?.username || !credentials?.password) {
-            console.error('Missing credentials');
+          if (typeof credentials !== 'object' || credentials === null) {
+            console.error('Invalid credentials object');
+            return null;
+          }
+
+          const { username, password } = credentials;
+
+          // 检查 username 和 password 是否为字符串
+          if (typeof username!== 'string' || typeof password!== 'string') {
+            console.error('Username or password is not a string');
             return null;
           }
 
           // 查找用户
+          const validCredentials: Credentials = { username, password };
+
+          // 查找用户
           const user = await prisma.user.findUnique({
             where: {
-              username: credentials.username
+              username: validCredentials.username
             },
             select: {
               id: true,
@@ -57,13 +68,14 @@ export const authConfig = {
             }
           });
 
-          if (!user || !user.password) {
+          if (!user ||!user.password) {
             console.error('User not found');
             return null;
           }
 
+
           // 验证密码
-          const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
+          const isPasswordValid = await bcrypt.compare(validCredentials.password, user.password);
 
           if (!isPasswordValid) {
             console.error('Invalid password');
@@ -85,7 +97,7 @@ export const authConfig = {
     })
   ],
   pages: {
-    signIn: '/auth/signin',
+    signIn: '/',
     error: '/auth/error'
   },
   session: {
@@ -106,12 +118,12 @@ export const authConfig = {
       return {
         ...session,
         user: {
-          id: token.id,
-          username: token.username,
-          image: token.image,
-          isAdmin: token.isAdmin
+          id: token.id as string,
+          username: token.username as string,
+          image: token.image as string | null,
+          isAdmin: token.isAdmin as boolean
         }
-      };
+      } as Session;
     },
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
