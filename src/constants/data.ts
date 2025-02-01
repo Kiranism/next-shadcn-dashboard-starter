@@ -13,15 +13,7 @@ export type Product = {
 
 //Info: The following data is used for the sidebar navigation and Cmd K bar.
 export const navItems: NavItem[] = [
-  {
-    title: '概览',
-    url: '/dashboard',
-    icon: 'home',
-    isActive: false,
-    shortcut: ['d', 'd'],
-    items: [],
-    adminOnly: true
-  },
+ 
   {
     title: '视频',
     url: '/dashboard/videos',
@@ -40,24 +32,7 @@ export const navItems: NavItem[] = [
     items: [],
     adminOnly: true
   },
-  {
-    title: '我的任务',
-    url: '/dashboard/my-tasks',
-    icon: 'check',
-    shortcut: ['m', 't'],
-    isActive: false,
-    items: [],
-    adminOnly: false
-  },
-  {
-    title: '个人信息',
-    url: '/dashboard/profile',
-    icon: 'user',
-    shortcut: ['p', 'p'],
-    isActive: false,
-    items: [],
-    adminOnly: false
-  }
+  
 ];
 
 export interface SaleUser {

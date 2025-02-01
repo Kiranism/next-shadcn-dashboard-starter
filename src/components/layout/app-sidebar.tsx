@@ -61,7 +61,7 @@ export const company = {
 
 export default function AppSidebar() {
   const { data: session } = useSession();
-  const { isOpen } = useSidebar();
+  const { open } = useSidebar();
   const pathname = usePathname();
 
   // 图标映射
@@ -94,7 +94,7 @@ export default function AppSidebar() {
       <SidebarContent>
         <SidebarMenu>
           {filteredNavItems.map((item) => {
-            const Icon = iconMap[item.icon] || CircuitBoardIcon;
+            const Icon = iconMap[item.icon!] || CircuitBoardIcon;
             return (
               <Link key={item.title} href={item.url}>
                 <SidebarMenuButton
@@ -124,7 +124,7 @@ export default function AppSidebar() {
                 {session?.user?.username?.[0]}
               </AvatarFallback>
             </Avatar>
-            {isOpen && (
+            {open && (
               <div className='overflow-hidden'>
                 <div className='text-sm font-medium leading-none'>
                   {session?.user?.username}

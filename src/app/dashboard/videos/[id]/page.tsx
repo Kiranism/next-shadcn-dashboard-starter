@@ -4,11 +4,12 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { ThumbsUp, Calendar, Clock, Tag, Camera, Wand2, FileText, VideoIcon, Play, Upload, X } from 'lucide-react'
+import { ThumbsUp, Calendar, Clock, Tag, Camera, Wand2, FileText, VideoIcon, Play, Upload, X, BarChart, DollarSign, Heart, MessageCircle, Share2, ShoppingCart, ChevronsUpDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
-import { OSSClient, OSSVideo } from '@/lib/oss'
+import { OSSClient } from '@/lib/oss'
+import { getVideoList, Video } from '@/data/videos'
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
 interface VideoCardProps {
   id: string;
@@ -69,6 +71,27 @@ const VideoCard = ({
   const [isInQueue, setIsInQueue] = useState(initialState?.isInQueue || false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case '审核中':
+        return 'text-blue-500';
+      case '待分发':
+        return 'text-orange-500';
+      case '已分发':
+        return 'text-purple-500';
+      case '拍摄中':
+        return 'text-yellow-500';
+      case '已上传':
+        return 'text-cyan-500';
+      case '已录用':
+        return 'text-green-500';
+      case '已拒绝':
+        return 'text-red-500';
+      default:
+        return 'text-gray-500';
+    }
+  };
+
   // Check if this card is in task queue
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -89,7 +112,7 @@ const VideoCard = ({
     { id: '3', name: '用户C' },
   ];
 
-  const showUploadSection = status === '待领取' || status === '拍摄中' || status === '已上传' || status === '录用' || status === '拒绝';
+  const showUploadSection = true;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newText = e.target.value;
@@ -156,10 +179,10 @@ const VideoCard = ({
   };
 
   return (
-    <Card className="p-4">
-      <div className="flex gap-8">
+    <div className="p-4">
+      <div className="flex">
         {/* Section 1: Video Player */}
-        <div className="space-y-2">
+        <div className="w-[200px] space-y-2">
           <Dialog>
             <DialogTrigger>
               <div className="relative w-32 h-32 bg-gray-100 rounded cursor-pointer">
@@ -175,11 +198,11 @@ const VideoCard = ({
               </div>
             </DialogTrigger>
             <DialogContent className="max-w-4xl">
+              <DialogTitle></DialogTitle>
               <video src={videoUrl} controls className="w-full max-h-[70vh] object-contain rounded-lg"
                 autoPlay
                 playsInline
               />
-
             </DialogContent>
           </Dialog>
           <div className="text-sm">
@@ -188,8 +211,10 @@ const VideoCard = ({
           </div>
         </div>
 
+        <div className="w-[2px] bg-black mx-4" />
+
         {/* Section 2: Script Input */}
-        <div className="flex-1">
+        <div className="w-[600px] space-y-2">
           <Input
             value={inputText}
             onChange={handleInputChange}
@@ -216,8 +241,10 @@ const VideoCard = ({
           </div>
         </div>
 
+        <div className="w-[2px] bg-black mx-4" />
+
         {/* Section 3: Distribution */}
-        <div className="space-y-2 min-w-[200px]">
+        <div className="w-[400px] space-y-2">
           <Dialog open={showDistributeDialog} onOpenChange={setShowDistributeDialog}>
             <DialogTrigger asChild>
               <Button variant="secondary" className="w-full" disabled={status !== '未分发'}>
@@ -228,6 +255,8 @@ const VideoCard = ({
               <DialogTitle>分发拍摄任务</DialogTitle>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-4">
+                  <DialogTitle></DialogTitle>
+
                   <video src={videoUrl} controls className="w-full max-h-[70vh] object-contain rounded-lg"
                     autoPlay
                     playsInline
@@ -291,128 +320,128 @@ const VideoCard = ({
                   </div>
                 </DialogTrigger>
                 <DialogContent className="max-w-4xl">
-                <video src={video} controls className="w-full max-h-[70vh] object-contain rounded-lg"
+                  <DialogTitle></DialogTitle>
+
+                  <video src={video} controls className="w-full max-h-[70vh] object-contain rounded-lg"
                     autoPlay
                     playsInline
-                  />                
-                  </DialogContent>
+                  />
+                </DialogContent>
               </Dialog>
             ))}
           </div>
         </div>
 
-        {/* Section 4: Upload (Only shown after distribution) */}
-        {showUploadSection && (
-          <div className="space-y-2 min-w-[200px]">
-            <div className="space-y-2">
-              <div className="relative w-32 h-32 border-2 border-dashed rounded flex items-center justify-center">
-                {uploadedVideo ? (
-                  <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
-                    <DialogTrigger asChild>
-                      <div className="relative w-full h-full cursor-pointer">
-                        <video
-                          src={uploadedVideo}
-                          className="w-full h-full object-cover rounded"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                          <Play className="w-8 h-8 text-white" />
-                        </div>
-                        <button
-                          className="absolute top-1 right-1 p-1 bg-white rounded-full shadow"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setUploadedVideo(null);
-                          }}
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-4xl">
-                      <video src={uploadedVideo} controls className="w-full" />
-                    </DialogContent>
-                  </Dialog>
-                ) : (
-                  <div className="text-center">
-                    <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                    <input
-                      type="file"
-                      accept="video/*"
-                      className="absolute inset-0 opacity-0 cursor-pointer"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          setUploadedVideo(URL.createObjectURL(file));
-                          handleStatusChange('已上传');
-                        }
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
+        <div className="w-[2px] bg-black mx-4" />
 
-              {uploadedVideo && (
-                <div className="space-y-2">
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>分镜头来源：</div>
-                    <div>原有素材</div>
-                    <div>相似度：</div>
-                    <div>{persistentValues.current.similarity}</div>
-                    <div>状态：</div>
-                    <div>{status}</div>
-                  </div>
-                  <Select
-                    value={status}
-                    onValueChange={(value: any) => handleStatusChange(value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="更改状态" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="已上传">已上传</SelectItem>
-                      <SelectItem value="录用">录用</SelectItem>
-                      <SelectItem value="拒绝">拒绝</SelectItem>
-                    </SelectContent>
-                  </Select>
+        {/* Section 4: Upload */}
+        <div className="w-[400px] space-y-2">
+          <div className="flex gap-4">
+            <div className="relative w-32 h-32 border-2 border-dashed rounded flex items-center justify-center">
+              {uploadedVideo ? (
+                <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+                  <DialogTrigger asChild>
+                    <div className="relative w-full h-full cursor-pointer">
+                      <video
+                        src={uploadedVideo}
+                        className="w-full h-full object-cover rounded"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                        <Play className="w-8 h-8 text-white" />
+                      </div>
+                      <button
+                        className="absolute top-1 right-1 p-1 bg-white rounded-full shadow"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setUploadedVideo(null);
+                        }}
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl">
+                    <video src={uploadedVideo} controls className="w-full" />
+                  </DialogContent>
+                </Dialog>
+              ) : (
+                <div className="text-center">
+                  <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                  <input
+                    type="file"
+                    accept="video/*"
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setUploadedVideo(URL.createObjectURL(file));
+                        handleStatusChange('已上传');
+                      }
+                    }}
+                  />
                 </div>
               )}
             </div>
-            {!isInQueue && status === '待领取' && (
-              <Button
-                variant="default"
-                className="w-full"
-                onClick={() => handleStatusChange('拍摄中')}
+
+            <div className="space-y-2 text-sm">
+              <div>分镜头来源：{uploadedVideo && "原有素材"}</div>
+              <div>相似度：{uploadedVideo && persistentValues.current.similarity}</div>
+              <div>状态：<span className={getStatusColor(status)}>{status}</span></div>
+              <Select
+                value={status || "更改状态"}
+                onValueChange={(value: any) => handleStatusChange(value)}
               >
-                领取任务
-              </Button>
-            )}
-            {isInQueue && (
-              <div className="space-y-2 mt-4">
-                <div className="flex justify-between items-center">
-                  <div>状态: {status}</div>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleRemoveFromQueue}
-                  >
-                    删除任务
-                  </Button>
-                </div>
-                {status === '待领取' && (
-                  <Button
-                    variant="default"
-                    className="w-full"
-                    onClick={() => handleStatusChange('拍摄中')}
-                  >
-                    领取任务
-                  </Button>
-                )}
-              </div>
-            )}
+                <SelectTrigger>
+                  <SelectValue className="text-gray-500">更改状态</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="审核中" className="text-blue-500">审核中</SelectItem>
+                  <SelectItem value="待分发" className="text-orange-500">待分发</SelectItem>
+                  <SelectItem value="已分发" className="text-purple-500">已分发</SelectItem>
+                  <SelectItem value="拍摄中" className="text-yellow-500">拍摄中</SelectItem>
+                  <SelectItem value="已上传" className="text-cyan-500">已上传</SelectItem>
+                  <SelectItem value="已录用" className="text-green-500">已录用</SelectItem>
+                  <SelectItem value="已拒绝" className="text-red-500">已拒绝</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        )}
-      </div>
-    </Card>
+
+          {!isInQueue && status === '待领取' && (
+            <Button
+              variant="default"
+              className="w-full"
+              onClick={() => handleStatusChange('拍摄中')}
+            >
+              领取任务
+            </Button>
+          )}
+          {isInQueue && (
+            <div className="space-y-2 mt-4">
+              <div className="flex justify-between items-center">
+                <div>状态: {status}</div>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleRemoveFromQueue}
+                >
+                  删除任务
+                </Button>
+              </div>
+              {status === '待领取' && (
+                <Button
+                  variant="default"
+                  className="w-full"
+                  onClick={() => handleStatusChange('拍摄中')}
+                >
+                  领取任务
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      </div >
+    </div>
   );
 };
 
@@ -426,11 +455,9 @@ const mockData = Array.from({ length: 10 }, (_, i) => ({
 
 // 虚拟产品数据
 const mockProducts = [
-  { id: 1, name: '智能手表', category: '智能穿戴' },
-  { id: 2, name: '无线耳机', category: '音频设备' },
-  { id: 3, name: '智能音箱', category: '智能家居' },
-  { id: 4, name: '平板电脑', category: '移动设备' },
-  { id: 5, name: '智能手环', category: '智能穿戴' },
+  { id: 1, name: '娇润泉', category: '智能穿戴' },
+  { id: 2, name: '护肤品', category: '音频设备' },
+
 ];
 
 // 本地存储键
@@ -471,7 +498,7 @@ export default function VideoDetailPage() {
   const router = useRouter()
   const params = useParams()
   const videoId = decodeURIComponent(params.id as string)
-  const [video, setVideo] = useState<OSSVideo | undefined>()
+  const [video, setVideo] = useState<Video | undefined>()
   const [selectedItems, setSelectedItems] = useState<number[]>([])
   const [publishedItems, setPublishedItems] = useState<number[]>([])
   const [loading, setLoading] = useState(true)
@@ -484,7 +511,7 @@ export default function VideoDetailPage() {
     const loadVideo = async () => {
       try {
         setLoading(true)
-        const videoList = await OSSClient.listVideos()
+        const videoList = await getVideoList()
         const foundVideo = videoList.find(v => v.id === videoId)
         if (foundVideo) {
           setVideo(foundVideo)
@@ -502,23 +529,22 @@ export default function VideoDetailPage() {
     loadVideo()
   }, [videoId, router])
 
-  
+
 
   // 加载test_result目录下的视频
   useEffect(() => {
     const loadTestVideos = async () => {
       try {
         const client = OSSClient.getInstance()
-        const anotherParam = {}; // 补充缺少的参数
-        const result = await client.list({
-            prefix: 'test_result/',
-            'max-keys': 1000
-        }, anotherParam);
+        const result = await (client.list as any)({
+          prefix: 'test_result/',
+          'max-keys': 1000
+        });
 
         // Filter for MP4 files and sort by scene number
         const mp4Files = result.objects
-          ?.filter(obj => obj.name.toLowerCase().endsWith('.mp4'))
-          .sort((a, b) => {
+          ?.filter((obj: { name: string }) => obj.name.toLowerCase().endsWith('.mp4'))
+          .sort((a: { name: string }, b: { name: string }) => {
             const getSceneNumber = (name: string) => {
               const match = name.match(/scene_(\d+)\.mp4$/i)
               return match ? parseInt(match[1]) : 0
@@ -527,7 +553,7 @@ export default function VideoDetailPage() {
           }) || []
 
         const videosWithDuration = await Promise.all(
-          mp4Files.map(async (file) => {
+          mp4Files.map(async (file: { name: string }) => {
             const url = client.signatureUrl(file.name)
             // Get video duration
             const video = document.createElement('video')
@@ -639,166 +665,188 @@ export default function VideoDetailPage() {
   }
 
   return (
-    <div className="p-0 space-y-4 max-h-[calc(100vh-4rem)] overflow-y-auto">
-      <div className="p-4">
-        <div className="grid gap-4">
-          <Card className="p-4 max-w-[1418px]">
-            <div className="flex items-start justify-center">
-              {/* 左侧视频播放器和属性 */}
-              <div className="w-[500px]">
-                <div className="flex gap-3">
-                  <Dialog>
-                    <DialogTrigger>
-                      <div className="relative w-32 aspect-square cursor-pointer group">
-                        {loading ? (
-                          <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-lg">
-                            <div className="text-sm">加载中...</div>
-                          </div>
-                        ) : video?.url ? (
-                          <>
-                            <video
-                              className="w-full h-full object-cover rounded-lg"
-                              src={video.url}
-                              key={video.url}
-                            />
-                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg">
-                              <Play className="w-6 h-6 text-white" />
+    <div className="flex-1 overflow-hidden">
+      <div className="h-full overflow-y-auto">
+        <div className="p-0 space-y-4 max-h-[calc(100vh-4rem)] overflow-y-auto">
+          <div className="p-4">
+            <div className="grid gap-4">
+              <div className="flex flex-shrink min-w-0">
+                {/* 左侧视频播放器和属性 */}
+                <div className="flex-1 max-w-[50%]">
+                  <div className="flex gap-3">
+                    <Dialog>
+                      <DialogTrigger>
+                        <div className="relative w-32 aspect-square cursor-pointer group">
+                          {loading ? (
+                            <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-lg">
+                              <div className="text-sm">加载中...</div>
                             </div>
-                          </>
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-lg">
-                            <div className="text-sm">视频加载失败</div>
-                          </div>
-                        )}
-                      </div>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-xl sm:max-w-2xl">
-                      <DialogTitle>
-                        {video?.title || "视频播放"}
-                      </DialogTitle>
-                      {video?.url && (
-                        <video
-                          className="w-full max-h-[70vh] object-contain rounded-lg"
-                          controls
-                          autoPlay
-                          playsInline
-                          src={video.url}
-                        />
-                      )}
-                    </DialogContent>
-                  </Dialog>
+                          ) : video ? (
+                            <>
+                              <video
+                                className="w-full h-full object-cover rounded-lg"
+                                src={video.ossUrl}
+                                key={video.ossUrl}
+                                onLoadedMetadata={(e) => {
+                                  const videoEl = e.target as HTMLVideoElement;
+                                  const minutes = Math.floor(videoEl.duration / 60);
+                                  const seconds = Math.floor(videoEl.duration % 60);
+                                  const duration = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                                  setVideo(prev => prev ? { ...prev, duration } : prev);
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg">
+                                <Play className="w-6 h-6 text-white" />
+                              </div>
+                            </>
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-lg">
+                              <div className="text-sm">无视频</div>
+                            </div>
+                          )}
+                        </div>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-4xl">
+                        <DialogTitle>{video?.title}</DialogTitle>
+                        <video src={video?.ossUrl} controls className="w-full aspect-[9/16] object-contain rounded-lg bg-black" />
+                      </DialogContent>
+                    </Dialog>
 
-                  <div className="space-y-0.5 flex-1 min-w-0">
                     {video && (
-                      <>
-                        <h3 className="text-xs font-medium truncate">{video.title}</h3>
-                        <div className="flex items-center space-x-2 text-xs text-gray-500">
-                          <span className="flex items-center">
-                            <Calendar className="w-3 h-3 mr-1" />
-                            {video.lastModified.toLocaleString()}
-                          </span>
-                          <span className="flex items-center">
-                            <Clock className="w-3 h-3 mr-1" />
-                            {(video.size / 1024 / 1024).toFixed(2)} MB
-                          </span>
-                          <span className="flex items-center text-blue-500">
-                            <ThumbsUp className="h-3 w-3 mr-1" />
-                            {video.likes.toLocaleString()} 赞
-                          </span>
+                      <div className="flex-1 space-y-4">
+                        <div>
+                          <h3 className="text-lg font-semibold">{video.title}</h3>
+                          <div className="text-sm text-muted-foreground">{video.platformCategory} · {video.productCategory}</div>
                         </div>
-                        <div className="flex flex-wrap gap-1">
-                          <span className="px-1.5 py-0.5 bg-blue-100 rounded-full text-xs">
-                            {video.platformCategory}
-                          </span>
-                          <span className="px-1.5 py-0.5 bg-green-100 rounded-full text-xs">
-                            {video.productCategory}
-                          </span>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="flex items-center gap-2">
+                            <Heart className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm">{video.likes.toLocaleString()} 点赞</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <MessageCircle className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm">{video.comments.toLocaleString()} 评论</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Share2 className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm">{video.shares.toLocaleString()} 分享</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <ShoppingCart className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm">{video.sales.toLocaleString()} 销量</span>
+                          </div>
                         </div>
-                      </>
+
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm">收入: ¥{video.revenue.toLocaleString()}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <BarChart className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm">转化率: {video.conversionRate}%</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm">上传时间: {video.uploadDate}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm">时长: {video.duration}</span>
+                          </div>
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
-              </div>
 
-              {/* 分割线 */}
-              <div className="mx-6 self-stretch w-px bg-border opacity-70" />
+                {/* 中间分割线 */}
+                <div className="w-[2px] bg-black mx-8" />
 
-              {/* 右侧 AI 生成部分 */}
-              <div className="w-[400px]">
-                <div className="space-y-3">
-                  <div>
-                    <h3 className="text-xs font-medium mb-2">请选择产品</h3>
-                    <div className="grid grid-cols-3 gap-2">
-                      {mockProducts.map(product => (
-                        <Button
-                          key={product.id}
-                          variant={selectedProduct === product.id ? "default" : "outline"}
-                          className="justify-start h-7 text-xs"
-                          onClick={() => setSelectedProduct(product.id)}
-                        >
-                          <span className="truncate">{product.name}</span>
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
+                {/* AI 分析部分 */}
+                <div className="flex-1 max-w-[50%]">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-bold">AI 生成</h3>
 
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 grid grid-cols-2 gap-2">
-                      <Button size="sm" variant="outline" className="w-full h-7 text-xs" onClick={() => toast.success("开始生成文案")}>
-                        <FileText className="w-3 h-3 mr-1" />
-                        生成文案
+                    <div className="flex gap-3">
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm whitespace-nowrap ">请选择产品：</span>
+                          <Select value={selectedProduct?.toString()} onValueChange={(value) => setSelectedProduct(Number(value))}>
+                            <SelectTrigger className="w-[140px]">
+                              <SelectValue placeholder="选择产品" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {mockProducts.map(product => (
+                                <SelectItem key={product.id} value={product.id.toString()}>
+                                  {product.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <Button className="bg-blue-500 hover:bg-blue-600" onClick={() => toast.success("开始生成文案")}>
+                            <FileText className="w-4 h-4 mr-2" />
+                            生成文案
+                          </Button>
+                          <Button className="bg-blue-500 hover:bg-blue-600" onClick={() => toast.success("开始挑选素材")}>
+                            <Wand2 className="w-4 h-4 mr-2" />
+                            自动挑选素材
+                          </Button>
+                        </div>
+                      </div>
+
+                      <Button
+                        className="w-[160px] h-[100px] bg-red-500 hover:bg-red-600 ml-20"
+                        onClick={() => toast.success("开始生成视频")}
+                        disabled={!selectedProduct}
+                      >
+                        <VideoIcon className="w-4 h-40 mr-2" />
+                        生成视频
                       </Button>
-                      <Button size="sm" variant="outline" className="w-full h-7 text-xs" onClick={() => toast.success("开始挑选素材")}>
-                        <Wand2 className="w-3 h-3 mr-1" />
-                        自动挑选素材
-                      </Button>
                     </div>
-                    <Button
-                      size="sm"
-                      className="px-4 h-7 text-xs"
-                      onClick={() => toast.success("开始生成视频")}
-                      disabled={!selectedProduct}
-                    >
-                      <VideoIcon className="w-3 h-3 mr-1" />
-                      生成视频
-                    </Button>
                   </div>
                 </div>
               </div>
             </div>
-          </Card>
 
-          {/* 新的视频卡片列表 */}
-          <div className="mt-4 space-y-4 max-w-[1418px]">
-            {videos.map((video, index) => (
-              <VideoCard
-                key={index}
-                id={index.toString()}
-                videoUrl={video.url}
-                duration={video.duration}
-                startTime={cumulativeDurations[index]}
-                script="这是示例台词文本，您可以根据实际情况修改。"
-                similarVideos={videos.map(v => v.url)}
-                onDistribute={() => {
-                  handleVideoStateChange(index, {
-                    status: '待领取',
-                    inputText: video.inputText,
-                    selectedUser: video.selectedUser,
-                    isInQueue: video.isInQueue
-                  })
-                }}
-                initialState={{
-                  status: video.status,
-                  inputText: video.inputText,
-                  selectedUser: video.selectedUser,
-                  isInQueue: video.isInQueue
-                }}
-                onStateChange={(state) => handleVideoStateChange(index, state)}
-              />
-            ))}
+            {/* 新的视频卡片列表 */}
+            <div className="mt-4 space-y-4 w-full">
+              {videos.map((video, index) => (
+                <Card key={index} className="p-4">
+                  <VideoCard
+                    id={index.toString()}
+                    videoUrl={video.url}
+                    duration={video.duration}
+                    startTime={cumulativeDurations[index]}
+                    script="这是示例台词文本，您可以根据实际情况修改。"
+                    similarVideos={videos.map(v => v.url)}
+                    onDistribute={() => {
+                      handleVideoStateChange(index, {
+                        status: '待领取',
+                        inputText: video.inputText,
+                        selectedUser: video.selectedUser,
+                        isInQueue: video.isInQueue
+                      })
+                    }}
+                    initialState={{
+                      status: video.status,
+                      inputText: video.inputText,
+                      selectedUser: video.selectedUser,
+                      isInQueue: video.isInQueue
+                    }}
+                    onStateChange={(state) => handleVideoStateChange(index, state)}
+                  />
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
       </div>
     </div>
+  
   )
 }

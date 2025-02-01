@@ -1,6 +1,7 @@
 import { Icons } from '@/components/icons';
 
 export interface NavItem {
+  [x: string]: any;
   title: string;
   url: string;
   disabled?: boolean;
