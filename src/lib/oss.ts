@@ -2,6 +2,7 @@ import OSS from 'ali-oss';
 import { ossConfig } from './oss.config';
 
 export interface OSSVideo {
+  [x: string]: string | number | Date;
   id: string;
   name: string;
   title: string;
