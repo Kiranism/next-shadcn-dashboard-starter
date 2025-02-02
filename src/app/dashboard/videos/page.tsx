@@ -75,7 +75,7 @@ export default function VideosPage() {
     })
 
   return (
-    <div className="p-0 space-y-6 max-h-[calc(100vh-4rem)] overflow-y-auto">
+    <div className="p-0 space-y-6 max-h-[calc(100vh-4rem)] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-gray-100">
       <div className="flex justify-between items-center sticky top-0 bg-background z-10 p-6 border-b">
         <div className="grid grid-cols-12 gap-6 w-full">
           {/* 左侧分类筛选和搜索 */}
