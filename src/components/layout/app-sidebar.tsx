@@ -86,7 +86,7 @@ export default function AppSidebar() {
         <Link href='/'>
           <div className='flex items-center gap-2 px-4'>
             <CircuitBoardIcon className='h-6 w-6' />
-            <span className='text-lg font-semibold'>控制面板</span>
+            <span className='text-lg font-semibold'>HyperHIT Logo</span>
           </div>
         </Link>
       </SidebarHeader>

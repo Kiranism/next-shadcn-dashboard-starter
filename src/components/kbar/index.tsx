@@ -31,8 +31,8 @@ export default function KBar({ children }: { children: React.ReactNode }) {
                 name: navItem.title,
                 shortcut: navItem.shortcut,
                 keywords: navItem.title.toLowerCase(),
-                section: 'Navigation',
-                subtitle: `Go to ${navItem.title}`,
+                section: '导航',
+                subtitle: `前往 ${navItem.title}`,
                 perform: () => navigateTo(navItem.url)
               }
             : null;
@@ -45,7 +45,7 @@ export default function KBar({ children }: { children: React.ReactNode }) {
             shortcut: childItem.shortcut,
             keywords: childItem.title.toLowerCase(),
             section: navItem.title,
-            subtitle: `Go to ${childItem.title}`,
+            subtitle: `前往 ${childItem.title}`,
             perform: () => navigateTo(childItem.url)
           })) ?? [];
 
@@ -71,7 +71,7 @@ const KBarComponent = ({ children }: { children: React.ReactNode }) => {
           <KBarAnimator className='relative !mt-64 w-full max-w-[600px] !-translate-y-12 overflow-hidden rounded-lg border bg-background text-foreground shadow-lg'>
             <div className='bg-background'>
               <div className='border-x-0 border-b-2'>
-                <KBarSearch className='w-full border-none bg-background px-6 py-4 text-lg outline-none focus:outline-none focus:ring-0 focus:ring-offset-0' />
+                <KBarSearch defaultPlaceholder="输入命令或者搜索..." className='kbar-input w-full border-none bg-background px-6 py-4 text-lg outline-none focus:outline-none focus:ring-0 focus:ring-offset-0' />
               </div>
               <RenderResults />
             </div>

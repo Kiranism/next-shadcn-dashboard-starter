@@ -84,7 +84,7 @@ export default function VideosPage() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="w-[160px] justify-between">
-                  {selectedPlatform === '全部' ? '平台分类' : selectedPlatform}
+                  {selectedPlatform ===  '全部' ? '数据来源' : selectedPlatform}
                   <ChevronDown className="ml-2 h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>

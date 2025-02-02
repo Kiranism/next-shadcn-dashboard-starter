@@ -11,21 +11,21 @@ const useThemeSwitching = () => {
   const themeAction = [
     {
       id: 'toggleTheme',
-      name: 'Toggle Theme',
+      name: '切换主题',
       shortcut: ['t', 't'],
-      section: 'Theme',
+      section: '主题',
       perform: toggleTheme
     },
     {
       id: 'setLightTheme',
-      name: 'Set Light Theme',
-      section: 'Theme',
+      name: '设置为浅色',
+      section: '主题',
       perform: () => setTheme('light')
     },
     {
       id: 'setDarkTheme',
-      name: 'Set Dark Theme',
-      section: 'Theme',
+      name: '设置为深色',
+      section: '主题',
       perform: () => setTheme('dark')
     }
   ];
