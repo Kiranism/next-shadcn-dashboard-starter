@@ -15,8 +15,8 @@ export interface Video {
   sales: number
   revenue: number
   conversionRate: number
-  platformCategory: '抖音' | '蝉妈妈'
-  productCategory: '洗面奶' | '护肤品' | '牙具'
+  platformCategory: '抖音直客' | '飞瓜' | '蝉妈妈'
+  productCategory: '护肤美白' | '祛痘' | '牙膏'
   uploadDate: string
   duration: string | number ; 
   tags: string[]
@@ -47,8 +47,8 @@ export async function getVideoList(): Promise<Video[]> {
         sales: Math.floor(Math.random() * 5000),
         revenue: Math.floor(Math.random() * 400000),
         conversionRate: Number((Math.random() * 5).toFixed(1)),
-        platformCategory: Math.random() > 0.5 ? '抖音' : '蝉妈妈',
-        productCategory: Math.random() > 0.66 ? '洗面奶' : Math.random() > 0.5 ? '护肤品' : '牙具',
+        platformCategory: Math.random() > 0.3 ? '抖音直客' : Math.random() > 0.5 ? '蝉妈妈' : '飞瓜',
+        productCategory: Math.random() > 0.3 ? '护肤美白' : Math.random() > 0.5 ? '祛痘' : '牙膏',
         uploadDate: ossVideo.lastModified.toISOString().split('T')[0],
         duration: String(ossVideo.duration || '00:00'), // 使用OSS视频的时长
         tags: ['产品展示', '使用教程'].sort(() => Math.random() - 0.5).slice(0, Math.random() > 0.5 ? 2 : 1)
@@ -61,7 +61,7 @@ export async function getVideoList(): Promise<Video[]> {
 }
 
 // 平台分类选项
-export const platformCategories = ['全部', '抖音', '蝉妈妈']
+export const platformCategories = ['抖音直客', '飞瓜', '蝉妈妈']
   
 // 产品分类选项
-export const productCategories = ['全部', '洗面奶', '护肤品', '牙具']
+export const productCategories = ['全部', '护肤美白', '祛痘', '牙膏']

@@ -708,8 +708,11 @@ export default function VideoDetailPage() {
                       </DialogTrigger>
                       <DialogContent className="max-w-4xl">
                         <DialogTitle>{video?.title}</DialogTitle>
-                        <video src={video?.ossUrl} controls className="w-full aspect-[9/16] object-contain rounded-lg bg-black" />
-                      </DialogContent>
+
+                        <video src={video?.ossUrl} controls className="w-full max-h-[70vh] object-contain rounded-lg"
+                          autoPlay
+                          playsInline
+                        /></DialogContent>
                     </Dialog>
 
                     {video && (
@@ -847,6 +850,6 @@ export default function VideoDetailPage() {
         </div>
       </div>
     </div>
-  
+
   )
 }
