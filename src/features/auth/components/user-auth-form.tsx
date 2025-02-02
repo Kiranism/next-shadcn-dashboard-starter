@@ -113,7 +113,7 @@ export default function UserAuthForm({ isRegister, setIsRegister }: UserAuthForm
               <FormItem>
                 <FormLabel>用户名</FormLabel>
                 <FormControl>
-                  <Input placeholder="username" {...field} />
+                  <Input placeholder="用户名" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -126,7 +126,7 @@ export default function UserAuthForm({ isRegister, setIsRegister }: UserAuthForm
               <FormItem>
                 <FormLabel>密码</FormLabel>
                 <FormControl>
-                  <Input type="password" placeholder="password" {...field} />
+                  <Input type="password" placeholder="密码" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
