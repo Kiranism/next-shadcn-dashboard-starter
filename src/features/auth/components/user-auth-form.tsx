@@ -25,11 +25,15 @@ const formSchema = z.object({
 
 type UserFormValue = z.infer<typeof formSchema>;
 
-export default function UserAuthForm() {
+interface UserAuthFormProps {
+  isRegister: boolean;
+  setIsRegister: (value: boolean) => void;
+}
+
+export default function UserAuthForm({ isRegister, setIsRegister }: UserAuthFormProps) {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl');
   const [loading, startTransition] = useTransition();
-  const [isRegister, setIsRegister] = useState(false);
   
   const defaultValues = {
     username: '',
@@ -107,7 +111,7 @@ export default function UserAuthForm() {
             name="username"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Username</FormLabel>
+                <FormLabel>用户名</FormLabel>
                 <FormControl>
                   <Input placeholder="username" {...field} />
                 </FormControl>
@@ -120,7 +124,7 @@ export default function UserAuthForm() {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Password</FormLabel>
+                <FormLabel>密码</FormLabel>
                 <FormControl>
                   <Input type="password" placeholder="password" {...field} />
                 </FormControl>
@@ -134,9 +138,9 @@ export default function UserAuthForm() {
               name="adminCode"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Admin Code (Optional)</FormLabel>
+                  <FormLabel>管理员码（可选）</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="Enter admin code if you have one" {...field} />
+                    <Input type="password" placeholder="如有，请输入" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -144,7 +148,7 @@ export default function UserAuthForm() {
             />
           )}
           <Button type='submit' className='w-full' disabled={loading}>
-            {isRegister ? 'Register' : 'Sign In'}
+            {isRegister ? '注册' : '登录'}
           </Button>
         </form>
       </Form>
@@ -160,8 +164,8 @@ export default function UserAuthForm() {
         onClick={() => setIsRegister(!isRegister)}
       >
         {isRegister
-          ? 'Already have an account? Sign In'
-          : "Don't have an account? Register"}
+          ? '已有帐户？ 点击登录'
+          : "还没有帐户？ 点击注册"}
       </Button>
     </>
   );
