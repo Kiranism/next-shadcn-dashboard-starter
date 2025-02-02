@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { ThumbsUp, ChevronDown, LayoutGrid, LayoutList, Search, Heart, Share2, MessageCircle, Play, ShoppingCart, DollarSign, BarChart } from 'lucide-react'
+import { ThumbsUp, ChevronDown, LayoutGrid, LayoutList, Search, Heart, Share2, MessageCircle, Play, ShoppingCart, DollarSign, BarChart, Clock, Calendar } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -26,7 +26,7 @@ export default function VideosPage() {
   const [selectedPlatform, setSelectedPlatform] = useState<string>('全部')
   const [selectedProduct, setSelectedProduct] = useState<string>('全部')
   const [searchQuery, setSearchQuery] = useState('')
-  const [sortBySales, setSortBySales] = useState(false)
+  const [sortType, setSortType] = useState<'default' | 'sales' | 'revenue' | 'conversion' | 'likes' | 'date'>('default')
   const [isGridView, setIsGridView] = useState(true)
   const [videos, setVideos] = useState<Video[]>([])
   const [loading, setLoading] = useState(true)
@@ -57,11 +57,26 @@ export default function VideosPage() {
       (selectedProduct === '全部' || video.productCategory === selectedProduct) &&
       (searchQuery === '' || video.title.toLowerCase().includes(searchQuery.toLowerCase()))
     )
-    .sort((a, b) => sortBySales ? b.sales - a.sales : 0)
+    .sort((a, b) => {
+      switch (sortType) {
+        case 'sales':
+          return b.sales - a.sales
+        case 'revenue':
+          return b.revenue - a.revenue
+        case 'conversion':
+          return b.conversionRate - a.conversionRate
+        case 'likes':
+          return b.likes - a.likes
+        case 'date':
+          return new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime()
+        default:
+          return 0
+      }
+    })
 
   return (
-    <div className="p-6 space-y-6 max-h-[calc(100vh-4rem)] overflow-y-auto">
-      <div className="flex justify-between items-center sticky top-6 bg-background z-10 pb-4">
+    <div className="p-0 space-y-6 max-h-[calc(100vh-4rem)] overflow-y-auto">
+      <div className="flex justify-between items-center sticky top-0 bg-background z-10 p-6 border-b">
         <div className="grid grid-cols-12 gap-6 w-full">
           {/* 左侧分类筛选和搜索 */}
           <div className="col-span-8 flex gap-6">
@@ -132,151 +147,210 @@ export default function VideosPage() {
               )}
             </Button>
 
-            <Button
-              variant="outline"
-              onClick={() => setSortBySales(!sortBySales)}
-              className="w-[150px] justify-between shrink-0"
-            >
-              {sortBySales ? '默认排序' : '按销量排序'} 
-              <ShoppingCart className="ml-2 h-4 w-4" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-[150px] justify-between shrink-0"
+                >
+                  {sortType === 'default' && '默认排序'}
+                  {sortType === 'sales' && '按销量排序'}
+                  {sortType === 'revenue' && '按销售额排序'}
+                  {sortType === 'conversion' && '按转化率排序'}
+                  {sortType === 'likes' && '按点赞数排序'}
+                  {sortType === 'date' && '按发布时间排序'}
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setSortType('default')}>
+                  默认排序
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortType('sales')}>
+                  <ShoppingCart className="mr-2 h-4 w-4" />
+                  按销量排序
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortType('revenue')}>
+                  <DollarSign className="mr-2 h-4 w-4" />
+                  按销售额排序
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortType('conversion')}>
+                  <BarChart className="mr-2 h-4 w-4" />
+                  按转化率排序
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortType('likes')}>
+                  <ThumbsUp className="mr-2 h-4 w-4" />
+                  按点赞数排序
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortType('date')}>
+                  <Clock className="mr-2 h-4 w-4" />
+                  按发布时间排序
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
 
       {loading ? (
         // 加载状态
-        <div className={isGridView ? "grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6" : "space-y-4"}>
-          {[1, 2, 3, 4, 5, 6].map((n) => (
-            <Card key={n} className={isGridView ? "overflow-hidden" : "p-4"}>
-              <div className={isGridView ? "aspect-square bg-gray-100 animate-pulse" : "h-16 bg-gray-100 animate-pulse"} />
-            </Card>
-          ))}
+        <div className="px-6">
+          <div className={isGridView ? "grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6" : "space-y-4"}>
+            {[1, 2, 3, 4, 5, 6].map((n) => (
+              <Card key={n} className={isGridView ? "overflow-hidden" : "p-4"}>
+                <div className={isGridView ? "aspect-square bg-gray-100 animate-pulse" : "h-16 bg-gray-100 animate-pulse"} />
+              </Card>
+            ))}
+          </div>
         </div>
       ) : isGridView ? (
         // 网格视图
-        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-          {filteredAndSortedVideos.map(video => (
-            <Card 
-              key={video.id} 
-              className="overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-              onClick={() => setSelectedVideo(video)}
-            >
-              <div className="aspect-square relative">
-                {video.thumbnailUrl ? (
-                  <img 
-                    src={video.thumbnailUrl}
-                    alt={video.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <video
-                    src={video.ossUrl}
-                    className="w-full h-full object-cover"
-                    preload="metadata"
-                    onLoadedMetadata={(e) => {
-                      const videoEl = e.target as HTMLVideoElement;
-                      const minutes = Math.floor(videoEl.duration / 60);
-                      const seconds = Math.floor(videoEl.duration % 60);
-                      const duration = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                      setVideos(prev => prev.map(v => 
-                        v.id === video.id 
-                          ? { ...v, duration } 
-                          : v
-                      ));
-                    }}
-                  />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0 p-3">
-                  <div className="absolute bottom-3 left-3 right-3">
-                    <div className="text-white font-medium text-sm line-clamp-2 mb-2">
-                      {video.title}
-                    </div>
-                    <div className="flex items-center gap-3 text-white/90 text-xs">
-                      <div className="flex items-center gap-1">
-                        <Play className="h-3 w-3" />
-                        <span>{video.views.toLocaleString()}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <ThumbsUp className="h-3 w-3" />
-                        <span>{video.likes.toLocaleString()}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="p-3 space-y-2">
-                <div className="flex gap-1 flex-wrap">
-                  <span className="px-1.5 py-0.5 bg-blue-100 rounded-full text-xs">
-                    {video.platformCategory}
-                  </span>
-                  <span className="px-1.5 py-0.5 bg-green-100 rounded-full text-xs">
-                    {video.productCategory}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-xs text-muted-foreground">
-                  <span>{video.duration}</span>
-                  <span>{video.uploadDate}</span>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        // 列表视图
-        <div className="space-y-4">
-          {filteredAndSortedVideos.map(video => (
-            <Card 
-              key={video.id} 
-              className="p-4 cursor-pointer hover:bg-accent/50 transition-colors"
-              onClick={() => setSelectedVideo(video)}
-            >
-              <div className="flex gap-4">
-                <div className="aspect-square w-40 relative flex-shrink-0">
+        <div className="px-6">
+          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            {filteredAndSortedVideos.map(video => (
+              <Card 
+                key={video.id} 
+                className="overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                onClick={() => setSelectedVideo(video)}
+              >
+                <div className="aspect-square relative">
                   {video.thumbnailUrl ? (
                     <img 
                       src={video.thumbnailUrl}
                       alt={video.title}
-                      className="w-full h-full object-cover rounded-lg"
+                      className="w-full h-full object-cover"
                     />
                   ) : (
                     <video
                       src={video.ossUrl}
-                      className="w-full h-full object-cover rounded-lg"
+                      className="w-full h-full object-cover"
                       preload="metadata"
+                      onLoadedMetadata={(e) => {
+                        const videoEl = e.target as HTMLVideoElement;
+                        const minutes = Math.floor(videoEl.duration / 60);
+                        const seconds = Math.floor(videoEl.duration % 60);
+                        const duration = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                        setVideos(prev => prev.map(v => 
+                          v.id === video.id 
+                            ? { ...v, duration } 
+                            : v
+                        ));
+                      }}
                     />
                   )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-medium mb-2">{video.title}</h3>
-                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-2">
-                    <span className="px-2 py-1 bg-blue-100 rounded-full">{video.platformCategory}</span>
-                    <span className="px-2 py-1 bg-green-100 rounded-full">{video.productCategory}</span>
-                    <span>{video.duration}</span>
-                    <span>{video.uploadDate}</span>
-                  </div>
-                  <div className="grid grid-cols-4 gap-4">
-                    <div className="flex items-center gap-1 text-sm">
-                      <Play className="h-4 w-4" />
-                      <span>{video.views.toLocaleString()}</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-sm">
-                      <ThumbsUp className="h-4 w-4" />
-                      <span>{video.likes.toLocaleString()}</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-sm">
-                      <Heart className="h-4 w-4" />
-                      <span>{video.favorites.toLocaleString()}</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-sm">
-                      <ShoppingCart className="h-4 w-4" />
-                      <span>{video.sales.toLocaleString()}</span>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0 p-3">
+                    <div className="absolute bottom-3 left-3 right-3">
+                      <div className="text-white font-medium text-sm line-clamp-2 mb-2">
+                        {video.title}
+                      </div>
+                      <div className="flex items-center gap-3 text-white/90 text-xs">
+                        <div className="flex items-center gap-1">
+                          <Play className="h-3 w-3" />
+                          <span>{video.views.toLocaleString()}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <ThumbsUp className="h-3 w-3" />
+                          <span>{video.likes.toLocaleString()}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </Card>
-          ))}
+                <div className="p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-1 flex-wrap">
+                      <span className="px-1.5 py-0.5 bg-blue-100 rounded-full text-xs">
+                        {video.platformCategory}
+                      </span>
+                      <span className="px-1.5 py-0.5 bg-green-100 rounded-full text-xs">
+                        {video.productCategory}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Calendar className="h-3 w-3" />
+                      <span>{video.uploadDate}</span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      <span>时长：{video.duration}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <ShoppingCart className="h-3 w-3" />
+                      <span>销量：{video.sales.toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <DollarSign className="h-3 w-3" />
+                      <span>销售额：{video.revenue.toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <BarChart className="h-3 w-3" />
+                      <span>转化率：{video.conversionRate}%</span>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      ) : (
+        // 列表视图
+        <div className="px-6">
+          <div className="space-y-4">
+            {filteredAndSortedVideos.map(video => (
+              <Card 
+                key={video.id} 
+                className="p-4 cursor-pointer hover:bg-accent/50 transition-colors"
+                onClick={() => setSelectedVideo(video)}
+              >
+                <div className="flex gap-4">
+                  <div className="aspect-square w-40 relative flex-shrink-0">
+                    {video.thumbnailUrl ? (
+                      <img 
+                        src={video.thumbnailUrl}
+                        alt={video.title}
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                    ) : (
+                      <video
+                        src={video.ossUrl}
+                        className="w-full h-full object-cover rounded-lg"
+                        preload="metadata"
+                      />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-medium mb-2">{video.title}</h3>
+                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-2">
+                      <span className="px-2 py-1 bg-blue-100 rounded-full">{video.platformCategory}</span>
+                      <span className="px-2 py-1 bg-green-100 rounded-full">{video.productCategory}</span>
+                      <span>{video.duration}</span>
+                      <span>{video.uploadDate}</span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-4">
+                      <div className="flex items-center gap-1 text-sm">
+                        <Play className="h-4 w-4" />
+                        <span>{video.views.toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-sm">
+                        <ThumbsUp className="h-4 w-4" />
+                        <span>{video.likes.toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-sm">
+                        <Heart className="h-4 w-4" />
+                        <span>{video.favorites.toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-sm">
+                        <ShoppingCart className="h-4 w-4" />
+                        <span>{video.sales.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
         </div>
       )}
 
