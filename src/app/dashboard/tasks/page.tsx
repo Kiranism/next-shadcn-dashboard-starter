@@ -1,241 +1,329 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Play, Upload, Check, X, Clock } from 'lucide-react'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { toast } from 'sonner'
-import { VideoIcon } from 'lucide-react'
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useState, useEffect } from 'react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useTasks } from '@/hooks/useTasks';
+import { Upload } from 'lucide-react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { SceneTaskStatus } from '@/types/sceneTask';
+import { useSession } from 'next-auth/react';
+import { useQueryClient } from '@tanstack/react-query';
+
+const STATUS_TRANSLATIONS: Record<string, string> = {
+  PENDING: '待领取',
+  ASSIGNED: '已分配',
+  IN_PROGRESS: '进行中',
+  COMPLETED: '已完成',
+  REJECTED: '已拒绝'
+};
 
 // 获取任务列表
 const getVideoTasks = () => {
   try {
-    return JSON.parse(localStorage.getItem('taskQueueItems') || '[]')
+    return JSON.parse(localStorage.getItem('taskQueueItems') || '[]');
   } catch {
-    return []
+    return [];
   }
-}
+};
 
 export default function TasksPage() {
-  const [tasks, setTasks] = useState<any[]>([])
-  const [showVideoDialog, setShowVideoDialog] = useState(false)
-  const [selectedTask, setSelectedTask] = useState<any>(null)
-  const [showUploadDialog, setShowUploadDialog] = useState(false)
-  const currentUser = { id: 'user1', name: '用户1' } // 模拟当前用户
+  const queryClient = useQueryClient();
+
+  const [showVideoDialog, setShowVideoDialog] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<any>(null);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+
+  const { data: currentUserSession } = useSession();
+  const currentUser = currentUserSession?.user;
+
+  const {
+    data: availableTasks,
+    isLoading: isAvailableTasksLoading,
+    error: availableTasksError
+  } = useTasks({ status: SceneTaskStatus.PENDING }, 'available-tasks');
+
+  const {
+    data: currentUserTasks,
+    isLoading: isCurrentUserTasksLoading,
+    error: currentUserTasksError
+  } = useTasks(
+    { status: SceneTaskStatus.ASSIGNED, assignedToUserId: currentUser?.id },
+    'user-tasks'
+  );
 
   // 加载任务
   useEffect(() => {
     const loadTasks = () => {
-      const tasks = getVideoTasks()
-      setTasks(tasks)
-    }
-    loadTasks()
-    window.addEventListener('storage', loadTasks)
-    return () => window.removeEventListener('storage', loadTasks)
-  }, [])
+      const tasks = getVideoTasks();
+      //setTasks(tasks)
+    };
+    loadTasks();
+    window.addEventListener('storage', loadTasks);
+    return () => window.removeEventListener('storage', loadTasks);
+  }, []);
 
   // 领取任务
-  const handleClaimTask = (task: any) => {
-    const updatedTasks = tasks.map(t => {
-      if (t.id === task.id) {
-        return { ...t, status: '拍摄中', assignee: currentUser }
+  const handleClaimTask = async (task: any) => {
+    try {
+      const response = await fetch(`/api/tasks`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          taskId: task.id,
+          assignedToUserId: currentUser?.id
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to claim task');
       }
-      return t
-    })
-    localStorage.setItem('taskQueueItems', JSON.stringify(updatedTasks))
-    setTasks(updatedTasks)
-    toast.success('已领取任务')
-  }
+
+      toast.success('Successfully claimed task');
+      // Refetch tasks to update the UI
+      await queryClient.invalidateQueries({ queryKey: ['available-tasks'] });
+      await queryClient.invalidateQueries({ queryKey: ['user-tasks'] });
+    } catch (error) {
+      console.error('Error claiming task:', error);
+      toast.error('Failed to claim task');
+    }
+  };
 
   // 删除任务
-  const handleDeleteTask = (taskId: string) => {
-    const updatedTasks = tasks.filter(t => t.id !== taskId)
-    localStorage.setItem('taskQueueItems', JSON.stringify(updatedTasks))
-    setTasks(updatedTasks)
-    toast.success('已删除任务')
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      if (!currentUser?.isAdmin) {
+        toast.error('You are not allowed to delete tasks');
+        throw new Error('Current user is not allowed to delete tasks');
+      }
+
+      const response = await fetch(`/api/tasks?taskId=${taskId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete task');
+      }
+
+      toast.success('Successfully deleted task');
+      // Refetch tasks to update the UI
+      await queryClient.invalidateQueries({ queryKey: ['available-tasks'] });
+      await queryClient.invalidateQueries({ queryKey: ['user-tasks'] });
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      toast.error('Failed to delete task');
+    }
+  };
+
+  if (isAvailableTasksLoading) {
+    return <div>Loading tasks...</div>;
+  }
+
+  if (availableTasksError) {
+    return <div>Error loading tasks: {availableTasksError.message}</div>;
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <Tabs defaultValue="pending">
-        <div className="flex justify-between items-center mb-4">
+    <div className='container mx-auto p-4'>
+      <Tabs defaultValue='pending'>
+        <div className='mb-4 flex items-center justify-between'>
           <TabsList>
-            <TabsTrigger value="pending">待领取任务</TabsTrigger>
-            <TabsTrigger value="my">我的任务</TabsTrigger>
+            <TabsTrigger value='pending'>待领取任务</TabsTrigger>
+            <TabsTrigger value='my'>我的任务</TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="pending" className="space-y-4">
-          {tasks.filter(task => task.status === '待领取').map((task) => (
-            <Card key={task.id} className="p-4">
-              <div className="flex gap-4">
-                <div className="relative w-32 h-32 bg-gray-100 rounded">
-                  {task.videoUrl && (
-                    <video
-                      src={task.videoUrl}
-                      className="w-full h-full object-cover rounded"
-                      onClick={() => {
-                        setSelectedTask(task)
-                        setShowVideoDialog(true)
-                      }}
-                    />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm mb-4">
-                    <div>时长：{task.duration?.toFixed(2)}秒</div>
-                    <div>总时长：{task.startTime?.toFixed(2)}秒 ~ {(task.startTime + task.duration)?.toFixed(2)}秒</div>
-                    <div className="mt-2">台词：{task.inputText}</div>
+        <TabsContent value='pending' className='space-y-4'>
+          {!availableTasks || availableTasks.length === 0 ? (
+            <div className='py-8 text-center text-gray-500'>暂无待领取任务</div>
+          ) : (
+            availableTasks.map((task) => (
+              <Card key={task.id} className='p-4'>
+                <div className='flex gap-4'>
+                  <div className='relative h-32 w-32 rounded bg-gray-100'>
+                    {task.videoUrl && (
+                      <video
+                        src={task.videoUrl}
+                        className='h-full w-full rounded object-cover'
+                        onClick={() => {
+                          setSelectedTask(task);
+                          setShowVideoDialog(true);
+                        }}
+                      />
+                    )}
                   </div>
-                  <div className="flex justify-between items-center">
-                    <Badge>{task.status}</Badge>
-                    <div className="space-x-2">
+                  <div className='flex-1'>
+                    <div className='mb-4 text-sm'>
+                      <div>时长：{task.scene?.duration?.toFixed(2)}秒</div>
+                      <div>
+                        总时长：{task.scene?.startTime?.toFixed(2) || 0}秒 ~{' '}
+                        {(
+                          (task.scene?.startTime || 0) +
+                          (task.scene?.duration || 0)
+                        ).toFixed(2)}
+                        秒
+                      </div>
+                      <div className='mt-2'>台词：{task.scene?.dialogue}</div>
+                    </div>
+                    <div className='flex items-center justify-between'>
+                      <Badge>
+                        {STATUS_TRANSLATIONS[task.status] || task.status}
+                      </Badge>
+                      <div className='space-x-2'>
+                        <Button
+                          variant='outline'
+                          size='sm'
+                          onClick={() => handleDeleteTask(task.id)}
+                        >
+                          删除任务
+                        </Button>
+                        <Button size='sm' onClick={() => handleClaimTask(task)}>
+                          领取任务
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))
+          )}
+        </TabsContent>
+
+        <TabsContent value='my' className='space-y-4'>
+          {!currentUserTasks || currentUserTasks.length === 0 ? (
+            <div className='py-8 text-center text-gray-500'>暂无我的任务</div>
+          ) : (
+            currentUserTasks.map((task) => (
+              <Card key={task.id} className='p-4'>
+                <div className='flex gap-4'>
+                  <div className='relative h-32 w-32 rounded bg-gray-100'>
+                    {task.videoUrl && (
+                      <video
+                        src={task.videoUrl}
+                        className='h-full w-full rounded object-cover'
+                        onClick={() => {
+                          setSelectedTask(task);
+                          setShowVideoDialog(true);
+                        }}
+                      />
+                    )}
+                  </div>
+                  <div className='flex-1'>
+                    <div className='mb-4 text-sm'>
+                      <div>时长：{task.scene?.duration?.toFixed(2) || 0}秒</div>
+                      <div>
+                        总时长：{task.scene?.startTime?.toFixed(2) || 0}秒 ~{' '}
+                        {(
+                          (task.scene?.startTime || 0) +
+                          (task.scene?.duration || 0)
+                        ).toFixed(2)}
+                        秒
+                      </div>
+                      <div className='mt-2'>
+                        台词：{task.scene?.dialogue || ''}
+                      </div>
+                    </div>
+                    <div className='flex items-center justify-between'>
+                      <Badge>
+                        {STATUS_TRANSLATIONS[task.status] || task.status}
+                      </Badge>
                       <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDeleteTask(task.id)}
+                        size='sm'
+                        onClick={() => {
+                          setSelectedTask(task);
+                          setShowUploadDialog(true);
+                        }}
                       >
-                        删除任务
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => handleClaimTask(task)}
-                      >
-                        领取任务
+                        上传视频
                       </Button>
                     </div>
                   </div>
                 </div>
-              </div>
-            </Card>
-          ))}
-          {tasks.filter(task => task.status === '待领取').length === 0 && (
-            <div className="text-center text-gray-500 py-8">
-              暂无待领取任务
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="my" className="space-y-4">
-          {tasks.filter(task => task.status === '拍摄中' && task.assignee?.id === currentUser.id).map((task) => (
-            <Card key={task.id} className="p-4">
-              <div className="flex gap-4">
-                <div className="relative w-32 h-32 bg-gray-100 rounded">
-                  {task.videoUrl && (
-                    <video
-                      src={task.videoUrl}
-                      className="w-full h-full object-cover rounded"
-                      onClick={() => {
-                        setSelectedTask(task)
-                        setShowVideoDialog(true)
-                      }}
-                    />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm mb-4">
-                    <div>时长：{task.duration?.toFixed(2)}秒</div>
-                    <div>总时长：{task.startTime?.toFixed(2)}秒 ~ {(task.startTime + task.duration)?.toFixed(2)}秒</div>
-                    <div className="mt-2">台词：{task.inputText}</div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <Badge>{task.status}</Badge>
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        setSelectedTask(task)
-                        setShowUploadDialog(true)
-                      }}
-                    >
-                      上传视频
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          ))}
-          {tasks.filter(task => task.status === '拍摄中' && task.assignee?.id === currentUser.id).length === 0 && (
-            <div className="text-center text-gray-500 py-8">
-              暂无我的任务
-            </div>
+              </Card>
+            ))
           )}
         </TabsContent>
       </Tabs>
 
       {/* 视频预览弹窗 */}
       <Dialog open={showVideoDialog} onOpenChange={setShowVideoDialog}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className='max-w-4xl'>
           {selectedTask?.videoUrl && (
-            <video src={selectedTask.videoUrl} controls className="w-full max-h-[70vh] object-contain rounded-lg"
-                    autoPlay
-                    playsInline
-                  />
-                            )}
+            <video
+              src={selectedTask.videoUrl}
+              controls
+              className='max-h-[70vh] w-full rounded-lg object-contain'
+              autoPlay
+              playsInline
+            />
+          )}
         </DialogContent>
       </Dialog>
 
       {/* 上传视频弹窗 */}
       <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
         <DialogContent>
-          <div className="space-y-4">
-            <div className="text-lg font-medium">上传视频</div>
-            <div className="relative w-full h-32 border-2 border-dashed rounded flex items-center justify-center">
+          <div className='space-y-4'>
+            <div className='text-lg font-medium'>上传视频</div>
+            <div className='relative flex h-32 w-full items-center justify-center rounded border-2 border-dashed'>
               <input
-                type="file"
-                accept="video/*"
-                className="absolute inset-0 opacity-0 cursor-pointer"
+                type='file'
+                accept='video/*'
+                className='absolute inset-0 cursor-pointer opacity-0'
                 onChange={(e) => {
-                  const file = e.target.files?.[0]
+                  const file = e.target.files?.[0];
                   if (file && selectedTask) {
                     const videoUrl = URL.createObjectURL(file);
-                    
+
                     // 更新任务队列中的状态
-                    const updatedTasks = tasks.map(t => {
-                      if (t.id === selectedTask.id) {
-                        return {
-                          ...t,
-                          status: '已上传',
-                          uploadedVideo: videoUrl
-                        }
-                      }
-                      return t
-                    })
-                    localStorage.setItem('taskQueueItems', JSON.stringify(updatedTasks))
-                    setTasks(updatedTasks)
+                    // const updatedTasks = tasks.map(t => {
+                    //   if (t.id === selectedTask.id) {
+                    //     return {
+                    //       ...t,
+                    //       status: '已上传',
+                    //       uploadedVideo: videoUrl
+                    //     }
+                    //   }
+                    //   return t
+                    // })
+                    // localStorage.setItem('taskQueueItems', JSON.stringify(updatedTasks))
+                    //setTasks(updatedTasks)
 
                     // 同步更新视频详情页的状态
-                    const videoStates = JSON.parse(localStorage.getItem('videoStates') || '{}')
-                    const key = `${selectedTask.videoUrl}`
+                    const videoStates = JSON.parse(
+                      localStorage.getItem('videoStates') || '{}'
+                    );
+                    const key = `${selectedTask.videoUrl}`;
                     if (videoStates[key]) {
                       videoStates[key] = {
                         ...videoStates[key],
                         status: '已上传',
                         uploadedVideo: videoUrl
-                      }
-                      localStorage.setItem('videoStates', JSON.stringify(videoStates))
+                      };
+                      localStorage.setItem(
+                        'videoStates',
+                        JSON.stringify(videoStates)
+                      );
                     }
 
-                    setShowUploadDialog(false)
-                    toast.success('上传成功')
+                    setShowUploadDialog(false);
+                    toast.success('上传成功');
                   }
                 }}
               />
-              <div className="text-center">
-                <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                <div className="text-sm text-gray-500">点击或拖拽上传视频</div>
+              <div className='text-center'>
+                <Upload className='mx-auto mb-2 h-8 w-8 text-gray-400' />
+                <div className='text-sm text-gray-500'>点击或拖拽上传视频</div>
               </div>
             </div>
           </div>
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }
