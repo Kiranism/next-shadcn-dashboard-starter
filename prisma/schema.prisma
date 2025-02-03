@@ -14,13 +14,78 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  username      String    @unique
-  password      String
-  image         String?
-  isAdmin       Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  image     String?
+  isAdmin   Boolean   @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  roleId    Int
+  role      UserRole @relation(fields: [roleId], references: [id])
+
+  // Back relation: tasks created by this user (as an editor)
+  createdTasks SceneTask[] @relation("EditorTasks")
+
+  // Back relation: tasks assigned to this user (as a photographer)
+  assignedTasks SceneTask[] @relation("PhotographerTasks")
 
   @@map("users")
+}
+
+model UserRole {
+  id       Int    @id
+  roleName String
+  users    User[]
+
+  @@map("user_roles")
+}
+
+model SceneTask {
+  id          String          @id @default(cuid())
+  description String? // Optional description for the task
+  videoUrl    String? // URL or path to the scene clip
+  sceneNumber Int? // Identifier or order of the scene in the video
+  status      SceneTaskStatus @default(PENDING)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // The editor who created the task
+  createdByUserId String
+  createdBy       User   @relation("EditorTasks", fields: [createdByUserId], references: [id])
+
+  // Optionally, the photographer to whom the task is assigned
+  assignedToUserId String?
+  assignedTo       User?   @relation("PhotographerTasks", fields: [assignedToUserId], references: [id])
+
+  // Optionally, link this task to a Scene record with detailed scene metadata
+  sceneId String?
+  scene   Scene?  @relation(fields: [sceneId], references: [id])
+
+  @@map("scene_tasks")
+}
+
+enum SceneTaskStatus {
+  PENDING // Task is in the queue for pickup
+  ASSIGNED // Task has been directly assigned to a photographer
+  IN_PROGRESS // Photographer is working on the task
+  COMPLETED // Task is finished
+  REJECTED // Task was rejected or could not be processed
+  DELETED // Task was deleted
+}
+
+model Scene {
+  id         String      @id @default(cuid())
+  name       String // The name of the scene
+  dialogue   String? // Combined field for character lines and voice lines
+  duration   Float // Duration of the scene in seconds (e.g., 1.77)
+  size       Int // Size of the scene (e.g., file size in bytes)
+  resolution String? // Resolution of the scene, e.g., "1920x1080"
+  startTime  Float // Start time in the original video in seconds (e.g., 2.01)
+  endTime    Float // End time in the original video in seconds (e.g., 4.55)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  SceneTask  SceneTask[]
+
+  @@map("scenes")
 }
