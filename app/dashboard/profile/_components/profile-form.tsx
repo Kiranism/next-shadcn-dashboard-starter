@@ -147,7 +147,8 @@ export default function ProfileForm() {
                       <p>
                         {`<iframe
                         src="https://mehchant.vercel.app/widget/${user.storeId}"
-                        style={{ border: "none", width: "100%", height: "100vh" }}
+                        title="The Marketplace For Merchandise Licensed by Creators"
+                        style="border: none; width: 100%; height: 100vh"
                       ></iframe>`}
                       </p>
                     </Card>
@@ -155,7 +156,8 @@ export default function ProfileForm() {
                     <CopyToClipboard
                       text={`<iframe
                         src="https://mehchant.vercel.app/widget/${user.storeId}"
-                        style={{ border: "none", width: "100%", height: "100vh" }}
+                        title="The Marketplace For Merchandise Licensed by Creators"
+                        style="border: none; width: 100%; height: 100vh"
                       ></iframe>`}
                       onCopy={() => setCopied((prevState) => !prevState)}
                     >
