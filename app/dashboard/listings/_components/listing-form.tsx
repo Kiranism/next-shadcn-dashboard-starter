@@ -230,13 +230,12 @@ export default function CreateListingForm() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
+                        <SelectItem value="art">Art</SelectItem>
                         <SelectItem value="clothing">Clothing</SelectItem>
                         <SelectItem value="fashion">
                           Fashion Accessories
                         </SelectItem>
-                        <SelectItem value="digital-assets">
-                          Digital Assets
-                        </SelectItem>
+                        <SelectItem value="digital">Digital Assets</SelectItem>
                         <SelectItem value="beauty">Beauty</SelectItem>
                         <SelectItem value="music">
                           Music e.g vinyl, cds

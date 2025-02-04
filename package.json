@@ -72,6 +72,7 @@
     "pnpm": "^9.15.2",
     "postcss": "8.4.49",
     "react": "19.0.0",
+    "react-copy-to-clipboard": "^5.1.0",
     "react-day-picker": "^9.4.3",
     "react-dom": "19.0.0",
     "react-dropzone": "^14.3.5",
@@ -95,6 +96,7 @@
   "devDependencies": {
     "@faker-js/faker": "^9.3.0",
     "@types/markdown-it": "^14.1.2",
+    "@types/react-copy-to-clipboard": "^5.0.7",
     "@types/sort-by": "^1.2.3",
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^6.11.0",

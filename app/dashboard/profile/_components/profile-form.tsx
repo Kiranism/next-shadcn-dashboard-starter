@@ -24,6 +24,10 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { CurrentUserContextType } from '@/@types/user';
 import { UserContext } from '@/context/UserProvider';
+import { Heading } from '@/components/ui/heading';
+import { Textarea } from '@/components/ui/textarea';
+import { Copy, CheckCircle } from 'lucide-react';
+import { CopyToClipboard } from 'react-copy-to-clipboard';
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -54,7 +58,7 @@ export default function ProfileForm() {
     console.log(values);
   }
 
-  console.log(user);
+  const [copied, setCopied] = React.useState(false);
 
   return (
     <Card className="mx-auto w-full">
@@ -132,10 +136,46 @@ export default function ProfileForm() {
                   </FormItem>
                 )}
               />
+              <div>
+                <div>
+                  <Heading
+                    title={'Embed Listings'}
+                    description=" Copy the code below to embed your stores listings to your website."
+                  />
+                  <div className="flex">
+                    <Card className="mx-auto w-full p-4">
+                      <p>
+                        {`<iframe
+                        src="https://mehchant.vercel.app/widget/${user.storeId}"
+                        style={{ border: "none", width: "100%", height: "100vh" }}
+                      ></iframe>`}
+                      </p>
+                    </Card>
+
+                    <CopyToClipboard
+                      text={`<iframe
+                        src="https://mehchant.vercel.app/widget/${user.storeId}"
+                        style={{ border: "none", width: "100%", height: "100vh" }}
+                      ></iframe>`}
+                      onCopy={() => setCopied((prevState) => !prevState)}
+                    >
+                      <span className="ms-5 flex cursor-pointer items-center space-x-2">
+                        Copy <Copy size={18} className="ms-1" />
+                      </span>
+                    </CopyToClipboard>
+                  </div>
+                  {copied && (
+                    <div className="mt-3 flex items-center space-x-2">
+                      <span>Copied to clipboard!</span>
+                      <CheckCircle color="green" />
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-            <Button type="submit" disabled>
+            {/* <Button type="submit" disabled>
               Submit
-            </Button>
+            </Button> */}
           </form>
         </Form>
       </CardContent>

@@ -42,13 +42,17 @@ export const RecentOrders: React.FC<OrderProps> = ({ orders }) => {
           >
             <Avatar className="h-9 w-9">
               <AvatarFallback className="uppercase">
-                {item?.userId?.firstname.slice(0, 2)}
+                {/* {item.userId != null ? item?.userId?.firstname.slice(0, 2) : item?.name.slice(0, 2)} */}
               </AvatarFallback>
             </Avatar>
             <div className="ml-4 space-y-1">
-              <p className="text-sm font-medium leading-none">{`${item?.userId?.firstname} ${item?.userId.lastname}`}</p>
+              <p className="text-sm font-medium leading-none">
+                {item.userId != null
+                  ? `${item?.userId?.firstname} ${item?.userId.lastname}`
+                  : item?.name}
+              </p>
               <p className="text-sm text-muted-foreground">
-                {item.userId.email}
+                {item.userId != null ? item.userId.email : item?.email}
               </p>
               <p className="text-sm text-muted-foreground">
                 {`${new Date(item.createdAt).toLocaleString('en-US', {

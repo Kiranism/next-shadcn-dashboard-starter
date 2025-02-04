@@ -178,7 +178,7 @@ export default function OrderDetails() {
                   </div>
                 </div>
               </div>
-              {order.userId && (
+              {order && (
                 <Card className="col-span-4 md:col-span-3">
                   <CardHeader>
                     <CardTitle>Customer Details</CardTitle>
@@ -191,17 +191,28 @@ export default function OrderDetails() {
                       <div className="flex items-center">
                         <Avatar className="h-9 w-9">
                           <AvatarFallback className="uppercase">
-                            {order?.userId.firstname.slice(0, 2)}
+                            {order?.userId != null
+                              ? order?.userId.firstname.slice(0, 2)
+                              : order?.name.slice(0, 2)}
                           </AvatarFallback>
                         </Avatar>
                         <div className="ml-4 space-y-1">
-                          <p className="text-sm font-medium leading-none">{`${order?.userId.firstname} ${order?.userId.lastname}`}</p>
+                          <p className="text-sm font-medium leading-none">
+                            {order?.userId != null
+                              ? `${order?.userId.firstname} ${order?.userId.lastname}`
+                              : `${order?.name}`}
+                          </p>
                           <p className="text-sm text-muted-foreground">
                             {order?.userId?.phoneNumber &&
                               `${order?.userId?.phoneNumber}`}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            {` ${order?.userId.email}`}
+                            {order.phoneNumber && `${order?.phoneNumber}`}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {order?.userId != null
+                              ? ` ${order?.userId.email}`
+                              : `${order?.email}`}
                           </p>
                         </div>
                       </div>

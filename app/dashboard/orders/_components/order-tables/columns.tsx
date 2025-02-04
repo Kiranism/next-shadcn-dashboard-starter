@@ -1,5 +1,5 @@
 'use client';
-import { Orders, Store, UserId, OrderItem, Fulfilled } from '@/constants/data';
+import { Orders, UserId, Fulfilled } from '@/constants/data';
 import { Row } from '@tanstack/react-table'; // Import Row type
 import { Checkbox } from '@/components/ui/checkbox';
 import { ColumnDef } from '@tanstack/react-table';
@@ -63,12 +63,13 @@ export const columns: ColumnDef<Orders>[] = [
     header: 'CUSTOMER',
     cell: ({ row }) => {
       const customer = row.getValue<UserId | null>('userId');
+      //const name = row.getValue<string | null>('email');
       return (
         <div>
           {customer ? (
             <p>{`${customer.firstname} ${customer.lastname}`}</p> // Safely access the firstname and lastname
           ) : (
-            <p>No Customer</p> // Fallback in case the customer object is null or undefined
+            <p>Guest Checkout</p> // Fallback in case the customer object is null or undefined
           )}
         </div>
       );

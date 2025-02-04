@@ -136,6 +136,8 @@ export type ListingImage = {
 
 export type Orders = {
   _id: string;
+  name: string;
+  email: string;
   orderId: string;
   item: OrderItem[];
   userId: UserId;
