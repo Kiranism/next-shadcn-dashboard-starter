@@ -155,7 +155,7 @@ export default function ProfileForm() {
 
                     <CopyToClipboard
                       text={`<iframe
-                        src="https://mehchant.vercel.app/widget/${user.storeId}"
+                        src="https://mehchant.com/widget/${user.storeId}"
                         title="The Marketplace For Merchandise Licensed by Creators"
                         style="border: none; width: 100%; height: 100vh"
                       ></iframe>`}
