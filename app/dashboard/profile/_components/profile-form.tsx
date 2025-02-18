@@ -146,7 +146,7 @@ export default function ProfileForm() {
                     <Card className="mx-auto w-full p-4">
                       <p>
                         {`<iframe
-                        src="https://mehchant.vercel.app/widget/${user.storeId}"
+                        src="https://mehchant.com/store-widget/${user.storeId}"
                         title="The Marketplace For Merchandise Licensed by Creators"
                         style="border: none; width: 100%; height: 100vh"
                       ></iframe>`}
