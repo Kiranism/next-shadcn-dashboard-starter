@@ -67,11 +67,11 @@ const KBarComponent = ({ children }: { children: React.ReactNode }) => {
   return (
     <>
       <KBarPortal>
-        <KBarPositioner className='scrollbar-hide fixed inset-0 z-[99999] bg-black/80 !p-0 backdrop-blur-sm'>
-          <KBarAnimator className='relative !mt-64 w-full max-w-[600px] !-translate-y-12 overflow-hidden rounded-lg border bg-background text-foreground shadow-lg'>
+        <KBarPositioner className='scrollbar-hide fixed inset-0 z-99999 bg-black/80 p-0! backdrop-blur-xs'>
+          <KBarAnimator className='bg-background text-foreground relative mt-64! w-full max-w-[600px] -translate-y-12! overflow-hidden rounded-lg border shadow-lg'>
             <div className='bg-background'>
               <div className='border-x-0 border-b-2'>
-                <KBarSearch className='w-full border-none bg-background px-6 py-4 text-lg outline-none focus:outline-none focus:ring-0 focus:ring-offset-0' />
+                <KBarSearch className='bg-background w-full border-none px-6 py-4 text-lg outline-hidden focus:ring-0 focus:ring-offset-0 focus:outline-hidden' />
               </div>
               <RenderResults />
             </div>
