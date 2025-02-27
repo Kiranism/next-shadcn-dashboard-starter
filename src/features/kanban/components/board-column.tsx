@@ -58,7 +58,7 @@ export function BoardColumn({ column, tasks, isOverlay }: BoardColumnProps) {
   };
 
   const variants = cva(
-    'h-[75vh] max-h-[75vh] w-[350px] max-w-full bg-secondary flex flex-col flex-shrink-0 snap-center',
+    'h-[75vh] max-h-[75vh] w-[350px] max-w-full bg-secondary flex flex-col shrink-0 snap-center',
     {
       variants: {
         dragging: {
@@ -83,19 +83,19 @@ export function BoardColumn({ column, tasks, isOverlay }: BoardColumnProps) {
           variant={'ghost'}
           {...attributes}
           {...listeners}
-          className='relative -ml-2 h-auto cursor-grab p-1 text-primary/50'
+          className='text-primary/50 relative -ml-2 h-auto cursor-grab p-1'
         >
           <span className='sr-only'>{`Move column: ${column.title}`}</span>
           <GripVertical />
         </Button>
-        {/* <span className="mr-auto !mt-0"> {column.title}</span> */}
+        {/* <span className="mr-auto mt-0!"> {column.title}</span> */}
         {/* <Input
           defaultValue={column.title}
-          className="text-base !mt-0 mr-auto"
+          className="text-base mt-0! mr-auto"
         /> */}
         <ColumnActions id={column.id} title={column.title} />
       </CardHeader>
-      <CardContent className='flex flex-grow flex-col gap-4 overflow-x-hidden p-2'>
+      <CardContent className='flex grow flex-col gap-4 overflow-x-hidden p-2'>
         <ScrollArea className='h-full'>
           <SortableContext items={tasksIds}>
             {tasks.map((task) => (
@@ -121,7 +121,7 @@ export function BoardContainer({ children }: { children: React.ReactNode }) {
   });
 
   return (
-    <ScrollArea className='w-full whitespace-nowrap rounded-md'>
+    <ScrollArea className='w-full rounded-md whitespace-nowrap'>
       <div
         className={variations({
           dragging: dndContext.active ? 'active' : 'default'
