@@ -36,50 +36,72 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
   totalItems: number;
   pageSizeOptions?: number[];
+  currentPage?: number;
+  onPageChange?: (page: number) => void;
+  pageSize?: number;
+  onPageSizeChange?: (pageSize: number) => void;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
   totalItems,
-  pageSizeOptions = [5, 10, 20, 30, 40, 50]
+  pageSizeOptions = [5, 10, 20, 30, 40, 50],
+  currentPage,
+  onPageChange,
+  pageSize,
+  onPageSizeChange
 }: DataTableProps<TData, TValue>) {
-  const [currentPage, setCurrentPage] = useQueryState(
+  const [localPage, setLocalPage] = useQueryState(
     'page',
     parseAsInteger.withOptions({ shallow: false }).withDefault(1)
   );
-  const [pageSize, setPageSize] = useQueryState(
+  const [localPageSize, setLocalPageSize] = useQueryState(
     'limit',
     parseAsInteger
       .withOptions({ shallow: false, history: 'push' })
       .withDefault(10)
   );
 
-  const paginationState = {
-    pageIndex: currentPage - 1, // zero-based index for React Table
-    pageSize: pageSize
+  const actualCurrentPage = currentPage ?? localPage;
+  const actualPageSize = pageSize ?? localPageSize;
+
+  const paginationState: PaginationState = {
+    pageIndex: actualCurrentPage - 1,
+    pageSize: actualPageSize
   };
 
-  const pageCount = Math.ceil(totalItems / pageSize);
+  const pageCount = Math.ceil(totalItems / actualPageSize);
 
   const handlePaginationChange = (
     updaterOrValue:
       | PaginationState
       | ((old: PaginationState) => PaginationState)
   ) => {
-    const pagination =
+    const next =
       typeof updaterOrValue === 'function'
         ? updaterOrValue(paginationState)
         : updaterOrValue;
 
-    setCurrentPage(pagination.pageIndex + 1); // converting zero-based index to one-based
-    setPageSize(pagination.pageSize);
+    const nextPage = next.pageIndex + 1;
+
+    if (onPageChange) {
+      onPageChange(nextPage);
+    } else {
+      setLocalPage(nextPage);
+    }
+
+    if (onPageSizeChange) {
+      onPageSizeChange(next.pageSize);
+    } else {
+      setLocalPageSize(next.pageSize);
+    }
   };
 
   const table = useReactTable({
     data,
     columns,
-    pageCount: pageCount,
+    pageCount,
     state: {
       pagination: paginationState
     },
@@ -178,9 +200,9 @@ export function DataTable<TData, TValue>({
                   <SelectValue placeholder={paginationState.pageSize} />
                 </SelectTrigger>
                 <SelectContent side='top'>
-                  {pageSizeOptions.map((pageSize) => (
-                    <SelectItem key={pageSize} value={`${pageSize}`}>
-                      {pageSize}
+                  {pageSizeOptions.map((ps) => (
+                    <SelectItem key={ps} value={`${ps}`}>
+                      {ps}
                     </SelectItem>
                   ))}
                 </SelectContent>

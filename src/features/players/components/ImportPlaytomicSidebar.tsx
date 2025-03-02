@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useSession } from 'next-auth/react';
 import { X } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
+import { useApi } from '@/hooks/useApi';
 // If you have a "toast" utility, import it:
 // import { toast } from 'react-hot-toast'; // or whichever toast library you use
 
@@ -27,13 +27,12 @@ export default function ImportPlaytomicSidebar({
   onClose,
   onSuccess
 }: ImportPlaytomicSidebarProps) {
+  const callApi = useApi();
+
   const [searchText, setSearchText] = useState('');
   const [results, setResults] = useState<PlaytomicUser[] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const { data: session } = useSession();
-  const token = session?.accessToken || '';
 
   async function handleSearch() {
     setError(null);
@@ -41,14 +40,8 @@ export default function ImportPlaytomicSidebar({
     setResults(null);
 
     try {
-      const resp = await fetch(
-        `http://localhost:8000/player/playtomic-player/?name=${searchText}`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          }
-        }
+      const resp = await callApi(
+        `/player/playtomic-player/?name=${searchText}`
       );
       if (!resp.ok) {
         throw new Error('Failed to search from Playtomic');
@@ -66,25 +59,22 @@ export default function ImportPlaytomicSidebar({
   async function handleImport(user: PlaytomicUser) {
     try {
       const genderInt = user.gender.toUpperCase() === 'MALE' ? 1 : 2;
-      const resp = await fetch('http://localhost:8000/player/from-playtomic/', {
+      const resp = await callApi('/player/from-playtomic/', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          user_id: parseInt(user.user_id, 10),
+          user_id: user.user_id,
           gender: genderInt
         })
       });
+      const data = await resp.json();
       if (!resp.ok) {
-        throw new Error('Failed to import this user');
+        throw new Error(data?.message || 'Failed to import this user');
       }
-      // If successful, show success
-      // toast.success('Imported successfully!');
       onSuccess();
     } catch (err: any) {
-      // toast.error(err.message);
       setError(err.message);
     }
   }

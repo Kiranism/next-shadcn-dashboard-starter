@@ -1,8 +1,8 @@
 'use client';
 import React, { useState } from 'react';
-import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
+import { useApi } from '@/hooks/useApi';
 
 interface CreatePlayerSidebarProps {
   onClose: () => void;
@@ -18,9 +18,8 @@ export default function CreatePlayerSidebar({
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Use NextAuth to get the token
-  const { data: session } = useSession();
-  const token = session?.accessToken || '';
+  // Use new hook
+  const callApi = useApi();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,11 +27,10 @@ export default function CreatePlayerSidebar({
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/player/', {
+      const response = await callApi('/player/', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           nickname,

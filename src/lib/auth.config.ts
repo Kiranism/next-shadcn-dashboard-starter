@@ -1,6 +1,7 @@
 import { NextAuthConfig } from 'next-auth';
 import CredentialProvider from 'next-auth/providers/credentials';
 import GithubProvider from 'next-auth/providers/github';
+import type { JwtPayload } from 'jwt-decode';
 
 // Extend the User type to include the token property and additional user details
 interface CustomUser {
@@ -121,33 +122,61 @@ const authConfig = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      // Persist the token and user details in the JWT
-      if (user) {
-        const customUser = user as CustomUser;
-        token.accessToken = customUser.token;
-        token.id = customUser.id;
-        token.name = customUser.name;
-        token.login = customUser.login;
-        token.address = customUser.address;
-        token.email = customUser.email;
-        token.phone_number = customUser.phone_number;
-        token.created_at = customUser.created_at;
+      // 1) On initial sign in:
+      if (user && (user as any).token) {
+        const accessToken = (user as any).token;
+        try {
+          // Decode the JWT to find `exp`
+          const decoded = simpleJwtDecode(accessToken) as JwtPayload;
+          token.expiresAt = decoded.exp ? decoded.exp * 1000 : 0;
+        } catch (err) {
+          console.error('Could not decode token', err);
+          token.expiresAt = 0;
+        }
+        token.accessToken = accessToken;
       }
+
+      // 2) On subsequent requests, if the token is expired, clear it.
+      if (
+        typeof token.expiresAt === 'number' &&
+        Date.now() >= token.expiresAt
+      ) {
+        console.log('Token has expired. Clearing token.');
+        token.accessToken = undefined;
+      }
+
       return token;
     },
     async session({ session, token }) {
-      // Add the token and user details to the session
+      // If `token.accessToken` is missing, force an "expired" session.
+      // This ends up logging the user out on the client side.
+      if (!token.accessToken) {
+        return {
+          ...session,
+          user: undefined, // remove user info
+          expires: new Date(0).toISOString() // an already-expired date
+        };
+      }
+
+      // Otherwise, return the (valid) session
       session.accessToken = token.accessToken as string;
-      session.user.id = token.id as string;
-      session.user.name = token.name as string;
-      session.user.login = token.login as string;
-      session.user.address = token.address as string;
-      session.user.email = token.email as string;
-      session.user.phone_number = token.phone_number as string;
-      session.user.created_at = token.created_at as string;
       return session;
     }
   }
 } satisfies NextAuthConfig;
+
+function simpleJwtDecode(token: string): Record<string, any> {
+  const segments = token.split('.');
+  if (segments.length < 2) {
+    throw new Error('Invalid JWT structure');
+  }
+  try {
+    const payloadBase64 = segments[1].replace(/-/g, '+').replace(/_/g, '/');
+    const decodedString = atob(payloadBase64);
+    return JSON.parse(decodedString);
+  } catch (err) {
+    throw new Error('Failed to decode token payload');
+  }
+}
 
 export default authConfig;

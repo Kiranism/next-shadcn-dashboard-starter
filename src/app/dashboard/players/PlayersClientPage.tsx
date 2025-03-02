@@ -44,10 +44,7 @@ export default function PlayersClientPage() {
     <PageContainer scrollable={false}>
       <div className='flex flex-1 flex-col space-y-4'>
         <div className='flex items-start justify-between'>
-          <Heading
-            title='Players'
-            description='Manage players (Client side table functionalities.)'
-          />
+          <Heading title='Players' description='Manage players' />
           <div className='flex gap-2'>
             <Link
               href='#'

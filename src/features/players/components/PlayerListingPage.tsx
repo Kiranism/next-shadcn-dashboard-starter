@@ -6,11 +6,16 @@ import { Player } from '../api/fetchPlayers';
 import { DataTableSkeleton } from '@/components/ui/table/data-table-skeleton';
 import { DataTable } from '@/components/ui/table/data-table';
 import { playerColumns } from './player-tables/columns';
+import { useApi } from '@/hooks/useApi';
 
 const PlayerListingPage: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const callApi = useApi();
 
   useEffect(() => {
     const fetchPlayers = async () => {
@@ -20,12 +25,7 @@ const PlayerListingPage: React.FC = () => {
           throw new Error('User is not authenticated');
         }
 
-        const response = await fetch('http://localhost:8000/player/', {
-          headers: {
-            Authorization: `Bearer ${session.accessToken}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        const response = await callApi('/player/');
 
         if (!response.ok) {
           throw new Error('Failed to fetch players');
@@ -43,21 +43,30 @@ const PlayerListingPage: React.FC = () => {
     };
 
     fetchPlayers();
-  }, []);
+  }, [callApi]);
 
   if (loading) {
-    return <DataTableSkeleton columnCount={4} rowCount={5} />;
+    return <DataTableSkeleton columnCount={4} rowCount={pageSize} />;
   }
 
   if (error) {
     return <div>Error: {error}</div>;
   }
 
+  const totalItems = players.length;
+  const pageStart = (currentPage - 1) * pageSize;
+  const pageEnd = pageStart + pageSize;
+  const paginatedPlayers = players.slice(pageStart, pageEnd);
+
   return (
     <DataTable
       columns={playerColumns}
-      data={players}
-      totalItems={players.length}
+      data={paginatedPlayers}
+      totalItems={totalItems}
+      currentPage={currentPage}
+      onPageChange={setCurrentPage}
+      pageSize={pageSize}
+      onPageSizeChange={setPageSize}
     />
   );
 };
