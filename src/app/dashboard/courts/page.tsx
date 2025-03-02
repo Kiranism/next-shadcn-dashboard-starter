@@ -14,6 +14,11 @@ import {
   CarouselNext,
   CarouselPrevious
 } from '@/components/ui/carousel';
+import Link from 'next/link';
+import { cn } from '@/lib/utils';
+import { buttonVariants } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
+import CreateCourtSidebar from '@/features/courts/components/CreateCourtSidebar';
 
 interface Court {
   name: string;
@@ -54,6 +59,7 @@ export default function CourtsClientPage() {
   const [courts, setCourts] = useState<Court[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -76,6 +82,19 @@ export default function CourtsClientPage() {
     })();
   }, [callApi]);
 
+  function refreshCourts() {
+    (async () => {
+      try {
+        const resp = await callApi('/court/');
+        if (!resp.ok) throw new Error('Failed to fetch courts');
+        const data = await resp.json();
+        setCourts(data);
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+  }
+
   return (
     <PageContainer scrollable>
       <div className='flex flex-1 flex-col space-y-4'>
@@ -84,6 +103,17 @@ export default function CourtsClientPage() {
             title='Courts'
             description='List of courts from your account'
           />
+          <Link
+            href='#'
+            onClick={(e) => {
+              e.preventDefault();
+              setShowSidebar(true);
+            }}
+            className={cn(buttonVariants(), 'text-xs md:text-sm')}
+          >
+            <Plus className='mr-1 h-4 w-4' />
+            Add new Court
+          </Link>
         </div>
         <Separator />
 
@@ -100,6 +130,16 @@ export default function CourtsClientPage() {
           ))}
         </div>
       </div>
+
+      {showSidebar && (
+        <CreateCourtSidebar
+          onClose={() => setShowSidebar(false)}
+          onSuccess={() => {
+            setShowSidebar(false);
+            refreshCourts();
+          }}
+        />
+      )}
     </PageContainer>
   );
 }
