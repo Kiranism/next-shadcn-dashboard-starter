@@ -15,7 +15,7 @@ export const columns: ColumnDef<Product>[] = [
             src={row.getValue('photo_url')}
             alt={row.getValue('name')}
             fill
-            className='rounded-lg'
+            className='rounded-sm'
           />
         </div>
       );

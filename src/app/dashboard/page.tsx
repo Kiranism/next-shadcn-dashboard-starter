@@ -6,7 +6,11 @@ export default async function Dashboard() {
 
   if (!session?.user) {
     return redirect('/');
-  } else {
-    redirect('/dashboard/overview');
   }
+
+  return (
+    <div>
+      <h1>Dashboard</h1>
+    </div>
+  );
 }

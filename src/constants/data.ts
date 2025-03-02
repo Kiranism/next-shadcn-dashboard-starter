@@ -11,6 +11,19 @@ export type Product = {
   updated_at: string;
 };
 
+export type Player = {
+  id: number;
+  nickname: string;
+  gender: number;
+  name: string | null;
+  surname: string | null;
+  number: string | null;
+  email: string | null;
+  playtomic_id: number;
+  level: number;
+  picture: string | null;
+};
+
 //Info: The following data is used for the sidebar navigation and Cmd K bar.
 export const navItems: NavItem[] = [
   {
@@ -20,6 +33,14 @@ export const navItems: NavItem[] = [
     isActive: false,
     shortcut: ['d', 'd'],
     items: [] // Empty array as there are no child items for Dashboard
+  },
+  {
+    title: 'Players',
+    url: '/dashboard/players',
+    icon: 'user', // Assuming you have an icon named 'users'
+    isActive: false,
+    shortcut: ['p', 'l'],
+    items: [] // No child items
   },
   {
     title: 'Product',
