@@ -37,10 +37,18 @@ export const navItems: NavItem[] = [
   {
     title: 'Players',
     url: '/dashboard/players',
-    icon: 'user', // Assuming you have an icon named 'users'
+    icon: 'users', // Assuming you have an icon named 'users'
     isActive: false,
     shortcut: ['p', 'l'],
     items: [] // No child items
+  },
+  {
+    title: 'Courts',
+    url: '/dashboard/courts',
+    icon: 'user',
+    isActive: false,
+    shortcut: ['c', 'c'],
+    items: []
   },
   {
     title: 'Product',
