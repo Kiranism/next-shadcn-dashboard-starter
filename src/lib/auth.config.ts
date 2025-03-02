@@ -10,33 +10,67 @@ const authConfig = {
     }),
     CredentialProvider({
       credentials: {
-        email: {
-          type: 'email'
+        username: {
+          type: 'username'
         },
         password: {
           type: 'password'
         }
       },
       async authorize(credentials, req) {
-        const user = {
-          id: '1',
-          name: 'John',
-          email: credentials?.email as string
-        };
-        if (user) {
-          // Any object returned will be saved in `user` property of the JWT
-          return user;
-        } else {
-          // If you return null then an error will be displayed advising the user to check their details.
-          return null;
+        try {
+          const response = await fetch('http://localhost:8000/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams({
+              username: credentials?.username,
+              password: credentials?.password
+            })
+          });
 
-          // You can also Reject this callback with an Error thus the user will be sent to the error page with the error message as a query parameter
+          const data = await response.json();
+          console.log('Response data:', data);
+
+          if (response.ok && data.access_token) {
+            return {
+              id: data.user?.id || 'default-id',
+              name: data.user?.name || 'default-name',
+              username: credentials?.username,
+              token: data.access_token
+            };
+          } else {
+            console.error('Login failed:', data);
+            return null;
+          }
+        } catch (error) {
+          console.error('Error during authorization:', error);
+          return null;
         }
       }
     })
   ],
   pages: {
-    signIn: '/' //sigin page
+    signIn: '/', // Sign-in page
+    signOut: '/auth/signout', // Optional: Sign-out page
+    error: '/auth/error', // Error page
+    verifyRequest: '/auth/verify-request', // Verification page
+    newUser: '/dashboard' // Redirect new users to the dashboard
+  },
+  callbacks: {
+    async jwt({ token, user }) {
+      // Persist the token in the JWT
+      if (user) {
+        token.accessToken = user.token;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      // Add the token to the session
+      session.accessToken = token.accessToken;
+      return session;
+    }
   }
 } satisfies NextAuthConfig;
 
