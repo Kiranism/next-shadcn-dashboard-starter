@@ -35,6 +35,20 @@ export const navItems: NavItem[] = [
     items: [] // Empty array as there are no child items for Dashboard
   },
   {
+    title: 'Tournament',
+    url: '#', // no direct link for the parent
+    icon: 'trophy', // or any existing icon name
+    isActive: true,
+    items: [
+      {
+        title: 'Overview',
+        url: '/dashboard/tournament/overview',
+        icon: 'dashboard', // set your preferred icon
+        shortcut: ['t', 'o']
+      }
+    ]
+  },
+  {
     title: 'Players',
     url: '/dashboard/players',
     icon: 'users', // Assuming you have an icon named 'users'
@@ -45,7 +59,7 @@ export const navItems: NavItem[] = [
   {
     title: 'Courts',
     url: '/dashboard/courts',
-    icon: 'user',
+    icon: 'gallery',
     isActive: false,
     shortcut: ['c', 'c'],
     items: []

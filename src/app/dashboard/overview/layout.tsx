@@ -1,6 +1,7 @@
 import PageContainer from '@/components/layout/page-container';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import React from 'react';
+import OverViewClient from './OverViewClient';
 
 export default function OverViewLayout({
   sales,
@@ -17,9 +18,7 @@ export default function OverViewLayout({
     <PageContainer>
       <div className='flex flex-1 flex-col space-y-2'>
         <div className='flex items-center justify-between space-y-2'>
-          <h2 className='text-2xl font-bold tracking-tight'>
-            Hi, Welcome back 👋
-          </h2>
+          <OverViewClient />
         </div>
         <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
           <Card>
