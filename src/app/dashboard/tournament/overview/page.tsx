@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Calendar, Users } from 'lucide-react';
 import Link from 'next/link';
+import PageContainer from '@/components/layout/page-container';
 
 interface Tournament {
   id: number;
@@ -135,7 +136,7 @@ export default function Page() {
 
   if (isLoading) {
     return (
-      <main className='grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3'>
+      <PageContainer>
         {Array.from({ length: 3 }).map((_, i) => (
           <Card key={i}>
             <CardHeader>
@@ -150,95 +151,103 @@ export default function Page() {
             </CardContent>
           </Card>
         ))}
-      </main>
+      </PageContainer>
     );
   }
 
   if (error) {
     return (
-      <main className='p-4'>
+      <PageContainer>
         <p className='text-destructive'>{error}</p>
-      </main>
+      </PageContainer>
     );
   }
 
   if (!tournaments || tournaments.length === 0) {
     return (
-      <main className='p-4'>
+      <PageContainer>
         <h1 className='mb-2 text-xl font-bold'>Overview</h1>
         <p>No tournaments found.</p>
         <Link
           href='/dashboard/tournament/create'
-          className='inline-block rounded bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90'
+          className='mt-2 inline-block rounded bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90'
         >
           New Tournament
         </Link>
-      </main>
+      </PageContainer>
     );
   }
 
   return (
-    <main className='grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3'>
-      <div className='col-span-full mb-2 flex justify-end'>
-        <Link
-          href='/dashboard/tournament/create'
-          className='rounded bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90'
-        >
-          New Tournament
-        </Link>
-      </div>
-      {tournaments.map((tourney) => {
-        const status = getTournamentStatus(tourney);
-        const start = new Date(tourney.start_date);
-        const end = new Date(tourney.end_date);
-        const lexicalDescription = tourney.full_description
-          ? renderLexicalDescription(tourney.full_description)
-          : null;
+    <PageContainer>
+      <div className='flex flex-1 flex-col space-y-2'>
+        {/* Title + Button row */}
+        <div className='flex items-center justify-between space-y-2'>
+          <h1 className='text-xl font-bold'>Overview</h1>
+          <Link
+            href='/dashboard/tournament/create'
+            className='rounded bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90'
+          >
+            New Tournament
+          </Link>
+        </div>
 
-        return (
-          <Card key={tourney.id}>
-            <CardHeader className='space-y-1'>
-              <CardTitle className='flex items-center justify-between text-lg font-semibold'>
-                {tourney.name}
-                <Badge variant='outline'>{status}</Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {tourney.images?.[0] && (
-                <div className='relative mb-3 h-40 w-full overflow-hidden rounded'>
-                  <Image
-                    src={tourney.images[0]}
-                    alt={tourney.name}
-                    fill
-                    className='object-cover'
-                  />
-                </div>
-              )}
-              {tourney.description && (
-                <p className='mb-2 text-sm text-foreground'>
-                  {tourney.description}
-                </p>
-              )}
-              <div className='mb-2 flex items-center gap-2 text-sm'>
-                <Users className='h-4 w-4 text-muted-foreground' />
-                <span className='leading-none'>
-                  {tourney.players_number} players
-                </span>
-              </div>
-              <div className='flex items-center gap-2 text-sm'>
-                <Calendar className='h-4 w-4 text-muted-foreground' />
-                <span className='leading-none text-muted-foreground'>
-                  {formatDate(start)} {formatTime(start)} - {formatDate(end)}{' '}
-                  {formatTime(end)}
-                </span>
-              </div>
-              {tourney.full_description && (
-                <div className='mt-2'>{lexicalDescription}</div>
-              )}
-            </CardContent>
-          </Card>
-        );
-      })}
-    </main>
+        {/* Cards in a 3-column grid (responsive) */}
+        <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+          {tournaments.map((tourney) => {
+            const status = getTournamentStatus(tourney);
+            const start = new Date(tourney.start_date);
+            const end = new Date(tourney.end_date);
+            const lexicalDescription = tourney.full_description
+              ? renderLexicalDescription(tourney.full_description)
+              : null;
+
+            return (
+              <Card key={tourney.id}>
+                <CardHeader className='space-y-1'>
+                  <CardTitle className='flex items-center justify-between text-lg font-semibold'>
+                    {tourney.name}
+                    <Badge variant='outline'>{status}</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {tourney.images?.[0] && (
+                    <div className='relative mb-3 h-40 w-full overflow-hidden rounded'>
+                      <Image
+                        src={tourney.images[0]}
+                        alt={tourney.name}
+                        fill
+                        className='object-cover'
+                      />
+                    </div>
+                  )}
+                  {tourney.description && (
+                    <p className='mb-2 text-sm text-foreground'>
+                      {tourney.description}
+                    </p>
+                  )}
+                  <div className='mb-2 flex items-center gap-2 text-sm'>
+                    <Users className='h-4 w-4 text-muted-foreground' />
+                    <span className='leading-none'>
+                      {tourney.players_number} players
+                    </span>
+                  </div>
+                  <div className='flex items-center gap-2 text-sm'>
+                    <Calendar className='h-4 w-4 text-muted-foreground' />
+                    <span className='leading-none text-muted-foreground'>
+                      {formatDate(start)} {formatTime(start)} -{' '}
+                      {formatDate(end)} {formatTime(end)}
+                    </span>
+                  </div>
+                  {tourney.full_description && (
+                    <div className='mt-2'>{lexicalDescription}</div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    </PageContainer>
   );
 }
