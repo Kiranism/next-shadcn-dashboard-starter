@@ -1,11 +1,8 @@
-# This config was automatically generated from your source code
-# Stacks detected: deps:node:.
 version: 2.1
 orbs:
   node: circleci/node@5
 jobs:
   build-node:
-    # Build node project
     executor: node/default
     steps:
       - checkout
@@ -17,26 +14,31 @@ jobs:
       - run:
           name: Create the ~/artifacts directory if it doesn't exist
           command: mkdir -p ~/artifacts
-      # Copy output to artifacts dir
       - run:
           name: Copy artifacts
           command: cp -R build dist public .output .next .docusaurus ~/artifacts 2>/dev/null || true
       - store_artifacts:
           path: ~/artifacts
           destination: node-build
-  deploy:
-    # This is an example deploy job, not actually used by the workflow
+  build_docker_image:
     docker:
-      - image: cimg/base:stable
+      - image: docker:20.10.7
     steps:
-      # Replace this with steps to deploy to users
+      - setup_remote_docker
+      - checkout
       - run:
-          name: deploy
-          command: '#e.g. ./deploy.sh'
+          name: Build Docker Image
+          command: docker build -t my-docker-repo/my-image-name:latest .
+      - run:
+          name: Login to Docker Registry
+          command: echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
+      - run:
+          name: Push Docker Image
+          command: docker push my-docker-repo/my-image-name:latest
 workflows:
   build:
     jobs:
       - build-node
-    # - deploy:
-    #     requires:
-    #       - build-node
+      - build_docker_image:
+          requires:
+            - build-node
