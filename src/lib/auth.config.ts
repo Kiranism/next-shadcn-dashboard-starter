@@ -59,16 +59,19 @@ const authConfig = {
         }
 
         try {
-          const loginResponse = await fetch('http://localhost:8000/login', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: new URLSearchParams({
-              username: creds.username,
-              password: creds.password
-            })
-          });
+          const loginResponse = await fetch(
+            'http://api.be.orb.local:8000/login',
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+              },
+              body: new URLSearchParams({
+                username: creds.username,
+                password: creds.password
+              })
+            }
+          );
 
           const loginData = await loginResponse.json();
           console.log('Login response data:', loginData);
@@ -76,7 +79,7 @@ const authConfig = {
           if (loginResponse.ok && loginData.access_token) {
             // Fetch user details
             const userResponse = await fetch(
-              'http://localhost:8000/companies/me/',
+              'http://api.be.orb.local:8000/companies/me/',
               {
                 method: 'GET',
                 headers: {

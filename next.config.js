@@ -27,4 +27,9 @@ const nextConfig = {
   transpilePackages: ['geist']
 };
 
-module.exports = nextConfig;
+// Import next-intl configuration
+const createNextIntlPlugin = require('next-intl/plugin');
+const withNextIntl = createNextIntlPlugin('./src/i18n.ts');
+
+// Export the wrapped configuration
+module.exports = withNextIntl(nextConfig);

@@ -4,5 +4,9 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {
+		"i18n-ally.localesPaths": [
+			"src/messages"
+		]
+	}
 }

@@ -17,22 +17,26 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
 import GithubSignInButton from './github-auth-button';
-
-const formSchema = z.object({
-  username: z.string().min(1, { message: 'Enter a valid username' }),
-  password: z.string().min(1, { message: 'Password is required' })
-});
-
-type UserFormValue = z.infer<typeof formSchema>;
+import { useTranslations } from 'next-intl';
 
 export default function UserAuthForm() {
+  const t = useTranslations();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl');
   const [loading, startTransition] = useTransition();
+
+  const formSchema = z.object({
+    username: z.string().min(1, { message: t('Errors.requiredUsername') }),
+    password: z.string().min(1, { message: t('Errors.requiredPassword') })
+  });
+
+  type UserFormValue = z.infer<typeof formSchema>;
+
   const defaultValues = {
     username: '',
     password: ''
   };
+
   const form = useForm<UserFormValue>({
     resolver: zodResolver(formSchema),
     defaultValues
@@ -45,7 +49,7 @@ export default function UserAuthForm() {
         password: data.password,
         callbackUrl: callbackUrl ?? '/dashboard'
       });
-      toast.success('Signed In Successfully!');
+      toast.success(t('Auth.signInSuccess'));
     });
   };
 
@@ -61,11 +65,11 @@ export default function UserAuthForm() {
             name='username'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Username</FormLabel>
+                <FormLabel>{t('Auth.usernameLabel')}</FormLabel>
                 <FormControl>
                   <Input
                     type='text'
-                    placeholder='Enter your username...'
+                    placeholder={t('Auth.usernamePlaceholder')}
                     disabled={loading}
                     {...field}
                   />
@@ -80,11 +84,11 @@ export default function UserAuthForm() {
             name='password'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Password</FormLabel>
+                <FormLabel>{t('Auth.passwordLabel')}</FormLabel>
                 <FormControl>
                   <Input
                     type='password'
-                    placeholder='Enter your password...'
+                    placeholder={t('Auth.passwordPlaceholder')}
                     disabled={loading}
                     {...field}
                   />
@@ -95,7 +99,7 @@ export default function UserAuthForm() {
           />
 
           <Button disabled={loading} className='ml-auto w-full' type='submit'>
-            Continue With Email
+            {t('Auth.continueWithEmail')}
           </Button>
         </form>
       </Form>
@@ -105,7 +109,7 @@ export default function UserAuthForm() {
         </div>
         <div className='relative flex justify-center text-xs uppercase'>
           <span className='bg-background px-2 text-muted-foreground'>
-            Or continue with
+            {t('Auth.orContinueWith')}
           </span>
         </div>
       </div>

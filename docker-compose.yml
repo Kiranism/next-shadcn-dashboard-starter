@@ -1,0 +1,32 @@
+version: '3.8'
+services:
+  next-dev:
+    container_name: "tournme-fe"
+    build: .
+    ports:
+      - "3000:3000"
+    # Mount source code to see live changes without rebuilding
+    volumes:
+      - .:/usr/src/app
+      # Excluding node_modules from volume to avoid duplicating them
+      - /usr/src/app/node_modules
+    environment:
+      - NODE_ENV=development
+      # Node.js memory limits
+      - NODE_OPTIONS=--max-old-space-size=512
+      - NEXT_TELEMETRY_DISABLED=1
+    command: pnpm dev
+    # Set memory limits for the container
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+        reservations:
+          memory: 512M
+    # Use healthcheck to verify the service is running correctly
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s 
