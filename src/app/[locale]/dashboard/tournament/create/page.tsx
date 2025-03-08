@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApi } from '@/hooks/useApi';
 import { useRouter } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
@@ -19,10 +19,45 @@ import {
 } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import PageContainer from '@/components/layout/page-container';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, AlertCircle } from 'lucide-react';
 import { Heading } from '@/components/ui/heading';
 import { Separator } from '@/components/ui/separator';
 import { Link } from '@/lib/navigation';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { FileUploader } from '@/components/file-uploader';
+import { SerializedEditorState } from 'lexical';
+import { Editor } from '@/components/blocks/editor-00/editor';
+
+// Initial value for editor
+const initialEditorValue = {
+  root: {
+    children: [
+      {
+        children: [
+          {
+            detail: 0,
+            format: 0,
+            mode: 'normal',
+            style: '',
+            text: '',
+            type: 'text',
+            version: 1
+          }
+        ],
+        direction: 'ltr',
+        format: '',
+        indent: 0,
+        type: 'paragraph',
+        version: 1
+      }
+    ],
+    direction: 'ltr',
+    format: '',
+    indent: 0,
+    type: 'root',
+    version: 1
+  }
+} as unknown as SerializedEditorState;
 
 export default function CreateTournamentPage() {
   /**
@@ -49,12 +84,68 @@ export default function CreateTournamentPage() {
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [fullDescription, setFullDescription] = useState('');
+  const [editorState, setEditorState] =
+    useState<SerializedEditorState>(initialEditorValue);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [playersNumber, setPlayersNumber] = useState('');
   const [images, setImages] = useState<File[]>([]);
+  const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isImageUploaded, setIsImageUploaded] = useState(false);
+
+  // Handle image upload using the court API
+  async function handleImageUpload() {
+    if (images.length === 0) {
+      toast.error(
+        t('pleaseSelectImage', { fallback: 'Please select an image to upload' })
+      );
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+
+      // Prepare FormData for image upload
+      const formData = new FormData();
+      // Use the same field name as court upload API
+      for (let i = 0; i < images.length; i++) {
+        formData.append('files', images[i], images[i].name);
+      }
+
+      // Make API request to upload images
+      const response = await callApi('/court/upload_image/', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          errorT('failedToUploadImages', {
+            fallback: 'Failed to upload images'
+          })
+        );
+      }
+
+      // If the server returns { "image_urls": [...] }, store it
+      const data = await response.json();
+      const imageUrls = data.image_urls || [];
+      setUploadedImageUrls(imageUrls);
+      setIsImageUploaded(true);
+
+      toast.success(
+        t('imagesUploaded', { fallback: 'Images uploaded successfully' })
+      );
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      toast.error(
+        error instanceof Error ? error.message : errorT('somethingWentWrong')
+      );
+    } finally {
+      setIsUploading(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -64,28 +155,37 @@ export default function CreateTournamentPage() {
       return;
     }
 
+    if (!isImageUploaded || uploadedImageUrls.length === 0) {
+      toast.error(
+        t('pleaseUploadImageFirst', {
+          fallback:
+            'Please upload at least one image before creating the tournament'
+        })
+      );
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 
-      // Create FormData for API request
-      const formData = new FormData();
-      formData.append('name', name);
-      formData.append('description', description);
-      formData.append('full_description', fullDescription);
-      formData.append('start_date', new Date(startDate).toISOString());
-      formData.append('end_date', new Date(endDate).toISOString());
-      formData.append('players_number', playersNumber);
-
-      // Append images if any
-      images.forEach((image) => {
-        formData.append('images', image);
-      });
+      // Create tournament with the expected BE format
+      const tournamentData = {
+        name: name,
+        description: description,
+        images: uploadedImageUrls, // Use the uploaded image URLs
+        start_date: new Date(startDate).toISOString(),
+        end_date: new Date(endDate).toISOString(),
+        players_number: parseInt(playersNumber, 10),
+        full_description: editorState // Pass the full editor state as the BE expects
+      };
 
       // Make API request
       const response = await callApi('/tournament/', {
         method: 'POST',
-        body: formData
-        // Don't set Content-Type header, browser will set it with boundary for FormData
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(tournamentData)
       });
 
       if (!response.ok) {
@@ -106,7 +206,7 @@ export default function CreateTournamentPage() {
 
   return (
     <PageContainer scrollable>
-      <div className='flex flex-col space-y-6'>
+      <div className='flex w-full flex-col space-y-6'>
         <div className='flex items-center space-x-2'>
           <Link
             href='/dashboard/tournament/overview'
@@ -126,7 +226,78 @@ export default function CreateTournamentPage() {
           <Separator className='my-4' />
         </div>
 
-        <form onSubmit={handleSubmit} className='space-y-8'>
+        {!isImageUploaded && (
+          <Alert>
+            <AlertCircle className='h-4 w-4' />
+            <AlertDescription>
+              {t('uploadImageFirst', {
+                fallback:
+                  'You need to upload an image before creating a tournament.'
+              })}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <form onSubmit={handleSubmit} className='w-full space-y-8'>
+          {/* Image Upload Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {t('tournament')} {t('images')}*
+              </CardTitle>
+              <CardDescription>
+                {t('uploadImages', {
+                  fallback: 'Upload images for your tournament'
+                })}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className='space-y-4'>
+                <FileUploader
+                  value={images}
+                  onValueChange={setImages}
+                  maxFiles={1}
+                  maxSize={5 * 1024 * 1024}
+                  disabled={isUploading || isImageUploaded}
+                />
+
+                <div className='flex justify-end'>
+                  <Button
+                    type='button'
+                    onClick={handleImageUpload}
+                    disabled={
+                      isUploading || images.length === 0 || isImageUploaded
+                    }
+                  >
+                    {isUploading
+                      ? t('uploading', { fallback: 'Uploading...' })
+                      : t('uploadImage', { fallback: 'Upload Image' })}
+                  </Button>
+                </div>
+
+                {uploadedImageUrls.length > 0 && (
+                  <div className='mt-4 grid grid-cols-1 gap-2'>
+                    {uploadedImageUrls.map((url, index) => (
+                      <div
+                        key={index}
+                        className='relative aspect-video w-full rounded-md border bg-muted'
+                      >
+                        <Image
+                          src={url}
+                          alt={`${t('tournamentImage', { fallback: 'Tournament image' })} ${index}`}
+                          fill
+                          sizes='100vw'
+                          className='rounded-md object-cover'
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Tournament Details Section */}
           <Card>
             <CardHeader>
               <CardTitle>
@@ -134,36 +305,50 @@ export default function CreateTournamentPage() {
               </CardTitle>
               <CardDescription>{commonT('description')}</CardDescription>
             </CardHeader>
-            <CardContent className='space-y-4'>
-              <div className='space-y-2'>
-                <Label htmlFor='name'>
-                  {t('tournament')} {commonT('name')}*
-                </Label>
-                <Input
-                  id='name'
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder={t('enterTournamentName', {
-                    fallback: 'Enter tournament name'
-                  })}
-                  required
-                />
-              </div>
+            <CardContent>
+              <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+                <div className='space-y-2'>
+                  <Label htmlFor='name'>
+                    {t('tournament')} {commonT('name')}*
+                  </Label>
+                  <Input
+                    id='name'
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder={t('enterTournamentName', {
+                      fallback: 'Enter tournament name'
+                    })}
+                    required
+                  />
+                </div>
 
-              <div className='space-y-2'>
-                <Label htmlFor='description'>{commonT('description')}*</Label>
-                <Textarea
-                  id='description'
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder={t('briefDescription', {
-                    fallback: 'Brief description of the tournament'
-                  })}
-                  required
-                />
-              </div>
+                <div className='space-y-2'>
+                  <Label htmlFor='playersNumber'>{t('numberOfPlayers')}*</Label>
+                  <Input
+                    id='playersNumber'
+                    type='number'
+                    value={playersNumber}
+                    onChange={(e) => setPlayersNumber(e.target.value)}
+                    placeholder={t('enterNumberOfPlayers', {
+                      fallback: 'Enter number of players'
+                    })}
+                    required
+                  />
+                </div>
 
-              <div className='grid gap-4 sm:grid-cols-2'>
+                <div className='space-y-2 md:col-span-2'>
+                  <Label htmlFor='description'>{commonT('description')}*</Label>
+                  <Textarea
+                    id='description'
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder={t('briefDescription', {
+                      fallback: 'Brief description of the tournament'
+                    })}
+                    required
+                  />
+                </div>
+
                 <div className='space-y-2'>
                   <Label htmlFor='startDate'>{t('startDate')}*</Label>
                   <Input
@@ -174,6 +359,7 @@ export default function CreateTournamentPage() {
                     required
                   />
                 </div>
+
                 <div className='space-y-2'>
                   <Label htmlFor='endDate'>{t('endDate')}*</Label>
                   <Input
@@ -185,93 +371,31 @@ export default function CreateTournamentPage() {
                   />
                 </div>
               </div>
-
-              <div className='space-y-2'>
-                <Label htmlFor='playersNumber'>{t('numberOfPlayers')}*</Label>
-                <Input
-                  id='playersNumber'
-                  type='number'
-                  value={playersNumber}
-                  onChange={(e) => setPlayersNumber(e.target.value)}
-                  placeholder={t('enterNumberOfPlayers', {
-                    fallback: 'Enter number of players'
-                  })}
-                  required
-                />
-              </div>
             </CardContent>
           </Card>
 
+          {/* Full Description Section with Rich Text Editor */}
           <Card>
             <CardHeader>
               <CardTitle>{t('fullDescription')}</CardTitle>
-              <CardDescription>{commonT('description')}</CardDescription>
+              <CardDescription>
+                {t('detailedTournamentDescription', {
+                  fallback: 'Provide a detailed description of your tournament'
+                })}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className='space-y-2'>
                 <Label htmlFor='fullDescription'>{t('fullDescription')}</Label>
-                <Textarea
-                  id='fullDescription'
-                  value={fullDescription}
-                  onChange={(e) => setFullDescription(e.target.value)}
-                  placeholder={t('enterFullDescription', {
-                    fallback: 'Enter detailed description of the tournament'
-                  })}
-                  className='min-h-[200px]'
+                <Editor
+                  editorSerializedState={editorState}
+                  onSerializedChange={(value) => setEditorState(value)}
                 />
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                {t('tournament')} {t('images')}
-              </CardTitle>
-              <CardDescription>{t('uploadImages')}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className='rounded-md border-2 border-dashed border-gray-300 p-6 text-center'>
-                <p className='text-sm text-muted-foreground'>{t('dragDrop')}</p>
-                <Input
-                  id='images'
-                  type='file'
-                  multiple
-                  accept='image/*'
-                  className='mt-2'
-                  onChange={(e) => {
-                    if (e.target.files) {
-                      setImages((prev) => [
-                        ...prev,
-                        ...Array.from(e.target.files || [])
-                      ]);
-                    }
-                  }}
-                />
-              </div>
-
-              {images.length > 0 && (
-                <div className='mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4'>
-                  {images.map((file, index) => (
-                    <div
-                      key={index}
-                      className='relative aspect-square rounded-md border bg-muted'
-                    >
-                      <Image
-                        src={URL.createObjectURL(file)}
-                        alt={`${t('tournamentImage', { fallback: 'Tournament image' })} ${index}`}
-                        fill
-                        sizes='(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw'
-                        className='rounded-md object-cover'
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <CardFooter className='flex justify-end space-x-2 border-t p-4'>
+          <div className='flex justify-end space-x-2'>
             <Button
               variant='outline'
               onClick={() => router.push('/dashboard/tournament/overview')}
@@ -279,12 +403,12 @@ export default function CreateTournamentPage() {
             >
               {commonT('cancel')}
             </Button>
-            <Button type='submit' disabled={isSubmitting}>
+            <Button type='submit' disabled={isSubmitting || !isImageUploaded}>
               {isSubmitting
                 ? t('creating')
                 : `${t('create')} ${t('tournament')}`}
             </Button>
-          </CardFooter>
+          </div>
         </form>
       </div>
     </PageContainer>

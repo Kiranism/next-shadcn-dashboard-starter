@@ -35,7 +35,6 @@ export default async function Page(props: pageProps) {
     // Now safely access the locale property
     locale = resolvedParams?.locale || defaultLocale;
   } catch (error) {
-    console.error('Error accessing locale:', error);
     // Keep using defaultLocale
   }
 
