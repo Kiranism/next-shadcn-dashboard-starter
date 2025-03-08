@@ -1,6 +1,8 @@
 'use client';
 import { MoonIcon, SunIcon } from '@radix-ui/react-icons';
 import { useTheme } from 'next-themes';
+import { useEffect } from 'react';
+import { applyTheme } from '@/utils/theme-persistence';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -9,9 +11,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+
 type CompProps = {};
+
 export default function ThemeToggle({}: CompProps) {
   const { setTheme } = useTheme();
+
+  // Apply saved theme on initial render
+  // This runs once when the component mounts
+  useEffect(() => {
+    // Apply the saved theme as early as possible
+    applyTheme();
+  }, []); // Empty dependency array ensures this runs only once
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

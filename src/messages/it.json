@@ -47,9 +47,20 @@
     "uploadImages": "Carica Immagini",
     "dragDrop": "Trascina e rilascia i file qui",
     "loading": "Caricamento...",
-    "tryAgain": "Riprova",
+    "tryAgain": "Prova di nuovo",
     "creating": "Creazione in corso...",
-    "requiredFields": "Compila tutti i campi obbligatori"
+    "requiredFields": "Si prega di compilare tutti i campi obbligatori",
+    "enterTournamentName": "Inserisci il nome del torneo",
+    "briefDescription": "Breve descrizione del torneo",
+    "enterNumberOfPlayers": "Inserisci il numero di giocatori",
+    "enterFullDescription": "Inserisci una descrizione dettagliata del torneo",
+    "tournamentImage": "Immagine del torneo"
+  },
+  "Metadata": {
+    "productView": "Dashboard : Vista Prodotto",
+    "dashboard": "Dashboard",
+    "overview": "Panoramica",
+    "products": "Prodotti"
   },
   "Navigation": {
     "dashboard": "Dashboard",
@@ -87,7 +98,7 @@
   },
   "NotFound": {
     "title": "Pagina Non Trovata",
-    "description": "Spiacenti, la pagina che stai cercando non esiste o è stata spostata.",
+    "description": "Ci dispiace, la pagina che stai cercando non esiste o è stata spostata.",
     "returnHome": "Torna alla Home",
     "goToDashboard": "Vai alla Dashboard",
     "returnToLogin": "Torna al Login"
@@ -97,8 +108,11 @@
     "requiredPassword": "La password è obbligatoria",
     "failedToLoad": "Impossibile caricare i dati",
     "somethingWentWrong": "Qualcosa è andato storto",
-    "tryAgainLater": "Riprova più tardi",
+    "tryAgainLater": "Per favore riprova più tardi",
     "unableToDisplay": "Impossibile visualizzare il contenuto",
-    "invalidData": "Dati non validi"
+    "invalidData": "Dati non validi",
+    "tournament": "Errore con il torneo",
+    "create": "Errore durante la creazione",
+    "requiredFields": ""
   }
-} 
+}

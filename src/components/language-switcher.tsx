@@ -1,7 +1,7 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import { createSharedPathnamesNavigation } from 'next-intl/navigation';
+import { useRouter, usePathname } from '@/lib/navigation';
 import { locales, Locale } from '@/config/locales';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,9 +12,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Globe } from 'lucide-react';
 
-// Create shared navigation
-const { useRouter, usePathname } = createSharedPathnamesNavigation({ locales });
-
 export default function LanguageSwitcher() {
   const t = useTranslations('Common');
   const locale = useLocale();
@@ -22,7 +19,11 @@ export default function LanguageSwitcher() {
   const pathname = usePathname();
 
   const switchLocale = (newLocale: Locale) => {
-    router.replace(pathname, { locale: newLocale });
+    // Only change if selecting a different locale
+    if (newLocale !== locale) {
+      // Use next-intl's router to navigate properly
+      router.replace(pathname, { locale: newLocale });
+    }
   };
 
   return (

@@ -1,0 +1,19 @@
+{
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  // Disable TypeScript checking for translation keys
+  "typescript.suggestionActions.enabled": true,
+  "typescript.validate.enable": true,
+  // Disable "Cannot find name" errors in files using translations
+  "typescript.tsserver.ignoredFields": {
+    "errorCodes": ["2304"]
+  },
+  // Add JSDoc comments to help with IntelliSense for translations
+  "javascript.suggest.jsdoc.generateReturns": true,
+  // Files to ignore for TypeScript validation
+  "typescript.validate.exclude": ["**/*.{jsx,tsx}", "!**/*.{js,ts}"]
+}

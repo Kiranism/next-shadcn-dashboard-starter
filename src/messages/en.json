@@ -49,7 +49,18 @@
     "loading": "Loading...",
     "tryAgain": "Try Again",
     "creating": "Creating...",
-    "requiredFields": "Please fill in all required fields"
+    "requiredFields": "Please fill in all required fields",
+    "enterTournamentName": "Enter tournament name",
+    "briefDescription": "Brief description of the tournament",
+    "enterNumberOfPlayers": "Enter number of players",
+    "enterFullDescription": "Enter detailed description of the tournament",
+    "tournamentImage": "Tournament image"
+  },
+  "Metadata": {
+    "productView": "Dashboard : Product View",
+    "dashboard": "Dashboard",
+    "overview": "Overview",
+    "products": "Products"
   },
   "Navigation": {
     "dashboard": "Dashboard",
@@ -99,6 +110,8 @@
     "somethingWentWrong": "Something went wrong",
     "tryAgainLater": "Please try again later",
     "unableToDisplay": "Unable to display content",
-    "invalidData": "Invalid data provided"
+    "invalidData": "Invalid data provided",
+    "tournament": "Error with tournament",
+    "create": "Error creating item"
   }
-} 
+}

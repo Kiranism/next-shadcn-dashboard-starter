@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import Image from 'next/image';
 import {
   Card,
   CardContent,
@@ -24,9 +25,25 @@ import { Separator } from '@/components/ui/separator';
 import { Link } from '@/lib/navigation';
 
 export default function CreateTournamentPage() {
+  /**
+   * Dashboard translations - available keys:
+   * - tournament, create, details, images, fullDescription, startDate, endDate
+   * - numberOfPlayers, backTo, uploadImages, dragDrop, etc.
+   */
   const t = useTranslations('Dashboard');
+
+  /**
+   * Common translations - available keys:
+   * - name, description, save, cancel, edit, delete, create, etc.
+   */
   const commonT = useTranslations('Common');
+
+  /**
+   * Error translations - available keys:
+   * - failedToLoad, somethingWentWrong, tryAgainLater, etc.
+   */
   const errorT = useTranslations('Errors');
+
   const router = useRouter();
   const callApi = useApi();
 
@@ -96,14 +113,15 @@ export default function CreateTournamentPage() {
             className='flex items-center text-sm font-medium text-muted-foreground hover:text-primary'
           >
             <ChevronLeft className='mr-1 h-4 w-4' />
-            {t('backTo')} {t('tournament')}
+            {t('backTo', { fallback: 'Back to' })}{' '}
+            {t('tournament', { fallback: 'Tournament' })}
           </Link>
         </div>
 
         <div>
           <Heading
-            title={`${t('create')} ${t('tournament')}`}
-            description={`${t('addNew')} ${t('tournament').toLowerCase()} ${commonT('manage').toLowerCase()}`}
+            title={`${t('create', { fallback: 'Create' })} ${t('tournament', { fallback: 'Tournament' })}`}
+            description={`${t('addNew', { fallback: 'Add New' })} ${t('tournament', { fallback: 'Tournament' }).toLowerCase()} ${commonT('manage', { fallback: 'Manage' }).toLowerCase()}`}
           />
           <Separator className='my-4' />
         </div>
@@ -125,7 +143,9 @@ export default function CreateTournamentPage() {
                   id='name'
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder='Enter tournament name'
+                  placeholder={t('enterTournamentName', {
+                    fallback: 'Enter tournament name'
+                  })}
                   required
                 />
               </div>
@@ -136,7 +156,9 @@ export default function CreateTournamentPage() {
                   id='description'
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder='Brief description of the tournament'
+                  placeholder={t('briefDescription', {
+                    fallback: 'Brief description of the tournament'
+                  })}
                   required
                 />
               </div>
@@ -171,7 +193,9 @@ export default function CreateTournamentPage() {
                   type='number'
                   value={playersNumber}
                   onChange={(e) => setPlayersNumber(e.target.value)}
-                  placeholder='Enter number of players'
+                  placeholder={t('enterNumberOfPlayers', {
+                    fallback: 'Enter number of players'
+                  })}
                   required
                 />
               </div>
@@ -190,7 +214,9 @@ export default function CreateTournamentPage() {
                   id='fullDescription'
                   value={fullDescription}
                   onChange={(e) => setFullDescription(e.target.value)}
-                  placeholder='Enter detailed description of the tournament'
+                  placeholder={t('enterFullDescription', {
+                    fallback: 'Enter detailed description of the tournament'
+                  })}
                   className='min-h-[200px]'
                 />
               </div>
@@ -231,10 +257,12 @@ export default function CreateTournamentPage() {
                       key={index}
                       className='relative aspect-square rounded-md border bg-muted'
                     >
-                      <img
+                      <Image
                         src={URL.createObjectURL(file)}
-                        alt={`Tournament image ${index}`}
-                        className='h-full w-full rounded-md object-cover'
+                        alt={`${t('tournamentImage', { fallback: 'Tournament image' })} ${index}`}
+                        fill
+                        sizes='(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw'
+                        className='rounded-md object-cover'
                       />
                     </div>
                   ))}

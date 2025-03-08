@@ -1,12 +1,9 @@
 import { NextIntlClientProvider } from 'next-intl';
 import { locales, defaultLocale } from '@/config/locales';
 import { auth } from '@/lib/auth';
-import Providers from '@/components/layout/providers';
 import { Toaster } from '@/components/ui/sonner';
 import type { Metadata } from 'next';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
-import { Lato } from 'next/font/google';
-import NextTopLoader from 'nextjs-toploader';
 import '../globals.css';
 
 export const metadata: Metadata = {
@@ -14,18 +11,12 @@ export const metadata: Metadata = {
   description: 'Basic dashboard with Next.js and Shadcn'
 };
 
-const lato = Lato({
-  subsets: ['latin'],
-  weight: ['400', '700', '900'],
-  display: 'swap'
-});
-
 // Generate static params for locales
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
 }
 
-export default async function RootLayout({
+export default async function LocaleLayout({
   children,
   params
 }: {
@@ -45,8 +36,6 @@ export default async function RootLayout({
     // Keep using defaultLocale
   }
 
-  const session = await auth();
-
   // Load messages for the locale
   let messages;
   try {
@@ -57,22 +46,11 @@ export default async function RootLayout({
   }
 
   return (
-    <html
-      lang={locale}
-      className={`${lato.className}`}
-      suppressHydrationWarning
-    >
-      <body className={'overflow-hidden'}>
-        <NextTopLoader showSpinner={false} />
-        <NextIntlClientProvider locale={locale} messages={messages}>
-          <NuqsAdapter>
-            <Providers session={session}>
-              <Toaster />
-              {children}
-            </Providers>
-          </NuqsAdapter>
-        </NextIntlClientProvider>
-      </body>
-    </html>
+    <NextIntlClientProvider locale={locale} messages={messages}>
+      <NuqsAdapter>
+        <Toaster />
+        {children}
+      </NuqsAdapter>
+    </NextIntlClientProvider>
   );
 }

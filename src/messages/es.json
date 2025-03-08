@@ -49,7 +49,18 @@
     "loading": "Cargando...",
     "tryAgain": "Intentar de nuevo",
     "creating": "Creando...",
-    "requiredFields": "Por favor, completa todos los campos requeridos"
+    "requiredFields": "Por favor, completa todos los campos requeridos",
+    "enterTournamentName": "Introduce el nombre del torneo",
+    "briefDescription": "Breve descripción del torneo",
+    "enterNumberOfPlayers": "Introduce el número de jugadores",
+    "enterFullDescription": "Introduce una descripción detallada del torneo",
+    "tournamentImage": "Imagen del torneo"
+  },
+  "Metadata": {
+    "productView": "Panel de Control : Vista de Producto",
+    "dashboard": "Panel de Control",
+    "overview": "Resumen",
+    "products": "Productos"
   },
   "Navigation": {
     "dashboard": "Panel de Control",
@@ -99,6 +110,9 @@
     "somethingWentWrong": "Algo salió mal",
     "tryAgainLater": "Por favor, inténtalo más tarde",
     "unableToDisplay": "No se puede mostrar el contenido",
-    "invalidData": "Datos no válidos"
+    "invalidData": "Datos no válidos",
+    "tournament": "Error con el torneo",
+    "create": "Error al crear",
+    "requiredFields": ""
   }
-} 
+}
