@@ -1,0 +1,44 @@
+version: 2.1
+orbs:
+  node: circleci/node@5
+jobs:
+  build-node:
+    executor: node/default
+    steps:
+      - checkout
+      - node/install-packages:
+          cache-path: ~/project/node_modules
+          override-ci-command: npm install
+      - run:
+          command: npm run build
+      - run:
+          name: Create the ~/artifacts directory if it doesn't exist
+          command: mkdir -p ~/artifacts
+      - run:
+          name: Copy artifacts
+          command: cp -R build dist public .output .next .docusaurus ~/artifacts 2>/dev/null || true
+      - store_artifacts:
+          path: ~/artifacts
+          destination: node-build
+  build_docker_image:
+    docker:
+      - image: docker:20.10.7
+    steps:
+      - setup_remote_docker
+      - checkout
+      - run:
+          name: Build Docker Image
+          command: docker build -t my-docker-repo/my-image-name:latest .
+      - run:
+          name: Login to Docker Registry
+          command: echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
+      - run:
+          name: Push Docker Image
+          command: docker push my-docker-repo/my-image-name:latest
+workflows:
+  build:
+    jobs:
+      - build-node
+      - build_docker_image:
+          requires:
+            - build-node
