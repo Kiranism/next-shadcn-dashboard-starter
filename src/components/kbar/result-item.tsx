@@ -30,7 +30,7 @@ const ResultItem = React.forwardRef(
         {active && (
           <div
             id='kbar-result-item'
-            className='absolute inset-0 !z-[-1] border-l-4 border-sidebar-primary bg-sidebar-accent'
+            className='border-sidebar-primary bg-sidebar-accent absolute inset-0 z-[-1]! border-l-4'
           ></div>
         )}
         <div className='relative z-10 flex items-center gap-2'>
@@ -47,7 +47,7 @@ const ResultItem = React.forwardRef(
               <span>{action.name}</span>
             </div>
             {action.subtitle && (
-              <span className='text-sm text-muted-foreground'>
+              <span className='text-muted-foreground text-sm'>
                 {action.subtitle}
               </span>
             )}
@@ -58,7 +58,7 @@ const ResultItem = React.forwardRef(
             {action.shortcut.map((sc, i) => (
               <kbd
                 key={sc + i}
-                className='flex items-center gap-1 rounded-md border px-1.5 py-1 text-xs font-medium shadow'
+                className='flex items-center gap-1 rounded-md border px-1.5 py-1 text-xs font-medium shadow-sm'
               >
                 {sc}
               </kbd>

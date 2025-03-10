@@ -1,78 +1,214 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@plugin 'tailwindcss-animate';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-sidebar: var(--sidebar-background);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-color-1: var(--color-1);
+  --color-color-2: var(--color-2);
+  --color-color-3: var(--color-3);
+  --color-color-4: var(--color-4);
+  --color-color-5: var(--color-5);
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-rainbow: rainbow var(--speed, 2s) infinite linear;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+  @keyframes rainbow {
+    0% {
+      background-position: 0%;
+    }
+    100% {
+      background-position: 200%;
+    }
+  }
+}
+
+@utility container {
+  margin-inline: auto;
+  padding-inline: 2rem;
+  @media (width >= --theme(--breakpoint-sm)) {
+    max-width: none;
+  }
+  @media (width >= 1400px) {
+    max-width: 1400px;
+  }
+}
+
+/*
+  The default border color has changed to `currentColor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+}
+
+/* Refined shadow utilities for better layering */
+@utility shadow-card-dark {
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.2),
+    0 1px 2px rgba(0, 0, 0, 0.4);
+}
+@utility shadow-elevation-dark {
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.2),
+    0 5px 15px rgba(0, 0, 0, 0.4);
+}
+@utility hover-elevation-dark {
+  /* New utility for subtle hover states */
+  transition: background-color 0.2s ease;
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+  }
+}
+@utility min-h-screen {
+  min-height: 100vh; /* Fallback */
+  min-height: 100dvh;
+}
+@utility h-screen {
+  height: 100vh; /* Fallback */
+  height: 100dvh;
+}
 
 @layer base {
-  :root {
-    --background: 20 66% 99%;
-    --foreground: 20 51% 4%;
-    --muted: 20 25% 86%;
-    --muted-foreground: 20 7% 25%;
-    --popover: 20 66% 98%;
-    --popover-foreground: 20 51% 3%;
-    --card: 20 66% 98%;
-    --card-foreground: 20 51% 3%;
-    --border: 20 15% 94%;
-    --input: 20 15% 94%;
-    --primary: 248 25% 84%;
-    --primary-foreground: 20 48% 12%;
-    --secondary: 20 12% 92%;
-    --secondary-foreground: 20 12% 32%;
-    --accent: 20 12% 92%;
-    --accent-foreground: 20 12% 32%;
-    --destructive: 11 80% 22%;
-    --destructive-foreground: 11 80% 82%;
-    --ring: 248 25% 84%;
-    --radius: 0.5rem;
-    --chart-1: 248 25% 84%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --sidebar-background: 20 66% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 20 25% 86%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
+}
 
-  .dark {
-    --background: 253 43% 3%;
-    --foreground: 253 31% 98%;
-    --muted: 253 7% 13%;
-    --muted-foreground: 253 13% 63%;
-    --popover: 253 43% 3%;
-    --popover-foreground: 253 31% 98%;
-    --card: 253 43% 4%;
-    --card-foreground: 253 31% 99%;
-    --border: 215 27.9% 16.9%;
-    --input: 215 27.9% 16.9%;
-    --primary: 253 91% 58%;
-    --primary-foreground: 253 91% 98%;
-    --secondary: 253 7% 9%;
-    --secondary-foreground: 253 7% 69%;
-    --accent: 253 13% 14%;
-    --accent-foreground: 253 13% 74%;
-    --destructive: 339.2 90.36% 51.18%;
-    --destructive-foreground: 0 0% 100%;
-    --ring: 253 91% 58%;
-    --chart-1: 253 91% 58%;
-    --chart-2: 253 13% 74%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar-background: 253 43% 4%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 253 91% 58%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 253 91% 58%%;
-  }
+:root {
+  --background: hsl(20 66% 99%);
+  --foreground: hsl(20 51% 4%);
+  --muted: hsl(20 25% 86%);
+  --muted-foreground: hsl(20 7% 25%);
+  --popover: hsl(20 66% 98%);
+  --popover-foreground: hsl(20 51% 3%);
+  --card: hsl(20 66% 98%);
+  --card-foreground: hsl(20 51% 3%);
+  --border: hsl(20 15% 94%);
+  --input: hsl(20 15% 94%);
+  --primary: hsl(248 25% 84%);
+  --primary-foreground: hsl(20 48% 12%);
+  --secondary: hsl(20 12% 92%);
+  --secondary-foreground: hsl(20 12% 32%);
+  --accent: hsl(20 12% 92%);
+  --accent-foreground: hsl(20 12% 32%);
+  --destructive: hsl(11 80% 22%);
+  --destructive-foreground: hsl(11 80% 82%);
+  --ring: hsl(248 25% 84%);
+  --radius: 0.5rem;
+  --chart-1: hsl(248 25% 84%);
+  --chart-2: hsl(173 58% 39%);
+  --chart-3: hsl(197 37% 24%);
+  --chart-4: hsl(43 74% 66%);
+  --chart-5: hsl(27 87% 67%);
+  --sidebar-background: hsl(20 66% 98%);
+  --sidebar-foreground: hsl(240 5.3% 26.1%);
+  --sidebar-primary: hsl(240 5.9% 10%);
+  --sidebar-primary-foreground: hsl(0 0% 98%);
+  --sidebar-accent: hsl(20 25% 86%);
+  --sidebar-accent-foreground: hsl(240 5.9% 10%);
+  --sidebar-border: hsl(220 13% 91%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+}
+
+.dark {
+  --background: hsl(253 43% 3%);
+  --foreground: hsl(253 31% 98%);
+  --muted: hsl(253 7% 13%);
+  --muted-foreground: hsl(253 13% 63%);
+  --popover: hsl(253 43% 3%);
+  --popover-foreground: hsl(253 31% 98%);
+  --card: hsl(253 43% 4%);
+  --card-foreground: hsl(253 31% 99%);
+  --border: hsl(215 27.9% 16.9%);
+  --input: hsl(215 27.9% 16.9%);
+  --primary: hsl(253 91% 58%);
+  --primary-foreground: hsl(253 91% 98%);
+  --secondary: hsl(253 7% 9%);
+  --secondary-foreground: hsl(253 7% 69%);
+  --accent: hsl(253 13% 14%);
+  --accent-foreground: hsl(253 13% 74%);
+  --destructive: hsl(339.2 90.36% 51.18%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --ring: hsl(253 91% 58%);
+  --chart-1: hsl(253 91% 58%);
+  --chart-2: hsl(253 13% 74%);
+  --chart-3: hsl(30 80% 55%);
+  --chart-4: hsl(280 65% 60%);
+  --chart-5: hsl(340 75% 55%);
+  --sidebar-background: hsl(253 43% 4%);
+  --sidebar-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-primary: hsl(253 91% 58%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(240 3.7% 15.9%);
+  --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-border: hsl(240 3.7% 15.9%);
+  --sidebar-ring: hsl(253 91% 58%);
 }
 
 @layer base {
@@ -80,40 +216,7 @@
     @apply border-border;
   }
   body {
-    @apply box-border bg-background text-foreground;
-  }
-}
-
-/* Refined shadow utilities for better layering */
-@layer utilities {
-  .shadow-card-dark {
-    box-shadow:
-      0 1px 3px rgba(0, 0, 0, 0.2),
-      0 1px 2px rgba(0, 0, 0, 0.4);
-  }
-
-  .shadow-elevation-dark {
-    box-shadow:
-      0 4px 6px rgba(0, 0, 0, 0.2),
-      0 5px 15px rgba(0, 0, 0, 0.4);
-  }
-
-  /* New utility for subtle hover states */
-  .hover-elevation-dark {
-    transition: background-color 0.2s ease;
-  }
-  .hover-elevation-dark:hover {
-    background-color: rgba(255, 255, 255, 0.03);
-  }
-}
-@layer utilities {
-  .min-h-screen {
-    min-height: 100vh; /* Fallback */
-    min-height: 100dvh;
-  }
-  .h-screen {
-    height: 100vh; /* Fallback */
-    height: 100dvh;
+    @apply bg-background text-foreground box-border;
   }
 }
 
