@@ -198,7 +198,7 @@ const ProfileCreateForm: React.FC<ProfileFormType> = ({
           {steps.map((step, index) => (
             <li key={step.name} className='md:flex-1'>
               {currentStep > index ? (
-                <div className='group flex w-full flex-col border-l-4 border-sky-600 py-2 pl-4 transition-colors md:border-l-0 md:border-t-4 md:pb-0 md:pl-0 md:pt-4'>
+                <div className='group flex w-full flex-col border-l-4 border-sky-600 py-2 pl-4 transition-colors md:border-t-4 md:border-l-0 md:pt-4 md:pb-0 md:pl-0'>
                   <span className='text-sm font-medium text-sky-600 transition-colors'>
                     {step.id}
                   </span>
@@ -206,7 +206,7 @@ const ProfileCreateForm: React.FC<ProfileFormType> = ({
                 </div>
               ) : currentStep === index ? (
                 <div
-                  className='flex w-full flex-col border-l-4 border-sky-600 py-2 pl-4 md:border-l-0 md:border-t-4 md:pb-0 md:pl-0 md:pt-4'
+                  className='flex w-full flex-col border-l-4 border-sky-600 py-2 pl-4 md:border-t-4 md:border-l-0 md:pt-4 md:pb-0 md:pl-0'
                   aria-current='step'
                 >
                   <span className='text-sm font-medium text-sky-600'>
@@ -215,7 +215,7 @@ const ProfileCreateForm: React.FC<ProfileFormType> = ({
                   <span className='text-sm font-medium'>{step.name}</span>
                 </div>
               ) : (
-                <div className='group flex h-full w-full flex-col border-l-4 border-gray-200 py-2 pl-4 transition-colors md:border-l-0 md:border-t-4 md:pb-0 md:pl-0 md:pt-4'>
+                <div className='group flex h-full w-full flex-col border-l-4 border-gray-200 py-2 pl-4 transition-colors md:border-t-4 md:border-l-0 md:pt-4 md:pb-0 md:pl-0'>
                   <span className='text-sm font-medium text-gray-500 transition-colors'>
                     {step.id}
                   </span>
@@ -390,7 +390,7 @@ const ProfileCreateForm: React.FC<ProfileFormType> = ({
                     <AccordionItem value='item-1'>
                       <AccordionTrigger
                         className={cn(
-                          'relative !no-underline [&[data-state=closed]>button]:hidden [&[data-state=open]>.alert]:hidden',
+                          'relative no-underline! [&[data-state=closed]>button]:hidden [&[data-state=open]>.alert]:hidden',
                           errors?.jobs?.[index] && 'text-red-700'
                         )}
                       >
@@ -600,7 +600,7 @@ const ProfileCreateForm: React.FC<ProfileFormType> = ({
             type='button'
             onClick={prev}
             disabled={currentStep === 0}
-            className='rounded bg-white px-2 py-1 text-sm font-semibold text-sky-900 shadow-sm ring-1 ring-inset ring-sky-300 hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-50'
+            className='rounded bg-white px-2 py-1 text-sm font-semibold text-sky-900 ring-1 shadow-xs ring-sky-300 ring-inset hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-50'
           >
             <svg
               xmlns='http://www.w3.org/2000/svg'
@@ -621,7 +621,7 @@ const ProfileCreateForm: React.FC<ProfileFormType> = ({
             type='button'
             onClick={next}
             disabled={currentStep === steps.length - 1}
-            className='rounded bg-white px-2 py-1 text-sm font-semibold text-sky-900 shadow-sm ring-1 ring-inset ring-sky-300 hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-50'
+            className='rounded bg-white px-2 py-1 text-sm font-semibold text-sky-900 ring-1 shadow-xs ring-sky-300 ring-inset hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-50'
           >
             <svg
               xmlns='http://www.w3.org/2000/svg'
