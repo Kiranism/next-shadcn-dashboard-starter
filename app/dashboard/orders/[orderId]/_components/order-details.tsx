@@ -166,13 +166,16 @@ export default function OrderDetails() {
                       {user?.role === 'store' && (
                         <li>{`Subotal: $${totalPrice.toFixed(2)}`}</li>
                       )}
-                      <li>Shipping Fee: $5.99</li>
+                      <li>
+                        Shipping Fee: {`$${order.shippingFee.toFixed(2)}`}
+                      </li>
+                      <li>Shipping Type: {`${order.shippingType}`}</li>
                       {/* <li>Tax: $2.00</li> */}
                       {user?.role === 'admin' && (
-                        <li>{`Total: $${(order.subTotal + 5.99).toFixed(2)}`}</li>
+                        <li>{`Total: $${(order.subTotal + order.shippingFee).toFixed(2)}`}</li>
                       )}
                       {user?.role === 'store' && (
-                        <li>{`Total: $${(totalPrice + 5.99).toFixed(2)}`}</li>
+                        <li>{`Total: $${(totalPrice + order.shippingFee).toFixed(2)}`}</li>
                       )}
                     </ul>
                   </div>
