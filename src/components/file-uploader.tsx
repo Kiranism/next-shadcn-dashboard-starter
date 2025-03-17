@@ -14,6 +14,7 @@ import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useControllableState } from '@/hooks/use-controllable-state';
 import { cn, formatBytes } from '@/lib/utils';
+import { Icons } from './icons';
 
 interface FileUploaderProps extends React.HTMLAttributes<HTMLDivElement> {
   /**
@@ -238,6 +239,11 @@ export function FileUploader(props: FileUploaderProps) {
                       files (up to ${formatBytes(maxSize)} each)`
                       : ` a file with ${formatBytes(maxSize)}`}
                   </p>
+                  {(files?.length ?? 0) > 0 && (
+                    <p className='text-sm text-muted-foreground/70'>
+                      Selected file(s): {files?.length}/{maxFiles}
+                    </p>
+                  )}
                 </div>
               </div>
             )}
@@ -288,7 +294,7 @@ function FileCard({ file, progress, onRemove }: FileCardProps) {
               {file.name}
             </p>
             <p className='text-xs text-muted-foreground'>
-              {formatBytes(file.size)}
+              {file.size > 0 ? formatBytes(file.size) : 'N/A'}
             </p>
           </div>
           {progress ? <Progress value={progress} /> : null}
@@ -302,7 +308,7 @@ function FileCard({ file, progress, onRemove }: FileCardProps) {
           className='size-7'
           onClick={onRemove}
         >
-          <CrossIcon className='size-4' aria-hidden='true' />
+          <Icons.trash className='size-4' aria-hidden='true' />
           <span className='sr-only'>Remove file</span>
         </Button>
       </div>

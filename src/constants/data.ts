@@ -27,36 +27,41 @@ export const navItems: NavItem[] = [
     icon: 'product',
     shortcut: ['p', 'p'],
     isActive: false,
-    items: [] // No child items
-  },
-  {
-    title: 'Account',
-    url: '#', // Placeholder as there is no direct link for the parent
-    icon: 'billing',
-    isActive: true,
-
     items: [
       {
-        title: 'Profile',
-        url: '/dashboard/profile',
-        icon: 'userPen',
-        shortcut: ['m', 'm']
+        title: 'Product',
+        url: '/dashboard/product',
+        icon: 'product'
       },
       {
-        title: 'Login',
-        shortcut: ['l', 'l'],
-        url: '/',
-        icon: 'login'
+        title: 'Product Attribute',
+        url: '/dashboard/product-attribute',
+        icon: 'kanban'
+      },
+      {
+        title: 'Category',
+        url: '/dashboard/category',
+        icon: 'category'
+      },
+      {
+        title: 'Brand',
+        url: '/dashboard/brand',
+        icon: 'hexagon'
       }
     ]
   },
   {
-    title: 'Kanban',
-    url: '/dashboard/kanban',
-    icon: 'kanban',
-    shortcut: ['k', 'k'],
+    title: 'Orders',
+    url: '/dashboard/order',
+    icon: 'package',
     isActive: false,
-    items: [] // No child items
+    disabled: true
+  },
+  {
+    title: 'Users',
+    url: '/dashboard/user',
+    icon: 'user',
+    isActive: true
   }
 ];
 

@@ -24,3 +24,33 @@ export function formatBytes(
       : (sizes[i] ?? 'Bytes')
   }`;
 }
+
+export function withPrecision({
+  num,
+  precision = 2
+}: {
+  num: number;
+  precision?: number;
+}) {
+  if (precision < 1) precision = 1;
+  const shift = Math.pow(10, precision);
+
+  return (Math.round(num * shift) / shift).toFixed(precision);
+}
+
+export function toCapCase(str: string) {
+  const words = str.trim().split(' ');
+  const capitalizedWords = words.map((item) => {
+    if (item.length < 1) return item;
+    return item.charAt(0).toUpperCase().concat(item.substring(1));
+  });
+
+  return capitalizedWords.join(' ');
+}
+
+export function toHTTPSString(link?: string) {
+  if (!link) return '#';
+
+  if (!link.startsWith('http')) return `https://${link}`;
+  return link.replace('http:', 'https:');
+}

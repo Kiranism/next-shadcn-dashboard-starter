@@ -7,8 +7,15 @@ import {
   CATEGORY_OPTIONS,
   useProductTableFilters
 } from './use-product-table-filters';
+import { ICategory } from 'types/schema/product.shema';
 
-export default function ProductTableAction() {
+interface IProductTableActionProps {
+  categories: ICategory[];
+}
+
+export default function ProductTableAction({
+  categories
+}: IProductTableActionProps) {
   const {
     categoriesFilter,
     setCategoriesFilter,
@@ -29,7 +36,7 @@ export default function ProductTableAction() {
       <DataTableFilterBox
         filterKey='categories'
         title='Categories'
-        options={CATEGORY_OPTIONS}
+        options={categories.map((cat) => ({ value: cat.id, label: cat.name }))}
         setFilterValue={setCategoriesFilter}
         filterValue={categoriesFilter}
       />

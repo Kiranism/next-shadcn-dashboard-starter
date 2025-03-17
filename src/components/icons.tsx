@@ -20,10 +20,12 @@ import {
   LucideShoppingBag,
   Moon,
   MoreVertical,
+  PackageIcon,
   Pizza,
   Plus,
   Settings,
   SunMedium,
+  SVGAttributes,
   Trash,
   Twitter,
   User,
@@ -32,11 +34,54 @@ import {
   UserX2Icon,
   X
 } from 'lucide-react';
+import React from 'react';
 
 export type Icon = LucideIcon;
 
+const HexagonIcon = React.forwardRef<SVGElement, SVGAttributes>(
+  ({ className, ...props }) => (
+    <svg
+      width='800'
+      height='800'
+      viewBox='0 0 14 14'
+      aria-hidden='true'
+      xmlns='http://www.w3.org/2000/svg'
+    >
+      <path d='M7 1 1.796 4v6L7 13l5.204-3V4zm2.571 7.53L7 10.03l-2.571-1.5V5.562L7 4.061l2.571 1.5z' />
+    </svg>
+  )
+);
+HexagonIcon.displayName = 'HexagonIcon';
+
+const CategoryIcon = React.forwardRef<SVGElement, SVGAttributes>(
+  ({ className, ...props }) => (
+    <svg
+      width='800px'
+      height='800px'
+      viewBox='0 0 48 48'
+      xmlns='http://www.w3.org/2000/svg'
+    >
+      <title>category</title>
+      <g id='Layer_2' data-name='Layer 2'>
+        <g id='invisible_box' data-name='invisible box'>
+          <rect width='48' height='48' fill='none' />
+        </g>
+        <g id='icons_Q2' data-name='icons Q2'>
+          <path d='M24,7.7,29.3,16H18.6L24,7.7M24,2a2.1,2.1,0,0,0-1.7,1L13.2,17a2.3,2.3,0,0,0,0,2,1.9,1.9,0,0,0,1.7,1H33a2.1,2.1,0,0,0,1.7-1,1.8,1.8,0,0,0,0-2l-9-14A1.9,1.9,0,0,0,24,2Z' />
+          <path d='M43,43H29a2,2,0,0,1-2-2V27a2,2,0,0,1,2-2H43a2,2,0,0,1,2,2V41A2,2,0,0,1,43,43ZM31,39H41V29H31Z' />
+          <path d='M13,28a6,6,0,1,1-6,6,6,6,0,0,1,6-6m0-4A10,10,0,1,0,23,34,10,10,0,0,0,13,24Z' />
+        </g>
+      </g>
+    </svg>
+  )
+);
+CategoryIcon.displayName = 'CategoryIcon';
+
 export const Icons = {
+  package: PackageIcon,
   dashboard: LayoutDashboardIcon,
+  hexagon: HexagonIcon,
+  category: CategoryIcon,
   logo: Command,
   login: LogIn,
   close: X,

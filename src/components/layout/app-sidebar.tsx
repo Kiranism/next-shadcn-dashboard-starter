@@ -37,7 +37,6 @@ import {
   ChevronRight,
   ChevronsUpDown,
   CreditCard,
-  GalleryVerticalEnd,
   LogOut
 } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
@@ -45,12 +44,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import * as React from 'react';
 import { Icons } from '../icons';
-
-export const company = {
-  name: 'Acme Inc',
-  logo: GalleryVerticalEnd,
-  plan: 'Enterprise'
-};
+import { SiteEmblem, SiteLogo } from '@/constants/site-config';
 
 export default function AppSidebar() {
   const { data: session } = useSession();
@@ -59,17 +53,21 @@ export default function AppSidebar() {
 
   return (
     <Sidebar collapsible='icon'>
-      <SidebarHeader>
-        <div className='flex gap-2 py-2 text-sidebar-accent-foreground'>
-          <div className='flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground'>
-            <company.logo className='size-4' />
-          </div>
-          <div className='grid flex-1 text-left text-sm leading-tight'>
-            <span className='truncate font-semibold'>{company.name}</span>
-            <span className='truncate text-xs'>{company.plan}</span>
-          </div>
-        </div>
-      </SidebarHeader>
+      {isMobile ? (
+        <SidebarHeader>
+          <SiteLogo className={`h-fit w-full p-1`} />
+        </SidebarHeader>
+      ) : (
+        <SidebarHeader className='relative flex'>
+          <SiteEmblem
+            className={`absolute size-6 self-center transition-all ${state === 'collapsed' ? 'opacity-100' : 'opacity-0'}`}
+          />
+
+          <SiteLogo
+            className={`h-fit w-full p-1 opacity-100 transition-all ${state === 'collapsed' && 'invisible p-0 opacity-0'}`}
+          />
+        </SidebarHeader>
+      )}
       <SidebarContent className='overflow-x-hidden'>
         <SidebarGroup>
           <SidebarGroupLabel>Overview</SidebarGroupLabel>
@@ -119,7 +117,7 @@ export default function AppSidebar() {
                     tooltip={item.title}
                     isActive={pathname === item.url}
                   >
-                    <Link href={item.url}>
+                    <Link href={item.disabled ? '#' : item.url}>
                       <Icon />
                       <span>{item.title}</span>
                     </Link>

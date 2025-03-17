@@ -3,16 +3,17 @@ import Providers from '@/components/layout/providers';
 import { Toaster } from '@/components/ui/sonner';
 import type { Metadata } from 'next';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
-import { Lato } from 'next/font/google';
+import { Poppins } from 'next/font/google';
 import NextTopLoader from 'nextjs-toploader';
 import './globals.css';
+import { SiteConfig } from '@/constants/site-config';
 
 export const metadata: Metadata = {
-  title: 'Next Shadcn',
-  description: 'Basic dashboard with Next.js and Shadcn'
+  title: SiteConfig.siteTitle.default,
+  description: SiteConfig.siteDescription.default
 };
 
-const lato = Lato({
+const poppins = Poppins({
   subsets: ['latin'],
   weight: ['400', '700', '900'],
   display: 'swap'
@@ -25,7 +26,11 @@ export default async function RootLayout({
 }) {
   const session = await auth();
   return (
-    <html lang='en' className={`${lato.className}`} suppressHydrationWarning>
+    <html
+      lang='en'
+      className={`${poppins.className} antialiased`}
+      suppressHydrationWarning
+    >
       <body className={'overflow-hidden'}>
         <NextTopLoader showSpinner={false} />
         <NuqsAdapter>

@@ -24,6 +24,45 @@ module.exports = {
         ring: 'hsl(var(--ring))',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
+        red: {
+          50: '#ffe6e6',
+          100: '#ffb0b0',
+          200: '#ff8a8a',
+          300: '#ff5454',
+          400: '#ff3333',
+          500: '#ff0000',
+          600: '#e80000',
+          700: '#b50000',
+          800: '#8c0000',
+          900: '#6b0000'
+        },
+        yellow: {
+          50: '#fff8e6',
+          100: '#ffeab0',
+          200: '#ffe08a',
+          300: '#ffd154',
+          400: '#ffc933',
+          500: '#ffbb00',
+          600: '#e8aa00',
+          700: '#b58500',
+          800: '#8c6700',
+          900: '#6b4f00'
+        },
+        green: {
+          50: '#e7f4e8',
+          100: '#b3deb6',
+          200: '#8fcd93',
+          300: '#5cb762',
+          400: '#3ca943',
+          500: '#0b9314',
+          600: '#0a8612',
+          700: '#08680e',
+          800: '#06510b',
+          900: '#053e08'
+        },
+        orange: {
+          550: '#f05b22'
+        },
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))'
@@ -67,6 +106,24 @@ module.exports = {
         'color-3': 'hsl(var(--color-3))',
         'color-4': 'hsl(var(--color-4))',
         'color-5': 'hsl(var(--color-5))'
+      },
+      fontSize: {
+        // Header Typography Styles
+        h1: ['2.5rem', '3.25rem'],
+        h2: ['2.25rem', '2.75rem'],
+        h3: ['2rem', '2.5rem'],
+        h4: ['1.75rem', '2.25rem'],
+        h5: ['1.5rem', '2rem'],
+        h6: ['1.25rem', '1.75rem'],
+
+        // Display Typography Styles
+        'display-lg': ['6rem', '7rem'],
+        display: ['3.25rem', '4rem'],
+        'display-sm': ['2.75rem', '3.25rem'],
+        'display-xs': ['2.25rem', '2.75rem']
+      },
+      height: {
+        13: '3.125rem'
       },
       borderRadius: {
         lg: 'var(--radius)',

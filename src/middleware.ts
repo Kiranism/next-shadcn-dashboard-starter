@@ -4,11 +4,12 @@
 
 import NextAuth from 'next-auth';
 import authConfig from '@/lib/auth.config';
+import { SiteConfig } from './constants/site-config';
 
 const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
-  if (!req.auth) {
+  if (!req.auth && !SiteConfig.featureFlags.disableAuth) {
     const url = req.url.replace(req.nextUrl.pathname, '/');
     return Response.redirect(url);
   }
