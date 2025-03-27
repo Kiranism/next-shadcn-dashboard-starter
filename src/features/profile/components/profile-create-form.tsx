@@ -27,7 +27,7 @@ import { Separator } from '@/components/ui/separator';
 import { profileSchema, type ProfileFormValues } from '../utils/form-schema';
 import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AlertTriangleIcon, Trash, Trash2Icon } from 'lucide-react';
+import { IconAlertTriangle, IconTrash } from '@tabler/icons-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
@@ -188,7 +188,7 @@ const ProfileCreateForm: React.FC<ProfileFormType> = ({
             size='sm'
             onClick={() => setOpen(true)}
           >
-            <Trash className='h-4 w-4' />
+            <IconTrash className='h-4 w-4' />
           </Button>
         )}
       </div>
@@ -402,11 +402,11 @@ const ProfileCreateForm: React.FC<ProfileFormType> = ({
                           className='absolute right-8'
                           onClick={() => remove(index)}
                         >
-                          <Trash2Icon className='h-4 w-4' />
+                          <IconTrash className='h-4 w-4' />
                         </Button>
                         {errors?.jobs?.[index] && (
                           <span className='alert absolute right-8'>
-                            <AlertTriangleIcon className='h-4 w-4 text-red-700' />
+                            <IconAlertTriangle className='h-4 w-4 text-red-700' />
                           </span>
                         )}
                       </AccordionTrigger>
@@ -600,7 +600,7 @@ const ProfileCreateForm: React.FC<ProfileFormType> = ({
             type='button'
             onClick={prev}
             disabled={currentStep === 0}
-            className='rounded bg-white px-2 py-1 text-sm font-semibold text-sky-900 ring-1 shadow-xs ring-sky-300 ring-inset hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-50'
+            className='rounded bg-white px-2 py-1 text-sm font-semibold text-sky-900 shadow-xs ring-1 ring-sky-300 ring-inset hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-50'
           >
             <svg
               xmlns='http://www.w3.org/2000/svg'
@@ -621,7 +621,7 @@ const ProfileCreateForm: React.FC<ProfileFormType> = ({
             type='button'
             onClick={next}
             disabled={currentStep === steps.length - 1}
-            className='rounded bg-white px-2 py-1 text-sm font-semibold text-sky-900 ring-1 shadow-xs ring-sky-300 ring-inset hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-50'
+            className='rounded bg-white px-2 py-1 text-sm font-semibold text-sky-900 shadow-xs ring-1 ring-sky-300 ring-inset hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-50'
           >
             <svg
               xmlns='http://www.w3.org/2000/svg'

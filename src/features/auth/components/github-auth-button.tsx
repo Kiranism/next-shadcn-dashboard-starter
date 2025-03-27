@@ -18,7 +18,7 @@ export default function GithubSignInButton() {
         signIn('github', { callbackUrl: callbackUrl ?? '/dashboard' })
       }
     >
-      <Icons.gitHub className='mr-2 h-4 w-4' />
+      <Icons.github className='mr-2 h-4 w-4' />
       Continue with Github
     </Button>
   );

@@ -1,13 +1,13 @@
 'use client';
 
 import {
-  BadgeCheck,
-  Bell,
-  ChevronsUpDown,
-  CreditCard,
-  LogOut,
-  Sparkles
-} from 'lucide-react';
+  IconCircleCheck,
+  IconBell,
+  IconChevronsDown,
+  IconCreditCard,
+  IconLogout,
+  IconSparkles
+} from '@tabler/icons-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -54,7 +54,7 @@ export function NavUser({
                 <span className='truncate font-semibold'>{user.name}</span>
                 <span className='truncate text-xs'>{user.email}</span>
               </div>
-              <ChevronsUpDown className='ml-auto size-4' />
+              <IconChevronsDown className='ml-auto size-4' />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -78,28 +78,28 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem>
-                <Sparkles />
+                <IconSparkles className='mr-2 h-4 w-4' />
                 Upgrade to Pro
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem>
-                <BadgeCheck />
+                <IconCircleCheck className='mr-2 h-4 w-4' />
                 Account
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <CreditCard />
+                <IconCreditCard className='mr-2 h-4 w-4' />
                 Billing
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <Bell />
+                <IconBell className='mr-2 h-4 w-4' />
                 Notifications
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
-              <LogOut />
+              <IconLogout className='mr-2 h-4 w-4' />
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>

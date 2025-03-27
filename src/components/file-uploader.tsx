@@ -1,6 +1,6 @@
 'use client';
 
-import { CrossIcon, UploadIcon } from 'lucide-react';
+import { IconX, IconUpload } from '@tabler/icons-react';
 import Image from 'next/image';
 import * as React from 'react';
 import Dropzone, {
@@ -210,7 +210,7 @@ export function FileUploader(props: FileUploaderProps) {
             {isDragActive ? (
               <div className='flex flex-col items-center justify-center gap-4 sm:px-5'>
                 <div className='rounded-full border border-dashed p-3'>
-                  <UploadIcon
+                  <IconUpload
                     className='text-muted-foreground size-7'
                     aria-hidden='true'
                   />
@@ -222,7 +222,7 @@ export function FileUploader(props: FileUploaderProps) {
             ) : (
               <div className='flex flex-col items-center justify-center gap-4 sm:px-5'>
                 <div className='rounded-full border border-dashed p-3'>
-                  <UploadIcon
+                  <IconUpload
                     className='text-muted-foreground size-7'
                     aria-hidden='true'
                   />
@@ -297,12 +297,13 @@ function FileCard({ file, progress, onRemove }: FileCardProps) {
       <div className='flex items-center gap-2'>
         <Button
           type='button'
-          variant='outline'
+          variant='ghost'
           size='icon'
-          className='size-7'
           onClick={onRemove}
+          disabled={progress !== undefined && progress < 100}
+          className='size-8 rounded-full'
         >
-          <CrossIcon className='size-4' aria-hidden='true' />
+          <IconX className='text-muted-foreground' />
           <span className='sr-only'>Remove file</span>
         </Button>
       </div>

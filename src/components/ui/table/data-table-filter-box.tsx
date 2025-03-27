@@ -19,7 +19,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { PlusCircledIcon } from '@radix-ui/react-icons';
-import { CheckIcon } from 'lucide-react';
+import { IconCheck } from '@tabler/icons-react';
 import { Options } from 'nuqs';
 import React from 'react';
 
@@ -118,17 +118,17 @@ export function DataTableFilterBox({
                 >
                   <div
                     className={cn(
-                      'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
+                      'border-primary mr-2 flex h-4 w-4 items-center justify-center rounded-sm border',
                       selectedValuesSet.has(option.value)
                         ? 'bg-primary text-primary-foreground'
                         : 'opacity-50 [&_svg]:invisible'
                     )}
                   >
-                    <CheckIcon className='h-4 w-4' aria-hidden='true' />
+                    <IconCheck className='h-4 w-4' aria-hidden='true' />
                   </div>
                   {option.icon && (
                     <option.icon
-                      className='mr-2 h-4 w-4 text-muted-foreground'
+                      className='text-muted-foreground mr-2 h-4 w-4'
                       aria-hidden='true'
                     />
                   )}
