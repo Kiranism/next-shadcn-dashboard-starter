@@ -45,6 +45,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import * as React from 'react';
 import { Icons } from '../icons';
+import { OrgSwitcher } from '../org-switcher';
 
 export const company = {
   name: 'Acme Inc',
@@ -52,23 +53,31 @@ export const company = {
   plan: 'Enterprise'
 };
 
+const tenants = [
+  { id: '1', name: 'Acme Inc' },
+  { id: '2', name: 'Beta Corp' },
+  { id: '3', name: 'Gamma Ltd' }
+];
+
 export default function AppSidebar() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const { state, isMobile } = useSidebar();
 
+  const handleSwitchTenant = (tenantId: string) => {
+    console.log('Switching to tenant:', tenantId);
+  };
+
+  const activeTenant = tenants[0];
+
   return (
     <Sidebar collapsible='icon'>
       <SidebarHeader>
-        <div className='text-sidebar-accent-foreground flex gap-2 py-2'>
-          <div className='bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg'>
-            <company.logo className='size-4' />
-          </div>
-          <div className='grid flex-1 text-left text-sm leading-tight'>
-            <span className='truncate font-semibold'>{company.name}</span>
-            <span className='truncate text-xs'>{company.plan}</span>
-          </div>
-        </div>
+        <OrgSwitcher
+          tenants={tenants}
+          defaultTenant={activeTenant}
+          onTenantSwitch={handleSwitchTenant}
+        />
       </SidebarHeader>
       <SidebarContent className='overflow-x-hidden'>
         <SidebarGroup>
