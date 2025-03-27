@@ -5,11 +5,11 @@ import type { Metadata, Viewport } from 'next';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import { Lato } from 'next/font/google';
 import NextTopLoader from 'nextjs-toploader';
-import './globals.css';
-import './theme.css';
-
 import { cookies } from 'next/headers';
 import { cn } from '@/lib/utils';
+import { fontVariables } from '@/lib/font';
+import './globals.css';
+import './theme.css';
 
 const META_THEME_COLORS = {
   light: '#ffffff',
@@ -62,8 +62,8 @@ export default async function RootLayout({
         className={cn(
           'bg-background overflow-hidden overscroll-none font-sans antialiased',
           activeThemeValue ? `theme-${activeThemeValue}` : '',
-          isScaled ? 'theme-scaled' : ''
-          // fontVariables
+          isScaled ? 'theme-scaled' : '',
+          fontVariables
         )}
       >
         <NextTopLoader showSpinner={false} />
