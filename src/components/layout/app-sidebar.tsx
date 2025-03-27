@@ -46,6 +46,7 @@ import { usePathname } from 'next/navigation';
 import * as React from 'react';
 import { Icons } from '../icons';
 import { OrgSwitcher } from '../org-switcher';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 export const company = {
   name: 'Acme Inc',
@@ -63,12 +64,17 @@ export default function AppSidebar() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const { state, isMobile } = useSidebar();
+  const { isOpen } = useMediaQuery();
 
   const handleSwitchTenant = (tenantId: string) => {
     console.log('Switching to tenant:', tenantId);
   };
 
   const activeTenant = tenants[0];
+
+  React.useEffect(() => {
+    // Remove console.log
+  }, [isOpen]);
 
   return (
     <Sidebar collapsible='icon'>
