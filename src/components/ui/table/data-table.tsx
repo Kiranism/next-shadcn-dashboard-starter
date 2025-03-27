@@ -17,9 +17,11 @@ import {
   TableRow
 } from '@/components/ui/table';
 import {
-  DoubleArrowLeftIcon,
-  DoubleArrowRightIcon
-} from '@radix-ui/react-icons';
+  IconChevronLeft,
+  IconChevronRight,
+  IconChevronsLeft,
+  IconChevronsRight
+} from '@tabler/icons-react';
 import {
   ColumnDef,
   flexRender,
@@ -28,7 +30,6 @@ import {
   PaginationState,
   useReactTable
 } from '@tanstack/react-table';
-import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { parseAsInteger, useQueryState } from 'nuqs';
 
 interface DataTableProps<TData, TValue> {
@@ -56,7 +57,7 @@ export function DataTable<TData, TValue>({
   );
 
   const paginationState = {
-    pageIndex: currentPage - 1, // zero-based index for React Table
+    pageIndex: currentPage - 1,
     pageSize: pageSize
   };
 
@@ -72,7 +73,7 @@ export function DataTable<TData, TValue>({
         ? updaterOrValue(paginationState)
         : updaterOrValue;
 
-    setCurrentPage(pagination.pageIndex + 1); // converting zero-based index to one-based
+    setCurrentPage(pagination.pageIndex + 1);
     setPageSize(pagination.pageSize);
   };
 
@@ -93,10 +94,10 @@ export function DataTable<TData, TValue>({
   return (
     <div className='flex flex-1 flex-col space-y-4'>
       <div className='relative flex flex-1'>
-        <div className='absolute bottom-0 left-0 right-0 top-0 flex overflow-scroll rounded-md border md:overflow-auto'>
-          <ScrollArea className='flex-1'>
-            <Table className='relative'>
-              <TableHeader>
+        <div className='absolute inset-0 flex overflow-hidden rounded-lg border'>
+          <ScrollArea className='h-full w-full'>
+            <Table>
+              <TableHeader className='bg-muted sticky top-0 z-10'>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
@@ -146,9 +147,9 @@ export function DataTable<TData, TValue>({
         </div>
       </div>
 
-      <div className='flex flex-col items-center justify-end gap-2 space-x-2 py-2 sm:flex-row'>
+      <div className='flex flex-col items-center justify-end gap-4 space-x-2 px-4 sm:flex-row'>
         <div className='flex w-full items-center justify-between'>
-          <div className='flex-1 text-sm text-muted-foreground'>
+          <div className='text-muted-foreground flex-1 text-sm'>
             {totalItems > 0 ? (
               <>
                 Showing{' '}
@@ -164,10 +165,8 @@ export function DataTable<TData, TValue>({
             )}
           </div>
           <div className='flex flex-col items-center gap-4 sm:flex-row sm:gap-6 lg:gap-8'>
-            <div className='flex items-center space-x-2'>
-              <p className='whitespace-nowrap text-sm font-medium'>
-                Rows per page
-              </p>
+            <div className='flex items-center gap-2'>
+              <span className='text-sm font-medium'>Rows per page</span>
               <Select
                 value={`${paginationState.pageSize}`}
                 onValueChange={(value) => {
@@ -177,9 +176,13 @@ export function DataTable<TData, TValue>({
                 <SelectTrigger className='h-8 w-[70px]'>
                   <SelectValue placeholder={paginationState.pageSize} />
                 </SelectTrigger>
-                <SelectContent side='top'>
+                <SelectContent side='top' className='rounded-lg'>
                   {pageSizeOptions.map((pageSize) => (
-                    <SelectItem key={pageSize} value={`${pageSize}`}>
+                    <SelectItem
+                      key={pageSize}
+                      value={`${pageSize}`}
+                      className='rounded-md'
+                    >
                       {pageSize}
                     </SelectItem>
                   ))}
@@ -198,7 +201,7 @@ export function DataTable<TData, TValue>({
               'No pages'
             )}
           </div>
-          <div className='flex items-center space-x-2'>
+          <div className='flex items-center gap-2'>
             <Button
               aria-label='Go to first page'
               variant='outline'
@@ -206,7 +209,7 @@ export function DataTable<TData, TValue>({
               onClick={() => table.setPageIndex(0)}
               disabled={!table.getCanPreviousPage()}
             >
-              <DoubleArrowLeftIcon className='h-4 w-4' aria-hidden='true' />
+              <IconChevronsLeft className='h-4 w-4' />
             </Button>
             <Button
               aria-label='Go to previous page'
@@ -215,7 +218,7 @@ export function DataTable<TData, TValue>({
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
             >
-              <ChevronLeftIcon className='h-4 w-4' aria-hidden='true' />
+              <IconChevronLeft className='h-4 w-4' />
             </Button>
             <Button
               aria-label='Go to next page'
@@ -224,7 +227,7 @@ export function DataTable<TData, TValue>({
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
             >
-              <ChevronRightIcon className='h-4 w-4' aria-hidden='true' />
+              <IconChevronRight className='h-4 w-4' />
             </Button>
             <Button
               aria-label='Go to last page'
@@ -233,7 +236,7 @@ export function DataTable<TData, TValue>({
               onClick={() => table.setPageIndex(table.getPageCount() - 1)}
               disabled={!table.getCanNextPage()}
             >
-              <DoubleArrowRightIcon className='h-4 w-4' aria-hidden='true' />
+              <IconChevronsRight className='h-4 w-4' />
             </Button>
           </div>
         </div>

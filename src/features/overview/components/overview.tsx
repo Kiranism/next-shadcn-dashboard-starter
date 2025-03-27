@@ -4,14 +4,18 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
-  CardTitle
+  CardTitle,
+  CardAction
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AreaGraph } from './area-graph';
 import { BarGraph } from './bar-graph';
 import { PieGraph } from './pie-graph';
 import { RecentSales } from './recent-sales';
+import { IconTrendingUp, IconTrendingDown } from '@tabler/icons-react';
+import { Badge } from '@/components/ui/badge';
 
 export default function OverViewPage() {
   return (
@@ -33,107 +37,95 @@ export default function OverViewPage() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value='overview' className='space-y-4'>
-            <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
-              <Card>
-                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                  <CardTitle className='text-sm font-medium'>
-                    Total Revenue
+            <div className='*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4'>
+              <Card className='@container/card'>
+                <CardHeader>
+                  <CardDescription>Total Revenue</CardDescription>
+                  <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
+                    $1,250.00
                   </CardTitle>
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    viewBox='0 0 24 24'
-                    fill='none'
-                    stroke='currentColor'
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth='2'
-                    className='h-4 w-4 text-muted-foreground'
-                  >
-                    <path d='M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6' />
-                  </svg>
+                  <CardAction>
+                    <Badge variant='outline'>
+                      <IconTrendingUp />
+                      +12.5%
+                    </Badge>
+                  </CardAction>
                 </CardHeader>
-                <CardContent>
-                  <div className='text-2xl font-bold'>$45,231.89</div>
-                  <p className='text-xs text-muted-foreground'>
-                    +20.1% from last month
-                  </p>
-                </CardContent>
+                <CardFooter className='flex-col items-start gap-1.5 text-sm'>
+                  <div className='line-clamp-1 flex gap-2 font-medium'>
+                    Trending up this month <IconTrendingUp className='size-4' />
+                  </div>
+                  <div className='text-muted-foreground'>
+                    Visitors for the last 6 months
+                  </div>
+                </CardFooter>
               </Card>
-              <Card>
-                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                  <CardTitle className='text-sm font-medium'>
-                    Subscriptions
+              <Card className='@container/card'>
+                <CardHeader>
+                  <CardDescription>New Customers</CardDescription>
+                  <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
+                    1,234
                   </CardTitle>
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    viewBox='0 0 24 24'
-                    fill='none'
-                    stroke='currentColor'
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth='2'
-                    className='h-4 w-4 text-muted-foreground'
-                  >
-                    <path d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' />
-                    <circle cx='9' cy='7' r='4' />
-                    <path d='M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' />
-                  </svg>
+                  <CardAction>
+                    <Badge variant='outline'>
+                      <IconTrendingDown />
+                      -20%
+                    </Badge>
+                  </CardAction>
                 </CardHeader>
-                <CardContent>
-                  <div className='text-2xl font-bold'>+2350</div>
-                  <p className='text-xs text-muted-foreground'>
-                    +180.1% from last month
-                  </p>
-                </CardContent>
+                <CardFooter className='flex-col items-start gap-1.5 text-sm'>
+                  <div className='line-clamp-1 flex gap-2 font-medium'>
+                    Down 20% this period <IconTrendingDown className='size-4' />
+                  </div>
+                  <div className='text-muted-foreground'>
+                    Acquisition needs attention
+                  </div>
+                </CardFooter>
               </Card>
-              <Card>
-                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                  <CardTitle className='text-sm font-medium'>Sales</CardTitle>
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    viewBox='0 0 24 24'
-                    fill='none'
-                    stroke='currentColor'
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth='2'
-                    className='h-4 w-4 text-muted-foreground'
-                  >
-                    <rect width='20' height='14' x='2' y='5' rx='2' />
-                    <path d='M2 10h20' />
-                  </svg>
-                </CardHeader>
-                <CardContent>
-                  <div className='text-2xl font-bold'>+12,234</div>
-                  <p className='text-xs text-muted-foreground'>
-                    +19% from last month
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                  <CardTitle className='text-sm font-medium'>
-                    Active Now
+              <Card className='@container/card'>
+                <CardHeader>
+                  <CardDescription>Active Accounts</CardDescription>
+                  <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
+                    45,678
                   </CardTitle>
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    viewBox='0 0 24 24'
-                    fill='none'
-                    stroke='currentColor'
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth='2'
-                    className='h-4 w-4 text-muted-foreground'
-                  >
-                    <path d='M22 12h-4l-3 9L9 3l-3 9H2' />
-                  </svg>
+                  <CardAction>
+                    <Badge variant='outline'>
+                      <IconTrendingUp />
+                      +12.5%
+                    </Badge>
+                  </CardAction>
                 </CardHeader>
-                <CardContent>
-                  <div className='text-2xl font-bold'>+573</div>
-                  <p className='text-xs text-muted-foreground'>
-                    +201 since last hour
-                  </p>
-                </CardContent>
+                <CardFooter className='flex-col items-start gap-1.5 text-sm'>
+                  <div className='line-clamp-1 flex gap-2 font-medium'>
+                    Strong user retention <IconTrendingUp className='size-4' />
+                  </div>
+                  <div className='text-muted-foreground'>
+                    Engagement exceed targets
+                  </div>
+                </CardFooter>
+              </Card>
+              <Card className='@container/card'>
+                <CardHeader>
+                  <CardDescription>Growth Rate</CardDescription>
+                  <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
+                    4.5%
+                  </CardTitle>
+                  <CardAction>
+                    <Badge variant='outline'>
+                      <IconTrendingUp />
+                      +4.5%
+                    </Badge>
+                  </CardAction>
+                </CardHeader>
+                <CardFooter className='flex-col items-start gap-1.5 text-sm'>
+                  <div className='line-clamp-1 flex gap-2 font-medium'>
+                    Steady performance increase{' '}
+                    <IconTrendingUp className='size-4' />
+                  </div>
+                  <div className='text-muted-foreground'>
+                    Meets growth projections
+                  </div>
+                </CardFooter>
               </Card>
             </div>
             <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-7'>
@@ -141,15 +133,7 @@ export default function OverViewPage() {
                 <BarGraph />
               </div>
               <Card className='col-span-4 md:col-span-3'>
-                <CardHeader>
-                  <CardTitle>Recent Sales</CardTitle>
-                  <CardDescription>
-                    You made 265 sales this month.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <RecentSales />
-                </CardContent>
+                <RecentSales />
               </Card>
               <div className='col-span-4'>
                 <AreaGraph />

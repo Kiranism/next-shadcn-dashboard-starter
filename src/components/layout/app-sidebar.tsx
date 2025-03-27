@@ -32,14 +32,14 @@ import {
 } from '@/components/ui/sidebar';
 import { navItems } from '@/constants/data';
 import {
-  BadgeCheck,
-  Bell,
-  ChevronRight,
-  ChevronsUpDown,
-  CreditCard,
-  GalleryVerticalEnd,
-  LogOut
-} from 'lucide-react';
+  IconCircleCheck,
+  IconBell,
+  IconChevronRight,
+  IconChevronsDown,
+  IconCreditCard,
+  IconPhotoUp,
+  IconLogout
+} from '@tabler/icons-react';
 import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -48,7 +48,7 @@ import { Icons } from '../icons';
 
 export const company = {
   name: 'Acme Inc',
-  logo: GalleryVerticalEnd,
+  logo: IconPhotoUp,
   plan: 'Enterprise'
 };
 
@@ -91,7 +91,7 @@ export default function AppSidebar() {
                       >
                         {item.icon && <Icon />}
                         <span>{item.title}</span>
-                        <ChevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
+                        <IconChevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
                       </SidebarMenuButton>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
@@ -156,7 +156,7 @@ export default function AppSidebar() {
                       {session?.user?.email || ''}
                     </span>
                   </div>
-                  <ChevronsUpDown className='ml-auto size-4' />
+                  <IconChevronsDown className='ml-auto size-4' />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -192,21 +192,21 @@ export default function AppSidebar() {
 
                 <DropdownMenuGroup>
                   <DropdownMenuItem>
-                    <BadgeCheck />
+                    <IconCircleCheck className='mr-2 h-4 w-4' />
                     Account
                   </DropdownMenuItem>
                   <DropdownMenuItem>
-                    <CreditCard />
+                    <IconCreditCard className='mr-2 h-4 w-4' />
                     Billing
                   </DropdownMenuItem>
                   <DropdownMenuItem>
-                    <Bell />
+                    <IconBell className='mr-2 h-4 w-4' />
                     Notifications
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => signOut()}>
-                  <LogOut />
+                  <IconLogout className='mr-2 h-4 w-4' />
                   Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>

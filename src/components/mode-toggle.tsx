@@ -12,7 +12,7 @@ import {
   TooltipProvider
 } from '@/components/ui/tooltip';
 
-export function ModeToggle() {
+export default function ModeToggle() {
   const { setTheme, theme } = useTheme();
 
   return (
@@ -20,13 +20,13 @@ export function ModeToggle() {
       <Tooltip delayDuration={100}>
         <TooltipTrigger asChild>
           <Button
-            className='mr-2 h-8 w-8 rounded-full bg-background'
-            variant='outline'
+            className='group/toggle size-8'
+            variant='secondary'
             size='icon'
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           >
-            <SunIcon className='h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-transform duration-500 ease-in-out dark:rotate-0 dark:scale-100' />
-            <MoonIcon className='scale-1000 absolute h-[1.2rem] w-[1.2rem] rotate-0 transition-transform duration-500 ease-in-out dark:-rotate-90 dark:scale-0' />
+            <SunIcon className='h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-transform duration-500 ease-in-out dark:scale-100 dark:rotate-0' />
+            <MoonIcon className='absolute h-[1.2rem] w-[1.2rem] scale-1000 rotate-0 transition-transform duration-500 ease-in-out dark:scale-0 dark:-rotate-90' />
             <span className='sr-only'>Switch Theme</span>
           </Button>
         </TooltipTrigger>

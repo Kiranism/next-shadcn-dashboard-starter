@@ -1,12 +1,12 @@
 'use client';
 
 import {
-  Folder,
-  Forward,
-  MoreHorizontal,
-  Trash2,
-  type LucideIcon
-} from 'lucide-react';
+  IconFolder,
+  IconShare,
+  IconDots,
+  IconTrash,
+  type IconProps
+} from '@tabler/icons-react';
 
 import {
   DropdownMenu,
@@ -24,6 +24,7 @@ import {
   SidebarMenuItem,
   useSidebar
 } from '@/components/ui/sidebar';
+import { Icon } from '@/components/icons';
 
 export function NavProjects({
   projects
@@ -31,7 +32,7 @@ export function NavProjects({
   projects: {
     name: string;
     url: string;
-    icon: LucideIcon;
+    icon: Icon;
   }[];
 }) {
   const { isMobile } = useSidebar();
@@ -51,7 +52,7 @@ export function NavProjects({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuAction showOnHover>
-                  <MoreHorizontal />
+                  <IconDots />
                   <span className='sr-only'>More</span>
                 </SidebarMenuAction>
               </DropdownMenuTrigger>
@@ -61,16 +62,16 @@ export function NavProjects({
                 align={isMobile ? 'end' : 'start'}
               >
                 <DropdownMenuItem>
-                  <Folder className='text-muted-foreground' />
+                  <IconFolder className='text-muted-foreground mr-2 h-4 w-4' />
                   <span>View Project</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
-                  <Forward className='text-muted-foreground' />
+                  <IconShare className='text-muted-foreground mr-2 h-4 w-4' />
                   <span>Share Project</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
-                  <Trash2 className='text-muted-foreground' />
+                  <IconTrash className='text-muted-foreground mr-2 h-4 w-4' />
                   <span>Delete Project</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -79,7 +80,7 @@ export function NavProjects({
         ))}
         <SidebarMenuItem>
           <SidebarMenuButton className='text-sidebar-foreground/70'>
-            <MoreHorizontal className='text-sidebar-foreground/70' />
+            <IconDots className='text-sidebar-foreground/70' />
             <span>More</span>
           </SidebarMenuButton>
         </SidebarMenuItem>

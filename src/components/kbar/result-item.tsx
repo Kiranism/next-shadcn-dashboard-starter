@@ -30,7 +30,7 @@ const ResultItem = React.forwardRef(
         {active && (
           <div
             id='kbar-result-item'
-            className='border-sidebar-primary bg-sidebar-accent absolute inset-0 z-[-1]! border-l-4'
+            className='border-primary bg-accent/50 absolute inset-0 z-[-1]! border-l-4'
           ></div>
         )}
         <div className='relative z-10 flex items-center gap-2'>
@@ -40,7 +40,9 @@ const ResultItem = React.forwardRef(
               {ancestors.length > 0 &&
                 ancestors.map((ancestor) => (
                   <React.Fragment key={ancestor.id}>
-                    <span className='mr-2 opacity-50'>{ancestor.name}</span>
+                    <span className='text-muted-foreground mr-2'>
+                      {ancestor.name}
+                    </span>
                     <span className='mr-2'>&rsaquo;</span>
                   </React.Fragment>
                 ))}
@@ -58,7 +60,7 @@ const ResultItem = React.forwardRef(
             {action.shortcut.map((sc, i) => (
               <kbd
                 key={sc + i}
-                className='flex items-center gap-1 rounded-md border px-1.5 py-1 text-xs font-medium shadow-sm'
+                className='bg-muted flex h-5 items-center gap-1 rounded-md border px-1.5 text-[10px] font-medium'
               >
                 {sc}
               </kbd>

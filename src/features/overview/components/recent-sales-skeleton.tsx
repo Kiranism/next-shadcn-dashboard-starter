@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 export function RecentSalesSkeleton() {
   return (
-    <Card>
+    <Card className='h-full'>
       <CardHeader>
         <Skeleton className='h-6 w-[140px]' /> {/* CardTitle */}
         <Skeleton className='h-4 w-[180px]' /> {/* CardDescription */}
