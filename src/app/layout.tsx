@@ -41,8 +41,6 @@ export default async function RootLayout({
   const activeThemeValue = cookieStore.get('active_theme')?.value;
   const isScaled = activeThemeValue?.endsWith('-scaled');
 
-  console.log('activeTheme', activeThemeValue);
-
   return (
     <html lang='en' suppressHydrationWarning>
       <head>
