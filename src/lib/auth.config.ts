@@ -1,9 +1,11 @@
+//定义认证配置
 import { NextAuthConfig } from 'next-auth';
 import CredentialProvider from 'next-auth/providers/credentials';
 import GithubProvider from 'next-auth/providers/github';
 
 const authConfig = {
   providers: [
+    //github登录和邮箱登录
     GithubProvider({}),
     CredentialProvider({
       credentials: {
@@ -15,6 +17,7 @@ const authConfig = {
         }
       },
       async authorize(credentials, req) {
+        //简单模拟用户验证，没有真正连接数据库
         const user = {
           id: '1',
           name: 'John',
