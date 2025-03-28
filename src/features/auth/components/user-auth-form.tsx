@@ -21,7 +21,10 @@ import * as z from 'zod';
 import GithubSignInButton from './github-auth-button';
 
 const formSchema = z.object({
-  email: z.string().email({ message: 'Enter a valid email address' })
+  username: z
+    .string()
+    .regex(/^[a-zA-Z0-9_]+$/, { message: '用户名只能包含字母、数字和下划线' }),
+  password: z.string().min(6, { message: '密码长度至少6个字符' })
 });
 
 type UserFormValue = z.infer<typeof formSchema>;
@@ -30,21 +33,21 @@ export default function UserAuthForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl');
   const [loading, startTransition] = useTransition();
-  const defaultValues = {
-    email: 'demo@gmail.com'
-  };
   const form = useForm<UserFormValue>({
     resolver: zodResolver(formSchema),
-    defaultValues
+    defaultValues: {
+      username: '',
+      password: ''
+    }
   });
 
   const onSubmit = async (data: UserFormValue) => {
     startTransition(() => {
       signIn('credentials', {
-        email: data.email,
+        username: data.username,
+        password: data.password,
         callbackUrl: callbackUrl ?? '/dashboard'
       });
-      toast.success('Signed In Successfully!');
     });
   };
 
@@ -57,14 +60,33 @@ export default function UserAuthForm() {
         >
           <FormField
             control={form.control}
-            name='email'
+            name='username'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel>用户名</FormLabel>
                 <FormControl>
                   <Input
-                    type='email'
-                    placeholder='Enter your email...'
+                    type='username'
+                    placeholder='输入您的用户名...'
+                    disabled={loading}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name='password'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>密码</FormLabel>
+                <FormControl>
+                  <Input
+                    type='password'
+                    placeholder='输入您的密码...'
                     disabled={loading}
                     {...field}
                   />
@@ -79,7 +101,7 @@ export default function UserAuthForm() {
             className='mt-2 ml-auto w-full'
             type='submit'
           >
-            Continue With Email
+            登录
           </Button>
         </form>
       </Form>
