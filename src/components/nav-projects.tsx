@@ -4,8 +4,7 @@ import {
   IconFolder,
   IconShare,
   IconDots,
-  IconTrash,
-  type IconProps
+  IconTrash
 } from '@tabler/icons-react';
 
 import {

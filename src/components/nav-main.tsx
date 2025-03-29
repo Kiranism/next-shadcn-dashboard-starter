@@ -1,6 +1,6 @@
 'use client';
 
-import { IconChevronRight, type IconProps } from '@tabler/icons-react';
+import { IconChevronRight } from '@tabler/icons-react';
 
 import {
   Collapsible,
