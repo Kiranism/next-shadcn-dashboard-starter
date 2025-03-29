@@ -2,7 +2,6 @@ import PageContainer from '@/components/layout/page-container';
 import { Badge } from '@/components/ui/badge';
 import {
   Card,
-  CardContent,
   CardHeader,
   CardTitle,
   CardDescription,

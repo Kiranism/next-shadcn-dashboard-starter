@@ -31,7 +31,6 @@ export function ColumnActions({
   title: string;
   id: UniqueIdentifier;
 }) {
-  const [open, setIsOpen] = React.useState(false);
   const [name, setName] = React.useState(title);
   const updateCol = useTaskStore((state) => state.updateCol);
   const removeCol = useTaskStore((state) => state.removeCol);

@@ -27,8 +27,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-  SidebarRail,
-  useSidebar
+  SidebarRail
 } from '@/components/ui/sidebar';
 import { navItems } from '@/constants/data';
 import {
@@ -63,17 +62,16 @@ const tenants = [
 export default function AppSidebar() {
   const { data: session } = useSession();
   const pathname = usePathname();
-  const { state, isMobile } = useSidebar();
   const { isOpen } = useMediaQuery();
 
-  const handleSwitchTenant = (tenantId: string) => {
-    console.log('Switching to tenant:', tenantId);
+  const handleSwitchTenant = (_tenantId: string) => {
+    // Tenant switching functionality would be implemented here
   };
 
   const activeTenant = tenants[0];
 
   React.useEffect(() => {
-    // Remove console.log
+    // Side effects based on sidebar state changes
   }, [isOpen]);
 
   return (

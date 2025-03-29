@@ -105,7 +105,7 @@ export function PieGraph() {
               content={<ChartTooltipContent hideLabel />}
             />
             <Pie
-              data={chartData.map((item, index) => ({
+              data={chartData.map((item) => ({
                 ...item,
                 fill: `url(#fill${item.browser})`
               }))}

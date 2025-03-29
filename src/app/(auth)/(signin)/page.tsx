@@ -22,7 +22,7 @@ export default async function Page() {
       stars = data.stargazers_count || stars; // Update stars if API response is valid
     }
   } catch (error) {
-    console.error('Error fetching GitHub stars:', error);
+    // Error fetching GitHub stars, using default value
   }
   return <SignInViewPage stars={stars} />;
 }

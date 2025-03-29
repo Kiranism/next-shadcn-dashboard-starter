@@ -14,7 +14,7 @@ const authConfig = {
           type: 'password'
         }
       },
-      async authorize(credentials, req) {
+      async authorize(credentials) {
         const user = {
           id: '1',
           name: 'John',
