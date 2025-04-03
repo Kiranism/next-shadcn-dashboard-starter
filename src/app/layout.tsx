@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { fontVariables } from '@/lib/font';
 import './globals.css';
 import './theme.css';
+import { ClerkProvider } from '@clerk/nextjs';
 
 const META_THEME_COLORS = {
   light: '#ffffff',
@@ -35,39 +36,41 @@ export default async function RootLayout({
   const isScaled = activeThemeValue?.endsWith('-scaled');
 
   return (
-    <html lang='en' suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
+    <ClerkProvider>
+      <html lang='en' suppressHydrationWarning>
+        <head>
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
               try {
                 if (localStorage.theme === 'dark' || ((!('theme' in localStorage) || localStorage.theme === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                   document.querySelector('meta[name="theme-color"]').setAttribute('content', '${META_THEME_COLORS.dark}')
                 }
               } catch (_) {}
             `
-          }}
-        />
-      </head>
-      <body
-        className={cn(
-          'bg-background overflow-hidden overscroll-none font-sans antialiased',
-          activeThemeValue ? `theme-${activeThemeValue}` : '',
-          isScaled ? 'theme-scaled' : '',
-          fontVariables
-        )}
-      >
-        <NextTopLoader showSpinner={false} />
-        <NuqsAdapter>
-          <Providers
-            session={session}
-            activeThemeValue={activeThemeValue as string}
-          >
-            <Toaster />
-            {children}
-          </Providers>
-        </NuqsAdapter>
-      </body>
-    </html>
+            }}
+          />
+        </head>
+        <body
+          className={cn(
+            'bg-background overflow-hidden overscroll-none font-sans antialiased',
+            activeThemeValue ? `theme-${activeThemeValue}` : '',
+            isScaled ? 'theme-scaled' : '',
+            fontVariables
+          )}
+        >
+          <NextTopLoader showSpinner={false} />
+          <NuqsAdapter>
+            <Providers
+              session={session}
+              activeThemeValue={activeThemeValue as string}
+            >
+              <Toaster />
+              {children}
+            </Providers>
+          </NuqsAdapter>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

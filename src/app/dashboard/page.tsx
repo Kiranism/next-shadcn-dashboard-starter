@@ -1,10 +1,10 @@
-import { auth } from '@/lib/auth';
+import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 
 export default async function Dashboard() {
-  const session = await auth();
+  const { userId } = await auth();
 
-  if (!session?.user) {
+  if (!userId) {
     return redirect('/');
   } else {
     redirect('/dashboard/overview');

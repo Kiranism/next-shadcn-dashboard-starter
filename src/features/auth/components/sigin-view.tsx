@@ -1,10 +1,10 @@
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { SignIn as ClerkSignInForm } from '@clerk/nextjs';
 import { GitHubLogoIcon } from '@radix-ui/react-icons';
 import { IconStar } from '@tabler/icons-react';
 import { Metadata } from 'next';
 import Link from 'next/link';
-import UserAuthForm from './user-auth-form';
 
 export const metadata: Metadata = {
   title: 'Authentication',
@@ -51,16 +51,11 @@ export default function SignInViewPage({ stars }: { stars: number }) {
           </blockquote>
         </div>
       </div>
-      <div className='flex h-full items-center p-4 lg:p-8'>
-        <div className='mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]'>
+      <div className='flex h-full items-center justify-center p-4 lg:p-8'>
+        <div className='flex w-full max-w-md flex-col items-center justify-center space-y-6'>
           {/* github link  */}
           <Link
-            className={cn(
-              buttonVariants({
-                variant: 'ghost'
-              }),
-              'group inline-flex hover:text-yellow-200'
-            )}
+            className={cn('group inline-flex hover:text-yellow-200')}
             target='_blank'
             href={'https://github.com/kiranism/next-shadcn-dashboard-starter'}
           >
@@ -76,15 +71,7 @@ export default function SignInViewPage({ stars }: { stars: number }) {
               <span className='font-display font-medium'>{stars}</span>
             </div>
           </Link>
-          <div className='flex flex-col space-y-2 text-center'>
-            <h1 className='text-2xl font-semibold tracking-tight'>
-              Create an account
-            </h1>
-            <p className='text-muted-foreground text-sm'>
-              Enter your email below to create your account
-            </p>
-          </div>
-          <UserAuthForm />
+          <ClerkSignInForm />
           <p className='text-muted-foreground px-8 text-center text-sm'>
             By clicking continue, you agree to our{' '}
             <Link
