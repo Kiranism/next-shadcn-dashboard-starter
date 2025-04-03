@@ -61,7 +61,8 @@ function ChartContainer({
         {...props}
       >
         <ChartStyle id={chartId} config={config} />
-        <RechartsPrimitive.ResponsiveContainer>
+        {/* adding debounce will fix chart laggy behavior while animating */}
+        <RechartsPrimitive.ResponsiveContainer debounce={2000}>
           {children}
         </RechartsPrimitive.ResponsiveContainer>
       </div>
