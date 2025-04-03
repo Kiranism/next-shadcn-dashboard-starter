@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import SignInViewPage from '@/features/auth/components/sign-in-view';
+import SignUpViewPage from '@/features/auth/components/sign-up-view';
 
 export const metadata: Metadata = {
   title: 'Authentication | Sign In',
@@ -24,5 +24,5 @@ export default async function Page() {
   } catch (error) {
     // Error fetching GitHub stars, using default value
   }
-  return <SignInViewPage stars={stars} />;
+  return <SignUpViewPage stars={stars} />;
 }

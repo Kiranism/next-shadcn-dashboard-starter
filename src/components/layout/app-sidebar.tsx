@@ -41,7 +41,7 @@ import {
   IconPhotoUp,
   IconUserCircle
 } from '@tabler/icons-react';
-import { signOut } from 'next-auth/react';
+import { SignOutButton } from '@clerk/nextjs';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import * as React from 'react';
@@ -198,9 +198,9 @@ export default function AppSidebar() {
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut()}>
+                <DropdownMenuItem>
                   <IconLogout className='mr-2 h-4 w-4' />
-                  Log out
+                  <SignOutButton redirectUrl='/auth/sign-in' />
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

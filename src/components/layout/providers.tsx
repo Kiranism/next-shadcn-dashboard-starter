@@ -1,30 +1,31 @@
 'use client';
+import { ClerkProvider } from '@clerk/nextjs';
+import { dark } from '@clerk/themes';
+import { useTheme } from 'next-themes';
 import React from 'react';
-import ThemeProvider from './ThemeToggle/theme-provider';
-import { SessionProvider, SessionProviderProps } from 'next-auth/react';
 import { ActiveThemeProvider } from '../active-theme';
+
 export default function Providers({
-  session,
   activeThemeValue,
   children
 }: {
-  session: SessionProviderProps['session'];
   activeThemeValue: string;
   children: React.ReactNode;
 }) {
+  // we need the resolvedTheme value to set the baseTheme for clerk based on the dark or light theme
+  const { resolvedTheme } = useTheme();
+
   return (
     <>
-      <ThemeProvider
-        attribute='class'
-        defaultTheme='system'
-        enableSystem
-        disableTransitionOnChange
-        enableColorScheme
-      >
-        <ActiveThemeProvider initialTheme={activeThemeValue}>
-          <SessionProvider session={session}>{children}</SessionProvider>
-        </ActiveThemeProvider>
-      </ThemeProvider>
+      <ActiveThemeProvider initialTheme={activeThemeValue}>
+        <ClerkProvider
+          appearance={{
+            baseTheme: resolvedTheme === 'dark' ? dark : undefined
+          }}
+        >
+          {children}
+        </ClerkProvider>
+      </ActiveThemeProvider>
     </>
   );
 }
