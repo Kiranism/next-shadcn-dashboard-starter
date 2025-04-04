@@ -6,7 +6,7 @@ import SearchInput from '../search-input';
 import { UserNav } from './user-nav';
 import { ThemeSelector } from '../theme-selector';
 import { ModeToggle } from './ThemeToggle/theme-toggle';
-import CtaGithub from './cta-github';
+// import CtaGithub from './cta-github';
 
 export default function Header() {
   return (
@@ -18,7 +18,7 @@ export default function Header() {
       </div>
 
       <div className='flex items-center gap-2 px-4'>
-        <CtaGithub />
+        {/* <CtaGithub /> */}
         <div className='hidden md:flex'>
           <SearchInput />
         </div>

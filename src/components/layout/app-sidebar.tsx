@@ -48,15 +48,15 @@ import { OrgSwitcher } from '../org-switcher';
 import { useMediaQuery } from '@/hooks/use-media-query';
 
 export const company = {
-  name: 'Acme Inc',
+  name: 'Mydecin',
   logo: IconPhotoUp,
   plan: 'Enterprise'
 };
 
 const tenants = [
-  { id: '1', name: 'Acme Inc' },
-  { id: '2', name: 'Beta Corp' },
-  { id: '3', name: 'Gamma Ltd' }
+  { id: '1', name: 'Mydecin' },
+  { id: '2', name: 'Mydecin' },
+  { id: '3', name: 'Mydecin' }
 ];
 
 export default function AppSidebar() {

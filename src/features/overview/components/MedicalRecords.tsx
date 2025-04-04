@@ -400,6 +400,18 @@ export default function MedicalRecordsTable() {
                       >
                         <FileText className='h-4 w-4' />
                       </Button>
+                      <Button
+                        variant='ghost'
+                        size='sm'
+                        className='h-8 w-8 p-0'
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePatientSelect(patient);
+                        }}
+                      >
+                        {/* Nouvelle consultation */}
+                        <Clipboard className='h-4 w-4' />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 );
