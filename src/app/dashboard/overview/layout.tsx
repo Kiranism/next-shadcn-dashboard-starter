@@ -34,7 +34,7 @@ export default function OverViewLayout({
         <div className='*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs md:grid-cols-2 lg:grid-cols-4'>
           <Card className='@container/card'>
             <CardHeader>
-              <CardDescription>Total Revenue</CardDescription>
+              <CardDescription>Nombre total de patients actifs</CardDescription>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
                 $1,250.00
               </CardTitle>
@@ -50,13 +50,13 @@ export default function OverViewLayout({
                 Trending up this month <IconTrendingUp className='size-4' />
               </div>
               <div className='text-muted-foreground'>
-                Visitors for the last 6 months
+                Patients ayant consulté dans les 6 derniers mois.
               </div>
             </CardFooter>
           </Card>
           <Card className='@container/card'>
             <CardHeader>
-              <CardDescription>New Customers</CardDescription>
+              <CardDescription>Nombre de rendez-vous planifiés</CardDescription>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
                 1,234
               </CardTitle>
@@ -72,13 +72,15 @@ export default function OverViewLayout({
                 Down 20% this period <IconTrendingDown className='size-4' />
               </div>
               <div className='text-muted-foreground'>
-                Acquisition needs attention
+                Total des consultations à venir.
               </div>
             </CardFooter>
           </Card>
           <Card className='@container/card'>
             <CardHeader>
-              <CardDescription>Active Accounts</CardDescription>
+              <CardDescription>
+                Taux d annulation des rendez-vous
+              </CardDescription>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
                 45,678
               </CardTitle>
@@ -94,13 +96,13 @@ export default function OverViewLayout({
                 Strong user retention <IconTrendingUp className='size-4' />
               </div>
               <div className='text-muted-foreground'>
-                Engagement exceed targets
+                Indicateur de suivi des annulations et reprogrammations.
               </div>
             </CardFooter>
           </Card>
           <Card className='@container/card'>
             <CardHeader>
-              <CardDescription>Growth Rate</CardDescription>
+              <CardDescription>Revenus par type de service</CardDescription>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
                 4.5%
               </CardTitle>
@@ -113,7 +115,7 @@ export default function OverViewLayout({
             </CardHeader>
             <CardFooter className='flex-col items-start gap-1.5 text-sm'>
               <div className='line-clamp-1 flex gap-2 font-medium'>
-                Steady performance increase{' '}
+                Consultation, téléconsultation, examens, etc.{' '}
                 <IconTrendingUp className='size-4' />
               </div>
               <div className='text-muted-foreground'>
