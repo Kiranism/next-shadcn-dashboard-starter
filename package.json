@@ -73,7 +73,6 @@
     "match-sorter": "^8.0.0",
     "motion": "^11.17.0",
     "next": "15.2.4",
-    "next-auth": "^5.0.0-beta.25",
     "next-themes": "^0.4.6",
     "nextjs-toploader": "^3.7.15",
     "nuqs": "^2.4.1",

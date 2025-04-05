@@ -1,6 +1,5 @@
 import Providers from '@/components/layout/providers';
 import { Toaster } from '@/components/ui/sonner';
-import { auth } from '@/lib/auth';
 import { fontVariables } from '@/lib/font';
 import ThemeProvider from '@/components/layout/ThemeToggle/theme-provider';
 import { cn } from '@/lib/utils';
@@ -30,7 +29,6 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
   const cookieStore = await cookies();
   const activeThemeValue = cookieStore.get('active_theme')?.value;
   const isScaled = activeThemeValue?.endsWith('-scaled');
