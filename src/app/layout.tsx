@@ -1,12 +1,12 @@
-import { auth } from '@/lib/auth';
 import Providers from '@/components/layout/providers';
 import { Toaster } from '@/components/ui/sonner';
-import type { Metadata, Viewport } from 'next';
-import { NuqsAdapter } from 'nuqs/adapters/next/app';
-import NextTopLoader from 'nextjs-toploader';
-import { cookies } from 'next/headers';
-import { cn } from '@/lib/utils';
 import { fontVariables } from '@/lib/font';
+import ThemeProvider from '@/components/layout/ThemeToggle/theme-provider';
+import { cn } from '@/lib/utils';
+import type { Metadata, Viewport } from 'next';
+import { cookies } from 'next/headers';
+import NextTopLoader from 'nextjs-toploader';
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import './globals.css';
 import './theme.css';
 
@@ -29,7 +29,6 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
   const cookieStore = await cookies();
   const activeThemeValue = cookieStore.get('active_theme')?.value;
   const isScaled = activeThemeValue?.endsWith('-scaled');
@@ -59,13 +58,18 @@ export default async function RootLayout({
       >
         <NextTopLoader showSpinner={false} />
         <NuqsAdapter>
-          <Providers
-            session={session}
-            activeThemeValue={activeThemeValue as string}
+          <ThemeProvider
+            attribute='class'
+            defaultTheme='system'
+            enableSystem
+            disableTransitionOnChange
+            enableColorScheme
           >
-            <Toaster />
-            {children}
-          </Providers>
+            <Providers activeThemeValue={activeThemeValue as string}>
+              <Toaster />
+              {children}
+            </Providers>
+          </ThemeProvider>
         </NuqsAdapter>
       </body>
     </html>

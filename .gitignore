@@ -35,3 +35,5 @@ yarn-error.log*
 next-env.d.ts
 
 .idea/
+# clerk configuration (can include secrets)
+/.clerk/

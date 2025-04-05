@@ -1,12 +1,9 @@
-import PageContainer from '@/components/layout/page-container';
-import ProfileCreateForm from './profile-create-form';
+import { UserProfile } from '@clerk/nextjs';
 
 export default function ProfileViewPage() {
   return (
-    <PageContainer>
-      <div className='space-y-4'>
-        <ProfileCreateForm initialData={null} />
-      </div>
-    </PageContainer>
+    <div className='flex w-full flex-col p-4'>
+      <UserProfile />
+    </div>
   );
 }
