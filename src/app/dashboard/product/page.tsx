@@ -25,7 +25,7 @@ export default async function Page(props: pageProps) {
   searchParamsCache.parse(searchParams);
 
   // This key is used for invoke suspense if any of the search params changed (used for filters).
-  const key = serialize({ ...searchParams });
+  // const key = serialize({ ...searchParams });
 
   return (
     <PageContainer scrollable={false}>
@@ -44,7 +44,7 @@ export default async function Page(props: pageProps) {
         </div>
         <Separator />
         <Suspense
-          key={key}
+          // key={key}
           fallback={
             <DataTableSkeleton columnCount={5} rowCount={8} filterCount={2} />
           }
