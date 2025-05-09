@@ -1,17 +1,77 @@
-import { buttonVariants } from '@/components/ui/button';
+'use client';
+
+import { Button, buttonVariants } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle
+} from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { SignIn as ClerkSignInForm } from '@clerk/nextjs';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { GitHubLogoIcon } from '@radix-ui/react-icons';
 import { IconStar } from '@tabler/icons-react';
 import { Metadata } from 'next';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
 
 export const metadata: Metadata = {
   title: 'Authentication',
   description: 'Authentication forms built using the components.'
 };
 
+// Form schema
+const signInSchema = z.object({
+  email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters')
+});
+
+type SignInValues = z.infer<typeof signInSchema>;
+
 export default function SignInViewPage({ stars }: { stars: number }) {
+  const router = useRouter();
+
+  // Default values
+  const defaultValues: Partial<SignInValues> = {
+    email: '',
+    password: ''
+  };
+
+  const form = useForm<SignInValues>({
+    resolver: zodResolver(signInSchema),
+    defaultValues
+  });
+
+  const onSubmit = async (data: SignInValues) => {
+    try {
+      // This is where you would normally call your API
+      console.log('Sign in data:', data);
+
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      toast.success('Signed in successfully!');
+      router.push('/dashboard');
+    } catch (error) {
+      toast.error('Failed to sign in');
+      console.error(error);
+    }
+  };
+
   return (
     <div className='relative h-screen flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0'>
       <Link
@@ -71,11 +131,71 @@ export default function SignInViewPage({ stars }: { stars: number }) {
               <span className='font-display font-medium'>{stars}</span>
             </div>
           </Link>
-          <ClerkSignInForm
-            initialValues={{
-              emailAddress: 'your_mail+clerk_test@example.com'
-            }}
-          />
+
+          {/* Custom Sign In Form */}
+          <Card className='w-full'>
+            <CardHeader>
+              <CardTitle>Sign In</CardTitle>
+              <CardDescription>
+                Enter your credentials to sign in to your account
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className='space-y-4'
+                >
+                  <FormField
+                    control={form.control}
+                    name='email'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder='Enter your email' {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name='password'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input
+                            type='password'
+                            placeholder='Enter your password'
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button type='submit' className='w-full'>
+                    {form.formState.isSubmitting ? 'Signing in...' : 'Sign In'}
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+            <CardFooter className='flex justify-center'>
+              <p className='text-muted-foreground text-sm'>
+                Don't have an account?{' '}
+                <Link
+                  href='/auth/sign-up'
+                  className='text-primary hover:underline'
+                >
+                  Sign up
+                </Link>
+              </p>
+            </CardFooter>
+          </Card>
 
           <p className='text-muted-foreground px-8 text-center text-sm'>
             By clicking continue, you agree to our{' '}

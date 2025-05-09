@@ -3,11 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 interface UserAvatarProfileProps {
   className?: string;
   showInfo?: boolean;
-  user: {
-    imageUrl?: string;
-    fullName?: string | null;
-    emailAddresses: Array<{ emailAddress: string }>;
-  } | null;
+  user: any;
 }
 
 export function UserAvatarProfile({
