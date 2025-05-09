@@ -24,21 +24,18 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { profileSchema, type ProfileFormValues } from '../utils/form-schema';
 import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { IconAlertTriangle, IconTrash } from '@tabler/icons-react';
-import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
+import { profileSchema, type ProfileFormValues } from '../utils/form-schema';
 
 interface ProfileFormType {
   initialData: any | null;
 }
 
 const ProfileCreateForm: React.FC<ProfileFormType> = ({ initialData }) => {
-  const params = useParams();
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const title = initialData ? 'Edit product' : 'Create Your Profile';
@@ -48,7 +45,7 @@ const ProfileCreateForm: React.FC<ProfileFormType> = ({ initialData }) => {
   const [previousStep, setPreviousStep] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
   const [data, setData] = useState({});
-
+  console.log(open, previousStep);
   const defaultValues = {
     jobs: [
       {
@@ -81,6 +78,7 @@ const ProfileCreateForm: React.FC<ProfileFormType> = ({ initialData }) => {
   const processForm: SubmitHandler<ProfileFormValues> = (data) => {
     // Process form data
     setData(data);
+    setLoading(false);
     // api call and reset
     // form.reset();
   };

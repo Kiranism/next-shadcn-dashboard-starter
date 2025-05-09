@@ -186,7 +186,7 @@ export default function SignInViewPage({ stars }: { stars: number }) {
             </CardContent>
             <CardFooter className='flex justify-center'>
               <p className='text-muted-foreground text-sm'>
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <Link
                   href='/auth/sign-up'
                   className='text-primary hover:underline'
