@@ -18,7 +18,7 @@ This is a starter template using the following stack:
 - Framework - [Next.js 15](https://nextjs.org/13)
 - Language - [TypeScript](https://www.typescriptlang.org)
 - Auth - [Clerk](https://go.clerk.com/ILdYhn7)
-- Error tracking - [ <picture><img alt="Sentry" src="public/assets/sentry.svg">
+- Error tracking - [Sentry - <picture><img alt="Sentry" src="public/assets/sentry.svg">
         </picture>](https://sentry.io/for/nextjs/?utm_source=github&utm_medium=paid-community&utm_campaign=general-fy26q2-nextjs&utm_content=github-banner-project-tryfree)
 - Styling - [Tailwind CSS v4](https://tailwindcss.com)
 - Components - [Shadcn-ui](https://ui.shadcn.com)
