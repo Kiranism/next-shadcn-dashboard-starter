@@ -25,6 +25,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
+.env*
 .env*.local
 
 # vercel
@@ -37,3 +38,11 @@ next-env.d.ts
 .idea/
 # clerk configuration (can include secrets)
 /.clerk/
+
+
+# cursor 
+.cursorrules
+/memory-bank
+
+# Sentry Config File
+.env.sentry-build-plugin
