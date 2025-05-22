@@ -1,35 +1,65 @@
-import { Icons } from '@/components/icons';
-
-export interface NavItem {
-  title: string;
-  url: string;
-  disabled?: boolean;
-  external?: boolean;
-  shortcut?: [string, string];
-  icon?: keyof typeof Icons;
-  label?: string;
-  description?: string;
-  isActive?: boolean;
-  items?: NavItem[];
+export enum Civility {
+  MR = "Mr",
+  MME = "Mme",
+  MLLE = "Mlle",
 }
 
-export interface NavItemWithChildren extends NavItem {
-  items: NavItemWithChildren[];
+export enum FamilySituation {
+  SINGLE = "Single",
+  MARRIED = "Married",
+  DIVORCED = "Divorced",
+  WIDOW = "Widow",
 }
 
-export interface NavItemWithOptionalChildren extends NavItem {
-  items?: NavItemWithChildren[];
+export enum Department {
+  IT = "IT",
+  PRODUCTION = "Production",
+  MANAGER = "Manager",
+  TEAM_LEAD = "Chef d’équipe",
+  FINISHING = "Finition",
+  PACKAGING = "Emballage",
+  CLEANING = "Femme de Ménage",
 }
 
-export interface FooterItem {
-  title: string;
-  items: {
-    title: string;
-    href: string;
-    external?: boolean;
-  }[];
+export enum ContractType {
+  CDD = "CDD",
+  CDI = "CDI",
+  SIVP = "SIVP",
 }
 
-export type MainNavItem = NavItemWithOptionalChildren;
+export enum PaymentType {
+  HOURLY = "Hourly",
+  MONTHLY = "Monthly",
+}
 
-export type SidebarNavItem = NavItemWithChildren;
+export enum PaymentMethod {
+  CASH = "Cash",
+  BANK = "Bank",
+}
+
+export enum EmployeeStatus {
+  ACTIVE = "Active",
+  INACTIVE = "Inactive",
+}
+
+export interface Employee {
+  EmployeeId: string;
+  Civility: Civility;
+  FullName: string;
+  Phone: string;
+  Address: string;
+  FamilySituation: FamilySituation;
+  cin: string;
+  cnss: string;
+  department: Department;
+  position: string;
+  hireDate: Date | string;
+  contractType: ContractType;
+  paymentType: PaymentType;
+  paymentMethod: PaymentMethod;
+  bankName?: string;
+  bankAccount?: string;
+  hourlyRate?: number;
+  monthlySalary?: number;
+  status: EmployeeStatus;
+}
