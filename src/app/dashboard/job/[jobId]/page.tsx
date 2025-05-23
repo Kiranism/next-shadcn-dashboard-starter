@@ -316,7 +316,7 @@ export default function JobDetailPage() {
             </Button>
             <Heading
               title={job.jobTitle}
-              description={`Posted by ${job.recruiterProfile.companyProfile.companyName}`}
+              description={`Posted by ${job.recruiterProfile.companyName}`}
             />
           </div>
           <div className='flex gap-2'>
