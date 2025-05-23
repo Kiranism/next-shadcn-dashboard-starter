@@ -21,68 +21,92 @@ export const navItems: NavItem[] = [
     shortcut: ['d', 'd'],
     items: [] // Empty array as there are no child items for Dashboard
   },
+  // {
+  //   title: 'Product',
+  //   url: '/dashboard/product',
+  //   icon: 'product',
+  //   shortcut: ['p', 'p'],
+  //   isActive: false,
+  //   items: [] // No child items
+  // },
   {
-    title: 'Product',
-    url: '/dashboard/product',
-    icon: 'product',
-    shortcut: ['p', 'p'],
+    title: 'All Recruiters',
+    url: '/dashboard/all-recruiters',
+    icon: 'user',
+    shortcut: ['r', 'r'],
     isActive: false,
     items: [] // No child items
   },
   {
-    title: 'React Query',
-    url: '#',
-    icon: 'logo',
-    isActive: true,
-    items: [
-      {
-        title: 'Posts',
-        url: '/posts',
-        icon: 'post',
-        shortcut: ['p', 'o']
-      },
-      {
-        title: 'Profile',
-        url: '/profile',
-        icon: 'userPen',
-        shortcut: ['p', 'r']
-      },
-      {
-        title: 'Todos',
-        url: '/todos',
-        icon: 'check',
-        shortcut: ['t', 'd']
-      }
-    ]
-  },
-  {
-    title: 'Account',
-    url: '#', // Placeholder as there is no direct link for the parent
-    icon: 'billing',
+    title: 'All Jobseekers',
+    url: '/dashboard/all-jobseekers',
+    icon: 'user',
+    shortcut: ['j', 's'],
     isActive: false,
-    items: [
-      {
-        title: 'Profile',
-        url: '/dashboard/profile',
-        icon: 'userPen',
-        shortcut: ['m', 'm']
-      },
-      {
-        title: 'Login',
-        shortcut: ['l', 'l'],
-        url: '/',
-        icon: 'login'
-      }
-    ]
+    items: [] // No child items
   },
   {
-    title: 'Kanban',
-    url: '/dashboard/kanban',
-    icon: 'kanban',
-    shortcut: ['k', 'k'],
+    title: 'All Jobs',
+    url: '/dashboard/all-jobs',
+    icon: 'product',
+    shortcut: ['j', 'j'],
     isActive: false,
     items: [] // No child items
   }
+  // {
+  //   title: 'React Query',
+  //   url: '#',
+  //   icon: 'logo',
+  //   isActive: true,
+  //   items: [
+  //     {
+  //       title: 'Posts',
+  //       url: '/posts',
+  //       icon: 'post',
+  //       shortcut: ['p', 'o']
+  //     },
+  //     {
+  //       title: 'Profile',
+  //       url: '/profile',
+  //       icon: 'userPen',
+  //       shortcut: ['p', 'r']
+  //     },
+  //     {
+  //       title: 'Todos',
+  //       url: '/todos',
+  //       icon: 'check',
+  //       shortcut: ['t', 'd']
+  //     }
+  //   ]
+  // },
+  // {
+  //   title: 'Account',
+  //   url: '#', // Placeholder as there is no direct link for the parent
+  //   icon: 'billing',
+  //   isActive: false,
+  //   items: [
+  //     {
+  //       title: 'Profile',
+  //       url: '/dashboard/profile',
+  //       icon: 'userPen',
+  //       shortcut: ['m', 'm']
+  //     },
+  //     {
+  //       title: 'Login',
+  //       shortcut: ['l', 'l'],
+  //       url: '/',
+  //       icon: 'login'
+  //     }
+  //   ]
+  // },
+  // {
+  //   title: 'Kanban',
+  //   url: '/dashboard/kanban',
+  //   icon: 'kanban',
+  //   shortcut: ['k', 'k'],
+  //   isActive: false,
+  //   items: [] // No child items
+  // }
 ];
 
 export interface SaleUser {

@@ -1,0 +1,177 @@
+'use client';
+
+import CandidateCard from '@/components/CandidateCard';
+import PageContainer from '@/components/layout/page-container';
+import { Pagination } from '@/components/Pagination';
+import SearchBar from '@/components/SearchBar';
+import { Heading } from '@/components/ui/heading';
+import { Separator } from '@/components/ui/separator';
+import { DataTableSkeleton } from '@/components/ui/table/data-table-skeleton';
+import { DEFAULT_IMAGE } from '@/constants/app.const';
+import { useGetAllCompanies } from '@/hooks/useQuery';
+import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
+export default function AllRecruitersPage() {
+  const searchParams = useSearchParams();
+
+  // Get search parameters from URL
+  const pageParam = searchParams.get('page');
+  const searchQuery = searchParams.get('search');
+  const coordinatesParam = searchParams.get('coordinates');
+
+  const [page, setPage] = useState(pageParam ? parseInt(pageParam) : 1);
+  const [limit] = useState(6);
+  const [search, setSearch] = useState(searchQuery || '');
+  const [coordinates, setCoordinates] = useState<[number, number] | undefined>(
+    coordinatesParam
+      ? (coordinatesParam.split(',').map(Number) as [number, number])
+      : undefined
+  );
+
+  // Update search parameters when URL changes
+  useEffect(() => {
+    const newPage = searchParams.get('page');
+    const newSearch = searchParams.get('search');
+    const newCoordinates = searchParams.get('coordinates');
+
+    if (newPage) setPage(parseInt(newPage));
+
+    // If search param is not in URL, set search to empty string
+    // This ensures the search state is cleared when the param is removed
+    setSearch(newSearch || '');
+
+    // If coordinates param is not in URL, set coordinates to undefined
+    // This ensures the coordinates state is cleared when the param is removed
+    setCoordinates(
+      newCoordinates
+        ? (newCoordinates.split(',').map(Number) as [number, number])
+        : undefined
+    );
+  }, [searchParams]);
+
+  // Create payload with only the required parameters
+  const payload: {
+    page: number;
+    limit: number;
+    search?: string;
+    coordinates?: [number, number];
+    maxDistance?: string;
+  } = {
+    page,
+    limit
+  };
+
+  // Only add search parameters if they are actually set
+  if (search && search !== '') {
+    payload.search = search;
+  }
+
+  if (coordinates) {
+    payload.coordinates = coordinates;
+    payload.maxDistance = '50';
+  }
+
+  // Fetch companies with search parameters
+  const { data, isLoading, isError, refetch } = useGetAllCompanies(payload, {
+    refetchOnWindowFocus: false
+  });
+
+  const companies = data?.data?.allCompanies || [];
+  const pagination = data?.data?.pagination;
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+
+    // Update URL with new page
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('page', newPage.toString());
+    window.history.pushState({}, '', `?${params.toString()}`);
+  };
+
+  // Handle search submission
+  const handleSearch = (params: {
+    search?: string;
+    coordinates?: [number, number];
+    maxDistance?: string;
+  }) => {
+    // Clear search state if not provided or empty
+    if (!params.search || params.search === '') {
+      setSearch('');
+    } else {
+      setSearch(params.search);
+    }
+
+    // Clear coordinates if not provided
+    setCoordinates(params.coordinates);
+
+    // Always reset to first page on new search
+    setPage(1);
+
+    // Force refetch with the new parameters
+    refetch();
+  };
+
+  return (
+    <PageContainer scrollable={true}>
+      <div className='flex flex-1 flex-col space-y-4'>
+        <div className='flex items-start justify-between'>
+          <Heading
+            title='All Recruiters'
+            description='Manage recruiters for your store.'
+          />
+        </div>
+        <Separator />
+
+        {/* Search Bar */}
+        <SearchBar onSearch={handleSearch} className='mb-4' />
+
+        {isLoading ? (
+          <DataTableSkeleton columnCount={5} rowCount={8} filterCount={2} />
+        ) : isError ? (
+          <div className='rounded-md bg-red-50 p-4 text-red-500'>
+            Failed to load recruiters. Please try again.
+          </div>
+        ) : companies.length === 0 ? (
+          <div className='flex flex-col items-center justify-center py-10'>
+            <p className='text-muted-foreground mb-4 text-center'>
+              No recruiters found matching your search criteria.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
+              {companies.map((company) => (
+                <CandidateCard
+                  key={company._id}
+                  candidateImage={
+                    company.companyProfile.profilePicture || DEFAULT_IMAGE
+                  }
+                  candidateName={company.companyProfile.companyName}
+                  candidateProfessional={company.companyProfile.companySize}
+                  candidateLocation={
+                    company.companyProfile.location?.formattedAddress
+                  }
+                  candidateDescription={company.aboutCompany?.description}
+                  link={`/dashboard/company/${company._id}`}
+                  openJobs={company.activeJobs}
+                  isProMember={true}
+                />
+              ))}
+            </div>
+
+            {pagination && (
+              <div className='mt-6 flex justify-center'>
+                <Pagination
+                  currentPage={pagination.currentPage}
+                  totalPages={pagination.pages}
+                  onPageChange={handlePageChange}
+                />
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </PageContainer>
+  );
+}

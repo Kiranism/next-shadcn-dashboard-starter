@@ -5,27 +5,23 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle
 } from '@/components/ui/card';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
-} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useLogin } from '@/hooks/useMutation';
 import { cn } from '@/lib/utils';
+import { useUserStore } from '@/stores/useUserStore';
+import { ILoginRequestDto } from '@/types/mutation.types';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { GitHubLogoIcon } from '@radix-ui/react-icons';
-import { IconStar } from '@tabler/icons-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Eye, EyeOff } from 'lucide-react';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useState } from 'react';
+import { SubmitHandler, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
@@ -42,9 +38,28 @@ const signInSchema = z.object({
 
 type SignInValues = z.infer<typeof signInSchema>;
 
-export default function SignInViewPage({ stars }: { stars: number }) {
+export default function SignInViewPage() {
+  const [showPassword, setShowPassword] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors }
+  } = useForm<ILoginRequestDto>();
   const router = useRouter();
-
+  const queryClient = useQueryClient();
+  const { setToken, setCurrentUser } = useUserStore();
+  const { mutateAsync: login, isPending } = useLogin({
+    onSuccess: (data) => {
+      toast.success('Signed in successfully!');
+      setToken(data.data.token);
+      setCurrentUser(data.data.user);
+      queryClient.invalidateQueries({ queryKey: ['get-current-user'] });
+      router.push('/dashboard/overview');
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to sign in');
+    }
+  });
   // Default values
   const defaultValues: Partial<SignInValues> = {
     email: '',
@@ -56,20 +71,8 @@ export default function SignInViewPage({ stars }: { stars: number }) {
     defaultValues
   });
 
-  const onSubmit = async (data: SignInValues) => {
-    try {
-      // This is where you would normally call your API
-      console.log('Sign in data:', data);
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      toast.success('Signed in successfully!');
-      router.push('/dashboard');
-    } catch (error) {
-      toast.error('Failed to sign in');
-      console.error(error);
-    }
+  const onSubmit: SubmitHandler<ILoginRequestDto> = async (data) => {
+    await login(data);
   };
 
   return (
@@ -100,38 +103,9 @@ export default function SignInViewPage({ stars }: { stars: number }) {
           </svg>
           Logo
         </div>
-        <div className='relative z-20 mt-auto'>
-          <blockquote className='space-y-2'>
-            <p className='text-lg'>
-              &ldquo;This starter template has saved me countless hours of work
-              and helped me deliver projects to my clients faster than ever
-              before.&rdquo;
-            </p>
-            <footer className='text-sm'>Random Dude</footer>
-          </blockquote>
-        </div>
       </div>
       <div className='flex h-full items-center justify-center p-4 lg:p-8'>
         <div className='flex w-full max-w-md flex-col items-center justify-center space-y-6'>
-          {/* github link  */}
-          <Link
-            className={cn('group inline-flex hover:text-yellow-200')}
-            target='_blank'
-            href={'https://github.com/kiranism/next-shadcn-dashboard-starter'}
-          >
-            <div className='flex items-center'>
-              <GitHubLogoIcon className='size-4' />
-              <span className='ml-1 inline'>Star on GitHub</span>{' '}
-            </div>
-            <div className='ml-2 flex items-center gap-1 text-sm md:flex'>
-              <IconStar
-                className='size-4 text-gray-500 transition-all duration-300 group-hover:text-yellow-300'
-                fill='currentColor'
-              />
-              <span className='font-display font-medium'>{stars}</span>
-            </div>
-          </Link>
-
           {/* Custom Sign In Form */}
           <Card className='w-full'>
             <CardHeader>
@@ -141,79 +115,83 @@ export default function SignInViewPage({ stars }: { stars: number }) {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Form {...form}>
-                <form
-                  onSubmit={form.handleSubmit(onSubmit)}
-                  className='space-y-4'
+              <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
+                <div className='space-y-2'>
+                  <Label htmlFor='email' className='text-black-100'>
+                    Email
+                  </Label>
+                  <Input
+                    id='email'
+                    type='email'
+                    className={
+                      'h-12 w-full rounded-full border border-[#737373] px-4'
+                    }
+                    placeholder='Enter your email'
+                    autoComplete='email' // Added autoComplete for email
+                    {...register('email', {
+                      required: 'Email is required',
+                      pattern: {
+                        value: /\S+@\S+\.\S+/,
+                        message: 'Invalid email address'
+                      }
+                    })}
+                  />
+                  {errors.email && (
+                    <p className='text-sm text-red-500'>
+                      {errors.email.message}
+                    </p>
+                  )}
+                </div>
+                <div className='space-y-2'>
+                  <Label htmlFor='password' className='text-black-100'>
+                    Password
+                  </Label>
+                  <div className='relative'>
+                    <Input
+                      id='password'
+                      type={showPassword ? 'text' : 'password'}
+                      className={
+                        'h-12 w-full rounded-full border border-[#737373] px-4'
+                      }
+                      placeholder='Enter your password'
+                      autoComplete='current-password' // Added autoComplete for password
+                      {...register('password', {
+                        required: 'Password is required',
+                        minLength: {
+                          value: 8,
+                          message: 'Password must be at least 8 characters'
+                        }
+                      })}
+                    />
+                    <button
+                      type='button'
+                      onClick={() => setShowPassword(!showPassword)}
+                      className='absolute top-1/2 right-4 -translate-y-1/2 text-gray-500 hover:text-gray-700'
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className='text-sm text-red-500'>
+                      {errors.password.message}
+                    </p>
+                  )}
+                </div>
+                <div className='text-right'>
+                  <Link href={'/forget-password'} className='text-gray-100'>
+                    Forgot Password
+                  </Link>
+                </div>
+                <Button
+                  type='submit'
+                  className='h-[48px] w-full rounded-full bg-orange-600 text-base'
+                  disabled={isPending}
                 >
-                  <FormField
-                    control={form.control}
-                    name='email'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input placeholder='Enter your email' {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name='password'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <Input
-                            type='password'
-                            placeholder='Enter your password'
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <Button type='submit' className='w-full'>
-                    {form.formState.isSubmitting ? 'Signing in...' : 'Sign In'}
-                  </Button>
-                </form>
-              </Form>
+                  {isPending ? 'Logging in...' : 'Log In'}
+                </Button>
+              </form>
             </CardContent>
-            <CardFooter className='flex justify-center'>
-              <p className='text-muted-foreground text-sm'>
-                Don&apos;t have an account?{' '}
-                <Link
-                  href='/auth/sign-up'
-                  className='text-primary hover:underline'
-                >
-                  Sign up
-                </Link>
-              </p>
-            </CardFooter>
           </Card>
-
-          <p className='text-muted-foreground px-8 text-center text-sm'>
-            By clicking continue, you agree to our{' '}
-            <Link
-              href='/terms'
-              className='hover:text-primary underline underline-offset-4'
-            >
-              Terms of Service
-            </Link>{' '}
-            and{' '}
-            <Link
-              href='/privacy'
-              className='hover:text-primary underline underline-offset-4'
-            >
-              Privacy Policy
-            </Link>
-            .
-          </p>
         </div>
       </div>
     </div>

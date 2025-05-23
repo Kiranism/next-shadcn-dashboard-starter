@@ -10,18 +10,23 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { UserAvatarProfile } from '@/components/user-avatar-profile';
+import { useGetCurrentUser } from '@/hooks/useQuery';
 import { useUserStore } from '@/stores/useUserStore';
 import { LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 export function UserNav() {
-  const { user } = useUserStore();
+  const { currentUser } = useUserStore();
+  const { data: userData } = useGetCurrentUser({
+    enabled: !!currentUser
+  });
+  const user = userData?.data;
   const router = useRouter();
   if (user) {
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant='ghost' className='relative h-8 w-8 rounded-full'>
-            <UserAvatarProfile user={user} />
+            <UserAvatarProfile />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
@@ -32,7 +37,12 @@ export function UserNav() {
         >
           <DropdownMenuLabel className='font-normal'>
             <div className='flex flex-col space-y-1'>
-              <p className='text-sm leading-none font-medium'>{user.name}</p>
+              {/* <p className='text-sm leading-none font-medium'>
+                {currentUser?.userProfile.firstName +
+                  ' ' +
+                  currentUser?.userProfile.lastName}
+              </p> */}
+              <p className='text-sm leading-none font-medium'>Admin</p>
               <p className='text-muted-foreground text-xs leading-none'>
                 {user.email}
               </p>
