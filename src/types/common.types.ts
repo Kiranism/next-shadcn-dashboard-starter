@@ -11,6 +11,9 @@ export interface IUser extends IProfileData {
   email: string;
   role: UserRole;
   isActive: boolean;
+  isRestricted?: boolean;
+  proTrialEndsAt?: string;
+  proMembershipEndsAt?: string;
 }
 
 export interface IAuthResponse {

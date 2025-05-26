@@ -145,7 +145,7 @@ export default function AllJobSeekersPage() {
                     jobSeeker.userProfile?.location?.formattedAddress
                   }
                   candidateDescription={jobSeeker.userProfile.shortBio}
-                  link={`/dashboard/profile/${jobSeeker._id}`}
+                  link={`/dashboard/all-jobseekers/${jobSeeker._id}`}
                   isProMember={jobSeeker.userProfile.isProMember}
                 />
               ))}

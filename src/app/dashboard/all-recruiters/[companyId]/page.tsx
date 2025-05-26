@@ -28,6 +28,7 @@ import {
   CardTitle
 } from '@/components/ui/card';
 import { DEFAULT_IMAGE } from '@/constants/app.const';
+import { UserAdminActions } from '@/components/UserAdminActions';
 import Image from 'next/image';
 
 export default function RecruiterDetailPage() {
@@ -39,7 +40,8 @@ export default function RecruiterDetailPage() {
   const {
     data: recruiterData,
     isLoading,
-    isError
+    isError,
+    refetch
   } = useGetRecruiterDetailById(companyId, {
     refetchOnWindowFocus: false
   });
@@ -132,9 +134,19 @@ export default function RecruiterDetailPage() {
                 />
               </div>
               <div className='flex-1'>
-                <h1 className='mb-2 text-2xl font-bold'>
-                  {recruiter.companyProfile.companyName}
-                </h1>
+                <div className='mb-2 flex items-center gap-3'>
+                  <h1 className='text-2xl font-bold'>
+                    {recruiter.companyProfile.companyName}
+                  </h1>
+                  <UserAdminActions
+                    userId={recruiter.user._id}
+                    userEmail={recruiter.user.email}
+                    isActive={recruiter.user.isActive}
+                    isRestricted={recruiter.user.isRestricted}
+                    onUpdate={() => refetch()}
+                    compact={true}
+                  />
+                </div>
                 <div className='text-muted-foreground grid grid-cols-1 gap-4 text-sm md:grid-cols-2'>
                   <div className='flex items-center'>
                     <IconBuilding className='mr-2 h-4 w-4' />
@@ -334,6 +346,22 @@ export default function RecruiterDetailPage() {
                     {format(new Date(recruiter.createdAt), 'MMM dd, yyyy')}
                   </p>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Admin Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Admin Actions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <UserAdminActions
+                  userId={recruiter.user._id}
+                  userEmail={recruiter.user.email}
+                  isActive={recruiter.user.isActive}
+                  isRestricted={recruiter.user.isRestricted}
+                  onUpdate={() => refetch()}
+                />
               </CardContent>
             </Card>
 

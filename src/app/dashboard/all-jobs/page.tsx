@@ -262,19 +262,19 @@ export default function AllJobsPage() {
   };
 
   // Handle job deletion (permanent)
-  const handleDeleteJob = (jobId: string) => {
-    setConfirmModal({
-      isOpen: true,
-      title: 'Permanently Delete Job',
-      description:
-        'Are you sure you want to permanently delete this job? This action cannot be undone.',
-      action: () => {
-        deleteJobMutation.mutate(jobId);
-      },
-      confirmText: 'Delete Permanently',
-      confirmVariant: 'destructive'
-    });
-  };
+  // const handleDeleteJob = (jobId: string) => {
+  //   setConfirmModal({
+  //     isOpen: true,
+  //     title: 'Permanently Delete Job',
+  //     description:
+  //       'Are you sure you want to permanently delete this job? This action cannot be undone.',
+  //     action: () => {
+  //       deleteJobMutation.mutate(jobId);
+  //     },
+  //     confirmText: 'Delete Permanently',
+  //     confirmVariant: 'destructive'
+  //   });
+  // };
 
   // Handle job premium status toggle
   const handleToggleJobPremium = (jobId: string, currentStatus: boolean) => {
@@ -721,7 +721,7 @@ export default function AllJobsPage() {
                             </Tooltip>
                           )}
 
-                          <Tooltip>
+                          {/* <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
                                 variant='destructive'
@@ -732,7 +732,7 @@ export default function AllJobsPage() {
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>Permanently delete</TooltipContent>
-                          </Tooltip>
+                          </Tooltip> */}
                         </div>
                       </TableCell>
                     </TableRow>

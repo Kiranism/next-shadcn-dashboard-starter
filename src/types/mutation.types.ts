@@ -410,3 +410,23 @@ export interface IUpdateJobAdminResponseDto {
   message: string;
   data: IJobData;
 }
+
+// Admin User Update Types
+export interface IUpdateUserAdminRequestDto {
+  isActive?: boolean;
+  isRestricted?: boolean;
+}
+
+export interface IUpdateUserAdminResponseDto {
+  success: boolean;
+  message: string;
+  data: {
+    user: {
+      _id: string;
+      email: string;
+      role: string;
+      isActive: boolean;
+      isRestricted: boolean;
+    };
+  };
+}
