@@ -38,7 +38,9 @@ export const API_ROUTES = {
     UPLOAD_PORTFOLIO: '/portfolio', // Endpoint to upload portfolio
     GET_PROFILE_BY_ID: (profileId: string) => `/profile/${profileId}`, // Dynamic route for getting a profile by ID
     GET_COMPANY_PROFILE_BY_ID: (profileId: string) =>
-      `/company-profile/${profileId}` // Dynamic route for getting a company profile by ID
+      `/company-profile/${profileId}`, // Dynamic route for getting a company profile by ID
+    GET_RECRUITER_DETAIL_BY_ID: (profileId: string) =>
+      `/company-profile/${profileId}` // Dynamic route for getting recruiter detail by ID
   },
   DEV: {
     ENUMS: '/dev/all-enums'

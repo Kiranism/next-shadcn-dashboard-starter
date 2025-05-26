@@ -22,7 +22,8 @@ import {
   getSavedCandidates,
   getSavedJobs,
   getShortlistedApplicants,
-  getAllApplicants
+  getAllApplicants,
+  getRecruiterDetailById
 } from '@/service/query';
 import { ApiError } from '@/types/common.types';
 import {
@@ -49,7 +50,8 @@ import {
   IGetAllApplicantsResponseDto,
   IGetConversationsResponseDto,
   IGetConversationResponseDto,
-  IGetMessagesResponseDto
+  IGetMessagesResponseDto,
+  IGetRecruiterDetailResponseDto
 } from '@/types/query.types';
 
 export function useGetCurrentUser(
@@ -353,6 +355,25 @@ export function useGetCompanyProfileById(
   return useQuery<IGetCompanyProfileResponseDto, ApiError>({
     queryKey: ['get-company-profile-by-id', id],
     queryFn: () => getCompanyProfileById(id),
+    enabled: !!id,
+    ...options
+  });
+}
+
+export function useGetRecruiterDetailById(
+  id: string,
+  options?: Omit<
+    UseQueryOptions<
+      IGetRecruiterDetailResponseDto,
+      ApiError,
+      IGetRecruiterDetailResponseDto
+    >,
+    'queryKey' | 'queryFn'
+  >
+) {
+  return useQuery<IGetRecruiterDetailResponseDto, ApiError>({
+    queryKey: ['get-recruiter-detail-by-id', id],
+    queryFn: () => getRecruiterDetailById(id),
     enabled: !!id,
     ...options
   });

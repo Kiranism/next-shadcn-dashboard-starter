@@ -985,3 +985,99 @@ export interface IGetAllCompaniesResponseDto {
     pagination: IPagination;
   };
 }
+
+// Types for Recruiter Detail Response
+export interface IRecruiterDetailLocation {
+  type: string;
+  coordinates: [number, number];
+  formattedAddress: string;
+  city: string;
+  state: string;
+  country: string;
+}
+
+export interface IRecruiterDetailCompanyProfile {
+  abn: string;
+  companyName: string;
+  foundedDate: string;
+  companySize: string;
+  websiteUrl: string;
+  location: IRecruiterDetailLocation;
+}
+
+export interface IRecruiterDetailEmailNotifications {
+  newApplications: boolean;
+  applicationUpdates: boolean;
+  marketingEmails: boolean;
+}
+
+export interface IRecruiterDetailJobPreferences {
+  autoPublish: boolean;
+  defaultJobDuration: number;
+  defaultApplicationDeadline: number;
+}
+
+export interface IRecruiterDetailSocialNetwork {
+  networkName: string;
+  networkUrl: string;
+  _id: string;
+}
+
+export interface IRecruiterDetailCompanyPhoto {
+  url: string;
+  s3Key: string;
+  uploadedAt: string;
+}
+
+export interface IRecruiterDetailPerkBenefit {
+  benefitName: string;
+  benefitDescription: string;
+  _id: string;
+}
+
+export interface IRecruiterDetailCompanyAchievement {
+  title: string;
+  date: string;
+  eventOrInstitute: string;
+  detail: string;
+  _id: string;
+}
+
+export interface IRecruiterDetailCompanyVideo {
+  url: string;
+  s3Key: string;
+  uploadedAt: string;
+}
+
+export interface IRecruiterDetailAboutCompany {
+  description: string;
+  companyVideo?: IRecruiterDetailCompanyVideo;
+}
+
+export interface IRecruiterDetailUser {
+  _id: string;
+  email: string;
+  role: string;
+}
+
+export interface IRecruiterDetail {
+  _id: string;
+  companyProfile: IRecruiterDetailCompanyProfile;
+  emailNotifications: IRecruiterDetailEmailNotifications;
+  jobPreferences: IRecruiterDetailJobPreferences;
+  socialNetworks: IRecruiterDetailSocialNetwork[];
+  companyPhotos: IRecruiterDetailCompanyPhoto[];
+  perksAndBenefits: IRecruiterDetailPerkBenefit[];
+  companyAchievements: IRecruiterDetailCompanyAchievement[];
+  createdAt: string;
+  updatedAt: string;
+  aboutCompany: IRecruiterDetailAboutCompany;
+  user: IRecruiterDetailUser;
+  activeJobs: number;
+}
+
+export interface IGetRecruiterDetailResponseDto {
+  success: boolean;
+  message: string;
+  data: IRecruiterDetail;
+}

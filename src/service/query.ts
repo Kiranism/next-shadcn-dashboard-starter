@@ -21,7 +21,8 @@ import {
   IShortlistedApplicantsSearchParams,
   IGetShortlistedApplicantsResponseDto,
   IAllApplicantsSearchParams,
-  IGetAllApplicantsResponseDto
+  IGetAllApplicantsResponseDto,
+  IGetRecruiterDetailResponseDto
 } from '@/types/query.types';
 
 export const getCurrentUser = async (): Promise<IGetCurrentUserResponse> => {
@@ -70,6 +71,15 @@ export const getCompanyProfileById = async (
   const route = API_ROUTES.PROFILE.GET_COMPANY_PROFILE_BY_ID(id); // Use the dynamic route function
   const { data } =
     await axiosInstance.get<IGetCompanyProfileResponseDto>(route);
+  return data;
+};
+
+export const getRecruiterDetailById = async (
+  id: string
+): Promise<IGetRecruiterDetailResponseDto> => {
+  const route = API_ROUTES.PROFILE.GET_RECRUITER_DETAIL_BY_ID(id); // Use the dynamic route function
+  const { data } =
+    await axiosInstance.get<IGetRecruiterDetailResponseDto>(route);
   return data;
 };
 export const getRecruitersJobs = async (params?: {

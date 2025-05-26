@@ -143,7 +143,7 @@ export default function AllRecruitersPage() {
                     company.companyProfile.location?.formattedAddress
                   }
                   candidateDescription={company.aboutCompany?.description}
-                  link={`/dashboard/company/${company._id}`}
+                  link={`/dashboard/all-recruiters/${company._id}`}
                   openJobs={company.activeJobs}
                   isProMember={true}
                 />
