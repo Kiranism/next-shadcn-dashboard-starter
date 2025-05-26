@@ -145,16 +145,10 @@ export default function AllJobsPage() {
 
   // Handle search submission
   const handleSearch = (params: {
-    search?: string;
+    search: string;
     coordinates?: [number, number];
-    maxDistance?: string;
   }) => {
-    if (!params.search || params.search === '') {
-      setSearch('');
-    } else {
-      setSearch(params.search);
-    }
-
+    setSearch(params.search || '');
     setCoordinates(params.coordinates);
     setPage(1);
     refetch();
@@ -380,7 +374,9 @@ export default function AllJobsPage() {
         <Separator />
 
         {/* Search Bar */}
-        <SearchBar onSearch={handleSearch} className='mb-4' />
+        <div className='mb-4'>
+          <SearchBar onSearch={handleSearch} />
+        </div>
 
         {/* Filters */}
         <div className='mb-4 flex flex-wrap gap-2'>

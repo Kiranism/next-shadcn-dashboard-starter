@@ -91,24 +91,12 @@ export default function AllRecruitersPage() {
 
   // Handle search submission
   const handleSearch = (params: {
-    search?: string;
+    search: string;
     coordinates?: [number, number];
-    maxDistance?: string;
   }) => {
-    // Clear search state if not provided or empty
-    if (!params.search || params.search === '') {
-      setSearch('');
-    } else {
-      setSearch(params.search);
-    }
-
-    // Clear coordinates if not provided
+    setSearch(params.search || '');
     setCoordinates(params.coordinates);
-
-    // Always reset to first page on new search
     setPage(1);
-
-    // Force refetch with the new parameters
     refetch();
   };
 
@@ -124,7 +112,9 @@ export default function AllRecruitersPage() {
         <Separator />
 
         {/* Search Bar */}
-        <SearchBar onSearch={handleSearch} className='mb-4' />
+        <div className='mb-4'>
+          <SearchBar onSearch={handleSearch} />
+        </div>
 
         {isLoading ? (
           <DataTableSkeleton columnCount={5} rowCount={8} filterCount={2} />
