@@ -23,7 +23,8 @@ import {
   getSavedJobs,
   getShortlistedApplicants,
   getAllApplicants,
-  getRecruiterDetailById
+  getRecruiterDetailById,
+  getJobSeekerProfileById
 } from '@/service/query';
 import { ApiError } from '@/types/common.types';
 import {
@@ -51,7 +52,8 @@ import {
   IGetConversationsResponseDto,
   IGetConversationResponseDto,
   IGetMessagesResponseDto,
-  IGetRecruiterDetailResponseDto
+  IGetRecruiterDetailResponseDto,
+  IGetJobSeekerProfileDetailResponseDto
 } from '@/types/query.types';
 
 export function useGetCurrentUser(
@@ -374,6 +376,25 @@ export function useGetRecruiterDetailById(
   return useQuery<IGetRecruiterDetailResponseDto, ApiError>({
     queryKey: ['get-recruiter-detail-by-id', id],
     queryFn: () => getRecruiterDetailById(id),
+    enabled: !!id,
+    ...options
+  });
+}
+
+export function useGetJobSeekerProfileById(
+  id: string,
+  options?: Omit<
+    UseQueryOptions<
+      IGetJobSeekerProfileDetailResponseDto,
+      ApiError,
+      IGetJobSeekerProfileDetailResponseDto
+    >,
+    'queryKey' | 'queryFn'
+  >
+) {
+  return useQuery<IGetJobSeekerProfileDetailResponseDto, ApiError>({
+    queryKey: ['get-jobseeker-profile-by-id', id],
+    queryFn: () => getJobSeekerProfileById(id),
     enabled: !!id,
     ...options
   });

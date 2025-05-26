@@ -40,6 +40,8 @@ import {
   IUpdateJobSeekerProfileRequestDto,
   IUpdateJobSeekerProfileResponseDto,
   IUpdateJobStatusResponseDto,
+  IUpdateUserAdminRequestDto,
+  IUpdateUserAdminResponseDto,
   IUploadMediaResponseDto,
   IOCRExtractRequestDto,
   IOCRExtractResponseDto
@@ -459,6 +461,19 @@ export const updateJobAdmin = async (
   const { data: response } =
     await axiosInstance.put<IUpdateJobAdminResponseDto>(
       API_ROUTES.ADMIN.UPDATE_JOB(jobId),
+      data
+    );
+  return response;
+};
+
+// Update user with admin privileges
+export const updateUserAdmin = async (
+  userId: string,
+  data: IUpdateUserAdminRequestDto
+): Promise<IUpdateUserAdminResponseDto> => {
+  const { data: response } =
+    await axiosInstance.put<IUpdateUserAdminResponseDto>(
+      API_ROUTES.ADMIN.UPDATE_USER(userId),
       data
     );
   return response;

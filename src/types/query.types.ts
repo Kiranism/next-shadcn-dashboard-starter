@@ -934,6 +934,15 @@ export interface IUserProfile {
 
 export interface IJobSeeker {
   _id: string;
+  user?: {
+    _id: string;
+    email: string;
+    role: string;
+    isActive: boolean;
+    isRestricted?: boolean;
+    proTrialEndsAt?: string;
+    proMembershipEndsAt?: string;
+  };
   jobPreferences: IJobPreference;
   userProfile: IUserProfile;
   skills: string[];
@@ -972,6 +981,15 @@ export interface IAboutCompanyListing {
 
 export interface ICompanyListing {
   _id: string;
+  user?: {
+    _id: string;
+    email: string;
+    role: string;
+    isActive: boolean;
+    isRestricted?: boolean;
+    proTrialEndsAt?: string;
+    proMembershipEndsAt?: string;
+  };
   companyProfile: ICompanyProfileListing;
   aboutCompany: IAboutCompanyListing;
   activeJobs: number;
@@ -1058,6 +1076,10 @@ export interface IRecruiterDetailUser {
   _id: string;
   email: string;
   role: string;
+  isActive: boolean;
+  isRestricted?: boolean;
+  proTrialEndsAt?: string;
+  proMembershipEndsAt?: string;
 }
 
 export interface IRecruiterDetail {
@@ -1080,4 +1102,118 @@ export interface IGetRecruiterDetailResponseDto {
   success: boolean;
   message: string;
   data: IRecruiterDetail;
+}
+
+// Types for JobSeeker Profile Detail Response
+export interface IJobSeekerProfileDetailLocation {
+  type: string;
+  coordinates: [number, number];
+  formattedAddress: string;
+  city: string;
+  state: string;
+  country: string;
+}
+
+export interface IJobSeekerProfileDetailJobPreferences {
+  jobType: string;
+  jobCategory: string[];
+  salaryRangeStart: number;
+  salaryRangeEnd: number;
+  location: IJobSeekerProfileDetailLocation;
+}
+
+export interface IJobSeekerProfileDetailUserProfile {
+  firstName: string;
+  lastName: string;
+  phoneNo: string;
+  shortBio: string;
+  isProMember?: boolean;
+}
+
+export interface IJobSeekerProfileDetailNotificationSettings {
+  desktopNotification: boolean;
+  emailNotification: boolean;
+  jobAlerts: boolean;
+  applicationStatusUpdates: boolean;
+  announcementsAndUpdates: boolean;
+}
+
+export interface IJobSeekerProfileDetailExperience {
+  _id: string;
+  organizationName: string;
+  designation: string;
+  startDate: string;
+  endDate?: string;
+  isPresent: boolean;
+  jobDetails: string;
+}
+
+export interface IJobSeekerProfileDetailCertificate {
+  _id: string;
+  instituteName: string;
+  certificate: string;
+}
+
+export interface IJobSeekerProfileDetailAcademicExperience {
+  _id: string;
+  instituteName: string;
+  startDate: string;
+  endDate?: string;
+  degree: string;
+}
+
+export interface IJobSeekerProfileDetailAchievement {
+  _id: string;
+  title: string;
+}
+
+export interface IJobSeekerProfileDetailCvAttachment {
+  cvUrl: string;
+  cvName: string;
+  uploadedDate: string;
+  s3Key: string;
+  mimeType: string;
+  fileSize: number;
+  isActive: boolean;
+}
+
+export interface IJobSeekerProfileDetailSocialNetwork {
+  _id: string;
+  networkName: string;
+  networkUrl: string;
+}
+
+export interface IJobSeekerProfileDetailUser {
+  _id: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  isRestricted?: boolean;
+  proTrialEndsAt?: string;
+  proMembershipEndsAt?: string;
+}
+
+export interface IJobSeekerProfileDetail {
+  _id: string;
+  user: IJobSeekerProfileDetailUser;
+  skills: string[];
+  jobPreferences: IJobSeekerProfileDetailJobPreferences;
+  userProfile: IJobSeekerProfileDetailUserProfile;
+  notificationSettings: IJobSeekerProfileDetailNotificationSettings;
+  experiences: IJobSeekerProfileDetailExperience[];
+  certificates: IJobSeekerProfileDetailCertificate[];
+  academicExperiences: IJobSeekerProfileDetailAcademicExperience[];
+  achievements: IJobSeekerProfileDetailAchievement[];
+  portFolioImages: any[];
+  cvAttachments: IJobSeekerProfileDetailCvAttachment[];
+  socialNetworks: IJobSeekerProfileDetailSocialNetwork[];
+  createdAt: string;
+  updatedAt: string;
+  isSaved: boolean;
+}
+
+export interface IGetJobSeekerProfileDetailResponseDto {
+  success: boolean;
+  message: string;
+  data: IJobSeekerProfileDetail;
 }

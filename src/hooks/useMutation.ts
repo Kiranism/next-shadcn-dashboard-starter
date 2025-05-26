@@ -18,7 +18,8 @@ import {
   updateJob,
   updateJobAdmin,
   updateJobSeekerProfile,
-  updateJobStatus
+  updateJobStatus,
+  updateUserAdmin
 } from '@/service/mutation';
 import { ApiError } from '@/types/common.types';
 import {
@@ -39,7 +40,9 @@ import {
   IUpdateJobAdminResponseDto,
   IUpdateJobSeekerProfileRequestDto,
   IUpdateJobSeekerProfileResponseDto,
-  IUpdateJobStatusResponseDto
+  IUpdateJobStatusResponseDto,
+  IUpdateUserAdminRequestDto,
+  IUpdateUserAdminResponseDto
 } from '@/types/mutation.types';
 
 import {
@@ -478,6 +481,39 @@ export function useToggleJobActive(
       toast.error(
         error.response?.data?.message || 'Failed to update job active status'
       );
+    },
+    ...options
+  });
+}
+
+export function useUpdateUserAdmin(
+  options?: UseMutationOptions<
+    IUpdateUserAdminResponseDto,
+    ApiError,
+    { userId: string; data: IUpdateUserAdminRequestDto }
+  >
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    IUpdateUserAdminResponseDto,
+    ApiError,
+    { userId: string; data: IUpdateUserAdminRequestDto }
+  >({
+    mutationFn: ({ userId, data }) => updateUserAdmin(userId, data),
+    onSuccess: (data, variables) => {
+      toast.success(data.message || 'User updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['get-all-jobseekers'] });
+      queryClient.invalidateQueries({ queryKey: ['get-all-companies'] });
+      queryClient.invalidateQueries({
+        queryKey: ['get-jobseeker-profile-by-id', variables.userId]
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['get-recruiter-detail-by-id', variables.userId]
+      });
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to update user');
     },
     ...options
   });

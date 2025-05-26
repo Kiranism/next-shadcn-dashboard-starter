@@ -14,12 +14,14 @@ interface SearchBarProps {
     search: string;
     coordinates?: [number, number];
   }) => void;
+  onClear?: () => void;
   initialSearch?: string;
   initialLocation?: string;
 }
 
 const SearchBar = ({
   onSearch,
+  onClear,
   initialSearch = '',
   initialLocation = ''
 }: SearchBarProps) => {
@@ -46,6 +48,10 @@ const SearchBar = ({
 
   useEffect(() => {
     setLocationValue(initialLocation);
+    // Reset location state when initialLocation changes
+    if (!initialLocation) {
+      setLocation(null);
+    }
   }, [initialLocation, setLocationValue]);
 
   const handleLocationSelect = async (address: string) => {
@@ -113,15 +119,16 @@ const SearchBar = ({
     onSearch(searchParams);
   };
 
-  // Clear all search inputs
   const handleClearAll = () => {
     setSearchTerm('');
     setLocationValue('');
     setLocation(null);
     clearSuggestions();
 
-    // Submit the form with empty values to clear the search
-    onSearch({ search: '' });
+    // Call parent's onClear if provided
+    if (onClear) {
+      onClear();
+    }
   };
 
   // Check if any search is active
@@ -161,7 +168,13 @@ const SearchBar = ({
             <button
               type='button'
               className='absolute right-3'
-              onClick={() => setSearchTerm('')}
+              onClick={() => {
+                setSearchTerm('');
+                // If both search and location are cleared, call parent's onClear
+                if (!locationValue && onClear) {
+                  onClear();
+                }
+              }}
               aria-label='Clear search'
             >
               <svg
@@ -218,7 +231,10 @@ const SearchBar = ({
                 setLocationValue('');
                 setLocation(null);
                 clearSuggestions();
-                handleClearAll();
+                // If both search and location are cleared, call parent's onClear
+                if (!searchTerm && onClear) {
+                  onClear();
+                }
               }}
               aria-label='Clear location'
             >
@@ -253,6 +269,15 @@ const SearchBar = ({
           )}
         </div>
         <div className='flex flex-grow justify-end gap-2'>
+          {(searchTerm || locationValue) && (
+            <button
+              type='button'
+              onClick={handleClearAll}
+              className='rounded-full border border-gray-300 bg-white px-4 py-3 font-medium text-gray-600 transition-colors duration-200 hover:bg-gray-50'
+            >
+              Clear All
+            </button>
+          )}
           <SearchButton text='Search' />
         </div>
       </div>

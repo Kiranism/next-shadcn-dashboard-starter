@@ -9,11 +9,13 @@ import { Separator } from '@/components/ui/separator';
 import { DataTableSkeleton } from '@/components/ui/table/data-table-skeleton';
 import { DEFAULT_IMAGE } from '@/constants/app.const';
 import { useGetAllJobSeekers } from '@/hooks/useQuery';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
 
 export default function AllJobSeekersPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   // Get search parameters from URL
   const pageParam = searchParams.get('page');
@@ -73,7 +75,7 @@ export default function AllJobSeekersPage() {
   }
 
   // Fetch job seekers with search parameters
-  const { data, isLoading, isError, refetch } = useGetAllJobSeekers(payload, {
+  const { data, isLoading, isError } = useGetAllJobSeekers(payload, {
     refetchOnWindowFocus: false
   });
 
@@ -97,7 +99,32 @@ export default function AllJobSeekersPage() {
     setSearch(params.search || '');
     setCoordinates(params.coordinates);
     setPage(1);
-    refetch();
+
+    // Update URL with search parameters
+    const urlParams = new URLSearchParams();
+    urlParams.set('page', '1');
+
+    if (params.search && params.search.trim() !== '') {
+      urlParams.set('search', params.search.trim());
+    }
+
+    if (params.coordinates) {
+      urlParams.set('coordinates', params.coordinates.join(','));
+    }
+
+    router.push(`?${urlParams.toString()}`);
+  };
+
+  // Handle clear search filters
+  const handleClearSearch = () => {
+    setSearch('');
+    setCoordinates(undefined);
+    setPage(1);
+
+    // Update URL to remove search parameters
+    const urlParams = new URLSearchParams();
+    urlParams.set('page', '1');
+    router.push(`?${urlParams.toString()}`);
   };
 
   return (
@@ -112,8 +139,25 @@ export default function AllJobSeekersPage() {
         <Separator />
 
         {/* Search Bar */}
-        <div className='mb-4'>
-          <SearchBar onSearch={handleSearch} />
+        <div className='mb-4 space-y-4'>
+          <SearchBar
+            onSearch={handleSearch}
+            initialSearch={search}
+            initialLocation={
+              coordinates ? `${coordinates[1]},${coordinates[0]}` : ''
+            }
+          />
+          {(search || coordinates) && (
+            <div className='flex justify-center'>
+              <Button
+                onClick={handleClearSearch}
+                variant='outline'
+                className='px-6'
+              >
+                Clear Search Filters
+              </Button>
+            </div>
+          )}
         </div>
 
         {isLoading ? (
@@ -145,7 +189,7 @@ export default function AllJobSeekersPage() {
                     jobSeeker.userProfile?.location?.formattedAddress
                   }
                   candidateDescription={jobSeeker.userProfile.shortBio}
-                  link={`/dashboard/profile/${jobSeeker._id}`}
+                  link={`/dashboard/all-jobseekers/${jobSeeker._id}`}
                   isProMember={jobSeeker.userProfile.isProMember}
                 />
               ))}

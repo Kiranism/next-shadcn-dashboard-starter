@@ -40,7 +40,8 @@ export const API_ROUTES = {
     GET_COMPANY_PROFILE_BY_ID: (profileId: string) =>
       `/company-profile/${profileId}`, // Dynamic route for getting a company profile by ID
     GET_RECRUITER_DETAIL_BY_ID: (profileId: string) =>
-      `/company-profile/${profileId}` // Dynamic route for getting recruiter detail by ID
+      `/company-profile/${profileId}`, // Dynamic route for getting recruiter detail by ID
+    GET_JOBSEEKER_PROFILE_BY_ID: (profileId: string) => `/profile/${profileId}` // Dynamic route for getting jobseeker profile by ID
   },
   DEV: {
     ENUMS: '/dev/all-enums'
@@ -92,6 +93,7 @@ export const API_ROUTES = {
     GET_USERS: '/users/'
   },
   ADMIN: {
-    UPDATE_JOB: (jobId: string) => `/admin/job/${jobId}`
+    UPDATE_JOB: (jobId: string) => `/admin/job/${jobId}`,
+    UPDATE_USER: (userId: string) => `/admin/user/${userId}`
   }
 } as const;
