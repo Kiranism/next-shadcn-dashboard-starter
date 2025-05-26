@@ -103,13 +103,38 @@ export default function AllJobsPage() {
   };
 
   // Fetch jobs with search parameters
-  const { data, isLoading, isError, refetch } = useGetAllJobs(payload, {
+  const { data, isLoading, isError } = useGetAllJobs(payload, {
     refetchOnWindowFocus: false
   });
 
   // Extract jobs and pagination from response
   const jobs = data?.data?.allJobs || [];
   const pagination = data?.data?.pagination;
+
+  // Update search parameters when URL changes (for browser back/forward)
+  useEffect(() => {
+    const newPage = searchParams.get('page');
+    const newSearch = searchParams.get('search');
+    const newCoordinates = searchParams.get('coordinates');
+    const newJobType = searchParams.get('jobType');
+    const newExperienceLevel = searchParams.get('experienceLevel');
+    const newQualification = searchParams.get('qualification');
+    const newCareerLevel = searchParams.get('careerLevel');
+    const newSalaryType = searchParams.get('salaryType');
+
+    if (newPage) setPage(parseInt(newPage));
+    setSearch(newSearch || '');
+    setCoordinates(
+      newCoordinates
+        ? (newCoordinates.split(',').map(Number) as [number, number])
+        : undefined
+    );
+    setJobType(newJobType || '');
+    setExperienceLevel(newExperienceLevel || '');
+    setQualification(newQualification || '');
+    setCareerLevel(newCareerLevel || '');
+    setSalaryType(newSalaryType || '');
+  }, [searchParams]);
 
   // Update URL when search parameters change
   useEffect(() => {
@@ -151,7 +176,49 @@ export default function AllJobsPage() {
     setSearch(params.search || '');
     setCoordinates(params.coordinates);
     setPage(1);
-    refetch();
+
+    // Update URL with search parameters
+    const urlParams = new URLSearchParams();
+    urlParams.set('page', '1');
+
+    if (params.search && params.search.trim() !== '') {
+      urlParams.set('search', params.search.trim());
+    }
+
+    if (params.coordinates) {
+      urlParams.set('coordinates', params.coordinates.join(','));
+    }
+
+    router.push(`?${urlParams.toString()}`);
+  };
+
+  // Handle clear search filters
+  const handleClearSearch = () => {
+    setSearch('');
+    setCoordinates(undefined);
+    setPage(1);
+
+    // Update URL to remove search parameters but preserve other filters
+    const urlParams = new URLSearchParams();
+
+    // Only set page if it's not 1
+    if (page !== 1) urlParams.set('page', '1');
+
+    // Preserve existing filter parameters
+    if (jobType && jobType !== 'all') urlParams.set('jobType', jobType);
+    if (experienceLevel && experienceLevel !== 'all')
+      urlParams.set('experienceLevel', experienceLevel);
+    if (qualification && qualification !== 'all')
+      urlParams.set('qualification', qualification);
+    if (careerLevel && careerLevel !== 'all')
+      urlParams.set('careerLevel', careerLevel);
+    if (salaryType && salaryType !== 'all')
+      urlParams.set('salaryType', salaryType);
+
+    const queryString = urlParams.toString();
+    router.push(queryString ? `?${queryString}` : '/dashboard/all-jobs', {
+      scroll: false
+    });
   };
 
   // Handle filter changes
@@ -186,6 +253,37 @@ export default function AllJobsPage() {
     setQualification('');
     setCareerLevel('');
     setSalaryType('');
+    setPage(1);
+
+    // Update URL to remove filter parameters but preserve search parameters
+    const urlParams = new URLSearchParams();
+
+    // Only set page if it's not 1
+    if (page !== 1) urlParams.set('page', '1');
+
+    // Preserve existing search parameters
+    if (search && search.trim() !== '') urlParams.set('search', search.trim());
+    if (coordinates) urlParams.set('coordinates', coordinates.join(','));
+
+    const queryString = urlParams.toString();
+    router.push(queryString ? `?${queryString}` : '/dashboard/all-jobs', {
+      scroll: false
+    });
+  };
+
+  // Clear all search and filters
+  const clearAllSearchAndFilters = () => {
+    setSearch('');
+    setCoordinates(undefined);
+    setJobType('');
+    setExperienceLevel('');
+    setQualification('');
+    setCareerLevel('');
+    setSalaryType('');
+    setPage(1);
+
+    // Navigate to clean URL
+    router.push('/dashboard/all-jobs', { scroll: false });
   };
 
   // Modal state
@@ -212,35 +310,15 @@ export default function AllJobsPage() {
   });
 
   // Set up mutations for job status update and deletion
-  const toggleJobActiveMutation = useToggleJobActive({
-    onSuccess: () => {
-      refetch();
-    }
-  });
+  const toggleJobActiveMutation = useToggleJobActive();
 
-  const deleteJobMutation = useDeleteJob({
-    onSuccess: () => {
-      refetch();
-    }
-  });
+  // const deleteJobMutation = useDeleteJob();
 
-  const toggleJobPremiumMutation = useToggleJobPremium({
-    onSuccess: () => {
-      refetch();
-    }
-  });
+  const toggleJobPremiumMutation = useToggleJobPremium();
 
-  const toggleJobBoostedMutation = useToggleJobBoosted({
-    onSuccess: () => {
-      refetch();
-    }
-  });
+  const toggleJobBoostedMutation = useToggleJobBoosted();
 
-  const toggleJobDeletedMutation = useToggleJobDeleted({
-    onSuccess: () => {
-      refetch();
-    }
-  });
+  const toggleJobDeletedMutation = useToggleJobDeleted();
 
   // Handle job status toggle
   const handleToggleJobStatus = (jobId: string, currentStatus: boolean) => {
@@ -374,8 +452,26 @@ export default function AllJobsPage() {
         <Separator />
 
         {/* Search Bar */}
-        <div className='mb-4'>
-          <SearchBar onSearch={handleSearch} />
+        <div className='mb-4 space-y-4'>
+          <SearchBar
+            onSearch={handleSearch}
+            onClear={clearAllSearchAndFilters}
+            initialSearch={search}
+            initialLocation={
+              coordinates ? `${coordinates[1]},${coordinates[0]}` : ''
+            }
+          />
+          {(search || coordinates) && (
+            <div className='flex justify-center'>
+              <Button
+                onClick={handleClearSearch}
+                variant='outline'
+                className='px-6'
+              >
+                Clear Search Filters
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Filters */}
