@@ -52,6 +52,14 @@ export const navItems: NavItem[] = [
     shortcut: ['j', 'j'],
     isActive: false,
     items: [] // No child items
+  },
+  {
+    title: 'Admin Settings',
+    url: '/dashboard/admin-settings',
+    icon: 'settings',
+    shortcut: ['A', 'S'],
+    isActive: false,
+    items: [] // No child items
   }
   // {
   //   title: 'React Query',

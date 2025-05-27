@@ -19,7 +19,8 @@ import {
   updateJobAdmin,
   updateJobSeekerProfile,
   updateJobStatus,
-  updateUserAdmin
+  updateUserAdmin,
+  updateAdminSettings
 } from '@/service/mutation';
 import { ApiError } from '@/types/common.types';
 import {
@@ -42,7 +43,9 @@ import {
   IUpdateJobSeekerProfileResponseDto,
   IUpdateJobStatusResponseDto,
   IUpdateUserAdminRequestDto,
-  IUpdateUserAdminResponseDto
+  IUpdateUserAdminResponseDto,
+  IUpdateAdminSettingsRequestDto,
+  IUpdateAdminSettingsResponseDto
 } from '@/types/mutation.types';
 
 import {
@@ -514,6 +517,37 @@ export function useUpdateUserAdmin(
     },
     onError: (error) => {
       toast.error(error.response?.data?.message || 'Failed to update user');
+    },
+    ...options
+  });
+}
+
+export function useUpdateAdminSettings(
+  options?: Omit<
+    UseMutationOptions<
+      IUpdateAdminSettingsResponseDto,
+      ApiError,
+      IUpdateAdminSettingsRequestDto
+    >,
+    'mutationFn'
+  >
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    IUpdateAdminSettingsResponseDto,
+    ApiError,
+    IUpdateAdminSettingsRequestDto
+  >({
+    mutationFn: updateAdminSettings,
+    onSuccess: (data) => {
+      toast.success(data.message || 'Admin settings updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['get-admin-settings'] });
+    },
+    onError: (error) => {
+      toast.error(
+        error.response?.data?.message || 'Failed to update admin settings'
+      );
     },
     ...options
   });

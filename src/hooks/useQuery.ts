@@ -24,7 +24,8 @@ import {
   getShortlistedApplicants,
   getAllApplicants,
   getRecruiterDetailById,
-  getJobSeekerProfileById
+  getJobSeekerProfileById,
+  getAdminSettings
 } from '@/service/query';
 import { ApiError } from '@/types/common.types';
 import {
@@ -53,7 +54,8 @@ import {
   IGetConversationResponseDto,
   IGetMessagesResponseDto,
   IGetRecruiterDetailResponseDto,
-  IGetJobSeekerProfileDetailResponseDto
+  IGetJobSeekerProfileDetailResponseDto,
+  IGetAdminSettingsResponseDto
 } from '@/types/query.types';
 
 export function useGetCurrentUser(
@@ -432,6 +434,23 @@ export function useGetAllApplicants(
   return useQuery<IGetAllApplicantsResponseDto, ApiError>({
     queryKey: ['get-all-applicants', params],
     queryFn: () => getAllApplicants(params),
+    ...options
+  });
+}
+
+export function useGetAdminSettings(
+  options?: Omit<
+    UseQueryOptions<
+      IGetAdminSettingsResponseDto,
+      ApiError,
+      IGetAdminSettingsResponseDto
+    >,
+    'queryKey' | 'queryFn'
+  >
+) {
+  return useQuery<IGetAdminSettingsResponseDto, ApiError>({
+    queryKey: ['get-admin-settings'],
+    queryFn: getAdminSettings,
     ...options
   });
 }

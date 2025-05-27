@@ -430,3 +430,19 @@ export interface IUpdateUserAdminResponseDto {
     };
   };
 }
+
+export interface IUpdateAdminSettingsRequestDto {
+  FeaturedJobPricePerWeek?: number;
+  ProMemberPricePerWeek?: number;
+  TrialEndsAt?: string;
+}
+
+export interface IUpdateAdminSettingsResponseDto {
+  success: boolean;
+  message: string;
+  data: {
+    FeaturedJobPricePerWeek: number;
+    ProMemberPricePerWeek: number;
+    TrialEndsAt: string;
+  };
+}

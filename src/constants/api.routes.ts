@@ -94,6 +94,8 @@ export const API_ROUTES = {
   },
   ADMIN: {
     UPDATE_JOB: (jobId: string) => `/admin/job/${jobId}`,
-    UPDATE_USER: (userId: string) => `/admin/user/${userId}`
+    UPDATE_USER: (userId: string) => `/admin/user/${userId}`,
+    SETTINGS: '/admin-settings/',
+    UPDATE_SETTINGS: '/admin-settings/'
   }
 } as const;

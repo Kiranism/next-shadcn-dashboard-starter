@@ -23,7 +23,8 @@ import {
   IAllApplicantsSearchParams,
   IGetAllApplicantsResponseDto,
   IGetRecruiterDetailResponseDto,
-  IGetJobSeekerProfileDetailResponseDto
+  IGetJobSeekerProfileDetailResponseDto,
+  IGetAdminSettingsResponseDto
 } from '@/types/query.types';
 
 export const getCurrentUser = async (): Promise<IGetCurrentUserResponse> => {
@@ -395,3 +396,12 @@ export const getAllApplicants = async (
   );
   return data;
 };
+
+// Get admin settings
+export const getAdminSettings =
+  async (): Promise<IGetAdminSettingsResponseDto> => {
+    const { data } = await axiosInstance.get<IGetAdminSettingsResponseDto>(
+      API_ROUTES.ADMIN.SETTINGS
+    );
+    return data;
+  };

@@ -307,7 +307,7 @@ export default function JobDetailPage() {
         confirmText={confirmModal.confirmText}
         confirmVariant={confirmModal.confirmVariant}
       />
-      <div className='flex flex-col space-y-6'>
+      <div className='flex w-full flex-col space-y-6'>
         <div className='flex items-center justify-between'>
           <div className='flex items-center'>
             <Button variant='ghost' onClick={goBack} className='mr-4'>
@@ -319,7 +319,7 @@ export default function JobDetailPage() {
               description={`Posted by ${job.recruiterProfile.companyName}`}
             />
           </div>
-          <div className='flex gap-2'>
+          <div className='ml-auto flex gap-2'>
             <Button
               variant={job.isJobActive ? 'destructive' : 'default'}
               onClick={handleToggleJobStatus}

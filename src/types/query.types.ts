@@ -1217,3 +1217,18 @@ export interface IGetJobSeekerProfileDetailResponseDto {
   message: string;
   data: IJobSeekerProfileDetail;
 }
+
+// Admin Settings Types
+export interface IAdminSettings {
+  _id: string;
+  FeaturedJobPricePerWeek: number;
+  ProMemberPricePerWeek: number;
+  TrialEndsAt: string;
+  __v: number;
+}
+
+export interface IGetAdminSettingsResponseDto {
+  success: boolean;
+  message: string;
+  data: IAdminSettings;
+}

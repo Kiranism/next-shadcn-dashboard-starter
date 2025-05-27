@@ -44,7 +44,9 @@ import {
   IUpdateUserAdminResponseDto,
   IUploadMediaResponseDto,
   IOCRExtractRequestDto,
-  IOCRExtractResponseDto
+  IOCRExtractResponseDto,
+  IUpdateAdminSettingsRequestDto,
+  IUpdateAdminSettingsResponseDto
 } from '@/types/mutation.types';
 import {
   ICreateJobRequestDto,
@@ -474,6 +476,17 @@ export const updateUserAdmin = async (
   const { data: response } =
     await axiosInstance.put<IUpdateUserAdminResponseDto>(
       API_ROUTES.ADMIN.UPDATE_USER(userId),
+      data
+    );
+  return response;
+};
+
+export const updateAdminSettings = async (
+  data: IUpdateAdminSettingsRequestDto
+): Promise<IUpdateAdminSettingsResponseDto> => {
+  const { data: response } =
+    await axiosInstance.put<IUpdateAdminSettingsResponseDto>(
+      API_ROUTES.ADMIN.UPDATE_SETTINGS,
       data
     );
   return response;
