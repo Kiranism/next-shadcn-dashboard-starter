@@ -47,8 +47,12 @@ import { Icons } from '../icons';
 import { OrgSwitcher } from '../org-switcher';
 import { LogOut } from 'lucide-react';
 import { useUserStore } from '@/stores/useUserStore';
+import { useLoader } from '@/hooks/useLoader';
+import { useLogout } from '@/hooks/useMutation';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 export const company = {
-  name: 'Acme Inc',
+  name: 'Yes job',
   logo: IconPhotoUp,
   plan: 'Enterprise'
 };
@@ -61,15 +65,44 @@ const tenants = [
 
 export default function AppSidebar() {
   const pathname = usePathname();
+  const queryClient = useQueryClient();
   const { isOpen } = useMediaQuery();
   const router = useRouter();
-  const { currentUser } = useUserStore();
+  const { currentUser, logout: clearStore } = useUserStore();
+  const { showLoader, hideLoader } = useLoader();
+
   const handleSwitchTenant = (_tenantId: string) => {
     // Tenant switching functionality would be implemented here
   };
 
-  const activeTenant = tenants[0];
+  const { mutate: logout } = useLogout({
+    onSuccess: () => {
+      clearStore();
+      queryClient.clear();
+      toast.success('Logged out successfully', {
+        description: 'You have been logged out of your account.'
+      });
 
+      setTimeout(() => {
+        hideLoader();
+        router.push('/auth/sign-in');
+      }, 1500);
+    },
+    onError: (error) => {
+      hideLoader();
+      toast.error('Logout failed', {
+        description:
+          error.response?.data?.message ||
+          'Something went wrong. Please try again.'
+      });
+    }
+  });
+
+  const activeTenant = tenants[0];
+  const handleLogout = () => {
+    showLoader('Logging you out...');
+    logout();
+  };
   React.useEffect(() => {
     // Side effects based on sidebar state changes
   }, [isOpen]);
@@ -179,7 +212,7 @@ export default function AppSidebar() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
 
-                <DropdownMenuGroup>
+                {/* <DropdownMenuGroup>
                   <DropdownMenuItem
                     onClick={() => router.push('/dashboard/profile')}
                   >
@@ -194,9 +227,9 @@ export default function AppSidebar() {
                     <IconBell className='mr-2 h-4 w-4' />
                     Notifications
                   </DropdownMenuItem>
-                </DropdownMenuGroup>
+                </DropdownMenuGroup> */}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>
                   <IconLogout className='mr-2 h-4 w-4' />
                   <LogOut className='mr-2 h-4 w-4' />
                 </DropdownMenuItem>

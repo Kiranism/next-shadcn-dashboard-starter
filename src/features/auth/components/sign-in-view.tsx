@@ -54,7 +54,7 @@ export default function SignInViewPage() {
       setToken(data.data.token);
       setCurrentUser(data.data.user);
       queryClient.invalidateQueries({ queryKey: ['get-current-user'] });
-      router.push('/dashboard/overview');
+      router.push('/dashboard/all-jobs');
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to sign in');
