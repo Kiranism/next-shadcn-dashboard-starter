@@ -7,7 +7,10 @@ import type { User, BonusTransaction } from '../types';
 /**
  * Валидация данных пользователя перед сохранением
  */
-export function validateUserData(user: Partial<User>): { isValid: boolean; errors: string[] } {
+export function validateUserData(user: Partial<User>): {
+  isValid: boolean;
+  errors: string[];
+} {
   const errors: string[] = [];
 
   if (!user.name || user.name.trim().length < 2) {
@@ -35,14 +38,20 @@ export function validateUserData(user: Partial<User>): { isValid: boolean; error
 /**
  * Валидация транзакции
  */
-export function validateTransaction(transaction: Partial<BonusTransaction>): { isValid: boolean; errors: string[] } {
+export function validateTransaction(transaction: Partial<BonusTransaction>): {
+  isValid: boolean;
+  errors: string[];
+} {
   const errors: string[] = [];
 
   if (!transaction.userId) {
     errors.push('ID пользователя обязателен');
   }
 
-  if (!transaction.type || !['EARN', 'SPEND', 'EXPIRE', 'ADMIN_ADJUST'].includes(transaction.type)) {
+  if (
+    !transaction.type ||
+    !['EARN', 'SPEND', 'EXPIRE', 'ADMIN_ADJUST'].includes(transaction.type)
+  ) {
     errors.push('Некорректный тип транзакции');
   }
 
@@ -69,17 +78,17 @@ export function validateTransaction(transaction: Partial<BonusTransaction>): { i
  * Безопасная операция с числами (избегание проблем с плавающей точкой)
  */
 export function safeNumberOperation(
-  a: number, 
-  b: number, 
+  a: number,
+  b: number,
   operation: 'add' | 'subtract' | 'multiply' | 'divide'
 ): number {
   const factor = 100; // Работаем с копейками для избежания проблем с float
-  
+
   const aInt = Math.round(a * factor);
   const bInt = Math.round(b * factor);
-  
+
   let result: number;
-  
+
   switch (operation) {
     case 'add':
       result = aInt + bInt;
@@ -97,7 +106,7 @@ export function safeNumberOperation(
     default:
       throw new Error('Unknown operation');
   }
-  
+
   return Math.round(result) / factor;
 }
 
@@ -106,20 +115,20 @@ export function safeNumberOperation(
  */
 export class OperationLimiter {
   private operations: Map<string, number[]> = new Map();
-  
+
   constructor(
     private maxOperationsPerHour: number = 100,
     private maxOperationsPerDay: number = 1000
   ) {}
-  
+
   canPerformOperation(userId: string): { allowed: boolean; reason?: string } {
     const now = Date.now();
     const userOps = this.operations.get(userId) || [];
-    
+
     // Очищаем старые операции (старше 24 часов)
     const dayAgo = now - 24 * 60 * 60 * 1000;
-    const recentOps = userOps.filter(timestamp => timestamp > dayAgo);
-    
+    const recentOps = userOps.filter((timestamp) => timestamp > dayAgo);
+
     // Проверяем лимит за день
     if (recentOps.length >= this.maxOperationsPerDay) {
       return {
@@ -127,21 +136,21 @@ export class OperationLimiter {
         reason: 'Превышен дневной лимит операций'
       };
     }
-    
+
     // Проверяем лимит за час
     const hourAgo = now - 60 * 60 * 1000;
-    const hourlyOps = recentOps.filter(timestamp => timestamp > hourAgo);
-    
+    const hourlyOps = recentOps.filter((timestamp) => timestamp > hourAgo);
+
     if (hourlyOps.length >= this.maxOperationsPerHour) {
       return {
         allowed: false,
         reason: 'Превышен часовой лимит операций'
       };
     }
-    
+
     return { allowed: true };
   }
-  
+
   recordOperation(userId: string): void {
     const userOps = this.operations.get(userId) || [];
     userOps.push(Date.now());
@@ -168,7 +177,7 @@ export class AuditLogger {
       userAgent: typeof window !== 'undefined' ? navigator.userAgent : 'server',
       ip: 'hidden' // В реальном приложении здесь был бы IP
     };
-    
+
     // В продакшене здесь была бы отправка в систему логирования
     console.log('AUDIT LOG:', logEntry);
   }
@@ -179,39 +188,40 @@ export class AuditLogger {
  */
 export class SimpleCache<T> {
   private cache: Map<string, { data: T; expiry: number }> = new Map();
-  
+
   constructor(private defaultTTL: number = 5 * 60 * 1000) {} // 5 минут по умолчанию
-  
+
   set(key: string, value: T, ttl?: number): void {
     const expiry = Date.now() + (ttl || this.defaultTTL);
     this.cache.set(key, { data: value, expiry });
   }
-  
+
   get(key: string): T | null {
     const entry = this.cache.get(key);
-    
+
     if (!entry) return null;
-    
+
     if (Date.now() > entry.expiry) {
       this.cache.delete(key);
       return null;
     }
-    
+
     return entry.data;
   }
-  
+
   delete(key: string): void {
     this.cache.delete(key);
   }
-  
+
   clear(): void {
     this.cache.clear();
   }
-  
+
   // Очистка истекших записей
   cleanup(): void {
     const now = Date.now();
-    for (const [key, entry] of this.cache.entries()) {
+    const entries = Array.from(this.cache.entries());
+    for (const [key, entry] of entries) {
       if (now > entry.expiry) {
         this.cache.delete(key);
       }
@@ -239,20 +249,18 @@ export function isValidEmail(email: string): boolean {
  */
 export function exportToCSV(data: any[], filename: string): void {
   if (data.length === 0) return;
-  
+
   const headers = Object.keys(data[0]);
   const csvContent = [
     headers.join(','),
-    ...data.map(row => 
-      headers.map(header => 
-        JSON.stringify(row[header] || '')
-      ).join(',')
+    ...data.map((row) =>
+      headers.map((header) => JSON.stringify(row[header] || '')).join(',')
     )
   ].join('\n');
-  
+
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
-  
+
   if (link.download !== undefined) {
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
@@ -268,7 +276,7 @@ export function exportToCSV(data: any[], filename: string): void {
  * Форматирование чисел для отображения
  */
 export function formatNumber(
-  value: number, 
+  value: number,
   options: {
     currency?: boolean;
     decimals?: number;
@@ -276,19 +284,19 @@ export function formatNumber(
   } = {}
 ): string {
   const { currency = false, decimals = 0, locale = 'ru-RU' } = options;
-  
+
   if (currency) {
     return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: 'RUB',
       minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
+      maximumFractionDigits: decimals
     }).format(value);
   }
-  
+
   return new Intl.NumberFormat(locale, {
     minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
+    maximumFractionDigits: decimals
   }).format(value);
 }
 
@@ -300,7 +308,7 @@ export function debounce<T extends (...args: any[]) => any>(
   wait: number
 ): (...args: Parameters<T>) => void {
   let timeout: NodeJS.Timeout;
-  
+
   return (...args: Parameters<T>) => {
     clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
