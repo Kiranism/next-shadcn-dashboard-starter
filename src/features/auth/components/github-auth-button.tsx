@@ -6,7 +6,8 @@ import { Icons } from '@/components/icons';
 
 export default function GithubSignInButton() {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl');
+  // TODO: логгер
+  // console.log('continue with github clicked')
 
   return (
     <Button

@@ -1,160 +1,287 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { ProjectService } from '@/lib/services/project.service';
+import { UserService, BonusService } from '@/lib/services/user.service';
+import type {
+  WebhookRegisterUserPayload,
+  WebhookPurchasePayload,
+  WebhookSpendBonusesPayload,
+} from '@/types/bonus';
 
-// Демо данных для webhook
-interface WebhookPayload {
-  event: string;
-  data: Record<string, any>;
-  timestamp: string;
-}
-
-interface WebhookConfig {
-  secret: string;
-  events: string[];
-  isActive: boolean;
-}
-
-// Простая валидация webhook
-function validateWebhookSignature(
-  payload: string,
-  signature: string,
-  secret: string
-): boolean {
-  // В реальном проекте здесь была бы криптографическая проверка
-  return signature === `sha256=${secret}`;
-}
-
-/**
- * GET /api/webhook/[webhookSecret]
- * Проверка статуса webhook
- */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ webhookSecret: string }> }
+// Функция логирования webhook запросов
+async function logWebhookRequest(
+  projectId: string,
+  endpoint: string,
+  method: string,
+  headers: Record<string, string>,
+  body: any,
+  response: any,
+  status: number,
+  success: boolean
 ) {
   try {
-    const { webhookSecret } = await params;
-
-    console.log('Webhook status check:', webhookSecret);
-
-    return NextResponse.json({
-      webhook: webhookSecret,
-      status: 'active',
-      events: ['user.created', 'order.completed', 'payment.processed'],
-      timestamp: new Date().toISOString()
+    await db.webhookLog.create({
+      data: {
+        projectId,
+        endpoint,
+        method,
+        headers,
+        body,
+        response,
+        status,
+        success,
+      },
     });
   } catch (error) {
-    console.error('Webhook status error:', error);
-    return NextResponse.json(
-      { error: 'Failed to check webhook status' },
-      { status: 500 }
-    );
+    // TODO: заменить на логгер
+    // console.error('Ошибка логирования webhook:', error);
   }
 }
 
-/**
- * POST /api/webhook/[webhookSecret]
- * Обработка webhook событий
- */
+// Обработчик POST запросов
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ webhookSecret: string }> }
 ) {
-  try {
-    const { webhookSecret } = await params;
-    const signature = request.headers.get('x-webhook-signature') || '';
-    const payload = await request.text();
+  const { webhookSecret } = await params;
+  const method = request.method;
+  const endpoint = request.url;
 
-    // Валидация подписи
-    if (!validateWebhookSignature(payload, signature, webhookSecret)) {
-      return NextResponse.json(
-        { error: 'Invalid webhook signature' },
-        { status: 401 }
-      );
+  // Получаем заголовки (упрощенная версия)
+  const requestHeaders: Record<string, string> = {
+    'content-type': request.headers.get('content-type') || '',
+    'user-agent': request.headers.get('user-agent') || '',
+  };
+
+  let body: any;
+  let project: any;
+  let response: any = { error: 'Неизвестная ошибка' };
+  let status = 500;
+  let success = false;
+
+  try {
+    // Парсим тело запроса
+    body = await request.json();
+
+    // Получаем проект по webhook secret
+    project = await ProjectService.getProjectByWebhookSecret(webhookSecret);
+
+    if (!project) {
+      response = { error: 'Неверный webhook secret' };
+      status = 401;
+      return NextResponse.json(response, { status });
     }
 
-    const webhookData: WebhookPayload = JSON.parse(payload);
+    if (!project.isActive) {
+      response = { error: 'Проект деактивирован' };
+      status = 403;
+      return NextResponse.json(response, { status });
+    }
 
-    console.log('Webhook received:', {
-      secret: webhookSecret,
-      event: webhookData.event,
-      timestamp: webhookData.timestamp
-    });
+    // Определяем тип операции по action в теле запроса
+    const { action, ...payload } = body;
 
-    // Обработка различных типов событий
-    switch (webhookData.event) {
-      case 'user.created':
-        await handleUserCreated(webhookData.data);
+    switch (action) {
+      case 'register_user':
+        response = await handleRegisterUser(project.id, payload as WebhookRegisterUserPayload);
+        status = 201;
+        success = true;
         break;
 
-      case 'order.completed':
-        await handleOrderCompleted(webhookData.data);
+      case 'purchase':
+        response = await handlePurchase(project.id, payload as WebhookPurchasePayload);
+        status = 200;
+        success = true;
         break;
 
-      case 'payment.processed':
-        await handlePaymentProcessed(webhookData.data);
+      case 'spend_bonuses':
+        response = await handleSpendBonuses(project.id, payload as WebhookSpendBonusesPayload);
+        status = 200;
+        success = true;
         break;
 
       default:
-        console.log('Unknown webhook event:', webhookData.event);
+        response = { error: `Неизвестное действие: ${action}` };
+        status = 400;
     }
 
-    return NextResponse.json({
-      success: true,
-      event: webhookData.event,
-      processed: true,
-      timestamp: new Date().toISOString()
-    });
+    return NextResponse.json(response, { status });
   } catch (error) {
-    console.error('Webhook processing error:', error);
-    return NextResponse.json(
-      { error: 'Failed to process webhook' },
-      { status: 500 }
-    );
+    // TODO: заменить на логгер
+    // console.error('Ошибка webhook:', error);
+    response = { 
+      error: 'Внутренняя ошибка сервера', 
+      details: error instanceof Error ? error.message : 'Неизвестная ошибка' 
+    };
+    status = 500;
+    return NextResponse.json(response, { status });
+  } finally {
+    // Логируем запрос
+    if (project) {
+      await logWebhookRequest(
+        project.id,
+        endpoint,
+        method,
+        requestHeaders,
+        body,
+        response,
+        status,
+        success
+      );
+    }
   }
 }
 
-/**
- * DELETE /api/webhook/[webhookSecret]
- * Удаление webhook
- */
-export async function DELETE(
+// Обработчик регистрации пользователя
+async function handleRegisterUser(
+  projectId: string,
+  payload: WebhookRegisterUserPayload
+) {
+  const { email, phone, firstName, lastName, birthDate } = payload;
+
+  if (!email && !phone) {
+    throw new Error('Должен быть указан email или телефон');
+  }
+
+  // Проверяем, не существует ли уже такой пользователь
+  const existingUser = await UserService.findUserByContact(projectId, email, phone);
+  if (existingUser) {
+    return {
+      success: true,
+      message: 'Пользователь уже существует',
+      user: {
+        id: existingUser.id,
+        email: existingUser.email,
+        phone: existingUser.phone,
+      },
+    };
+  }
+
+  // Создаем нового пользователя
+  const user = await UserService.createUser({
+    projectId,
+    email,
+    phone,
+    firstName,
+    lastName,
+    birthDate: birthDate ? new Date(birthDate) : undefined,
+  });
+
+  return {
+    success: true,
+    message: 'Пользователь успешно зарегистрирован',
+    user: {
+      id: user.id,
+      email: user.email,
+      phone: user.phone,
+    },
+  };
+}
+
+// Обработчик покупки (начисление бонусов)
+async function handlePurchase(
+  projectId: string,
+  payload: WebhookPurchasePayload
+) {
+  const { userEmail, userPhone, purchaseAmount, orderId, description } = payload;
+
+  if (!userEmail && !userPhone) {
+    throw new Error('Должен быть указан email или телефон пользователя');
+  }
+
+  // Находим пользователя
+  const user = await UserService.findUserByContact(projectId, userEmail, userPhone);
+  if (!user) {
+    throw new Error('Пользователь не найден');
+  }
+
+  // Начисляем бонусы за покупку
+  const bonus = await BonusService.awardPurchaseBonus(
+    user.id,
+    purchaseAmount,
+    orderId,
+    description
+  );
+
+  return {
+    success: true,
+    message: 'Бонусы успешно начислены',
+    bonus: {
+      id: bonus.id,
+      amount: Number(bonus.amount),
+      expiresAt: bonus.expiresAt,
+    },
+    user: {
+      id: user.id,
+      email: user.email,
+      phone: user.phone,
+    },
+  };
+}
+
+// Обработчик списания бонусов
+async function handleSpendBonuses(
+  projectId: string,
+  payload: WebhookSpendBonusesPayload
+) {
+  const { userEmail, userPhone, bonusAmount, orderId, description } = payload;
+
+  if (!userEmail && !userPhone) {
+    throw new Error('Должен быть указан email или телефон пользователя');
+  }
+
+  // Находим пользователя
+  const user = await UserService.findUserByContact(projectId, userEmail, userPhone);
+  if (!user) {
+    throw new Error('Пользователь не найден');
+  }
+
+  // Списываем бонусы
+  const transactions = await BonusService.spendBonuses(
+    user.id,
+    bonusAmount,
+    description || `Списание бонусов для заказа ${orderId}`,
+    { orderId }
+  );
+
+  const totalSpent = transactions.reduce((sum, t) => sum + Number(t.amount), 0);
+
+  return {
+    success: true,
+    message: 'Бонусы успешно списаны',
+    spent: {
+      amount: totalSpent,
+      transactionsCount: transactions.length,
+    },
+    user: {
+      id: user.id,
+      email: user.email,
+      phone: user.phone,
+    },
+  };
+}
+
+// Обработчик GET запросов (для проверки)
+export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ webhookSecret: string }> }
 ) {
-  try {
-    const { webhookSecret } = await params;
-
-    console.log('Webhook deletion:', webhookSecret);
-
-    // В реальном проекте здесь была бы логика удаления из БД
-
-    return NextResponse.json({
-      success: true,
-      message: 'Webhook deleted successfully',
-      webhook: webhookSecret,
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('Webhook deletion error:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete webhook' },
-      { status: 500 }
-    );
+  const { webhookSecret } = await params;
+  
+  const project = await ProjectService.getProjectByWebhookSecret(webhookSecret);
+  
+  if (!project) {
+    return NextResponse.json({ error: 'Неверный webhook secret' }, { status: 401 });
   }
-}
 
-// Обработчики событий
-async function handleUserCreated(data: any): Promise<void> {
-  console.log('Processing user.created event:', data);
-  // Логика обработки создания пользователя
-}
-
-async function handleOrderCompleted(data: any): Promise<void> {
-  console.log('Processing order.completed event:', data);
-  // Логика обработки завершения заказа
-}
-
-async function handlePaymentProcessed(data: any): Promise<void> {
-  console.log('Processing payment.processed event:', data);
-  // Логика обработки платежа
+  return NextResponse.json({
+    project: project.name,
+    status: project.isActive ? 'active' : 'inactive',
+    webhookEndpoint: `/api/webhook/${webhookSecret}`,
+    supportedActions: [
+      'register_user',
+      'purchase', 
+      'spend_bonuses'
+    ],
+  });
 }

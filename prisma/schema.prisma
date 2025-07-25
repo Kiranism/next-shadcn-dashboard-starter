@@ -1,0 +1,148 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Проекты (Тенанты) - каждый клиент создает свой проект
+model Project {
+  id               String   @id @default(cuid())
+  name             String
+  domain           String?  @unique
+  webhookSecret    String   @unique @default(cuid()) @map("webhook_secret")
+  bonusPercentage  Decimal  @default(1.0) @map("bonus_percentage") @db.Decimal(5, 2)
+  bonusExpiryDays  Int      @default(365) @map("bonus_expiry_days")
+  isActive         Boolean  @default(true) @map("is_active")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Связи
+  users            User[]
+  botSettings      BotSettings?
+  webhookLogs      WebhookLog[]
+
+  @@map("projects")
+}
+
+// Настройки Telegram бота для каждого проекта
+model BotSettings {
+  id              String   @id @default(cuid())
+  projectId       String   @unique @map("project_id")
+  botToken        String   @map("bot_token")
+  botUsername     String   @map("bot_username")
+  isActive        Boolean  @default(true) @map("is_active")
+  welcomeMessage  Json?    @default("{\"text\": \"Добро пожаловать! Отправьте свой номер телефона для привязки аккаунта.\"}") @map("welcome_message")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Связи
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("bot_settings")
+}
+
+// Пользователи проекта
+model User {
+  id           String   @id @default(cuid())
+  projectId    String   @map("project_id")
+  email        String?
+  phone        String?
+  firstName    String?  @map("first_name")
+  lastName     String?  @map("last_name")
+  birthDate    DateTime? @map("birth_date") @db.Date
+  telegramId   BigInt?  @unique @map("telegram_id")
+  telegramUsername String? @map("telegram_username")
+  isActive     Boolean  @default(true) @map("is_active")
+  registeredAt DateTime @default(now()) @map("registered_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Связи
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  bonuses      Bonus[]
+  transactions Transaction[]
+
+  // Уникальные ограничения
+  @@unique([projectId, email])
+  @@unique([projectId, phone])
+  @@map("users")
+}
+
+// Бонусы пользователей
+model Bonus {
+  id          String      @id @default(cuid())
+  userId      String      @map("user_id")
+  amount      Decimal     @db.Decimal(10, 2)
+  type        BonusType   @default(MANUAL)
+  description String?
+  expiresAt   DateTime?   @map("expires_at")
+  isUsed      Boolean     @default(false) @map("is_used")
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  // Связи
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@map("bonuses")
+}
+
+// Транзакции (история операций)
+model Transaction {
+  id          String          @id @default(cuid())
+  userId      String          @map("user_id")
+  bonusId     String?         @map("bonus_id")
+  amount      Decimal         @db.Decimal(10, 2)
+  type        TransactionType
+  description String?
+  metadata    Json?           // Дополнительная информация (ID заказа, и т.д.)
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  // Связи
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bonus       Bonus? @relation(fields: [bonusId], references: [id], onDelete: SetNull)
+
+  @@map("transactions")
+}
+
+// Логи webhook запросов
+model WebhookLog {
+  id        String     @id @default(cuid())
+  projectId String     @map("project_id")
+  endpoint  String
+  method    String
+  headers   Json?
+  body      Json?
+  response  Json?
+  status    Int
+  success   Boolean
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  // Связи
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("webhook_logs")
+}
+
+// Перечисления
+enum BonusType {
+  PURCHASE     // За покупку
+  BIRTHDAY     // За день рождения
+  MANUAL       // Ручное начисление админом
+  REFERRAL     // За реферальную программу
+  PROMO        // За промокод
+}
+
+enum TransactionType {
+  EARN         // Начисление
+  SPEND        // Списание
+  EXPIRE       // Истечение срока
+  REFUND       // Возврат
+}

@@ -7,7 +7,7 @@
     "url": "https://github.com/Kiranism"
   },
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev --turbopack -p 5006",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -30,6 +30,7 @@
     "@dnd-kit/sortable": "^8.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^3.9.1",
+    "@prisma/client": "^6.12.0",
     "@radix-ui/react-accordion": "^1.2.3",
     "@radix-ui/react-alert-dialog": "^1.1.6",
     "@radix-ui/react-aspect-ratio": "^1.1.2",
@@ -62,13 +63,16 @@
     "@tabler/icons-react": "^3.31.0",
     "@tailwindcss/postcss": "^4.0.0",
     "@tanstack/react-table": "^8.21.2",
+    "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
     "eslint": "8.48.0",
     "eslint-config-next": "15.1.0",
+    "grammy": "^1.37.0",
     "input-otp": "^1.4.2",
+    "jsonwebtoken": "^9.0.2",
     "kbar": "^0.1.0-beta.45",
     "lucide-react": "^0.476.0",
     "match-sorter": "^8.0.0",
@@ -78,6 +82,7 @@
     "nextjs-toploader": "^3.7.15",
     "nuqs": "^2.4.1",
     "postcss": "8.4.49",
+    "prisma": "^6.12.0",
     "react": "19.0.0",
     "react-day-picker": "^8.10.1",
     "react-dom": "19.0.0",
@@ -100,6 +105,8 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^9.3.0",
+    "@types/bcryptjs": "^3.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "22.10.2",
     "@types/react": "19.0.1",
     "@types/react-dom": "19.0.2",
@@ -115,5 +122,6 @@
   "overrides": {
     "@types/react": "19.0.1",
     "@types/react-dom": "19.0.2"
-  }
+  },
+  "packageManager": "pnpm@10.13.1+sha512.37ebf1a5c7a30d5fabe0c5df44ee8da4c965ca0c5af3dbab28c3a1681b70a256218d05c81c9c0dcf767ef6b8551eb5b960042b9ed4300c59242336377e01cfad"
 }

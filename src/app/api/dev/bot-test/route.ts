@@ -1,244 +1,185 @@
+/**
+ * @file: src/app/api/dev/bot-test/route.ts
+ * @description: API для тестирования ботов в development режиме
+ * @project: SaaS Bonus System
+ * @dependencies: Grammy, BotManager
+ * @created: 2024-12-31
+ * @author: AI Assistant + User
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
+import { botManager } from '@/lib/telegram/bot-manager';
 
-interface TestBotConfig {
-  botToken?: string;
-  webhookUrl?: string;
-  commands: string[];
-  testMode: boolean;
-}
-
-interface TestMessage {
-  id: string;
-  type: 'command' | 'text' | 'callback';
-  content: string;
-  timestamp: string;
-  response?: any;
-}
-
-// Демо конфигурация для тестирования
-const defaultTestConfig: TestBotConfig = {
-  botToken: 'demo_bot_token',
-  webhookUrl: 'https://example.com/api/telegram/webhook/test',
-  commands: ['/start', '/help', '/status', '/bonus'],
-  testMode: true
-};
-
-// История тестовых сообщений
-let testMessages: TestMessage[] = [];
-
-/**
- * GET /api/dev/bot-test
- * Получить конфигурацию и историю тестов
- */
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '20');
-
-    console.log('Bot test configuration requested');
-
-    return NextResponse.json({
-      success: true,
-      config: defaultTestConfig,
-      messages: testMessages.slice(-limit),
-      totalMessages: testMessages.length,
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('Bot test config error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get test configuration' },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * POST /api/dev/bot-test
- * Отправить тестовое сообщение боту
- */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { message, type = 'text', projectId = 'test' } = body;
+    const { projectId, message } = await request.json();
 
-    console.log('Test message received:', { message, type, projectId });
-
-    if (!message) {
+    if (!projectId) {
       return NextResponse.json(
-        { error: 'Message is required' },
+        { error: 'Project ID обязателен' },
         { status: 400 }
       );
     }
 
-    // Создаем тестовое сообщение
-    const testMessage: TestMessage = {
-      id: `test_${Date.now()}`,
-      type,
-      content: message,
-      timestamp: new Date().toISOString()
-    };
-
-    // Симулируем обработку бота
-    let botResponse: any = null;
-
-    switch (type) {
-      case 'command':
-        botResponse = await simulateCommandResponse(message, projectId);
-        break;
-
-      case 'callback':
-        botResponse = await simulateCallbackResponse(message, projectId);
-        break;
-
-      default:
-        botResponse = await simulateTextResponse(message, projectId);
-        break;
+    // TODO: логгер
+    const botInstance = botManager.getBot(projectId);
+    // TODO: логгер
+    // console.log(`🤖 Найден бот:`, !!botInstance);
+    // TODO: логгер
+    // console.log(`🔄 Активен:`, botInstance?.isActive);
+    // TODO: логгер
+    // console.log(`📋 Всего ботов в менеджере:`, Array.from(botManager['bots'].keys()));
+    
+    if (!botInstance) {
+      return NextResponse.json(
+        { 
+          error: 'Бот не найден в BotManager',
+          projectId,
+          availableBots: Array.from(botManager['bots'].keys())
+        },
+        { status: 404 }
+      );
     }
 
-    testMessage.response = botResponse;
-
-    // Добавляем в историю
-    testMessages.push(testMessage);
-
-    // Ограничиваем историю 100 сообщениями
-    if (testMessages.length > 100) {
-      testMessages = testMessages.slice(-100);
+    if (!botInstance.isActive) {
+      return NextResponse.json(
+        { 
+          error: 'Бот найден, но неактивен',
+          projectId,
+          botStatus: 'inactive'
+        },
+        { status: 404 }
+      );
     }
 
-    console.log('Bot response generated:', botResponse);
+    // Симулируем сообщение /start от пользователя
+    const testMessage = message || '/start';
+    
+    // TODO: логгер
+    // console.log(`📤 Отправляем тестовое сообщение боту: "${testMessage}"`);
+    
+    const mockUpdate = {
+      update_id: Date.now(),
+      message: {
+        message_id: Date.now(),
+        from: {
+          id: 123456789,
+          is_bot: false,
+          first_name: 'TestUser',
+          username: 'testuser',
+          language_code: 'ru'
+        },
+        chat: {
+          id: 123456789,
+          first_name: 'TestUser',
+          username: 'testuser',
+          type: 'private' as const
+        },
+        date: Math.floor(Date.now() / 1000),
+        text: testMessage
+      }
+    } as any; // Упрощаем типизацию для тестирования
 
-    return NextResponse.json({
-      success: true,
-      message: testMessage,
-      response: botResponse,
-      processed: true
-    });
+    try {
+      // Обрабатываем обновление через бота напрямую (минуя webhook)
+      // TODO: логгер
+      // console.log(`🤖 Обрабатываем обновление через бота...`);
+      await botInstance.bot.handleUpdate(mockUpdate);
+      // TODO: логгер
+      // console.log(`✅ Обновление обработано успешно`);
+
+      return NextResponse.json({
+        success: true,
+        message: `Тестовое сообщение "${testMessage}" успешно обработано ботом`,
+        projectId,
+        botActive: botInstance.isActive,
+        testUser: 'TestUser (ID: 123456789)',
+        processedAt: new Date().toISOString()
+      });
+    } catch (botError) {
+      // TODO: логгер
+      // console.error(`❌ Ошибка обработки обновления ботом:`, botError);
+      return NextResponse.json({
+        success: false,
+        error: `Ошибка обработки сообщения ботом: ${botError}`,
+        projectId,
+        testMessage
+      }, { status: 500 });
+    }
+
   } catch (error) {
-    console.error('Bot test error:', error);
+    // TODO: логгер
+    // console.error('Ошибка тестирования бота:', error);
     return NextResponse.json(
-      { error: 'Failed to process test message' },
+      { error: 'Ошибка тестирования бота' },
       { status: 500 }
     );
   }
 }
 
-/**
- * DELETE /api/dev/bot-test
- * Очистить историю тестов
- */
-export async function DELETE(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    console.log('Clearing test message history');
+    const { searchParams } = new URL(request.url);
+    const projectId = searchParams.get('projectId');
 
-    const clearedCount = testMessages.length;
-    testMessages = [];
+    if (!projectId) {
+      return NextResponse.json(
+        { error: 'Project ID обязателен' },
+        { status: 400 }
+      );
+    }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Test history cleared',
-      clearedMessages: clearedCount,
-      timestamp: new Date().toISOString()
-    });
+    const botInstance = botManager.getBot(projectId);
+    
+    if (!botInstance) {
+      return NextResponse.json({
+        projectId,
+        isRunning: false,
+        error: 'Бот не найден'
+      });
+    }
+
+    // Проверяем webhook info
+    try {
+      const webhookInfo = await botInstance.bot.api.getWebhookInfo();
+      const me = await botInstance.bot.api.getMe();
+
+      return NextResponse.json({
+        projectId,
+        isRunning: botInstance.isActive,
+        botInfo: {
+          id: me.id,
+          username: me.username,
+          first_name: me.first_name,
+          can_join_groups: me.can_join_groups,
+          can_read_all_group_messages: me.can_read_all_group_messages,
+          supports_inline_queries: me.supports_inline_queries
+        },
+        webhookInfo: {
+          url: webhookInfo.url,
+          has_custom_certificate: webhookInfo.has_custom_certificate,
+          pending_update_count: webhookInfo.pending_update_count,
+          last_error_date: webhookInfo.last_error_date,
+          last_error_message: webhookInfo.last_error_message,
+          max_connections: webhookInfo.max_connections,
+          allowed_updates: webhookInfo.allowed_updates
+        }
+      });
+
+    } catch (error) {
+      return NextResponse.json({
+        projectId,
+        isRunning: false,
+        error: `Ошибка получения информации о боте: ${error}`
+      });
+    }
+
   } catch (error) {
-    console.error('Clear test history error:', error);
+    // TODO: логгер
+    // console.error('Ошибка проверки бота:', error);
     return NextResponse.json(
-      { error: 'Failed to clear test history' },
+      { error: 'Ошибка проверки бота' },
       { status: 500 }
     );
   }
-}
-
-// Симуляция ответа на команду
-async function simulateCommandResponse(command: string, projectId: string) {
-  console.log('Simulating command response:', command);
-
-  switch (command) {
-    case '/start':
-      return {
-        method: 'sendMessage',
-        text: `🤖 Добро пожаловать в тестовый режим!\n\nПроект: ${projectId}\nВремя: ${new Date().toLocaleString('ru-RU')}\n\nДоступные команды:\n/help - Помощь\n/status - Статус\n/bonus - Бонусы`,
-        reply_markup: {
-          inline_keyboard: [
-            [
-              { text: '📊 Статистика', callback_data: 'stats' },
-              { text: '🎁 Бонусы', callback_data: 'bonuses' }
-            ]
-          ]
-        }
-      };
-
-    case '/help':
-      return {
-        method: 'sendMessage',
-        text: `🔧 Режим разработки\n\n📋 Тестовые команды:\n/start - Начало\n/help - Справка\n/status - Статус\n/bonus - Бонусы\n\n⚠️ Это тестовая среда!`
-      };
-
-    case '/status':
-      return {
-        method: 'sendMessage',
-        text: `📊 Тестовый статус\n\n🆔 Test User ID: 12345\n📱 Проект: ${projectId}\n🔧 Режим: Development\n⏰ Время: ${new Date().toLocaleTimeString('ru-RU')}`
-      };
-
-    case '/bonus':
-      const randomBonus = Math.floor(Math.random() * 1000) + 100;
-      return {
-        method: 'sendMessage',
-        text: `🎁 Тестовые бонусы\n\n💰 Баланс: ${randomBonus} бонусов\n⭐ Уровень: Test Level\n🏆 Достижений: ${Math.floor(Math.random() * 5) + 1}`
-      };
-
-    default:
-      return {
-        method: 'sendMessage',
-        text: `❓ Неизвестная команда: ${command}\n\nИспользуйте /help для списка команд.`
-      };
-  }
-}
-
-// Симуляция ответа на callback
-async function simulateCallbackResponse(
-  callbackData: string,
-  projectId: string
-) {
-  console.log('Simulating callback response:', callbackData);
-
-  switch (callbackData) {
-    case 'stats':
-      return {
-        method: 'sendMessage',
-        text: `📊 Тестовая статистика\n\n👥 Пользователей: ${Math.floor(Math.random() * 100) + 50}\n📈 Активность: +${Math.floor(Math.random() * 20) + 5}%\n🎯 Тестов: ${Math.floor(Math.random() * 50) + 10}`
-      };
-
-    case 'bonuses':
-      return {
-        method: 'sendMessage',
-        text: `🎁 Тестовые бонусы\n\n💰 Демо баланс: ${Math.floor(Math.random() * 500) + 100}\n🔧 Режим: Development\n⚠️ Данные не сохраняются`
-      };
-
-    default:
-      return {
-        method: 'sendMessage',
-        text: `🔧 Обработка тестового действия: ${callbackData}`
-      };
-  }
-}
-
-// Симуляция ответа на текст
-async function simulateTextResponse(text: string, projectId: string) {
-  console.log('Simulating text response:', text);
-
-  const responses = [
-    `Получено сообщение: "${text}"`,
-    `🤖 Тестовый ответ на: "${text}"`,
-    `📝 Обрабатываю текст: "${text}"`,
-    `💬 Echo: ${text}`
-  ];
-
-  const randomResponse =
-    responses[Math.floor(Math.random() * responses.length)];
-
-  return {
-    method: 'sendMessage',
-    text: `${randomResponse}\n\n🔧 Проект: ${projectId}\n⏰ ${new Date().toLocaleTimeString('ru-RU')}`
-  };
 }

@@ -67,7 +67,7 @@ export function KanbanBoard() {
 
   useEffect(() => {
     setIsMounted(true);
-  }, [isMounted]);
+  }, []);
 
   useEffect(() => {
     useTaskStore.persist.rehydrate();

@@ -1,115 +1,270 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/9113740/201498864-2a900c64-d88f-4ed4-b5cf-770bcb57e1f5.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/9113740/201498152-b171abb8-9225-487a-821c-6ff49ee48579.png">
-</picture>
+# 🎁 SaaS Bonus System
 
-<div align="center"><strong>Next.js Admin Dashboard Starter Template With Shadcn-ui</strong></div>
-<div align="center">Built with the Next.js 15 App Router</div>
-<br />
 <div align="center">
-<a href="https://dub.sh/shadcn-dashboard">View Demo</a>
-<span>
+  <strong>Мультитенантная платформа бонусных программ с Telegram ботами</strong>
+  <br />
+  <em>Построено на Next.js 15, React 19, PostgreSQL и Grammy</em>
 </div>
 
-## Overview
+<br />
 
-This is a starter template using the following stack:
+<div align="center">
+  <a href="#demo">Демо</a> •
+  <a href="#features">Возможности</a> •
+  <a href="#tech-stack">Технологии</a> •
+  <a href="#quick-start">Быстрый старт</a> •
+  <a href="#documentation">Документация</a>
+</div>
 
-- Framework - [Next.js 15](https://nextjs.org/13)
-- Language - [TypeScript](https://www.typescriptlang.org)
-- Auth - [Clerk](https://go.clerk.com/ILdYhn7)
-- Error tracking - [<picture><img alt="Sentry" src="public/assets/sentry.svg">
-        </picture>](https://sentry.io/for/nextjs/?utm_source=github&utm_medium=paid-community&utm_campaign=general-fy26q2-nextjs&utm_content=github-banner-project-tryfree)
-- Styling - [Tailwind CSS v4](https://tailwindcss.com)
-- Components - [Shadcn-ui](https://ui.shadcn.com)
-- Schema Validations - [Zod](https://zod.dev)
-- State Management - [Zustand](https://zustand-demo.pmnd.rs)
-- Search params state manager - [Nuqs](https://nuqs.47ng.com/)
-- Tables - [Tanstack Data Tables](https://ui.shadcn.com/docs/components/data-table) • [Dice table](https://www.diceui.com/docs/components/data-table)
-- Forms - [React Hook Form](https://ui.shadcn.com/docs/components/form)
-- Command+k interface - [kbar](https://kbar.vercel.app/)
-- Linting - [ESLint](https://eslint.org)
-- Pre-commit Hooks - [Husky](https://typicode.github.io/husky/)
-- Formatting - [Prettier](https://prettier.io)
+## 📋 Описание
 
-_If you are looking for a Tanstack start dashboard template, here is the [repo](https://git.new/tanstack-start-dashboard)._
+SaaS Bonus System — это мультитенантная платформа для управления бонусными программами клиентов с интеграцией Telegram ботов. Система позволяет создавать проекты, управлять пользователями, начислять и списывать бонусы, а также интегрироваться с существующими сайтами через webhook API.
 
-## Pages
+## ✨ Основные возможности
 
-| Pages                                                                                 | Specifications                                                                                                                                                                                                                                                          |
-| :------------------------------------------------------------------------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Signup / Signin](https://go.clerk.com/ILdYhn7)      | Authentication with **Clerk** provides secure authentication and user management with multiple sign-in options including passwordless authentication, social logins, and enterprise SSO - all designed to enhance security while delivering a seamless user experience. |
-| [Dashboard (Overview)](https://shadcn-dashboard.kiranism.dev/dashboard)    | Cards with Recharts graphs for analytics. Parallel routes in the overview sections feature independent loading, error handling, and isolated component rendering. |
-| [Product](https://shadcn-dashboard.kiranism.dev/dashboard/product)         | Tanstack tables with server side searching, filter, pagination by Nuqs which is a Type-safe search params state manager in nextjs                                                                                                                                       |
-| [Product/new](https://shadcn-dashboard.kiranism.dev/dashboard/product/new) | A Product Form with shadcn form (react-hook-form + zod).                                                                                                                                                                                                                |
-| [Profile](https://shadcn-dashboard.kiranism.dev/dashboard/profile)         | Clerk's full-featured account management UI that allows users to manage their profile and security settings                                                                                                                                                             |
-| [Kanban Board](https://shadcn-dashboard.kiranism.dev/dashboard/kanban)     | A Drag n Drop task management board with dnd-kit and zustand to persist state locally.                                                                                                                                                                                  |
-| [Not Found](https://shadcn-dashboard.kiranism.dev/dashboard/notfound)      | Not Found Page Added in the root level                                                                                                                                                                                                                                  |
-| [Global Error](https://sentry.io/for/nextjs/?utm_source=github&utm_medium=paid-community&utm_campaign=general-fy26q2-nextjs&utm_content=github-banner-project-tryfree)           | A centralized error page that captures and displays errors across the application. Integrated with **Sentry** to log errors, provide detailed reports, and enable replay functionality for better debugging. |
+### 🏢 Мультитенантность
+- **Изолированные проекты** — каждый клиент получает отдельный проект с собственными данными
+- **Уникальные webhook endpoints** — безопасная интеграция для каждого проекта
+- **Отдельные Telegram боты** — персонализированные боты для каждого проекта
 
-## Feature based organization
+### 🤖 Telegram интеграция
+- **Grammy framework** — современная библиотека для Telegram ботов
+- **Автоматическое развертывание** — боты запускаются автоматически при создании проекта
+- **Привязка пользователей** — связка аккаунтов по email/телефону
+- **Проверка бонусов** — пользователи могут проверять баланс через бота
 
-```plaintext
+### 💰 Система бонусов
+- **Автоматическое начисление** — бонусы за покупки через webhook
+- **Гибкие настройки** — процент начисления и сроки действия
+- **Списание бонусов** — использование бонусов при покупках
+- **Аналитика** — детальная статистика по бонусам и транзакциям
+
+### 🔗 Webhook интеграция
+- **Простой API** — регистрация пользователей, начисление и списание бонусов
+- **Безопасность** — уникальные secrets для каждого проекта
+- **Логирование** — полная история всех webhook запросов
+- **Поддержка популярных платформ** — Tilda, интернет-магазины, CRM
+
+## 🛠 Технологический стек
+
+### Backend & Framework
+- **[Next.js 15](https://nextjs.org/)** — App Router, Server Actions
+- **[TypeScript](https://www.typescriptlang.org)** — Строгая типизация
+- **[PostgreSQL](https://www.postgresql.org/)** — Надежная база данных
+- **[Prisma ORM](https://www.prisma.io/)** — Type-safe работа с БД
+
+### Authentication & UI
+- **[Clerk](https://clerk.com/)** — Современная аутентификация с мультитенантностью
+- **[Tailwind CSS v4](https://tailwindcss.com)** — Утилитарные стили
+- **[Shadcn/ui](https://ui.shadcn.com)** — Красивые компоненты
+- **[HeroUI](https://heroui.com/)** — Дополнительные UI компоненты
+
+### Telegram & Real-time
+- **[Grammy](https://grammy.dev/)** — Современный фреймворк для Telegram ботов
+- **[Webhooks](https://core.telegram.org/bots/webhooks)** — Обработка сообщений в real-time
+
+### Developer Experience
+- **[Zod](https://zod.dev)** — Валидация схем данных
+- **[React Hook Form](https://react-hook-form.com/)** — Управление формами
+- **[Zustand](https://zustand-demo.pmnd.rs)** — Легковесное состояние
+- **[ESLint](https://eslint.org)** + **[Prettier](https://prettier.io)** — Качество кода
+
+## 🚀 Быстрый старт
+
+### Предварительные требования
+- Node.js 18+
+- PostgreSQL 14+
+- Telegram Bot Token (получить у [@BotFather](https://t.me/BotFather))
+
+### Установка
+
+1. **Клонирование репозитория**
+```bash
+git clone https://github.com/your-username/saas-bonus-system.git
+cd saas-bonus-system
+```
+
+2. **Установка зависимостей**
+```bash
+pnpm install
+```
+
+3. **Настройка окружения**
+```bash
+cp env.example.txt .env.local
+```
+
+Заполните `.env.local` файл:
+```env
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/saas_bonus_system"
+
+# Clerk Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_..."
+CLERK_SECRET_KEY="sk_test_..."
+NEXT_PUBLIC_CLERK_SIGN_IN_URL="/auth/sign-in"
+NEXT_PUBLIC_CLERK_SIGN_UP_URL="/auth/sign-up"
+
+# Telegram
+TELEGRAM_BOT_TOKEN="YOUR_DEFAULT_BOT_TOKEN"
+
+# App
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+```
+
+4. **Настройка базы данных**
+```bash
+npx prisma migrate dev
+npx prisma generate
+```
+
+5. **Запуск в режиме разработки**
+```bash
+pnpm dev
+```
+
+Приложение будет доступно по адресу [http://localhost:3000](http://localhost:3000)
+
+## 📱 Основные страницы
+
+| Страница | Описание |
+|----------|----------|
+| `/dashboard` | Главная панель управления с общей статистикой |
+| `/dashboard/projects` | Управление проектами (создание, настройка, деактивация) |
+| `/dashboard/projects/[id]/users` | Управление пользователями проекта |
+| `/dashboard/projects/[id]/analytics` | Детальная аналитика проекта |
+| `/dashboard/projects/[id]/bot` | Настройка и тестирование Telegram бота |
+| `/dashboard/bonuses` | Общее управление бонусами всех проектов |
+
+## 🔗 API Endpoints
+
+### Webhook API
+```bash
+# Регистрация пользователя
+POST /api/webhook/[secret]
+{
+  "action": "register_user",
+  "email": "user@example.com",
+  "firstName": "Иван",
+  "lastName": "Петров"
+}
+
+# Начисление бонусов за покупку
+POST /api/webhook/[secret]
+{
+  "action": "purchase",
+  "userEmail": "user@example.com",
+  "purchaseAmount": 1000,
+  "orderId": "ORDER-123"
+}
+
+# Списание бонусов
+POST /api/webhook/[secret]
+{
+  "action": "spend_bonuses",
+  "userEmail": "user@example.com",
+  "bonusAmount": 100,
+  "orderId": "ORDER-124"
+}
+```
+
+### Project Management API
+```bash
+# Получение списка проектов
+GET /api/projects
+
+# Создание проекта
+POST /api/projects
+
+# Получение аналитики проекта
+GET /api/projects/[id]/analytics
+```
+
+## 📚 Документация
+
+- **[API документация](docs/api.md)** — Полное описание всех API endpoints
+- **[Webhook интеграция](docs/webhook-integration.md)** — Гайд по подключению к сайтам
+- **[Telegram боты](docs/telegram-bots.md)** — Настройка и управление ботами
+- **[База данных](docs/database-schema.md)** — Схема БД и отношения
+- **[Changelog](docs/changelog.md)** — История изменений
+
+## 🔧 Архитектура проекта
+
+```
+SaaS Bonus System
+├── Admin Dashboard (Next.js)     # Управление проектами и пользователями
+├── Webhook API                    # Интеграция с внешними сайтами  
+├── Telegram Bots (Grammy)         # Боты для каждого проекта
+├── Database (PostgreSQL)          # Хранение данных и аналитики
+└── Analytics Engine               # Сбор и анализ метрик
+```
+
+### Структура файлов
+```
 src/
-├── app/ # Next.js App Router directory
-│ ├── (auth)/ # Auth route group
-│ │ ├── (signin)/
-│ ├── (dashboard)/ # Dashboard route group
-│ │ ├── layout.tsx
-│ │ ├── loading.tsx
-│ │ └── page.tsx
-│ └── api/ # API routes
-│
-├── components/ # Shared components
-│ ├── ui/ # UI components (buttons, inputs, etc.)
-│ └── layout/ # Layout components (header, sidebar, etc.)
-│
-├── features/ # Feature-based modules
-│ ├── feature/
-│ │ ├── components/ # Feature-specific components
-│ │ ├── actions/ # Server actions
-│ │ ├── schemas/ # Form validation schemas
-│ │ └── utils/ # Feature-specific utilities
-│ │
-├── lib/ # Core utilities and configurations
-│ ├── auth/ # Auth configuration
-│ ├── db/ # Database utilities
-│ └── utils/ # Shared utilities
-│
-├── hooks/ # Custom hooks
-│ └── use-debounce.ts
-│
-├── stores/ # Zustand stores
-│ └── dashboard-store.ts
-│
-└── types/ # TypeScript types
-└── index.ts
+├── app/                     # Next.js App Router
+│   ├── api/                 # API endpoints
+│   │   ├── projects/        # Управление проектами
+│   │   ├── webhook/         # Webhook endpoints
+│   │   └── telegram/        # Telegram webhook handlers
+│   └── dashboard/           # Админ панель
+├── components/              # Переиспользуемые компоненты
+├── features/               # Функциональные модули
+│   ├── projects/           # Управление проектами
+│   ├── bonuses/           # Система бонусов
+│   └── bots/              # Telegram боты
+├── lib/                    # Основные утилиты
+│   ├── db.ts              # Prisma client
+│   ├── telegram/          # Grammy интеграция
+│   └── services/          # Бизнес-логика
+└── types/                  # TypeScript типы
 ```
 
-## Getting Started
+## 🚀 Деплой
 
-> [!NOTE]  
-> We are using **Next 15** with **React 19**, follow these steps:
+### Vercel (рекомендуется)
+1. Push код в GitHub
+2. Подключите репозиторий к Vercel
+3. Настройте переменные окружения
+4. Деплой происходит автоматически
 
-Clone the repo:
+### Docker
+```bash
+# Сборка образа
+docker build -t saas-bonus-system .
 
+# Запуск с PostgreSQL
+docker-compose up -d
 ```
-git clone https://github.com/Kiranism/next-shadcn-dashboard-starter.git
-```
 
-- `pnpm install` ( we have legacy-peer-deps=true added in the .npmrc)
-- Create a `.env.local` file by copying the example environment file:
-  `cp env.example.txt .env.local`
-- Add the required environment variables to the `.env.local` file.
-- `pnpm run dev`
+## 🔒 Безопасность
 
-##### Environment Configuration Setup
+- **Мультитенантность** — полная изоляция данных между проектами
+- **Webhook secrets** — уникальные секретные ключи для каждого проекта
+- **Rate limiting** — защита от злоупотреблений API
+- **Input validation** — валидация всех входящих данных
+- **SQL injection protection** — использование Prisma ORM
 
-To configure the environment for this project, refer to the `env.example.txt` file. This file contains the necessary environment variables required for authentication and error tracking.
+## 🤝 Вклад в проект
 
-You should now be able to access the application at http://localhost:3000.
+1. Fork проекта
+2. Создайте feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit изменения (`git commit -m 'Add some AmazingFeature'`)
+4. Push в branch (`git push origin feature/AmazingFeature`)
+5. Откройте Pull Request
 
-> [!WARNING]
-> After cloning or forking the repository, be cautious when pulling or syncing with the latest changes, as this may result in breaking conflicts.
+## 📄 Лицензия
 
-Cheers! 🥂
+Проект распространяется под MIT лицензией. См. файл `LICENSE` для деталей.
+
+## 🆘 Поддержка
+
+- **Issues** — [GitHub Issues](https://github.com/your-username/saas-bonus-system/issues)
+- **Документация** — [Полная документация](docs/README.md)
+- **Email** — support@your-domain.com
+
+---
+
+<div align="center">
+  Сделано с ❤️ для развития бонусных программ
+</div>

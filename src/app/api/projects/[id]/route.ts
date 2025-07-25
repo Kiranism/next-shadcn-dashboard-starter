@@ -1,72 +1,43 @@
-import { NextRequest, NextResponse } from 'next/server';
-
-interface Project {
-  id: string;
-  name: string;
-  description: string;
-  status: 'active' | 'inactive' | 'archived';
-  createdAt: string;
-  updatedAt: string;
-  settings: {
-    allowBonuses: boolean;
-    maxBonusAmount: number;
-    notifications: boolean;
-  };
-}
-
-// Демо данные
-const mockProjects: Project[] = [
-  {
-    id: '1',
-    name: 'Telegram Bot Assistant',
-    description: 'AI-powered customer support bot',
-    status: 'active',
-    createdAt: '2024-01-15T10:00:00Z',
-    updatedAt: '2024-01-20T15:30:00Z',
-    settings: {
-      allowBonuses: true,
-      maxBonusAmount: 1000,
-      notifications: true
-    }
-  }
-];
-
 /**
- * GET /api/projects/[id]
- * Получить проект по ID
+ * @file: src/app/api/projects/[id]/route.ts
+ * @description: API для работы с отдельным проектом (GET, PUT, DELETE)
+ * @project: SaaS Bonus System
+ * @dependencies: Next.js App Router, Prisma, ProjectService
+ * @created: 2024-12-31
+ * @author: AI Assistant + User
  */
+
+import { NextRequest, NextResponse } from 'next/server';
+import { ProjectService } from '@/lib/services/project.service';
+import type { UpdateProjectInput } from '@/types/bonus';
+
+// GET /api/projects/[id] - Получение проекта по ID
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-
-    console.log('Fetching project:', id);
-
-    const project = mockProjects.find((p) => p.id === id);
+    const project = await ProjectService.getProjectById(id);
 
     if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Проект не найден' },
+        { status: 404 }
+      );
     }
 
-    return NextResponse.json({
-      success: true,
-      data: project
-    });
+    return NextResponse.json(project);
   } catch (error) {
-    console.error('Error fetching project:', error);
+    console.error('Ошибка получения проекта:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch project' },
+      { error: 'Ошибка получения проекта' },
       { status: 500 }
     );
   }
 }
 
-/**
- * PUT /api/projects/[id]
- * Обновить проект
- */
+// PUT /api/projects/[id] - Обновление проекта
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -74,68 +45,80 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-
-    console.log('Updating project:', id, body);
-
-    const projectIndex = mockProjects.findIndex((p) => p.id === id);
-
-    if (projectIndex === -1) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    
+    // Проверяем существование проекта
+    const existingProject = await ProjectService.getProjectById(id);
+    if (!existingProject) {
+      return NextResponse.json(
+        { error: 'Проект не найден' },
+        { status: 404 }
+      );
     }
 
-    // Обновляем проект
-    mockProjects[projectIndex] = {
-      ...mockProjects[projectIndex],
-      ...body,
-      id, // ID не должен изменяться
-      updatedAt: new Date().toISOString()
+    const updateData: UpdateProjectInput = {
+      name: body.name,
+      domain: body.domain,
+      bonusPercentage: body.bonusPercentage,
+      bonusExpiryDays: body.bonusExpiryDays,
+      isActive: body.isActive,
     };
 
-    return NextResponse.json({
-      success: true,
-      data: mockProjects[projectIndex],
-      message: 'Project updated successfully'
+    // Удаляем undefined значения
+    Object.keys(updateData).forEach(key => {
+      if (updateData[key as keyof typeof updateData] === undefined) {
+        delete updateData[key as keyof typeof updateData];
+      }
     });
+
+    const updatedProject = await ProjectService.updateProject(id, updateData);
+
+    return NextResponse.json(updatedProject);
   } catch (error) {
-    console.error('Error updating project:', error);
+    console.error('Ошибка обновления проекта:', error);
+    
+    if (error instanceof Error && error.message.includes('Unique constraint')) {
+      return NextResponse.json(
+        { error: 'Проект с таким доменом уже существует' },
+        { status: 409 }
+      );
+    }
+
     return NextResponse.json(
-      { error: 'Failed to update project' },
+      { error: 'Ошибка обновления проекта' },
       { status: 500 }
     );
   }
 }
 
-/**
- * DELETE /api/projects/[id]
- * Удалить проект
- */
+// DELETE /api/projects/[id] - Деактивация проекта
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-
-    console.log('Deleting project:', id);
-
-    const projectIndex = mockProjects.findIndex((p) => p.id === id);
-
-    if (projectIndex === -1) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    const project = await ProjectService.getProjectById(id);
+    
+    if (!project) {
+      return NextResponse.json(
+        { error: 'Проект не найден' },
+        { status: 404 }
+      );
     }
 
-    // Удаляем проект
-    const deletedProject = mockProjects.splice(projectIndex, 1)[0];
+    // Деактивируем проект вместо полного удаления
+    const deactivatedProject = await ProjectService.updateProject(id, {
+      isActive: false,
+    });
 
     return NextResponse.json({
-      success: true,
-      data: deletedProject,
-      message: 'Project deleted successfully'
+      message: 'Проект успешно деактивирован',
+      project: deactivatedProject,
     });
   } catch (error) {
-    console.error('Error deleting project:', error);
+    console.error('Ошибка деактивации проекта:', error);
     return NextResponse.json(
-      { error: 'Failed to delete project' },
+      { error: 'Ошибка деактивации проекта' },
       { status: 500 }
     );
   }

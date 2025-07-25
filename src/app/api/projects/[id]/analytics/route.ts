@@ -1,193 +1,236 @@
-import { NextRequest, NextResponse } from 'next/server';
-
-interface AnalyticsData {
-  projectId: string;
-  period: {
-    start: string;
-    end: string;
-  };
-  metrics: {
-    totalUsers: number;
-    activeUsers: number;
-    newUsers: number;
-    totalSessions: number;
-    averageSessionDuration: number;
-    bounceRate: number;
-    conversionRate: number;
-  };
-  charts: {
-    userGrowth: Array<{ date: string; users: number }>;
-    sessionAnalytics: Array<{
-      date: string;
-      sessions: number;
-      duration: number;
-    }>;
-    topPages: Array<{ page: string; views: number; uniqueUsers: number }>;
-  };
-  revenue: {
-    total: number;
-    growth: number;
-    transactions: number;
-    averageOrderValue: number;
-  };
-}
-
-// Генерация демо данных
-function generateAnalyticsData(
-  projectId: string,
-  period: { start: string; end: string }
-): AnalyticsData {
-  const days = 30; // Последние 30 дней
-  const baseUsers = 1000;
-  const baseRevenue = 50000;
-
-  return {
-    projectId,
-    period,
-    metrics: {
-      totalUsers: baseUsers + Math.floor(Math.random() * 500),
-      activeUsers: Math.floor((baseUsers + Math.random() * 500) * 0.7),
-      newUsers: Math.floor(Math.random() * 200) + 50,
-      totalSessions: Math.floor((baseUsers + Math.random() * 500) * 2.5),
-      averageSessionDuration: Math.floor(Math.random() * 300) + 120, // секунды
-      bounceRate: Math.floor(Math.random() * 30) + 25, // проценты
-      conversionRate: Math.floor(Math.random() * 10) + 2 // проценты
-    },
-    charts: {
-      userGrowth: Array.from({ length: days }, (_, i) => ({
-        date: new Date(Date.now() - (days - i) * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split('T')[0],
-        users: Math.floor(baseUsers * 0.8 + Math.random() * baseUsers * 0.4)
-      })),
-      sessionAnalytics: Array.from({ length: days }, (_, i) => ({
-        date: new Date(Date.now() - (days - i) * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split('T')[0],
-        sessions: Math.floor(50 + Math.random() * 200),
-        duration: Math.floor(120 + Math.random() * 400)
-      })),
-      topPages: [
-        { page: '/dashboard', views: 15420, uniqueUsers: 8932 },
-        { page: '/products', views: 12340, uniqueUsers: 7651 },
-        { page: '/analytics', views: 9876, uniqueUsers: 5432 },
-        { page: '/settings', views: 6543, uniqueUsers: 4321 },
-        { page: '/profile', views: 4567, uniqueUsers: 3210 }
-      ]
-    },
-    revenue: {
-      total: baseRevenue + Math.floor(Math.random() * 20000),
-      growth: Math.floor(Math.random() * 30) - 10, // -10% to +20%
-      transactions: Math.floor(Math.random() * 500) + 200,
-      averageOrderValue: Math.floor(Math.random() * 200) + 100
-    }
-  };
-}
-
 /**
- * GET /api/projects/[id]/analytics
- * Получить аналитику проекта
+ * @file: src/app/api/projects/[id]/analytics/route.ts
+ * @description: API для получения аналитических данных проекта
+ * @project: SaaS Bonus System
+ * @dependencies: Next.js API Routes, Prisma
+ * @created: 2024-12-31
+ * @author: AI Assistant + User
  */
+
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: projectId } = await params;
-    const { searchParams } = new URL(request.url);
+    const { id } = await params;
 
-    // Параметры запроса
-    const startDate =
-      searchParams.get('start') ||
-      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-    const endDate = searchParams.get('end') || new Date().toISOString();
-    const metrics = searchParams.get('metrics')?.split(',') || ['all'];
-
-    console.log('Analytics request:', {
-      projectId,
-      startDate,
-      endDate,
-      metrics
+    // Проверяем существование проекта
+    const project = await db.project.findUnique({
+      where: { id }
     });
 
-    // Генерируем данные аналитики
-    const analyticsData = generateAnalyticsData(projectId, {
-      start: startDate,
-      end: endDate
-    });
-
-    // Фильтруем данные по запрошенным метрикам
-    let responseData: Partial<AnalyticsData> = { ...analyticsData };
-
-    if (!metrics.includes('all')) {
-      responseData = {
-        projectId: analyticsData.projectId,
-        period: analyticsData.period
-      };
-
-      if (metrics.includes('metrics')) {
-        responseData.metrics = analyticsData.metrics;
-      }
-
-      if (metrics.includes('charts')) {
-        responseData.charts = analyticsData.charts;
-      }
-
-      if (metrics.includes('revenue')) {
-        responseData.revenue = analyticsData.revenue;
-      }
+    if (!project) {
+      return NextResponse.json(
+        { error: 'Проект не найден' },
+        { status: 404 }
+      );
     }
 
-    return NextResponse.json({
-      success: true,
-      data: responseData,
-      generated: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('Analytics error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch analytics data' },
-      { status: 500 }
-    );
-  }
-}
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-/**
- * POST /api/projects/[id]/analytics
- * Отправить событие аналитики
- */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id: projectId } = await params;
-    const body = await request.json();
+    // Параллельные запросы для всей аналитики
+    const [
+      // Общие метрики
+      totalUsers,
+      activeUsers,
+      totalBonuses,
+      activeBonuses,
+      totalTransactions,
+      
+      // Пользователи за последние 30 дней
+      newUsersLast30Days,
+      newUsersLast7Days,
+      
+      // Транзакции за последние 30 дней  
+      transactionsLast30Days,
+      transactionsLast7Days,
+      
+      // Данные для графиков (последние 30 дней по дням)
+      dailyStats,
+      
+      // Статистика по типам транзакций
+      transactionsByType,
+      
+      // Истекающие бонусы
+      expiringBonuses,
+      
+      // Топ активных пользователей
+      topUsers
+    ] = await Promise.all([
+      // Общие метрики
+      db.user.count({ where: { projectId: id } }),
+      db.user.count({ where: { projectId: id, isActive: true } }),
+      db.bonus.aggregate({
+        where: { user: { projectId: id } },
+        _sum: { amount: true }
+      }),
+      db.bonus.aggregate({
+        where: { 
+          user: { projectId: id },
+          isUsed: false,
+          OR: [
+            { expiresAt: null },
+            { expiresAt: { gt: now } }
+          ]
+        },
+        _sum: { amount: true }
+      }),
+      db.transaction.count({ where: { user: { projectId: id } } }),
+      
+      // Новые пользователи
+      db.user.count({
+        where: {
+          projectId: id,
+          registeredAt: { gte: thirtyDaysAgo }
+        }
+      }),
+      db.user.count({
+        where: {
+          projectId: id,
+          registeredAt: { gte: sevenDaysAgo }
+        }
+      }),
+      
+      // Транзакции за период
+      db.transaction.count({
+        where: {
+          user: { projectId: id },
+          createdAt: { gte: thirtyDaysAgo }
+        }
+      }),
+      db.transaction.count({
+        where: {
+          user: { projectId: id },
+          createdAt: { gte: sevenDaysAgo }
+        }
+      }),
+      
+      // Ежедневная статистика (последние 30 дней)
+      db.$queryRaw`
+        SELECT 
+          DATE(t.created_at) as date,
+          COUNT(CASE WHEN t.type = 'EARN' THEN 1 END) as earned_transactions,
+          COUNT(CASE WHEN t.type = 'SPEND' THEN 1 END) as spent_transactions,
+          SUM(CASE WHEN t.type = 'EARN' THEN t.amount ELSE 0 END) as earned_amount,
+          SUM(CASE WHEN t.type = 'SPEND' THEN t.amount ELSE 0 END) as spent_amount
+        FROM "transactions" t
+        JOIN "users" u ON t.user_id = u.id
+        WHERE u.project_id = ${id}
+          AND t.created_at >= ${thirtyDaysAgo}
+        GROUP BY DATE(t.created_at)
+        ORDER BY DATE(t.created_at) ASC
+      `,
+      
+      // Статистика по типам транзакций
+      db.transaction.groupBy({
+        by: ['type'],
+        where: {
+          user: { projectId: id },
+          createdAt: { gte: thirtyDaysAgo }
+        },
+        _count: true,
+        _sum: { amount: true }
+      }),
+      
+      // Истекающие бонусы (в ближайшие 7 дней)
+      db.bonus.aggregate({
+        where: {
+          user: { projectId: id },
+          isUsed: false,
+          expiresAt: {
+            gte: now,
+            lte: sevenDaysAgo
+          }
+        },
+        _sum: { amount: true },
+        _count: true
+      }),
+      
+      // Топ активных пользователей
+      db.$queryRaw`
+        SELECT 
+          u.id,
+          u.first_name,
+          u.last_name,
+          u.email,
+          u.phone,
+          COUNT(t.id) as transaction_count,
+          SUM(CASE WHEN t.type = 'EARN' THEN t.amount ELSE 0 END) as total_earned,
+          SUM(CASE WHEN t.type = 'SPEND' THEN t.amount ELSE 0 END) as total_spent
+        FROM "users" u
+        LEFT JOIN "transactions" t ON u.id = t.user_id
+        WHERE u.project_id = ${id}
+          AND (t.created_at IS NULL OR t.created_at >= ${thirtyDaysAgo})
+        GROUP BY u.id, u.first_name, u.last_name, u.email, u.phone
+        ORDER BY transaction_count DESC, total_earned DESC
+        LIMIT 10
+      `
+    ]);
 
-    const event = {
-      projectId,
-      type: body.type || 'page_view',
-      data: body.data || {},
-      timestamp: new Date().toISOString(),
-      userId: body.userId,
-      sessionId: body.sessionId,
-      userAgent: request.headers.get('user-agent'),
-      ip: request.headers.get('x-forwarded-for') || 'unknown'
+    // Обрабатываем данные для ответа
+    const analytics = {
+      // Основные метрики
+      overview: {
+        totalUsers,
+        activeUsers,
+        totalBonuses: totalBonuses._sum.amount || 0,
+        activeBonuses: activeBonuses._sum.amount || 0,
+        totalTransactions,
+        
+        // Динамика за периоды
+        newUsersLast30Days,
+        newUsersLast7Days,
+        transactionsLast30Days,
+        transactionsLast7Days,
+        
+        // Истекающие бонусы
+        expiringBonuses: {
+          amount: expiringBonuses._sum.amount || 0,
+          count: expiringBonuses._count || 0
+        }
+      },
+      
+      // Данные для графиков
+      charts: {
+        // Ежедневная активность
+        dailyActivity: (dailyStats as any[]).map((day: any) => ({
+          date: day.date,
+          earnedTransactions: Number(day.earned_transactions) || 0,
+          spentTransactions: Number(day.spent_transactions) || 0,
+          earnedAmount: Number(day.earned_amount) || 0,
+          spentAmount: Number(day.spent_amount) || 0
+        })),
+        
+        // Статистика по типам транзакций
+        transactionTypes: transactionsByType.map((type: any) => ({
+          type: type.type,
+          count: type._count,
+          amount: type._sum.amount || 0
+        }))
+      },
+      
+      // Топ пользователей
+      topUsers: (topUsers as any[]).map((user: any) => ({
+        id: user.id,
+        name: [user.first_name, user.last_name].filter(Boolean).join(' ') || 'Без имени',
+        contact: user.email || user.phone || 'Не указан',
+        transactionCount: Number(user.transaction_count) || 0,
+        totalEarned: Number(user.total_earned) || 0,
+        totalSpent: Number(user.total_spent) || 0
+      }))
     };
 
-    console.log('Analytics event:', event);
+    return NextResponse.json(analytics);
 
-    // В реальном проекте здесь была бы запись в аналитическую БД
-
-    return NextResponse.json({
-      success: true,
-      message: 'Event recorded successfully',
-      eventId: `evt_${Date.now()}`
-    });
   } catch (error) {
-    console.error('Analytics event error:', error);
+    console.error('Ошибка получения аналитики проекта:', error);
     return NextResponse.json(
-      { error: 'Failed to record analytics event' },
+      { error: 'Внутренняя ошибка сервера' },
       { status: 500 }
     );
   }
