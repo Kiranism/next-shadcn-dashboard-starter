@@ -1,3 +1,12 @@
+/**
+ * @file: route.ts
+ * @description: Webhook API для обработки регистрации пользователей, покупок и списания бонусов
+ * @project: SaaS Bonus System
+ * @dependencies: NextRequest, NextResponse, db, ProjectService, UserService, BonusService
+ * @created: 2025-01-23
+ * @author: AI Assistant + User
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { ProjectService } from '@/lib/services/project.service';
