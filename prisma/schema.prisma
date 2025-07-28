@@ -25,15 +25,60 @@ model Project {
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
+  // Настройки бота (самостоятельная настройка владельцем)
+  botToken         String?   @map("bot_token")       // Токен бота от владельца
+  botUsername      String?   @map("bot_username")    // Username бота
+  botStatus        BotStatus @default(INACTIVE) @map("bot_status") // Статус бота
+
   // Связи
   users            User[]
-  botSettings      BotSettings?
+  botSettings      BotSettings? // Deprecated, оставлено для совместимости
   webhookLogs      WebhookLog[]
+  bonusLevels      BonusLevel[]
+  referralProgram  ReferralProgram?
 
   @@map("projects")
 }
 
-// Настройки Telegram бота для каждого проекта
+// Уровни бонусной программы проекта
+model BonusLevel {
+  id             String  @id @default(cuid())
+  projectId      String  @map("project_id")
+  name           String  // "Базовый", "Серебряный", "Золотой"
+  minAmount      Decimal @default(0) @map("min_amount") @db.Decimal(10, 2)
+  maxAmount      Decimal? @map("max_amount") @db.Decimal(10, 2) // null для последнего уровня
+  bonusPercent   Int     @map("bonus_percent")   // 5, 7, 10
+  paymentPercent Int     @map("payment_percent") // 10, 15, 20
+  order          Int     @default(0)             // Порядок сортировки
+  isActive       Boolean @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Связи
+  project        Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, name])
+  @@map("bonus_levels")
+}
+
+// Реферальная программа проекта
+model ReferralProgram {
+  id             String  @id @default(cuid())
+  projectId      String  @unique @map("project_id")
+  isActive       Boolean @default(true) @map("is_active")
+  bonusPercent   Int     @default(5) @map("bonus_percent")    // % от покупки рефера
+  referrerBonus  Decimal @default(0) @map("referrer_bonus") @db.Decimal(10, 2) // фиксированный бонус рефереру
+  description    String? // Описание программы
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Связи
+  project        Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("referral_programs")
+}
+
+// Настройки Telegram бота для каждого проекта (DEPRECATED - используется для совместимости)
 model BotSettings {
   id              String   @id @default(cuid())
   projectId       String   @unique @map("project_id")
@@ -52,23 +97,42 @@ model BotSettings {
 
 // Пользователи проекта
 model User {
-  id           String   @id @default(cuid())
-  projectId    String   @map("project_id")
-  email        String?
-  phone        String?
-  firstName    String?  @map("first_name")
-  lastName     String?  @map("last_name")
-  birthDate    DateTime? @map("birth_date") @db.Date
-  telegramId   BigInt?  @unique @map("telegram_id")
-  telegramUsername String? @map("telegram_username")
-  isActive     Boolean  @default(true) @map("is_active")
-  registeredAt DateTime @default(now()) @map("registered_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id               String   @id @default(cuid())
+  projectId        String   @map("project_id")
+  email            String?
+  phone            String?
+  firstName        String?  @map("first_name")
+  lastName         String?  @map("last_name")
+  birthDate        DateTime? @map("birth_date") @db.Date
+  telegramId       BigInt?  @unique @map("telegram_id")
+  telegramUsername String?  @map("telegram_username")
+  isActive         Boolean  @default(true) @map("is_active")
+  registeredAt     DateTime @default(now()) @map("registered_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Статистика для уровней бонусов
+  totalPurchases   Decimal  @default(0) @map("total_purchases") @db.Decimal(10, 2)
+  currentLevel     String   @default("Базовый") @map("current_level")
+
+  // Реферальная система
+  referredBy       String?  @map("referred_by") // ID пользователя-рефера
+  referralCode     String?  @unique @map("referral_code") // Уникальный реферальный код
+
+  // UTM метки при регистрации
+  utmSource        String?  @map("utm_source")
+  utmMedium        String?  @map("utm_medium") 
+  utmCampaign      String?  @map("utm_campaign")
+  utmContent       String?  @map("utm_content")
+  utmTerm          String?  @map("utm_term")
 
   // Связи
-  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  bonuses      Bonus[]
-  transactions Transaction[]
+  project          Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  bonuses          Bonus[]
+  transactions     Transaction[]
+  
+  // Реферальные связи
+  referrer         User?    @relation("UserReferrals", fields: [referredBy], references: [id])
+  referrals        User[]   @relation("UserReferrals")
 
   // Уникальные ограничения
   @@unique([projectId, email])
@@ -96,18 +160,26 @@ model Bonus {
 
 // Транзакции (история операций)
 model Transaction {
-  id          String          @id @default(cuid())
-  userId      String          @map("user_id")
-  bonusId     String?         @map("bonus_id")
-  amount      Decimal         @db.Decimal(10, 2)
-  type        TransactionType
-  description String?
-  metadata    Json?           // Дополнительная информация (ID заказа, и т.д.)
-  createdAt   DateTime        @default(now()) @map("created_at")
+  id              String          @id @default(cuid())
+  userId          String          @map("user_id")
+  bonusId         String?         @map("bonus_id")
+  amount          Decimal         @db.Decimal(10, 2)
+  type            TransactionType
+  description     String?
+  metadata        Json?           // Дополнительная информация (ID заказа, и т.д.)
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  // Контекст уровня пользователя
+  userLevel       String?         @map("user_level")      // Уровень пользователя на момент операции
+  appliedPercent  Int?            @map("applied_percent") // Применённый процент бонусов
+
+  // Реферальная система
+  isReferralBonus Boolean         @default(false) @map("is_referral_bonus")
+  referralUserId  String?         @map("referral_user_id") // Кому начислен реферальный бонус
 
   // Связи
-  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bonus       Bonus? @relation(fields: [bonusId], references: [id], onDelete: SetNull)
+  user            User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bonus           Bonus? @relation(fields: [bonusId], references: [id], onDelete: SetNull)
 
   @@map("transactions")
 }
@@ -132,6 +204,12 @@ model WebhookLog {
 }
 
 // Перечисления
+enum BotStatus {
+  INACTIVE   // Бот не настроен
+  ACTIVE     // Бот работает
+  ERROR      // Ошибка настройки
+}
+
 enum BonusType {
   PURCHASE     // За покупку
   BIRTHDAY     // За день рождения

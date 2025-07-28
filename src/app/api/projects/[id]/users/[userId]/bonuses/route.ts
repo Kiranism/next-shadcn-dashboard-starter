@@ -18,7 +18,7 @@ export async function POST(
   try {
     const { id: projectId, userId } = await params;
     const body = await request.json();
-    
+
     const { amount, type, description } = body;
 
     // Валидация
@@ -59,8 +59,69 @@ export async function POST(
       description: description || 'Ручное начисление через админ-панель'
     });
 
-    return NextResponse.json(bonus, { status: 201 });
+    // Конвертируем BigInt в строки для JSON serialization
+    const serializedBonus = {
+      ...bonus,
+      id: bonus.id,
+      userId: bonus.userId,
+      amount: bonus.amount.toString(),
+      type: bonus.type,
+      description: bonus.description,
+      expiresAt: bonus.expiresAt ? bonus.expiresAt.toISOString() : null,
+      isUsed: bonus.isUsed,
+      createdAt: bonus.createdAt.toISOString(),
+      user: bonus.user
+        ? {
+            ...bonus.user,
+            id: bonus.user.id,
+            projectId: bonus.user.projectId,
+            totalPurchases: bonus.user.totalPurchases
+              ? bonus.user.totalPurchases.toString()
+              : '0',
+            currentLevel: bonus.user.currentLevel,
+            registeredAt: bonus.user.registeredAt.toISOString(),
+            updatedAt: bonus.user.updatedAt.toISOString(),
+            // Другие поля без BigInt
+            email: bonus.user.email,
+            phone: bonus.user.phone,
+            firstName: bonus.user.firstName,
+            lastName: bonus.user.lastName,
+            birthDate: bonus.user.birthDate
+              ? bonus.user.birthDate.toISOString()
+              : null,
+            telegramId: bonus.user.telegramId
+              ? bonus.user.telegramId.toString()
+              : null, // BigInt
+            telegramUsername: bonus.user.telegramUsername,
+            isActive: bonus.user.isActive,
+            referredBy: bonus.user.referredBy,
+            referralCode: bonus.user.referralCode,
+            utmSource: bonus.user.utmSource,
+            utmMedium: bonus.user.utmMedium,
+            utmCampaign: bonus.user.utmCampaign,
+            utmContent: bonus.user.utmContent,
+            utmTerm: bonus.user.utmTerm
+          }
+        : undefined,
+      transactions:
+        bonus.transactions?.map((t) => ({
+          ...t,
+          id: t.id,
+          userId: t.userId,
+          bonusId: t.bonusId,
+          amount: t.amount.toString(),
+          type: t.type,
+          description: t.description,
+          metadata: t.metadata,
+          createdAt: t.createdAt.toISOString(),
+          userLevel: t.userLevel,
+          appliedPercent: t.appliedPercent,
+          isReferralBonus: t.isReferralBonus,
+          referralUserId: t.referralUserId
+        })) || []
+    };
 
+    return NextResponse.json(serializedBonus, { status: 201 });
   } catch (error) {
     console.error('Ошибка начисления бонусов:', error);
     return NextResponse.json(
@@ -95,8 +156,16 @@ export async function GET(
     // Получаем баланс пользователя
     const balance = await UserService.getUserBalance(userId);
 
-    return NextResponse.json(balance);
+    // Сериализуем BigInt поля в балансе
+    const serializedBalance = {
+      ...balance,
+      currentBalance: balance.currentBalance.toString(),
+      totalEarned: balance.totalEarned.toString(),
+      totalSpent: balance.totalSpent.toString(),
+      expiringSoon: balance.expiringSoon.toString()
+    };
 
+    return NextResponse.json(serializedBalance);
   } catch (error) {
     console.error('Ошибка получения баланса:', error);
     return NextResponse.json(
@@ -104,4 +173,4 @@ export async function GET(
       { status: 500 }
     );
   }
-} 
+}

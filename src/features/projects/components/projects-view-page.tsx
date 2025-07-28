@@ -10,11 +10,26 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Search, Settings, Users, BarChart3, Bot, BotOff } from 'lucide-react';
+import {
+  Plus,
+  Search,
+  Settings,
+  Users,
+  BarChart3,
+  Bot,
+  BotOff
+} from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Heading } from '@/components/ui/heading';
@@ -37,11 +52,11 @@ export function ProjectsView() {
     try {
       setLoading(true);
       const response = await fetch('/api/projects');
-      
+
       if (!response.ok) {
         throw new Error('Ошибка загрузки проектов');
       }
-      
+
       const data = await response.json();
       setProjects(data.projects || []);
     } catch (error) {
@@ -52,9 +67,11 @@ export function ProjectsView() {
   };
 
   // Фильтрация проектов по поисковому запросу
-  const filteredProjects = projects.filter(project =>
-    project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (project.domain && project.domain.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredProjects = projects.filter(
+    (project) =>
+      project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (project.domain &&
+        project.domain.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const handleCreateProject = () => {
@@ -63,75 +80,75 @@ export function ProjectsView() {
   };
 
   return (
-    <div className="flex flex-1 flex-col space-y-4">
+    <div className='flex flex-1 flex-col space-y-4'>
       {/* Заголовок и действия */}
-      <div className="flex items-start justify-between">
+      <div className='flex items-start justify-between'>
         <Heading
-          title="Проекты"
-          description="Управляйте проектами вашей бонусной системы"
+          title='Проекты'
+          description='Управляйте проектами вашей бонусной системы'
         />
         <Button onClick={() => setShowCreateDialog(true)}>
-          <Plus className="mr-2 h-4 w-4" />
+          <Plus className='mr-2 h-4 w-4' />
           Создать проект
         </Button>
       </div>
       <Separator />
 
       {/* Поиск */}
-      <div className="flex items-center space-x-2">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+      <div className='flex items-center space-x-2'>
+        <div className='relative max-w-sm flex-1'>
+          <Search className='text-muted-foreground absolute top-2.5 left-2 h-4 w-4' />
           <Input
-            placeholder="Поиск проектов..."
+            placeholder='Поиск проектов...'
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8"
+            className='pl-8'
           />
         </div>
       </div>
 
       {/* Список проектов */}
       {loading ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
           {Array.from({ length: 6 }).map((_, i) => (
             <Card key={i}>
               <CardHeader>
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-1/2" />
+                <Skeleton className='h-4 w-3/4' />
+                <Skeleton className='h-3 w-1/2' />
               </CardHeader>
               <CardContent>
-                <Skeleton className="h-8 w-full" />
+                <Skeleton className='h-8 w-full' />
               </CardContent>
             </Card>
           ))}
         </div>
       ) : filteredProjects.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="mx-auto max-w-md">
-            <div className="mx-auto h-12 w-12 text-muted-foreground/50">
-              <BarChart3 className="h-full w-full" />
+        <div className='py-12 text-center'>
+          <div className='mx-auto max-w-md'>
+            <div className='text-muted-foreground/50 mx-auto h-12 w-12'>
+              <BarChart3 className='h-full w-full' />
             </div>
-            <h3 className="mt-4 text-lg font-semibold">
+            <h3 className='mt-4 text-lg font-semibold'>
               {searchQuery ? 'Проекты не найдены' : 'Нет проектов'}
             </h3>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className='text-muted-foreground mt-2 text-sm'>
               {searchQuery
                 ? 'Попробуйте изменить поисковый запрос'
                 : 'Создайте первый проект для начала работы'}
             </p>
             {!searchQuery && (
-              <Button 
-                className="mt-4" 
+              <Button
+                className='mt-4'
                 onClick={() => setShowCreateDialog(true)}
               >
-                <Plus className="mr-2 h-4 w-4" />
+                <Plus className='mr-2 h-4 w-4' />
                 Создать проект
               </Button>
             )}
           </div>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
           {filteredProjects.map((project) => (
             <ProjectCard key={project.id} project={project} />
           ))}
@@ -151,11 +168,11 @@ export function ProjectsView() {
 // Компонент карточки проекта
 function ProjectCard({ project }: { project: Project }) {
   return (
-    <Card className="transition-colors hover:bg-muted/50">
+    <Card className='hover:bg-muted/50 transition-colors'>
       <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <CardTitle className="text-lg">{project.name}</CardTitle>
+        <div className='flex items-start justify-between'>
+          <div className='space-y-1'>
+            <CardTitle className='text-lg'>{project.name}</CardTitle>
             {project.domain && (
               <CardDescription>{project.domain}</CardDescription>
             )}
@@ -166,43 +183,58 @@ function ProjectCard({ project }: { project: Project }) {
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-2">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Процент бонусов:</span>
-          <span className="font-medium">{project.bonusPercentage}%</span>
+      <CardContent className='space-y-2'>
+        <div className='flex items-center justify-between text-sm'>
+          <span className='text-muted-foreground'>Процент бонусов:</span>
+          <span className='font-medium'>{project.bonusPercentage}%</span>
         </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Срок действия:</span>
-          <span className="font-medium">{project.bonusExpiryDays} дней</span>
+        <div className='flex items-center justify-between text-sm'>
+          <span className='text-muted-foreground'>Срок действия:</span>
+          <span className='font-medium'>{project.bonusExpiryDays} дней</span>
         </div>
         {project._count && (
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Пользователей:</span>
-            <span className="font-medium">{project._count.users}</span>
+          <div className='flex items-center justify-between text-sm'>
+            <span className='text-muted-foreground'>Пользователей:</span>
+            <span className='font-medium'>{project._count.users}</span>
           </div>
         )}
       </CardContent>
 
-      <CardFooter className="flex gap-2">
-        <Link href={`/dashboard/projects/${project.id}/settings`}>
-          <Button variant="outline" size="sm" className="flex-1">
-            <Settings className="mr-2 h-4 w-4" />
-            Настройки
-          </Button>
-        </Link>
-        <BotStatusButton project={project} />
-        <Link href={`/dashboard/projects/${project.id}/users`}>
-          <Button variant="outline" size="sm" className="flex-1">
-            <Users className="mr-2 h-4 w-4" />
-            Пользователи
-          </Button>
-        </Link>
-        <Link href={`/dashboard/projects/${project.id}/analytics`}>
-          <Button variant="outline" size="sm" className="flex-1">
-            <BarChart3 className="mr-2 h-4 w-4" />
-            Аналитика
-          </Button>
-        </Link>
+      <CardFooter className='flex flex-col gap-2'>
+        <div className='flex w-full gap-2'>
+          <Link
+            href={`/dashboard/projects/${project.id}/settings`}
+            className='flex-1'
+          >
+            <Button variant='outline' size='sm' className='w-full'>
+              <Settings className='mr-2 h-4 w-4' />
+              Настройки
+            </Button>
+          </Link>
+          <div className='flex-1'>
+            <BotStatusButton project={project} />
+          </div>
+        </div>
+        <div className='flex w-full gap-2'>
+          <Link
+            href={`/dashboard/projects/${project.id}/users`}
+            className='flex-1'
+          >
+            <Button variant='outline' size='sm' className='w-full'>
+              <Users className='mr-2 h-4 w-4' />
+              Пользователи
+            </Button>
+          </Link>
+          <Link
+            href={`/dashboard/projects/${project.id}/analytics`}
+            className='flex-1'
+          >
+            <Button variant='outline' size='sm' className='w-full'>
+              <BarChart3 className='mr-2 h-4 w-4' />
+              Аналитика
+            </Button>
+          </Link>
+        </div>
       </CardFooter>
     </Card>
   );
@@ -234,28 +266,24 @@ function BotStatusButton({ project }: { project: Project }) {
 
   return (
     <Link href={`/dashboard/projects/${project.id}/bot`}>
-      <Button 
-        variant="outline" 
-        size="sm" 
-        className="flex-1"
-      >
+      <Button variant='outline' size='sm' className='w-full'>
         {isBotActive ? (
           <>
-            <Bot className="mr-2 h-4 w-4 text-green-600" />
+            <Bot className='mr-2 h-4 w-4 text-green-600' />
             Бот активен
           </>
         ) : hasBotConfigured ? (
           <>
-            <BotOff className="mr-2 h-4 w-4 text-orange-600" />
+            <BotOff className='mr-2 h-4 w-4 text-orange-600' />
             Настроить бота
           </>
         ) : (
           <>
-            <Bot className="mr-2 h-4 w-4 text-gray-400" />
+            <Bot className='mr-2 h-4 w-4 text-gray-400' />
             Настроить бота
           </>
         )}
       </Button>
     </Link>
   );
-} 
+}

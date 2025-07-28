@@ -14,8 +14,8 @@ export type Product = {
 //Info: The following data is used for the sidebar navigation and Cmd K bar.
 export const navItems: NavItem[] = [
   {
-    title: 'Dashboard',
-    url: '/dashboard/overview',
+    title: 'Обзор',
+    url: '/dashboard',
     icon: 'dashboard',
     isActive: false,
     shortcut: ['d', 'd'],
@@ -30,49 +30,25 @@ export const navItems: NavItem[] = [
     items: [] // Empty array as there are no child items for Projects
   },
   {
-    title: 'Product',
-    url: '/dashboard/product',
-    icon: 'product',
-    shortcut: ['p', 'p'],
-    isActive: false,
-    items: [] // No child items
-  },
-  {
-    title: 'Бонусы',
-    url: '/dashboard/bonuses',
-    icon: 'bonus',
-    shortcut: ['b', 'b'],
-    isActive: false,
-    items: [] // No child items
-  },
-  {
-    title: 'Account',
+    title: 'Аккаунт',
     url: '#', // Placeholder as there is no direct link for the parent
     icon: 'billing',
     isActive: true,
 
     items: [
       {
-        title: 'Profile',
+        title: 'Профиль',
         url: '/dashboard/profile',
         icon: 'userPen',
         shortcut: ['m', 'm']
       },
       {
-        title: 'Login',
+        title: 'Вход',
         shortcut: ['l', 'l'],
         url: '/',
         icon: 'login'
       }
     ]
-  },
-  {
-    title: 'Kanban',
-    url: '/dashboard/kanban',
-    icon: 'kanban',
-    shortcut: ['k', 'k'],
-    isActive: false,
-    items: [] // No child items
   }
 ];
 
@@ -88,42 +64,42 @@ export interface SaleUser {
 export const recentSalesData: SaleUser[] = [
   {
     id: 1,
-    name: 'Olivia Martin',
+    name: 'Ольга Мартина',
     email: 'olivia.martin@email.com',
-    amount: '+$1,999.00',
+    amount: '+1,999₽',
     image: 'https://api.slingacademy.com/public/sample-users/1.png',
-    initials: 'OM'
+    initials: 'ОМ'
   },
   {
     id: 2,
-    name: 'Jackson Lee',
+    name: 'Джексон Ли',
     email: 'jackson.lee@email.com',
-    amount: '+$39.00',
+    amount: '+39₽',
     image: 'https://api.slingacademy.com/public/sample-users/2.png',
-    initials: 'JL'
+    initials: 'ДЛ'
   },
   {
     id: 3,
-    name: 'Isabella Nguyen',
+    name: 'Изабелла Нгуен',
     email: 'isabella.nguyen@email.com',
-    amount: '+$299.00',
+    amount: '+299₽',
     image: 'https://api.slingacademy.com/public/sample-users/3.png',
-    initials: 'IN'
+    initials: 'ИН'
   },
   {
     id: 4,
-    name: 'William Kim',
+    name: 'Вильям Ким',
     email: 'will@email.com',
-    amount: '+$99.00',
+    amount: '+99₽',
     image: 'https://api.slingacademy.com/public/sample-users/4.png',
-    initials: 'WK'
+    initials: 'ВК'
   },
   {
     id: 5,
-    name: 'Sofia Davis',
+    name: 'София Дэвис',
     email: 'sofia.davis@email.com',
-    amount: '+$39.00',
+    amount: '+39₽',
     image: 'https://api.slingacademy.com/public/sample-users/5.png',
-    initials: 'SD'
+    initials: 'СД'
   }
 ];

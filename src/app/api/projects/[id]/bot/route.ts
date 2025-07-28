@@ -12,6 +12,7 @@ import { db } from '@/lib/db';
 import { ProjectService } from '@/lib/services/project.service';
 import { botManager } from '@/lib/telegram/bot-manager';
 import type { BotSettings } from '@/types/bonus';
+import { logger } from '@/lib/logger';
 
 // GET /api/projects/[id]/bot - Получение настроек бота
 export async function GET(
@@ -20,19 +21,16 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    
+
     // Проверяем существование проекта
     const project = await ProjectService.getProjectById(id);
     if (!project) {
-      return NextResponse.json(
-        { error: 'Проект не найден' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Проект не найден' }, { status: 404 });
     }
 
     // Получаем настройки бота
     const botSettings = await db.botSettings.findUnique({
-      where: { projectId: id },
+      where: { projectId: id }
     });
 
     return NextResponse.json(botSettings);
@@ -53,14 +51,11 @@ export async function POST(
   try {
     const { id } = await params;
     const body = await request.json();
-    
+
     // Проверяем существование проекта
     const project = await ProjectService.getProjectById(id);
     if (!project) {
-      return NextResponse.json(
-        { error: 'Проект не найден' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Проект не найден' }, { status: 404 });
     }
 
     // Валидация данных
@@ -85,16 +80,20 @@ export async function POST(
       update: {
         botToken: body.botToken,
         botUsername: body.botUsername || null,
-        welcomeMessage: body.welcomeMessage || 'Добро пожаловать! 🎉\n\nЭто бот бонусной программы.',
-        isActive: body.isActive !== undefined ? body.isActive : true,
+        welcomeMessage:
+          body.welcomeMessage ||
+          'Добро пожаловать! 🎉\n\nЭто бот бонусной программы.',
+        isActive: body.isActive !== undefined ? body.isActive : true
       },
       create: {
         projectId: id,
         botToken: body.botToken,
         botUsername: body.botUsername || null,
-        welcomeMessage: body.welcomeMessage || 'Добро пожаловать! 🎉\n\nЭто бот бонусной программы.',
-        isActive: body.isActive !== undefined ? body.isActive : true,
-      },
+        welcomeMessage:
+          body.welcomeMessage ||
+          'Добро пожаловать! 🎉\n\nЭто бот бонусной программы.',
+        isActive: body.isActive !== undefined ? body.isActive : true
+      }
     });
 
     // Создаем/обновляем бота в BotManager
@@ -103,9 +102,10 @@ export async function POST(
         // Преобразуем настройки для BotManager
         const botSettingsForManager = {
           ...botSettings,
-          welcomeMessage: typeof botSettings.welcomeMessage === 'string' 
-            ? botSettings.welcomeMessage 
-            : 'Добро пожаловать! 🎉\n\nЭто бот бонусной программы.'
+          welcomeMessage:
+            typeof botSettings.welcomeMessage === 'string'
+              ? botSettings.welcomeMessage
+              : 'Добро пожаловать! 🎉\n\nЭто бот бонусной программы.'
         };
         await botManager.createBot(id, botSettingsForManager as BotSettings);
         console.log(`✅ Бот для проекта ${id} создан и активирован`);
@@ -121,7 +121,7 @@ export async function POST(
     return NextResponse.json(botSettings, { status: 201 });
   } catch (error) {
     console.error('Ошибка настройки бота:', error);
-    
+
     if (error instanceof Error && error.message.includes('Unique constraint')) {
       return NextResponse.json(
         { error: 'Токен бота уже используется в другом проекте' },
@@ -144,10 +144,10 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    
+
     // Проверяем существование настроек бота
     const existingBot = await db.botSettings.findUnique({
-      where: { projectId: id },
+      where: { projectId: id }
     });
 
     if (!existingBot) {
@@ -168,13 +168,15 @@ export async function PUT(
     // Обновляем настройки
     const updateData: any = {};
     if (body.botToken !== undefined) updateData.botToken = body.botToken;
-    if (body.botUsername !== undefined) updateData.botUsername = body.botUsername;
-    if (body.welcomeMessage !== undefined) updateData.welcomeMessage = body.welcomeMessage;
+    if (body.botUsername !== undefined)
+      updateData.botUsername = body.botUsername;
+    if (body.welcomeMessage !== undefined)
+      updateData.welcomeMessage = body.welcomeMessage;
     if (body.isActive !== undefined) updateData.isActive = body.isActive;
 
     const updatedBot = await db.botSettings.update({
       where: { projectId: id },
-      data: updateData,
+      data: updateData
     });
 
     // Обновляем бота в BotManager
@@ -183,9 +185,10 @@ export async function PUT(
         // Преобразуем настройки для BotManager
         const botSettingsForManager = {
           ...updatedBot,
-          welcomeMessage: typeof updatedBot.welcomeMessage === 'string' 
-            ? updatedBot.welcomeMessage 
-            : 'Добро пожаловать! 🎉\n\nЭто бот бонусной программы.'
+          welcomeMessage:
+            typeof updatedBot.welcomeMessage === 'string'
+              ? updatedBot.welcomeMessage
+              : 'Добро пожаловать! 🎉\n\nЭто бот бонусной программы.'
         };
         await botManager.updateBot(id, botSettingsForManager as BotSettings);
         console.log(`🔄 Бот для проекта ${id} обновлен`);
@@ -214,9 +217,9 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    
+
     const botSettings = await db.botSettings.findUnique({
-      where: { projectId: id },
+      where: { projectId: id }
     });
 
     if (!botSettings) {
@@ -229,7 +232,7 @@ export async function DELETE(
     // Деактивируем бота в базе данных
     const deactivatedBot = await db.botSettings.update({
       where: { projectId: id },
-      data: { isActive: false },
+      data: { isActive: false }
     });
 
     // Останавливаем бота в BotManager
@@ -242,7 +245,7 @@ export async function DELETE(
 
     return NextResponse.json({
       message: 'Бот успешно деактивирован',
-      bot: deactivatedBot,
+      bot: deactivatedBot
     });
   } catch (error) {
     console.error('Ошибка деактивации бота:', error);
@@ -251,4 +254,4 @@ export async function DELETE(
       { status: 500 }
     );
   }
-} 
+}

@@ -2,13 +2,15 @@
  * @file: src/app/api/projects/[id]/analytics/route.ts
  * @description: API для получения аналитических данных проекта
  * @project: SaaS Bonus System
- * @dependencies: Next.js API Routes, Prisma
+ * @dependencies: Next.js API Routes, Prisma, ReferralService
  * @created: 2024-12-31
  * @author: AI Assistant + User
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { ReferralService } from '@/lib/services/referral.service';
+import { logger } from '@/lib/logger';
 
 export async function GET(
   request: NextRequest,
@@ -23,10 +25,7 @@ export async function GET(
     });
 
     if (!project) {
-      return NextResponse.json(
-        { error: 'Проект не найден' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Проект не найден' }, { status: 404 });
     }
 
     const now = new Date();
@@ -41,26 +40,33 @@ export async function GET(
       totalBonuses,
       activeBonuses,
       totalTransactions,
-      
+
       // Пользователи за последние 30 дней
       newUsersLast30Days,
       newUsersLast7Days,
-      
-      // Транзакции за последние 30 дней  
+
+      // Транзакции за последние 30 дней
       transactionsLast30Days,
       transactionsLast7Days,
-      
+
       // Данные для графиков (последние 30 дней по дням)
       dailyStats,
-      
+
       // Статистика по типам транзакций
       transactionsByType,
-      
+
       // Истекающие бонусы
       expiringBonuses,
-      
+
       // Топ активных пользователей
-      topUsers
+      topUsers,
+
+      // Статистика по уровням пользователей
+      usersByLevel,
+      bonusLevels,
+
+      // Реферальная статистика
+      referralStats
     ] = await Promise.all([
       // Общие метрики
       db.user.count({ where: { projectId: id } }),
@@ -70,18 +76,15 @@ export async function GET(
         _sum: { amount: true }
       }),
       db.bonus.aggregate({
-        where: { 
+        where: {
           user: { projectId: id },
           isUsed: false,
-          OR: [
-            { expiresAt: null },
-            { expiresAt: { gt: now } }
-          ]
+          OR: [{ expiresAt: null }, { expiresAt: { gt: now } }]
         },
         _sum: { amount: true }
       }),
       db.transaction.count({ where: { user: { projectId: id } } }),
-      
+
       // Новые пользователи
       db.user.count({
         where: {
@@ -95,7 +98,7 @@ export async function GET(
           registeredAt: { gte: sevenDaysAgo }
         }
       }),
-      
+
       // Транзакции за период
       db.transaction.count({
         where: {
@@ -109,7 +112,7 @@ export async function GET(
           createdAt: { gte: sevenDaysAgo }
         }
       }),
-      
+
       // Ежедневная статистика (последние 30 дней)
       db.$queryRaw`
         SELECT 
@@ -125,7 +128,7 @@ export async function GET(
         GROUP BY DATE(t.created_at)
         ORDER BY DATE(t.created_at) ASC
       `,
-      
+
       // Статистика по типам транзакций
       db.transaction.groupBy({
         by: ['type'],
@@ -136,7 +139,7 @@ export async function GET(
         _count: true,
         _sum: { amount: true }
       }),
-      
+
       // Истекающие бонусы (в ближайшие 7 дней)
       db.bonus.aggregate({
         where: {
@@ -150,7 +153,7 @@ export async function GET(
         _sum: { amount: true },
         _count: true
       }),
-      
+
       // Топ активных пользователей
       db.$queryRaw`
         SELECT 
@@ -169,7 +172,37 @@ export async function GET(
         GROUP BY u.id, u.first_name, u.last_name, u.email, u.phone
         ORDER BY transaction_count DESC, total_earned DESC
         LIMIT 10
-      `
+      `,
+
+      // Статистика по уровням пользователей
+      db.$queryRaw`
+        SELECT 
+          u.current_level as level,
+          COUNT(u.id) as user_count,
+          AVG(u.total_purchases) as avg_purchases
+        FROM "users" u
+        WHERE u.project_id = ${id}
+        GROUP BY u.current_level
+        ORDER BY COUNT(u.id) DESC
+      `,
+
+      // Активные уровни бонусов проекта
+      db.$queryRaw`
+        SELECT 
+          bl.id,
+          bl.name,
+          bl.min_amount,
+          bl.max_amount,
+          bl.bonus_percent,
+          bl.payment_percent,
+          bl.order
+        FROM "bonus_levels" bl
+        WHERE bl.project_id = ${id} AND bl.is_active = true
+        ORDER BY bl.order ASC
+      `,
+
+      // Реферальная статистика через ReferralService
+      ReferralService.getReferralStats(id)
     ]);
 
     // Обрабатываем данные для ответа
@@ -181,20 +214,20 @@ export async function GET(
         totalBonuses: totalBonuses._sum.amount || 0,
         activeBonuses: activeBonuses._sum.amount || 0,
         totalTransactions,
-        
+
         // Динамика за периоды
         newUsersLast30Days,
         newUsersLast7Days,
         transactionsLast30Days,
         transactionsLast7Days,
-        
+
         // Истекающие бонусы
         expiringBonuses: {
           amount: expiringBonuses._sum.amount || 0,
           count: expiringBonuses._count || 0
         }
       },
-      
+
       // Данные для графиков
       charts: {
         // Ежедневная активность
@@ -205,7 +238,7 @@ export async function GET(
           earnedAmount: Number(day.earned_amount) || 0,
           spentAmount: Number(day.spent_amount) || 0
         })),
-        
+
         // Статистика по типам транзакций
         transactionTypes: transactionsByType.map((type: any) => ({
           type: type.type,
@@ -213,22 +246,47 @@ export async function GET(
           amount: type._sum.amount || 0
         }))
       },
-      
+
       // Топ пользователей
       topUsers: (topUsers as any[]).map((user: any) => ({
         id: user.id,
-        name: [user.first_name, user.last_name].filter(Boolean).join(' ') || 'Без имени',
+        name:
+          [user.first_name, user.last_name].filter(Boolean).join(' ') ||
+          'Без имени',
         contact: user.email || user.phone || 'Не указан',
         transactionCount: Number(user.transaction_count) || 0,
         totalEarned: Number(user.total_earned) || 0,
         totalSpent: Number(user.total_spent) || 0
-      }))
+      })),
+
+      // Метрики по уровням пользователей
+      userLevels: (usersByLevel as any[]).map((level: any) => ({
+        level: level.level,
+        userCount: Number(level.user_count) || 0,
+        avgPurchases: Number(level.avg_purchases) || 0
+      })),
+
+      // Конфигурация уровней бонусов
+      bonusLevels: (bonusLevels as any[]).map((level: any) => ({
+        id: level.id,
+        name: level.name,
+        minAmount: Number(level.min_amount) || 0,
+        maxAmount: level.max_amount ? Number(level.max_amount) : null,
+        bonusPercent: Number(level.bonus_percent) || 0,
+        paymentPercent: Number(level.payment_percent) || 0,
+        order: Number(level.order) || 0
+      })),
+
+      // Реферальная статистика
+      referralStats: referralStats
     };
 
     return NextResponse.json(analytics);
-
   } catch (error) {
-    console.error('Ошибка получения аналитики проекта:', error);
+    logger.error('Ошибка получения аналитики проекта', {
+      error: error instanceof Error ? error.message : 'Неизвестная ошибка',
+      component: 'analytics-api'
+    });
     return NextResponse.json(
       { error: 'Внутренняя ошибка сервера' },
       { status: 500 }

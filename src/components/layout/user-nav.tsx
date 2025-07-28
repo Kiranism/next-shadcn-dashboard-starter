@@ -12,9 +12,11 @@ import {
 import { UserAvatarProfile } from '@/components/user-avatar-profile';
 import { SignOutButton, useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
+
 export function UserNav() {
   const { user } = useUser();
   const router = useRouter();
+
   if (user) {
     return (
       <DropdownMenu>
@@ -42,16 +44,19 @@ export function UserNav() {
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuItem onClick={() => router.push('/dashboard/profile')}>
-              Profile
+              Профиль
             </DropdownMenuItem>
-            <DropdownMenuItem>Billing</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
-            <DropdownMenuItem>New Team</DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => router.push('/dashboard/projects')}
+            >
+              Проекты
+            </DropdownMenuItem>
+            <DropdownMenuItem>Настройки</DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
-            <SignOutButton redirectUrl='/auth/sign-in' />
-          </DropdownMenuItem>
+          <SignOutButton redirectUrl='/auth/sign-in'>
+            <DropdownMenuItem>Выйти из аккаунта</DropdownMenuItem>
+          </SignOutButton>
         </DropdownMenuContent>
       </DropdownMenu>
     );

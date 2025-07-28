@@ -8,36 +8,52 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { ProjectService } from '@/lib/services/project.service';
-import type { UpdateProjectInput } from '@/types/bonus';
+import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
-// GET /api/projects/[id] - Получение проекта по ID
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const project = await ProjectService.getProjectById(id);
+
+    // Получаем проект без связанных данных
+    const project = await db.project.findUnique({
+      where: { id }
+    });
 
     if (!project) {
-      return NextResponse.json(
-        { error: 'Проект не найден' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Проект не найден' }, { status: 404 });
     }
 
-    return NextResponse.json(project);
+    // Подсчитываем количество пользователей отдельно
+    const userCount = await db.user.count({
+      where: { projectId: id }
+    });
+
+    // Возвращаем проект с подсчетом пользователей
+    const response = {
+      ...project,
+      _count: {
+        users: userCount
+      }
+    };
+
+    return NextResponse.json(response);
   } catch (error) {
-    console.error('Ошибка получения проекта:', error);
+    const { id } = await params;
+    logger.error('Ошибка получения проекта', {
+      projectId: id,
+      error: error instanceof Error ? error.message : 'Неизвестная ошибка'
+    });
     return NextResponse.json(
-      { error: 'Ошибка получения проекта' },
+      { error: 'Внутренняя ошибка сервера' },
       { status: 500 }
     );
   }
 }
 
-// PUT /api/projects/[id] - Обновление проекта
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -45,80 +61,61 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    
-    // Проверяем существование проекта
-    const existingProject = await ProjectService.getProjectById(id);
-    if (!existingProject) {
-      return NextResponse.json(
-        { error: 'Проект не найден' },
-        { status: 404 }
-      );
-    }
 
-    const updateData: UpdateProjectInput = {
-      name: body.name,
-      domain: body.domain,
-      bonusPercentage: body.bonusPercentage,
-      bonusExpiryDays: body.bonusExpiryDays,
-      isActive: body.isActive,
-    };
-
-    // Удаляем undefined значения
-    Object.keys(updateData).forEach(key => {
-      if (updateData[key as keyof typeof updateData] === undefined) {
-        delete updateData[key as keyof typeof updateData];
+    const updatedProject = await db.project.update({
+      where: { id },
+      data: {
+        name: body.name,
+        domain: body.domain,
+        bonusPercentage: body.bonusPercentage,
+        bonusExpiryDays: body.bonusExpiryDays,
+        isActive: body.isActive
       }
     });
 
-    const updatedProject = await ProjectService.updateProject(id, updateData);
-
     return NextResponse.json(updatedProject);
   } catch (error) {
-    console.error('Ошибка обновления проекта:', error);
-    
-    if (error instanceof Error && error.message.includes('Unique constraint')) {
-      return NextResponse.json(
-        { error: 'Проект с таким доменом уже существует' },
-        { status: 409 }
-      );
-    }
-
+    const { id } = await params;
+    logger.error('Ошибка обновления проекта', { projectId: id, error });
     return NextResponse.json(
-      { error: 'Ошибка обновления проекта' },
+      { error: 'Внутренняя ошибка сервера' },
       { status: 500 }
     );
   }
 }
 
-// DELETE /api/projects/[id] - Деактивация проекта
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const project = await ProjectService.getProjectById(id);
-    
+
+    // Проверяем существование проекта
+    const project = await db.project.findUnique({
+      where: { id }
+    });
+
     if (!project) {
-      return NextResponse.json(
-        { error: 'Проект не найден' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Проект не найден' }, { status: 404 });
     }
 
-    // Деактивируем проект вместо полного удаления
-    const deactivatedProject = await ProjectService.updateProject(id, {
-      isActive: false,
+    // Удаляем проект (каскадное удаление настроено в схеме)
+    await db.project.delete({
+      where: { id }
     });
 
-    return NextResponse.json({
-      message: 'Проект успешно деактивирован',
-      project: deactivatedProject,
-    });
-  } catch (error) {
-    console.error('Ошибка деактивации проекта:', error);
+    logger.info('Проект удален', { projectId: id, projectName: project.name });
+
     return NextResponse.json(
-      { error: 'Ошибка деактивации проекта' },
+      { message: 'Проект успешно удален' },
+      { status: 200 }
+    );
+  } catch (error) {
+    const { id } = await params;
+    logger.error('Ошибка удаления проекта', { projectId: id, error });
+    return NextResponse.json(
+      { error: 'Внутренняя ошибка сервера' },
       { status: 500 }
     );
   }

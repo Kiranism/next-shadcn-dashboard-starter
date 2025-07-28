@@ -8,12 +8,11 @@
  */
 
 import { Metadata } from 'next';
-import PageContainer from '@/components/layout/page-container';
 import { ProjectSettingsView } from '@/features/projects/components/project-settings-view';
 
 export const metadata: Metadata = {
   title: 'Настройки проекта - SaaS Bonus System',
-  description: 'Настройка и управление проектом бонусной системы',
+  description: 'Настройка и управление проектом бонусной системы'
 };
 
 interface SettingsPageProps {
@@ -22,10 +21,10 @@ interface SettingsPageProps {
 
 export default async function SettingsPage({ params }: SettingsPageProps) {
   const { id } = await params;
-  
+
   return (
-    <PageContainer scrollable={false}>
+    <div className='p-6'>
       <ProjectSettingsView projectId={id} />
-    </PageContainer>
+    </div>
   );
-} 
+}

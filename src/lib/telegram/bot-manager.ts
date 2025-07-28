@@ -13,6 +13,7 @@
 import { Bot, Context, SessionFlavor, webhookCallback } from 'grammy';
 import { createBot } from './bot';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import type { BotSettings } from '@/types/bonus';
 
 // Типизация контекста (совпадает с bot.ts)
@@ -30,6 +31,7 @@ interface BotInstance {
   isActive: boolean;
   projectId: string;
   lastUpdated: Date;
+  isPolling?: boolean; // Флаг для отслеживания состояния polling
 }
 
 /**
@@ -41,8 +43,12 @@ class BotManager {
   private readonly WEBHOOK_BASE_URL: string;
 
   constructor() {
-    this.WEBHOOK_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:5006';
-    // TODO: логгер
+    this.WEBHOOK_BASE_URL =
+      process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:5006';
+    logger.info('BotManager инициализирован', {
+      webhookBaseUrl: this.WEBHOOK_BASE_URL,
+      component: 'bot-manager'
+    });
   }
 
   /**
@@ -55,108 +61,162 @@ class BotManager {
   /**
    * Создание и запуск нового бота
    */
-  async createBot(projectId: string, botSettings: BotSettings): Promise<BotInstance> {
+  async createBot(
+    projectId: string,
+    botSettings: BotSettings
+  ): Promise<BotInstance> {
     try {
-      // Останавливаем существующий бот если есть
+      // КРИТИЧНО: Останавливаем существующий бот если есть
       await this.stopBot(projectId);
 
       // Создаем новый экземпляр бота
-      const bot = createBot(botSettings.botToken, projectId);
-      
+      const bot = createBot(botSettings.botToken, projectId, botSettings);
+
       // ВАЖНО: Инициализируем бота согласно документации Grammy
-      // TODO: логгер
       await bot.init();
-      // TODO: логгер
-      // console.log(`✅ Бот инициализирован: @${bot.botInfo.username} (ID: ${bot.botInfo.id})`);
-      
+      logger.info(`Бот инициализирован: @${bot.botInfo.username}`, {
+        projectId,
+        botId: bot.botInfo.id,
+        username: bot.botInfo.username,
+        component: 'bot-manager'
+      });
+
       // Определяем dev режим по localhost URL ПЕРЕД созданием webhook callback
-      const isDev = this.WEBHOOK_BASE_URL.includes('localhost') || this.WEBHOOK_BASE_URL.includes('127.0.0.1');
-      
-      // TODO: логгер
-      // console.log(`🔍 Режим работы: ${isDev ? 'Development (polling)' : 'Production (webhook)'}`);
-      // TODO: логгер
-      // console.log(`🔗 Base URL: ${this.WEBHOOK_BASE_URL}`);
-      // TODO: логгер
-      // console.log(`🌍 NODE_ENV: ${process.env.NODE_ENV}`);
+      const isDev =
+        this.WEBHOOK_BASE_URL.includes('localhost') ||
+        this.WEBHOOK_BASE_URL.includes('127.0.0.1');
+
+      logger.info(
+        `Режим работы: ${isDev ? 'Development (polling)' : 'Production (webhook)'}`,
+        {
+          projectId,
+          isDev,
+          baseUrl: this.WEBHOOK_BASE_URL,
+          nodeEnv: process.env.NODE_ENV,
+          component: 'bot-manager'
+        }
+      );
 
       let webhook = null;
+      let isPolling = false;
 
       if (isDev) {
         // Development режим - очищаем webhook и запускаем polling
         try {
-          // TODO: логгер
-          // console.log(`🔄 Development режим: очищаем webhook для бота ${projectId}`);
-          await bot.api.deleteWebhook();
-          // TODO: логгер
-          // console.log(`✅ Webhook очищен для бота ${projectId}`);
+          logger.info(`Development режим: очищаем webhook для бота`, {
+            projectId,
+            component: 'bot-manager'
+          });
+          await bot.api.deleteWebhook({ drop_pending_updates: true });
+          logger.info(`Webhook очищен для бота`, {
+            projectId,
+            component: 'bot-manager'
+          });
         } catch (error) {
-          // TODO: логгер
-          // console.warn(`⚠️ Не удалось очистить webhook для бота ${projectId}:`, error);
-          // НЕ останавливаем работу - это не критично
+          logger.warn(`Не удалось очистить webhook для бота`, {
+            projectId,
+            error:
+              error instanceof Error ? error.message : 'Неизвестная ошибка',
+            component: 'bot-manager'
+          });
         }
 
-        // Запускаем polling для реальных пользователей
+        // Запускаем polling для реальных пользователей ТОЛЬКО ОДИН РАЗ
         try {
-          // TODO: логгер
-          // console.log(`🔄 Запускаем polling для бота ${projectId}...`);
-          bot.start({
+          logger.info(`Запускаем polling для бота`, {
+            projectId,
+            component: 'bot-manager'
+          });
+
+          // Используем промис для контроля процесса
+          const startPromise = bot.start({
             onStart: (botInfo) => {
-              // TODO: логгер
-              // console.log(`🚀 Polling запущен для бота @${botInfo.username} (ID: ${botInfo.id})`);
-              // TODO: логгер
-              // console.log(`📱 Реальные пользователи могут писать боту в Telegram!`);
+              logger.info(`Polling запущен для бота @${botInfo.username}`, {
+                projectId,
+                botId: botInfo.id,
+                username: botInfo.username,
+                component: 'bot-manager'
+              });
+              logger.info(
+                `Реальные пользователи могут писать боту в Telegram`,
+                {
+                  projectId,
+                  component: 'bot-manager'
+                }
+              );
             },
             drop_pending_updates: true // Пропускаем старые обновления
           });
-          // TODO: логгер
-          // console.log(`✅ Polling активирован для бота ${projectId}`);
+
+          isPolling = true;
+          logger.info(`Polling активирован для бота`, {
+            projectId,
+            component: 'bot-manager'
+          });
+
+          // НЕ ждем завершения start() - он работает бесконечно
         } catch (error) {
-          // TODO: логгер
-          // console.error(`❌ Ошибка запуска polling для бота ${projectId}:`, error);
-          // НЕ выбрасываем ошибку - пусть бот работает хотя бы через API
+          logger.error(`Ошибка запуска polling для бота`, {
+            projectId,
+            error:
+              error instanceof Error ? error.message : 'Неизвестная ошибка',
+            component: 'bot-manager'
+          });
+          isPolling = false;
         }
       } else {
         // Production режим - создаем webhook callback и настраиваем webhook
-        // TODO: логгер
-        // console.log(`🔄 Production режим: создаем webhook callback для бота ${projectId}`);
+        logger.info(`Production режим: создаем webhook callback для бота`, {
+          projectId,
+          component: 'bot-manager'
+        });
         webhook = webhookCallback(bot, 'std/http');
         // Production режим - настраиваем webhook только если есть HTTPS
         const webhookUrl = `${this.WEBHOOK_BASE_URL}/api/telegram/webhook/${projectId}`;
-        
+
         if (!webhookUrl.startsWith('https://')) {
-          // TODO: логгер
-          // console.warn(`⚠️ HTTPS отсутствует для webhook в production: ${webhookUrl}`);
-          // TODO: логгер
-          // console.warn(`⚠️ Бот будет работать без webhook (только для тестирования)`);
-          // НЕ выбрасываем ошибку - пусть бот работает для тестирования
+          logger.warn(`HTTPS отсутствует для webhook в production`, {
+            projectId,
+            webhookUrl,
+            component: 'bot-manager'
+          });
+          logger.warn(
+            `Бот будет работать без webhook (только для тестирования)`,
+            {
+              projectId,
+              component: 'bot-manager'
+            }
+          );
         } else {
           try {
-            // TODO: логгер
-            // console.log(`🔄 Production режим: устанавливаем webhook для бота ${projectId}: ${webhookUrl}`);
-            
+            logger.info(`Production режим: устанавливаем webhook для бота`, {
+              projectId,
+              webhookUrl,
+              component: 'bot-manager'
+            });
+
             await bot.api.setWebhook(webhookUrl, {
               allowed_updates: [
                 'message',
                 'callback_query',
                 'inline_query',
                 'my_chat_member'
-              ]
+              ],
+              drop_pending_updates: true
             });
-            
-            // TODO: логгер
-            // console.log(`✅ Webhook установлен для бота ${projectId}: ${webhookUrl}`);
-            
-            // Проверяем webhook info
-            const webhookInfo = await bot.api.getWebhookInfo();
-            // TODO: логгер
-            // console.log(`📊 Webhook info для бота ${projectId}:`, webhookInfo);
-            
+
+            logger.info(`Webhook установлен для бота`, {
+              projectId,
+              webhookUrl,
+              component: 'bot-manager'
+            });
           } catch (error) {
-            // TODO: логгер
-            // console.error(`❌ Ошибка установки webhook для бота ${projectId}:`, error);
-            // TODO: логгер
-            // console.warn(`⚠️ Бот будет работать без webhook (только для тестирования)`);
-            // НЕ выбрасываем ошибку - пусть бот работает
+            logger.error(`Ошибка установки webhook для бота`, {
+              projectId,
+              error:
+                error instanceof Error ? error.message : 'Неизвестная ошибка',
+              component: 'bot-manager'
+            });
           }
         }
       }
@@ -167,19 +227,23 @@ class BotManager {
         webhook, // null в dev режиме, webhookCallback в prod режиме
         isActive: botSettings.isActive,
         projectId,
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
+        isPolling
       };
 
       this.bots.set(projectId, botInstance);
-      // TODO: логгер
-      // console.log(`💾 Бот для проекта ${projectId} сохранен в BotManager`);
-      // TODO: логгер
-      // console.log(`🤖 Бот для проекта ${projectId} создан и активирован`);
-      return botInstance;
+      logger.info(`Бот для проекта ${projectId} создан и активирован`, {
+        projectId,
+        component: 'bot-manager'
+      });
 
+      return botInstance;
     } catch (error) {
-      // TODO: логгер
-      // console.error(`Ошибка создания бота для проекта ${projectId}:`, error);
+      logger.error(`Ошибка создания бота для проекта ${projectId}`, {
+        projectId,
+        error: error instanceof Error ? error.message : 'Неизвестная ошибка',
+        component: 'bot-manager'
+      });
       throw error;
     }
   }
@@ -187,9 +251,12 @@ class BotManager {
   /**
    * Обновление настроек бота
    */
-  async updateBot(projectId: string, botSettings: BotSettings): Promise<BotInstance> {
+  async updateBot(
+    projectId: string,
+    botSettings: BotSettings
+  ): Promise<BotInstance> {
     const existingBot = this.bots.get(projectId);
-    
+
     // Если токен изменился, создаем новый бот
     if (!existingBot || existingBot.bot.token !== botSettings.botToken) {
       return this.createBot(projectId, botSettings);
@@ -202,12 +269,17 @@ class BotManager {
     // Если бот деактивирован, останавливаем его
     if (!botSettings.isActive) {
       try {
-        await existingBot.bot.stop();
-        // TODO: логгер
-        // console.log(`🔄 Бот для проекта ${projectId} деактивирован`);
+        await this.stopBot(projectId);
+        logger.info(`Бот для проекта ${projectId} деактивирован`, {
+          projectId,
+          component: 'bot-manager'
+        });
       } catch (error) {
-        // TODO: логгер
-        // console.error(`Ошибка деактивации бота ${projectId}:`, error);
+        logger.error(`Ошибка деактивации бота ${projectId}`, {
+          projectId,
+          error: error instanceof Error ? error.message : 'Неизвестная ошибка',
+          component: 'bot-manager'
+        });
       }
     }
 
@@ -220,29 +292,41 @@ class BotManager {
    */
   async stopBot(projectId: string): Promise<void> {
     const botInstance = this.bots.get(projectId);
-    
+
     if (botInstance) {
       try {
-        // Удаляем webhook
-        await botInstance.bot.api.deleteWebhook();
-        // TODO: логгер
-        // console.log(`🛑 Webhook удален для бота ${projectId}`);
-      } catch (error) {
-        // TODO: логгер
-        // console.error(`Ошибка удаления webhook для бота ${projectId}:`, error);
-      }
+        // Сначала останавливаем polling если активен
+        if (botInstance.isPolling) {
+          logger.info(`Останавливаем polling для бота ${projectId}`, {
+            projectId,
+            component: 'bot-manager'
+          });
+          await botInstance.bot.stop();
+          logger.info(`Polling остановлен для бота ${projectId}`, {
+            projectId,
+            component: 'bot-manager'
+          });
+        }
 
-      // Останавливаем бота
-      try {
-        await botInstance.bot.stop();
-        // TODO: логгер
-        // console.log(`🛑 Бот ${projectId} остановлен`);
+        // Затем удаляем webhook
+        await botInstance.bot.api.deleteWebhook({ drop_pending_updates: true });
+        logger.info(`Webhook удален для бота ${projectId}`, {
+          projectId,
+          component: 'bot-manager'
+        });
       } catch (error) {
-        // TODO: логгер
-        // console.error(`Ошибка остановки бота ${projectId}:`, error);
+        logger.warn(`Ошибка остановки бота ${projectId}`, {
+          projectId,
+          error: error instanceof Error ? error.message : 'Неизвестная ошибка',
+          component: 'bot-manager'
+        });
       }
 
       this.bots.delete(projectId);
+      logger.info(`Бот ${projectId} удален из менеджера`, {
+        projectId,
+        component: 'bot-manager'
+      });
     }
   }
 
@@ -256,30 +340,42 @@ class BotManager {
         include: { project: true }
       });
 
-      // TODO: логгер
-      // console.log(`🔄 Загрузка ${allBotSettings.length} активных ботов...`);
+      logger.info(`Загрузка ${allBotSettings.length} активных ботов...`, {
+        component: 'bot-manager'
+      });
 
       for (const botSettings of allBotSettings) {
         try {
           // Преобразуем настройки для BotManager
           const botSettingsForManager = {
             ...botSettings,
-            welcomeMessage: typeof botSettings.welcomeMessage === 'string' 
-              ? botSettings.welcomeMessage 
-              : 'Добро пожаловать! 🎉\n\nЭто бот бонусной программы.'
+            welcomeMessage:
+              typeof botSettings.welcomeMessage === 'string'
+                ? botSettings.welcomeMessage
+                : 'Добро пожаловать! 🎉\n\nЭто бот бонусной программы.'
           };
-          await this.createBot(botSettings.projectId, botSettingsForManager as BotSettings);
+          await this.createBot(
+            botSettings.projectId,
+            botSettingsForManager as BotSettings
+          );
         } catch (error) {
-          // TODO: логгер
-          // console.error(`Ошибка загрузки бота ${botSettings.projectId}:`, error);
+          logger.error(`Ошибка загрузки бота ${botSettings.projectId}`, {
+            projectId: botSettings.projectId,
+            error:
+              error instanceof Error ? error.message : 'Неизвестная ошибка',
+            component: 'bot-manager'
+          });
         }
       }
 
-      // TODO: логгер
-      // console.log(`✅ Загружено ${this.bots.size} ботов`);
+      logger.info(`Загружено ${this.bots.size} ботов`, {
+        component: 'bot-manager'
+      });
     } catch (error) {
-      // TODO: логгер
-      // console.error('Ошибка загрузки ботов из базы данных:', error);
+      logger.error('Ошибка загрузки ботов из базы данных', {
+        error: error instanceof Error ? error.message : 'Неизвестная ошибка',
+        component: 'bot-manager'
+      });
     }
   }
 
@@ -288,7 +384,9 @@ class BotManager {
    */
   getStats() {
     const total = this.bots.size;
-    const active = Array.from(this.bots.values()).filter(bot => bot.isActive).length;
+    const active = Array.from(this.bots.values()).filter(
+      (bot) => bot.isActive
+    ).length;
     const inactive = total - active;
 
     return {
@@ -298,6 +396,7 @@ class BotManager {
       bots: Array.from(this.bots.entries()).map(([projectId, instance]) => ({
         projectId,
         isActive: instance.isActive,
+        isPolling: instance.isPolling || false,
         lastUpdated: instance.lastUpdated
       }))
     };
@@ -309,20 +408,13 @@ class BotManager {
    */
   getWebhookHandler(projectId: string) {
     const botInstance = this.bots.get(projectId);
-    
+
     if (!botInstance || !botInstance.isActive) {
       return null;
     }
 
     // В dev режиме webhook может быть null (используется polling)
     return botInstance.webhook;
-  }
-
-  /**
-   * Получение экземпляра бота для конкретного проекта
-   */
-  getBot(projectId: string): BotInstance | null {
-    return this.bots.get(projectId) || null;
   }
 
   /**
@@ -334,7 +426,7 @@ class BotManager {
     error?: string;
   }> {
     const botInstance = this.bots.get(projectId);
-    
+
     if (!botInstance) {
       return { isRunning: false, error: 'Бот не найден' };
     }
@@ -366,8 +458,10 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Автоматическая загрузка ботов при инициализации модуля
-// Загружаем в любом режиме для тестирования
-botManager.loadAllBots().catch(error => {
-  // TODO: логгер
-  // console.error('Ошибка автоматической загрузки ботов:', error);
-}); 
+// ОТКЛЮЧАЕМ автозагрузку - будем загружать только по требованию
+// botManager.loadAllBots().catch(error => {
+//   logger.error('Ошибка автоматической загрузки ботов:', {
+//     error: error instanceof Error ? error.message : 'Неизвестная ошибка',
+//     component: 'bot-manager'
+//   });
+// });

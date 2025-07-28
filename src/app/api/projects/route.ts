@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { ProjectService } from '@/lib/services/project.service';
+import { logger } from '@/lib/logger';
 // import { db } from '@/lib/db'; // удалено как неиспользуемое
 import type { CreateProjectInput } from '@/types/bonus';
 
@@ -23,7 +24,11 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    // TODO: логгер
+    logger.error('Ошибка получения списка проектов', {
+      error: error instanceof Error ? error.message : 'Неизвестная ошибка',
+      component: 'projects-api',
+      action: 'GET'
+    });
     return NextResponse.json(
       { error: 'Ошибка получения проектов' },
       { status: 500 }
@@ -35,13 +40,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
+
     // Валидация входных данных
     const projectData: CreateProjectInput = {
       name: body.name,
       domain: body.domain || undefined,
       bonusPercentage: body.bonusPercentage || 1.0,
-      bonusExpiryDays: body.bonusExpiryDays || 365,
+      bonusExpiryDays: body.bonusExpiryDays || 365
     };
 
     if (!projectData.name) {
@@ -55,8 +60,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(project, { status: 201 });
   } catch (error) {
-    // TODO: логгер
-    
+    logger.error('Ошибка создания проекта', {
+      error: error instanceof Error ? error.message : 'Неизвестная ошибка',
+      component: 'projects-api',
+      action: 'POST'
+    });
+
     if (error instanceof Error && error.message.includes('Unique constraint')) {
       return NextResponse.json(
         { error: 'Проект с таким доменом уже существует' },
