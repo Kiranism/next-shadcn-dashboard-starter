@@ -31,8 +31,8 @@ export async function sendBonusNotification(
 
     const emoji = getBonusEmoji(bonus.type);
     const typeText = getBonusTypeText(bonus.type);
-    
-    const message = 
+
+    const message =
       `${emoji} *Новые бонусы начислены!*\n\n` +
       `💰 Сумма: *+${bonus.amount}₽*\n` +
       `📝 Тип: ${typeText}\n` +
@@ -40,11 +40,9 @@ export async function sendBonusNotification(
       `⏰ Срок действия: ${bonus.expiresAt ? bonus.expiresAt.toLocaleDateString('ru-RU') : 'Бессрочно'}\n\n` +
       `Используйте команду /balance чтобы посмотреть актуальный баланс! 🎉`;
 
-    await botInstance.bot.api.sendMessage(
-      Number(user.telegramId),
-      message,
-      { parse_mode: 'Markdown' }
-    );
+    await botInstance.bot.api.sendMessage(Number(user.telegramId), message, {
+      parse_mode: 'Markdown'
+    });
 
     // console.log(`✅ Уведомление отправлено пользователю ${user.id} в Telegram`);
   } catch (error) {
@@ -71,17 +69,15 @@ export async function sendBonusSpentNotification(
       return;
     }
 
-    const message = 
+    const message =
       `💸 *Бонусы потрачены*\n\n` +
       `💰 Сумма: *-${amount}₽*\n` +
       `📄 За: ${description}\n\n` +
       `Спасибо за покупку! Используйте /balance для проверки баланса.`;
 
-    await botInstance.bot.api.sendMessage(
-      Number(user.telegramId),
-      message,
-      { parse_mode: 'Markdown' }
-    );
+    await botInstance.bot.api.sendMessage(Number(user.telegramId), message, {
+      parse_mode: 'Markdown'
+    });
 
     // console.log(`✅ Уведомление о списании отправлено пользователю ${user.id}`);
   } catch (error) {
@@ -108,25 +104,39 @@ export async function sendBonusExpiryWarning(
       return;
     }
 
-    const daysLeft = Math.ceil((expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-    
-    const message = 
+    const daysLeft = Math.ceil(
+      (expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+    );
+
+    const message =
       `⚠️ *Внимание! Бонусы скоро истекут*\n\n` +
       `💰 Сумма: *${expiringAmount}₽*\n` +
       `📅 Истекают: ${expiryDate.toLocaleDateString('ru-RU')}\n` +
       `⏰ Осталось дней: *${daysLeft}*\n\n` +
       `Поспешите воспользоваться бонусами! 🏃‍♂️`;
 
-    await botInstance.bot.api.sendMessage(
-      Number(user.telegramId),
-      message,
-      { parse_mode: 'Markdown' }
-    );
+    await botInstance.bot.api.sendMessage(Number(user.telegramId), message, {
+      parse_mode: 'Markdown'
+    });
 
     // console.log(`✅ Предупреждение об истечении отправлено пользователю ${user.id}`);
   } catch (error) {
     // console.error(`❌ Ошибка отправки предупреждения пользователю ${user.id}:`, error);
   }
+}
+
+/**
+ * Интерфейс для расширенного уведомления
+ */
+export interface RichNotification {
+  message: string;
+  imageUrl?: string;
+  buttons?: Array<{
+    text: string;
+    url?: string;
+    callback_data?: string;
+  }>;
+  parseMode?: 'Markdown' | 'HTML';
 }
 
 /**
@@ -137,48 +147,107 @@ export async function sendBroadcastMessage(
   message: string,
   userIds?: string[]
 ): Promise<{ sent: number; failed: number }> {
+  return sendRichBroadcastMessage(projectId, { message }, userIds);
+}
+
+/**
+ * Расширенная массовая рассылка с поддержкой медиа и кнопок
+ */
+export async function sendRichBroadcastMessage(
+  projectId: string,
+  notification: RichNotification,
+  userIds?: string[]
+): Promise<{ sent: number; failed: number }> {
   try {
+    const { db } = await import('@/lib/db');
     const botInstance = botManager.getBot(projectId);
+
     if (!botInstance || !botInstance.isActive) {
       return { sent: 0, failed: 0 };
     }
 
-    // Если не указаны конкретные пользователи, получаем всех активных с Telegram ID
+    // Получаем пользователей из базы данных
     let users: User[] = [];
-    if (userIds) {
-      // Здесь должен быть запрос к базе для получения пользователей по ID
-      // Для простоты пропускаем реализацию
+    if (userIds && userIds.length > 0) {
+      users = (await db.user.findMany({
+        where: {
+          id: { in: userIds },
+          projectId,
+          telegramId: { not: null },
+          isActive: true
+        }
+      })) as User[];
     } else {
-      // Здесь должен быть запрос всех активных пользователей проекта с telegramId
-      // Для простоты пропускаем реализацию
+      users = (await db.user.findMany({
+        where: {
+          projectId,
+          telegramId: { not: null },
+          isActive: true
+        }
+      })) as User[];
     }
 
     let sent = 0;
     let failed = 0;
 
+    // Создаем клавиатуру если есть кнопки
+    let replyMarkup;
+    if (notification.buttons && notification.buttons.length > 0) {
+      const keyboard = notification.buttons.map((button) => {
+        if (button.url) {
+          return [{ text: button.text, url: button.url }];
+        } else if (button.callback_data) {
+          return [{ text: button.text, callback_data: button.callback_data }];
+        }
+        return [{ text: button.text, callback_data: 'no_action' }];
+      });
+
+      replyMarkup = { inline_keyboard: keyboard };
+    }
+
     for (const user of users) {
       if (user.telegramId) {
         try {
-          await botInstance.bot.api.sendMessage(
-            Number(user.telegramId),
-            message,
-            { parse_mode: 'Markdown' }
-          );
+          const telegramId = Number(user.telegramId);
+
+          if (notification.imageUrl) {
+            // Отправляем фото с текстом
+            await botInstance.bot.api.sendPhoto(
+              telegramId,
+              notification.imageUrl,
+              {
+                caption: notification.message,
+                parse_mode: notification.parseMode || 'Markdown',
+                reply_markup: replyMarkup
+              }
+            );
+          } else {
+            // Отправляем обычное текстовое сообщение
+            await botInstance.bot.api.sendMessage(
+              telegramId,
+              notification.message,
+              {
+                parse_mode: notification.parseMode || 'Markdown',
+                reply_markup: replyMarkup
+              }
+            );
+          }
+
           sent++;
+
+          // Небольшая задержка чтобы не превысить лимиты Telegram API
+          await new Promise((resolve) => setTimeout(resolve, 50));
         } catch (error) {
-          // TODO: логгер
-          // console.error(`Ошибка отправки пользователю ${user.id}:`, error);
+          console.error(`Ошибка отправки пользователю ${user.id}:`, error);
           failed++;
         }
       }
     }
 
-    // TODO: логгер
-    // console.log(`📢 Рассылка завершена: отправлено ${sent}, ошибок ${failed}`);
+    console.log(`📢 Рассылка завершена: отправлено ${sent}, ошибок ${failed}`);
     return { sent, failed };
   } catch (error) {
-    // TODO: логгер
-    // console.error('Ошибка массовой рассылки:', error);
+    console.error('Ошибка массовой рассылки:', error);
     return { sent: 0, failed: 0 };
   }
 }
@@ -216,4 +285,4 @@ function getBonusTypeText(type: BonusType): string {
     default:
       return 'Бонус';
   }
-} 
+}

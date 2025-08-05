@@ -10,6 +10,14 @@ import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import './globals.css';
 import './theme.css';
 
+// Активируем глобальный обработчик ошибок для ботов
+if (typeof window === 'undefined') {
+  const {
+    setupGlobalErrorHandler
+  } = require('@/lib/telegram/global-error-handler');
+  setupGlobalErrorHandler();
+}
+
 const META_THEME_COLORS = {
   light: '#ffffff',
   dark: '#09090b'

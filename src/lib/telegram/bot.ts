@@ -27,6 +27,29 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
     })
   );
 
+  // Диагностический middleware для логирования всех сообщений
+  bot.use(async (ctx, next) => {
+    const updateType = ctx.update.message
+      ? 'message'
+      : ctx.update.callback_query
+        ? 'callback_query'
+        : ctx.update.inline_query
+          ? 'inline_query'
+          : 'other';
+
+    console.log(
+      `📨 Получено обновление от ${ctx.from?.username || ctx.from?.id}:`,
+      {
+        updateType,
+        updateId: ctx.update.update_id,
+        projectId,
+        timestamp: new Date().toISOString()
+      }
+    );
+
+    await next();
+  });
+
   // Получаем настройки бота или используем значения по умолчанию
   const getBotSettings = async () => {
     if (botSettings) {
@@ -36,6 +59,11 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
     const project = await ProjectService.getProjectById(projectId);
     return project?.botSettings;
   };
+
+  // Диагностическая команда для проверки работы бота
+  bot.command('test', async (ctx) => {
+    await ctx.reply('✅ Бот работает! Команда /test получена и обработана.');
+  });
 
   // Стартовая команда
   bot.command('start', async (ctx) => {

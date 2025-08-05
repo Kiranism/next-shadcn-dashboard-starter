@@ -18,7 +18,7 @@ import * as z from 'zod';
 import GithubSignInButton from './github-auth-button';
 
 const formSchema = z.object({
-  email: z.string().email({ message: 'Enter a valid email address' })
+  email: z.string().email({ message: 'Введите корректный email адрес' })
 });
 
 type UserFormValue = z.infer<typeof formSchema>;
@@ -36,7 +36,7 @@ export default function UserAuthForm() {
 
   const onSubmit = async (data: UserFormValue) => {
     startTransition(() => {
-      toast.success('Signed In Successfully!');
+      toast.success('Вход выполнен успешно!');
     });
   };
 
@@ -52,11 +52,11 @@ export default function UserAuthForm() {
             name='email'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel>Эл. почта</FormLabel>
                 <FormControl>
                   <Input
                     type='email'
-                    placeholder='Enter your email...'
+                    placeholder='Введите ваш email...'
                     disabled={loading}
                     {...field}
                   />
@@ -71,7 +71,7 @@ export default function UserAuthForm() {
             className='mt-2 ml-auto w-full'
             type='submit'
           >
-            Continue With Email
+            Продолжить с Email
           </Button>
         </form>
       </Form>
@@ -81,7 +81,7 @@ export default function UserAuthForm() {
         </div>
         <div className='relative flex justify-center text-xs uppercase'>
           <span className='bg-background text-muted-foreground px-2'>
-            Or continue with
+            Или продолжить с
           </span>
         </div>
       </div>

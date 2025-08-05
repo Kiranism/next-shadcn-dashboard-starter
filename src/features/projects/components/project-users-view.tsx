@@ -24,7 +24,8 @@ import {
   User as UserIcon,
   Badge as BadgeIcon,
   Target,
-  TrendingUp
+  TrendingUp,
+  MessageSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -52,6 +53,8 @@ import { useToast } from '@/hooks/use-toast';
 import type { Project, User, Bonus } from '@/types/bonus';
 import { UserCreateDialog } from './user-create-dialog';
 import { BonusAwardDialog } from './bonus-award-dialog';
+import { EnhancedBulkActionsToolbar } from '@/features/bonuses/components/enhanced-bulk-actions-toolbar';
+import { RichNotificationDialog } from '@/features/bonuses/components/rich-notification-dialog';
 
 interface ProjectUsersViewProps {
   projectId: string;
@@ -86,6 +89,8 @@ export function ProjectUsersView({ projectId }: ProjectUsersViewProps) {
 
   // Dialog states
   const [showCreateUserDialog, setShowCreateUserDialog] = useState(false);
+  const [showRichNotificationDialog, setShowRichNotificationDialog] =
+    useState(false);
   const [showBonusDialog, setShowBonusDialog] = useState(false);
   const [showDeductionDialog, setShowDeductionDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithBonuses | null>(
@@ -491,6 +496,23 @@ export function ProjectUsersView({ projectId }: ProjectUsersViewProps) {
           </div>
         </CardHeader>
         <CardContent>
+          {/* Подсказка по рассылкам */}
+          {filteredUsers.length > 0 && selectedUsers.length === 0 && (
+            <div className='mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4'>
+              <div className='flex items-center gap-2 text-sm text-blue-700'>
+                <MessageSquare className='h-4 w-4' />
+                <span className='font-medium'>
+                  📢 Как отправить рассылку пользователям:
+                </span>
+              </div>
+              <p className='mt-1 text-sm text-blue-600'>
+                1. Выберите пользователей (поставьте галочки) 2. Снизу появится
+                панель с кнопкой "Уведомления" 3. Выберите "📢 Расширенные
+                уведомления" для отправки рассылок с картинками и кнопками
+              </p>
+            </div>
+          )}
+
           {loading ? (
             <div className='space-y-4'>
               {Array.from({ length: 3 }).map((_, i) => (
@@ -801,6 +823,22 @@ export function ProjectUsersView({ projectId }: ProjectUsersViewProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Enhanced Bulk Actions Toolbar */}
+      <EnhancedBulkActionsToolbar
+        selectedUserIds={selectedUsers}
+        selectedCount={selectedUsers.length}
+        onClearSelection={() => setSelectedUsers([])}
+        onShowRichNotifications={() => setShowRichNotificationDialog(true)}
+      />
+
+      {/* Rich Notification Dialog */}
+      <RichNotificationDialog
+        open={showRichNotificationDialog}
+        onOpenChange={setShowRichNotificationDialog}
+        selectedUserIds={selectedUsers}
+        projectId={projectId}
+      />
     </div>
   );
 }

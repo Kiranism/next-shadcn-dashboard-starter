@@ -19,7 +19,8 @@ import {
   BarChart3,
   Settings,
   Coins,
-  Share2
+  Share2,
+  Code
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -359,6 +360,12 @@ export function ProjectSettingsView({ projectId }: ProjectSettingsViewProps) {
                 <Button variant='outline' className='w-full justify-start'>
                   <BarChart3 className='mr-2 h-4 w-4' />
                   Статистика и аналитика
+                </Button>
+              </Link>
+              <Link href={`/dashboard/projects/${projectId}/integration`}>
+                <Button variant='outline' className='w-full justify-start'>
+                  <Code className='mr-2 h-4 w-4' />
+                  Интеграция с Tilda
                 </Button>
               </Link>
             </CardContent>

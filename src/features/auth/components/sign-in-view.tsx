@@ -21,7 +21,7 @@ export default function SignInViewPage({ stars }: { stars: number }) {
           'absolute top-4 right-4 hidden md:top-8 md:right-8'
         )}
       >
-        Login
+        Вход
       </Link>
       <div className='bg-muted relative hidden h-full flex-col p-10 text-white lg:flex dark:border-r'>
         <div className='absolute inset-0 bg-zinc-900' />
@@ -61,7 +61,9 @@ export default function SignInViewPage({ stars }: { stars: number }) {
           >
             <div className='flex items-center'>
               <GitHubLogoIcon className='size-4' />
-              <span className='ml-1 inline'>Star on GitHub</span>{' '}
+              <span className='ml-1 inline'>
+                Поставить звезду на GitHub
+              </span>{' '}
             </div>
             <div className='ml-2 flex items-center gap-1 text-sm md:flex'>
               <IconStar
@@ -78,19 +80,19 @@ export default function SignInViewPage({ stars }: { stars: number }) {
           />
 
           <p className='text-muted-foreground px-8 text-center text-sm'>
-            By clicking continue, you agree to our{' '}
+            Продолжая, вы соглашаетесь с нашими{' '}
             <Link
               href='/terms'
               className='hover:text-primary underline underline-offset-4'
             >
-              Terms of Service
+              Условиями обслуживания
             </Link>{' '}
-            and{' '}
+            и{' '}
             <Link
               href='/privacy'
               className='hover:text-primary underline underline-offset-4'
             >
-              Privacy Policy
+              Политикой конфиденциальности
             </Link>
             .
           </p>

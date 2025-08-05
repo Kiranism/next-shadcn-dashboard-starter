@@ -312,50 +312,50 @@ export async function PUT(
         break;
 
       case 'bulk_notification':
-        // Массовая отправка уведомлений через Telegram бота
+        // Массовая отправка уведомлений через новую систему
         try {
-          const { botManager } = await import('@/lib/telegram/bot-manager');
-          const botInstance = botManager.getBot(projectId);
+          const { sendRichBroadcastMessage } = await import(
+            '@/lib/telegram/notifications'
+          );
 
-          if (!botInstance) {
+          if (!data.message || data.message.trim().length === 0) {
             return NextResponse.json(
-              { error: 'Бот для этого проекта не найден или неактивен' },
+              { error: 'Сообщение не может быть пустым' },
               { status: 400 }
             );
           }
 
-          for (const userId of userIds) {
-            try {
-              const user = await db.user.findUnique({
-                where: { id: userId }
-              });
+          const notification = {
+            message: data.message.trim(),
+            imageUrl: data.imageUrl,
+            buttons: data.buttons,
+            parseMode: data.parseMode || 'Markdown'
+          };
 
-              if (user && user.telegramId) {
-                await botInstance.bot.api.sendMessage(
-                  user.telegramId.toString(),
-                  data.message,
-                  { parse_mode: 'Markdown' }
-                );
-                results.push({ userId, success: true });
-              } else {
-                results.push({
-                  userId,
-                  success: false,
-                  error: 'Пользователь не привязан к Telegram'
-                });
-              }
-            } catch (error) {
-              results.push({
-                userId,
-                success: false,
-                error:
-                  error instanceof Error ? error.message : 'Ошибка отправки'
-              });
-            }
+          const result = await sendRichBroadcastMessage(
+            projectId,
+            notification,
+            userIds
+          );
+
+          // Формируем результаты для каждого пользователя
+          for (let i = 0; i < result.sent; i++) {
+            results.push({
+              userId: userIds[i] || `user_${i}`,
+              success: true
+            });
+          }
+
+          for (let i = result.sent; i < result.sent + result.failed; i++) {
+            results.push({
+              userId: userIds[i] || `user_${i}`,
+              success: false,
+              error: 'Ошибка отправки уведомления'
+            });
           }
         } catch (error) {
           return NextResponse.json(
-            { error: 'Ошибка инициализации бота' },
+            { error: 'Ошибка отправки уведомлений' },
             { status: 500 }
           );
         }

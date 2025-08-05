@@ -78,19 +78,21 @@ model ReferralProgram {
   @@map("referral_programs")
 }
 
-// Настройки Telegram бота для каждого проекта (DEPRECATED - используется для совместимости)
+// Настройки Telegram бота для каждого проекта
 model BotSettings {
-  id              String   @id @default(cuid())
-  projectId       String   @unique @map("project_id")
-  botToken        String   @map("bot_token")
-  botUsername     String   @map("bot_username")
-  isActive        Boolean  @default(true) @map("is_active")
-  welcomeMessage  Json?    @default("{\"text\": \"Добро пожаловать! Отправьте свой номер телефона для привязки аккаунта.\"}") @map("welcome_message")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id                  String   @id @default(cuid())
+  projectId           String   @unique @map("project_id")
+  botToken            String   @map("bot_token")
+  botUsername         String   @map("bot_username")
+  isActive            Boolean  @default(true) @map("is_active")
+  welcomeMessage      Json?    @default("{\"text\": \"Добро пожаловать! Отправьте свой номер телефона для привязки аккаунта.\"}") @map("welcome_message")
+  messageSettings     Json?    @default("{}") @map("message_settings")
+  functionalSettings  Json?    @default("{}") @map("functional_settings")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
 
   // Связи
-  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project             Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@map("bot_settings")
 }

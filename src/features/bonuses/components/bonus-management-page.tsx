@@ -1,6 +1,15 @@
+/**
+ * @file: bonus-management-page-refactored.tsx
+ * @description: Улучшенная версия страницы управления бонусами
+ * @project: SaaS Bonus System
+ * @dependencies: react, hooks, ui components
+ * @created: 2025-01-27
+ * @author: AI Assistant + User
+ */
+
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Card,
@@ -12,497 +21,608 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
-  Coins,
-  Users,
-  TrendingUp,
-  AlertTriangle,
   Search,
   Download,
   Settings,
-  Plus
+  Plus,
+  RefreshCw,
+  AlertCircle,
+  Users,
+  Filter,
+  MessageSquare
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
+
+// Hooks
+import { useProjects } from '../hooks/use-projects';
+import { useProjectUsers } from '../hooks/use-project-users';
+
+// Components
+import { BonusStatsCards } from './bonus-stats-cards';
 import { UserCreateDialog } from './user-create-dialog';
+import { BulkActionsToolbar } from './bulk-actions-toolbar';
+import { EnhancedBulkActionsToolbar } from './enhanced-bulk-actions-toolbar';
+import { RichNotificationDialog } from './rich-notification-dialog';
+
+// Types
 import type { User } from '../types';
 
-// Демо данные
-const demoUsers: User[] = [
-  {
-    id: '1',
-    name: 'Иван Петров',
-    email: 'ivan.petrov@example.com',
-    avatar: 'https://api.slingacademy.com/public/sample-users/1.png',
-    bonusBalance: 1500,
-    totalEarned: 3000,
-    createdAt: new Date('2024-01-15'),
-    updatedAt: new Date()
-  },
-  {
-    id: '2',
-    name: 'Мария Сидорова',
-    email: 'maria.sidorova@example.com',
-    avatar: 'https://api.slingacademy.com/public/sample-users/2.png',
-    bonusBalance: 750,
-    totalEarned: 1200,
-    createdAt: new Date('2024-02-01'),
-    updatedAt: new Date()
-  },
-  {
-    id: '3',
-    name: 'Алексей Козлов',
-    email: 'alex.kozlov@example.com',
-    avatar: 'https://api.slingacademy.com/public/sample-users/3.png',
-    bonusBalance: 2250,
-    totalEarned: 4500,
-    createdAt: new Date('2024-01-20'),
-    updatedAt: new Date()
-  }
-];
+interface BonusManagementPageProps {
+  className?: string;
+}
 
-export function BonusManagementPage() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showCreateUserDialog, setShowCreateUserDialog] = useState(false);
-
-  // Хук для уведомлений
-  const { toast } = useToast();
+export function BonusManagementPageRefactored({
+  className
+}: BonusManagementPageProps = {}) {
   const router = useRouter();
+  const { toast } = useToast();
 
-  // Состояние для выбранного проекта
-  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
-  const [availableProjects, setAvailableProjects] = useState<any[]>([]);
+  // Local state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [showCreateUserDialog, setShowCreateUserDialog] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [showRichNotificationDialog, setShowRichNotificationDialog] =
+    useState(false);
 
-  // Загрузка списка проектов
-  const loadProjects = async () => {
-    try {
-      const response = await fetch('/api/projects');
-      if (response.ok) {
-        const projects = await response.json();
-        console.log('Загружены проекты:', projects);
-        setAvailableProjects(projects);
+  // Custom hooks
+  const {
+    projects,
+    currentProjectId,
+    currentProject,
+    isLoading: projectsLoading,
+    error: projectsError,
+    selectProject
+  } = useProjects({
+    autoSelectFirst: true,
+    fallbackProjectId: 'cmdkloj85000cv8o0611rblp3' // Fallback project ID
+  });
 
-        // Автоматически выбираем первый активный проект
-        if (projects.length > 0) {
-          const activeProject =
-            projects.find((p: any) => p.isActive) || projects[0];
-          setCurrentProjectId(activeProject.id);
-          console.log('Выбран проект:', activeProject.id, activeProject.name);
-        }
-      }
-    } catch (error) {
-      console.error('Ошибка загрузки проектов:', error);
-      // Fallback на известный рабочий project ID
-      setCurrentProjectId('cmdkloj85000cv8o0611rblp3');
-    }
-  };
+  const {
+    users,
+    isLoading: usersLoading,
+    error: usersError,
+    totalUsers,
+    activeUsers,
+    totalBonuses,
+    createUser,
+    refreshUsers,
+    searchUsers,
+    exportUsers
+  } = useProjectUsers({
+    projectId: currentProjectId || undefined
+  });
 
-  // Инициализация проектов
-  useEffect(() => {
-    loadProjects();
-  }, []);
+  // Memoized values
+  const filteredUsers = useMemo(() => {
+    return searchUsers(searchTerm);
+  }, [searchUsers, searchTerm]);
 
-  const loadData = async () => {
-    if (!currentProjectId) {
-      console.log('Project ID не установлен, ожидаем загрузки проектов...');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      // Загружаем реальных пользователей из API
-      const usersResponse = await fetch(
-        `/api/projects/${currentProjectId}/users`
-      );
-
-      if (usersResponse.ok) {
-        const usersData = await usersResponse.json();
-        console.log('Загружены пользователи из API:', usersData); // Для отладки
-
-        // Проверяем, что получили массив
-        if (Array.isArray(usersData) && usersData.length > 0) {
-          // Форматируем данные для соответствия типу User
-          const formattedUsers = usersData.map((user, index) => ({
-            id: user.id || `user-${index}`,
-            name:
-              user.firstName && user.lastName
-                ? `${user.firstName} ${user.lastName}`.trim()
-                : user.email || `Пользователь ${index + 1}`,
-            email: user.email || '',
-            avatar:
-              user.avatar ||
-              `https://api.slingacademy.com/public/sample-users/${(index % 5) + 1}.png`,
-            bonusBalance: Number(user.bonusBalance) || 0,
-            totalEarned: Number(user.totalEarned) || 0,
-            createdAt: new Date(
-              user.registeredAt || user.createdAt || Date.now()
-            ),
-            updatedAt: new Date(user.updatedAt || Date.now())
-          }));
-
-          console.log('Форматированные пользователи:', formattedUsers); // Для отладки
-          setUsers(formattedUsers);
-        } else {
-          console.log(
-            'Пустой массив пользователей из API, используем демо данные'
-          );
-          setUsers(demoUsers);
-        }
-      } else {
-        console.warn(
-          `API недоступен (${usersResponse.status}), используем демо данные`
-        );
-        setUsers(demoUsers);
-      }
-    } catch (error) {
-      console.error('Ошибка загрузки данных:', error);
-      // В случае ошибки используем демо данные
-      setUsers(demoUsers);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Инициализация данных когда project ID установлен
-  useEffect(() => {
-    if (currentProjectId) {
-      console.log('Загружаем данные для проекта:', currentProjectId);
-      loadData();
-    }
-  }, [currentProjectId]); // Перезагружаем когда меняется project ID
-
-  // Фильтрация пользователей по поисковому запросу
-  const filteredUsers = users.filter(
-    (user) =>
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const statsData = useMemo(
+    () => ({
+      totalUsers,
+      activeUsers,
+      totalBonuses,
+      expiringSoonBonuses: Math.floor(totalBonuses * 0.15), // Mock для демо
+      monthlyGrowth: 12 // Mock для демо
+    }),
+    [totalUsers, activeUsers, totalBonuses]
   );
 
-  const handleExportData = () => {
-    if (!users || users.length === 0) {
+  const isLoading = projectsLoading || usersLoading;
+  const hasError = projectsError || usersError;
+
+  // Event handlers
+  const handleSearch = useCallback(
+    (term: string) => {
+      setSearchTerm(term);
+      setSelectedUsers(new Set()); // Сбрасываем выбор при поиске
+
+      logger.debug(
+        'Users search performed',
+        {
+          searchTerm: term,
+          resultsCount: searchUsers(term).length,
+          projectId: currentProjectId
+        },
+        'bonus-management'
+      );
+    },
+    [searchUsers, currentProjectId]
+  );
+
+  const handleUserSelection = useCallback(
+    (userId: string, selected: boolean) => {
+      setSelectedUsers((prev) => {
+        const newSet = new Set(prev);
+        if (selected) {
+          newSet.add(userId);
+        } else {
+          newSet.delete(userId);
+        }
+        return newSet;
+      });
+    },
+    []
+  );
+
+  const handleSelectAll = useCallback(
+    (selected: boolean) => {
+      if (selected) {
+        setSelectedUsers(new Set(filteredUsers.map((user) => user.id)));
+      } else {
+        setSelectedUsers(new Set());
+      }
+    },
+    [filteredUsers]
+  );
+
+  const handleCreateUser = useCallback(
+    async (userData: any) => {
+      try {
+        logger.info(
+          'Creating new user',
+          { projectId: currentProjectId },
+          'bonus-management'
+        );
+
+        await createUser(userData);
+        setShowCreateUserDialog(false);
+
+        toast({
+          title: 'Пользователь создан',
+          description: `Пользователь ${userData.firstName || userData.email} успешно добавлен`
+        });
+
+        logger.info(
+          'User created successfully',
+          {
+            projectId: currentProjectId,
+            userEmail: userData.email
+          },
+          'bonus-management'
+        );
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Unknown error';
+
+        toast({
+          title: 'Ошибка создания пользователя',
+          description: errorMessage,
+          variant: 'destructive'
+        });
+
+        logger.error(
+          'Failed to create user',
+          {
+            projectId: currentProjectId,
+            error: errorMessage
+          },
+          'bonus-management'
+        );
+      }
+    },
+    [createUser, currentProjectId, toast]
+  );
+
+  const handleExport = useCallback(async () => {
+    try {
+      logger.info(
+        'Exporting users',
+        {
+          projectId: currentProjectId,
+          count: users.length
+        },
+        'bonus-management'
+      );
+
+      await exportUsers();
+
       toast({
-        title: 'Предупреждение',
-        description: 'Нет данных для экспорта',
+        title: 'Экспорт завершен',
+        description: `Данные ${users.length} пользователей экспортированы в CSV`
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+
+      toast({
+        title: 'Ошибка экспорта',
+        description: errorMessage,
         variant: 'destructive'
       });
-      return;
+
+      logger.error(
+        'Failed to export users',
+        {
+          projectId: currentProjectId,
+          error: errorMessage
+        },
+        'bonus-management'
+      );
     }
+  }, [exportUsers, users.length, currentProjectId, toast]);
 
-    // Создаем CSV данные
-    const csvHeaders = [
-      'ID',
-      'Имя',
-      'Email',
-      'Баланс бонусов',
-      'Всего заработано',
-      'Дата регистрации'
-    ];
-    const csvData = users.map((user) => [
-      user.id,
-      user.name,
-      user.email,
-      user.bonusBalance,
-      user.totalEarned,
-      user.createdAt.toLocaleDateString('ru-RU')
-    ]);
+  const handleRefresh = useCallback(async () => {
+    try {
+      logger.info(
+        'Refreshing users data',
+        { projectId: currentProjectId },
+        'bonus-management'
+      );
 
-    const csvContent = [csvHeaders, ...csvData]
-      .map((row) => row.map((cell) => `"${cell}"`).join(','))
-      .join('\n');
+      await refreshUsers();
+      setSelectedUsers(new Set()); // Сбрасываем выбор
 
-    // Создаем и скачиваем файл
-    const blob = new Blob(['\ufeff' + csvContent], {
-      type: 'text/csv;charset=utf-8;'
-    });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute(
-      'download',
-      `users_export_${new Date().toISOString().split('T')[0]}.csv`
-    );
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    toast({
-      title: 'Успех',
-      description: 'Данные экспортированы в CSV файл'
-    });
-  };
-
-  const handleSettings = () => {
-    router.push('/dashboard/projects');
-    toast({
-      title: 'Переход',
-      description: 'Переходим к настройкам проектов'
-    });
-  };
-
-  const handleAddUser = () => {
-    if (!currentProjectId) {
       toast({
-        title: 'Ошибка',
-        description: 'Проект не выбран. Пожалуйста, подождите загрузки данных.',
+        title: 'Данные обновлены',
+        description: 'Список пользователей успешно обновлен'
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка обновления',
+        description: 'Не удалось обновить данные',
         variant: 'destructive'
       });
-      return;
     }
-    setShowCreateUserDialog(true);
-  };
+  }, [refreshUsers, currentProjectId, toast]);
 
-  const handleCreateUserSuccess = (newUser: User) => {
-    console.log('Создан новый пользователь:', newUser); // Для отладки
+  const handleProjectSettings = useCallback(() => {
+    if (currentProjectId) {
+      router.push(`/dashboard/projects/${currentProjectId}/settings`);
+    }
+  }, [currentProjectId, router]);
 
-    // Немедленно добавляем пользователя в локальное состояние
-    const updatedUsers = [newUser, ...users];
-    setUsers(updatedUsers);
-    console.log('Обновленный список пользователей:', updatedUsers); // Для отладки
-
-    // Перезагружаем данные из API для синхронизации через небольшую задержку
-    setTimeout(() => {
-      console.log('Перезагружаем данные из API...');
-      loadData();
-    }, 1000);
-
-    toast({
-      title: 'Успех',
-      description: 'Пользователь успешно добавлен'
-    });
-  };
-
-  // Если проект не загружен, показываем загрузку
-  if (!currentProjectId && !isLoading) {
+  // Render error state
+  if (hasError && !isLoading) {
     return (
-      <div className='p-6'>
-        <div className='flex min-h-[400px] items-center justify-center'>
-          <div className='text-center'>
-            <div className='border-primary mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2'></div>
-            <p className='text-muted-foreground'>Загрузка проектов...</p>
-          </div>
+      <div className={`space-y-6 ${className}`}>
+        <Alert variant='destructive'>
+          <AlertCircle className='h-4 w-4' />
+          <AlertDescription>{projectsError || usersError}</AlertDescription>
+        </Alert>
+
+        <div className='flex justify-center'>
+          <Button onClick={() => window.location.reload()} variant='outline'>
+            <RefreshCw className='mr-2 h-4 w-4' />
+            Попробовать снова
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className='space-y-6'>
-      {/* Заголовок и действия */}
-      <div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between'>
+    <div className={`space-y-6 ${className}`}>
+      {/* Header */}
+      <div className='flex items-center justify-between'>
         <div>
           <h1 className='text-3xl font-bold tracking-tight'>
             Управление бонусами
           </h1>
           <p className='text-muted-foreground'>
-            Управление пользователями и их бонусными счетами
-            {availableProjects.length > 0 && currentProjectId && (
-              <span className='bg-muted ml-2 rounded px-2 py-1 text-sm'>
-                Проект:{' '}
-                {availableProjects.find((p) => p.id === currentProjectId)
-                  ?.name || 'Неизвестен'}
-              </span>
-            )}
+            {currentProject
+              ? `Проект: ${currentProject.name}`
+              : 'Управление пользователями и бонусной программой'}
           </p>
         </div>
-        <div className='flex flex-col gap-2 sm:flex-row'>
-          <Button variant='outline' onClick={handleExportData}>
-            <Download className='mr-2 h-4 w-4' />
-            Экспорт
-          </Button>
-          <Button variant='outline' onClick={handleSettings}>
-            <Settings className='mr-2 h-4 w-4' />
-            Настройки
-          </Button>
-          <Button onClick={handleAddUser} disabled={!currentProjectId}>
-            <Plus className='mr-2 h-4 w-4' />
-            Добавить пользователя
+
+        <div className='flex items-center space-x-2'>
+          {projects.length > 1 && (
+            <select
+              value={currentProjectId || ''}
+              onChange={(e) => selectProject(e.target.value)}
+              className='rounded-md border px-3 py-2 text-sm'
+              disabled={isLoading}
+            >
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name}
+                </option>
+              ))}
+            </select>
+          )}
+
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={handleRefresh}
+            disabled={isLoading}
+          >
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}
+            />
+            Обновить
           </Button>
         </div>
       </div>
 
-      {/* Статистические карты */}
-      <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
-        <Card>
-          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>
-              Всего пользователей
-            </CardTitle>
-            <Users className='text-muted-foreground h-4 w-4' />
-          </CardHeader>
-          <CardContent>
-            <div className='text-2xl font-bold'>{users.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>
-              Активные бонусы
-            </CardTitle>
-            <Coins className='text-muted-foreground h-4 w-4' />
-          </CardHeader>
-          <CardContent>
-            <div className='text-2xl font-bold'>
-              {users.reduce((sum, user) => sum + user.bonusBalance, 0)}₽
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>
-              Всего заработано
-            </CardTitle>
-            <TrendingUp className='text-muted-foreground h-4 w-4' />
-          </CardHeader>
-          <CardContent>
-            <div className='text-2xl font-bold'>
-              {users.reduce((sum, user) => sum + user.totalEarned, 0)}₽
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>
-              Средний баланс
-            </CardTitle>
-            <Coins className='text-muted-foreground h-4 w-4' />
-          </CardHeader>
-          <CardContent>
-            <div className='text-2xl font-bold'>
-              {users.length > 0
-                ? Math.round(
-                    users.reduce((sum, user) => sum + user.bonusBalance, 0) /
-                      users.length
-                  )
-                : 0}
-              ₽
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Statistics */}
+      <BonusStatsCards
+        stats={statsData}
+        isLoading={isLoading}
+        error={hasError ? projectsError || usersError : null}
+      />
 
-      {/* Фильтры и поиск */}
+      {/* Controls */}
       <Card>
         <CardHeader>
-          <CardTitle>Поиск и фильтры</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className='flex items-center space-x-2'>
-            <Search className='text-muted-foreground h-4 w-4' />
-            <Input
-              placeholder='Поиск по имени или email...'
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className='max-w-sm'
-            />
+          <div className='flex items-center justify-between'>
+            <div>
+              <CardTitle className='flex items-center space-x-2'>
+                <Users className='h-5 w-5' />
+                <span>Пользователи</span>
+                {!isLoading && (
+                  <Badge variant='secondary'>
+                    {filteredUsers.length} из {totalUsers}
+                  </Badge>
+                )}
+              </CardTitle>
+              <CardDescription>
+                Управление пользователями бонусной программы
+              </CardDescription>
+            </div>
+
+            <div className='flex items-center space-x-2'>
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <Filter className='mr-2 h-4 w-4' />
+                Фильтры
+              </Button>
+
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={handleExport}
+                disabled={users.length === 0 || isLoading}
+              >
+                <Download className='mr-2 h-4 w-4' />
+                Скачать
+              </Button>
+
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={handleProjectSettings}
+                disabled={!currentProjectId}
+              >
+                <Settings className='mr-2 h-4 w-4' />
+                Настройки
+              </Button>
+
+              <Button
+                size='sm'
+                onClick={() => setShowCreateUserDialog(true)}
+                disabled={!currentProjectId}
+              >
+                <Plus className='mr-2 h-4 w-4' />
+                Добавить пользователя
+              </Button>
+            </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Таблица пользователей */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Список пользователей</CardTitle>
-          <CardDescription>
-            Управление пользователями и их бонусными счетами (
-            {filteredUsers.length} пользователей)
-          </CardDescription>
+          {/* Search */}
+          <div className='flex items-center space-x-4'>
+            <div className='relative max-w-sm flex-1'>
+              <Search className='text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform' />
+              <Input
+                placeholder='Поиск по имени, email или телефону...'
+                value={searchTerm}
+                onChange={(e) => handleSearch(e.target.value)}
+                className='pl-10'
+                disabled={isLoading}
+              />
+            </div>
+
+            {selectedUsers.size > 0 && (
+              <Badge variant='default'>Выбрано: {selectedUsers.size}</Badge>
+            )}
+          </div>
         </CardHeader>
+
         <CardContent>
-          {isLoading ? (
-            <div className='space-y-4'>
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className='bg-muted h-16 animate-pulse rounded' />
-              ))}
-            </div>
-          ) : filteredUsers.length === 0 ? (
-            <div className='py-8 text-center'>
-              <p className='text-muted-foreground'>Пользователи не найдены</p>
-            </div>
-          ) : (
-            <div className='space-y-4'>
-              {filteredUsers.map((user) => (
-                <div
-                  key={user.id}
-                  className='flex items-center justify-between rounded-lg border p-4'
-                >
-                  <div className='flex items-center space-x-4'>
-                    <img
-                      src={user.avatar}
-                      alt={user.name}
-                      className='h-10 w-10 rounded-full'
-                    />
-                    <div>
-                      <p className='font-medium'>{user.name}</p>
-                      <p className='text-muted-foreground text-sm'>
-                        {user.email}
-                      </p>
-                    </div>
-                  </div>
-                  <div className='flex items-center space-x-4'>
-                    <div className='text-right'>
-                      <p className='font-medium'>{user.bonusBalance}₽</p>
-                      <p className='text-muted-foreground text-sm'>
-                        Заработано: {user.totalEarned}₽
-                      </p>
-                    </div>
-                    <Badge variant='default'>Активен</Badge>
-                  </div>
-                </div>
-              ))}
+          {/* Подсказка по рассылкам */}
+          {filteredUsers.length > 0 && selectedUsers.size === 0 && (
+            <div className='mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4'>
+              <div className='flex items-center gap-2 text-sm text-blue-700'>
+                <MessageSquare className='h-4 w-4' />
+                <span className='font-medium'>💡 Как отправить рассылку:</span>
+              </div>
+              <p className='mt-1 text-sm text-blue-600'>
+                1. Выберите пользователей (поставьте галочки) 2. Снизу появится
+                панель с кнопкой &quot;Уведомления&quot; 3. Выберите &quot;📢
+                Расширенные уведомления&quot; для отправки рассылок с картинками
+                и кнопками
+              </p>
             </div>
           )}
+
+          {/* Users List */}
+          <UsersDisplayArea
+            users={filteredUsers}
+            selectedUsers={selectedUsers}
+            isLoading={isLoading}
+            onUserSelection={handleUserSelection}
+            onSelectAll={handleSelectAll}
+          />
         </CardContent>
       </Card>
 
-      {/* Уведомления об истекающих бонусах */}
-      {!isLoading && users.length > 0 && (
-        <Card className='border-amber-200 bg-amber-50'>
-          <CardHeader>
-            <CardTitle className='flex items-center gap-2 text-amber-800'>
-              <AlertTriangle className='h-5 w-5' />
-              Внимание: Истекающие бонусы
-            </CardTitle>
-            <CardDescription className='text-amber-700'>
-              У некоторых пользователей есть бонусы, которые скоро истекут
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className='space-y-2'>
-              <div className='flex items-center justify-between text-sm'>
-                <span>Истекает в течение 7 дней:</span>
-                <Badge
-                  variant='outline'
-                  className='border-amber-300 text-amber-700'
-                >
-                  750 бонусов у 2 пользователей
-                </Badge>
-              </div>
-              <div className='flex items-center justify-between text-sm'>
-                <span>Истекает в течение 30 дней:</span>
-                <Badge
-                  variant='outline'
-                  className='border-amber-300 text-amber-700'
-                >
-                  1250 бонусов у 5 пользователей
-                </Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Enhanced Bulk Actions Toolbar */}
+      <EnhancedBulkActionsToolbar
+        selectedUserIds={Array.from(selectedUsers)}
+        selectedCount={selectedUsers.size}
+        onClearSelection={() => setSelectedUsers(new Set())}
+        onShowRichNotifications={() => setShowRichNotificationDialog(true)}
+      />
 
-      {/* Тулбар массовых операций */}
-      {/* <BulkActionsToolbar /> */}
-
-      {/* Диалог создания пользователя */}
+      {/* Create User Dialog */}
       <UserCreateDialog
-        projectId={currentProjectId || ''} // Передаем текущий projectId
         open={showCreateUserDialog}
         onOpenChange={setShowCreateUserDialog}
-        onSuccess={handleCreateUserSuccess}
+        onSuccess={handleCreateUser}
+        projectId={currentProjectId || ''}
+      />
+
+      {/* Rich Notification Dialog */}
+      <RichNotificationDialog
+        open={showRichNotificationDialog}
+        onOpenChange={setShowRichNotificationDialog}
+        selectedUserIds={Array.from(selectedUsers)}
+        projectId={currentProjectId || ''}
       />
     </div>
   );
 }
+
+/**
+ * Компонент отображения списка пользователей
+ */
+interface UsersDisplayAreaProps {
+  users: User[];
+  selectedUsers: Set<string>;
+  isLoading: boolean;
+  onUserSelection: (userId: string, selected: boolean) => void;
+  onSelectAll: (selected: boolean) => void;
+}
+
+const UsersDisplayArea = memo<UsersDisplayAreaProps>(
+  ({ users, selectedUsers, isLoading, onUserSelection, onSelectAll }) => {
+    if (isLoading) {
+      return (
+        <div className='space-y-4'>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className='p-4'>
+              <div className='flex items-center space-x-4'>
+                <div className='bg-muted h-10 w-10 animate-pulse rounded-full' />
+                <div className='flex-1 space-y-2'>
+                  <div className='bg-muted h-4 w-48 animate-pulse rounded' />
+                  <div className='bg-muted h-3 w-32 animate-pulse rounded' />
+                </div>
+                <div className='bg-muted h-6 w-16 animate-pulse rounded' />
+              </div>
+            </Card>
+          ))}
+        </div>
+      );
+    }
+
+    if (users.length === 0) {
+      return (
+        <div className='py-12 text-center'>
+          <Users className='text-muted-foreground mx-auto mb-4 h-12 w-12' />
+          <h3 className='mb-2 text-lg font-semibold'>
+            Пользователей не найдено
+          </h3>
+          <p className='text-muted-foreground mb-4'>
+            Попробуйте изменить условия поиска или добавьте первого пользователя
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className='space-y-4'>
+        {/* Select All Control */}
+        <div className='flex items-center space-x-2 border-b p-2'>
+          <input
+            type='checkbox'
+            checked={selectedUsers.size === users.length && users.length > 0}
+            onChange={(e) => onSelectAll(e.target.checked)}
+            className='rounded border-gray-300'
+          />
+          <span className='text-muted-foreground text-sm'>
+            Выбрать все ({users.length})
+          </span>
+        </div>
+
+        {/* Users List */}
+        <div className='grid gap-4'>
+          {users.map((user) => (
+            <UserCard
+              key={user.id}
+              user={user}
+              selected={selectedUsers.has(user.id)}
+              onSelectionChange={(selected) =>
+                onUserSelection(user.id, selected)
+              }
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+);
+
+UsersDisplayArea.displayName = 'UsersDisplayArea';
+
+/**
+ * Компонент карточки пользователя
+ */
+interface UserCardProps {
+  user: User;
+  selected: boolean;
+  onSelectionChange: (selected: boolean) => void;
+}
+
+const UserCard = memo<UserCardProps>(
+  ({ user, selected, onSelectionChange }) => {
+    const isActive = user.bonusBalance > 0;
+
+    return (
+      <Card
+        className={`transition-all duration-200 ${selected ? 'ring-primary ring-2' : ''}`}
+      >
+        <CardContent className='p-4'>
+          <div className='flex items-center space-x-4'>
+            <input
+              type='checkbox'
+              checked={selected}
+              onChange={(e) => onSelectionChange(e.target.checked)}
+              className='rounded border-gray-300'
+            />
+
+            <img
+              src={user.avatar}
+              alt={user.name}
+              className='h-10 w-10 rounded-full object-cover'
+            />
+
+            <div className='flex-1'>
+              <div className='flex items-center space-x-2'>
+                <h4 className='font-medium'>{user.name}</h4>
+                {isActive && <Badge variant='default'>Активный</Badge>}
+              </div>
+              <div className='text-muted-foreground space-y-1 text-sm'>
+                <div>{user.email}</div>
+                {user.phone && <div>{user.phone}</div>}
+                <div>
+                  Регистрация: {user.createdAt.toLocaleDateString('ru-RU')}
+                </div>
+              </div>
+            </div>
+
+            <div className='text-right'>
+              <div className='text-lg font-semibold'>
+                {user.bonusBalance.toLocaleString('ru-RU')}₽
+              </div>
+              <div className='text-muted-foreground text-sm'>
+                Заработано: {user.totalEarned.toLocaleString('ru-RU')}₽
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+);
+
+UserCard.displayName = 'UserCard';
+
+export default BonusManagementPageRefactored;

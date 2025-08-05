@@ -12,6 +12,7 @@ import { db } from '@/lib/db';
 import { ProjectService } from '@/lib/services/project.service';
 import { UserService, BonusService } from '@/lib/services/user.service';
 import { logger } from '@/lib/logger';
+import { withWebhookRateLimit } from '@/lib/with-rate-limit';
 import type {
   WebhookRegisterUserPayload,
   WebhookPurchasePayload,
@@ -134,8 +135,8 @@ async function handleTildaOrder(projectId: string, orderData: any) {
   }
 }
 
-// Обработчик POST запросов
-export async function POST(
+// Обработчик POST запросов (без rate limiting)
+async function handlePOST(
   request: NextRequest,
   { params }: { params: Promise<{ webhookSecret: string }> }
 ) {
@@ -444,3 +445,6 @@ export async function GET(
     supportedActions: ['register_user', 'purchase', 'spend_bonuses']
   });
 }
+
+// Применяем rate limiting к POST запросам
+export const POST = withWebhookRateLimit(handlePOST);

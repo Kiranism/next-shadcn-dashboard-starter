@@ -27,7 +27,9 @@ import {
   Gift,
   Users,
   Save,
-  Edit
+  Edit,
+  RefreshCw,
+  Target
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -98,13 +100,13 @@ export function BotManagementView({ projectId }: BotManagementViewProps) {
     errorMessage: '❌ Произошла ошибка. Попробуйте позже.'
   });
 
-  // Form state для функционала
+  // Form state для функционала (соответствует схеме БД)
   const [features, setFeatures] = useState({
-    enableReferrals: true,
-    enableHistory: true,
-    enableNotifications: true,
-    enableBonusRequests: false,
-    enableSupport: true
+    showBalance: true,
+    showLevel: true,
+    showReferral: true,
+    showHistory: true,
+    showHelp: true
   });
 
   const loadData = async () => {
@@ -131,13 +133,13 @@ export function BotManagementView({ projectId }: BotManagementViewProps) {
         });
 
         // Загружаем настройки сообщений
-        if (botData?.messages) {
-          setMessages({ ...messages, ...botData.messages });
+        if (botData?.messageSettings) {
+          setMessages({ ...messages, ...botData.messageSettings });
         }
 
         // Загружаем настройки функционала
-        if (botData?.features) {
-          setFeatures({ ...features, ...botData.features });
+        if (botData?.functionalSettings) {
+          setFeatures({ ...features, ...botData.functionalSettings });
         }
       }
 
@@ -218,6 +220,80 @@ export function BotManagementView({ projectId }: BotManagementViewProps) {
     }
   };
 
+  const handleRestartBot = async () => {
+    try {
+      setStarting(true);
+      const response = await fetch(`/api/projects/${projectId}/bot/restart`, {
+        method: 'POST'
+      });
+
+      if (response.ok) {
+        toast({
+          title: 'Успех',
+          description: 'Бот успешно перезапущен'
+        });
+        await checkBotStatus();
+      } else {
+        const error = await response.json();
+        toast({
+          title: 'Ошибка',
+          description: error.error || 'Не удалось перезапустить бота',
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось перезапустить бота',
+        variant: 'destructive'
+      });
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  const handleStopAllBots = async () => {
+    if (
+      !confirm(
+        '⚠️ ЭКСТРЕННАЯ ОСТАНОВКА всех ботов в системе? Это может повлиять на других пользователей!'
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setStarting(true);
+      const response = await fetch(`/api/admin/bots/stop-all`, {
+        method: 'POST'
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast({
+          title: 'Экстренная остановка',
+          description: result.message,
+          variant: result.errors?.length > 0 ? 'destructive' : 'default'
+        });
+        await checkBotStatus();
+      } else {
+        const error = await response.json();
+        toast({
+          title: 'Ошибка',
+          description: error.error || 'Не удалось остановить ботов',
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось остановить ботов',
+        variant: 'destructive'
+      });
+    } finally {
+      setStarting(false);
+    }
+  };
+
   const handleSaveToken = async () => {
     try {
       setSaving(true);
@@ -260,11 +336,11 @@ export function BotManagementView({ projectId }: BotManagementViewProps) {
   const handleSaveMessages = async () => {
     try {
       setSaving(true);
-      const response = await fetch(`/api/projects/${projectId}/bot`, {
+      const response = await fetch(`/api/projects/${projectId}/bot/messages`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages
+          messageSettings: messages
         })
       });
 
@@ -275,9 +351,10 @@ export function BotManagementView({ projectId }: BotManagementViewProps) {
         });
         await loadData();
       } else {
+        const error = await response.json();
         toast({
           title: 'Ошибка',
-          description: 'Не удалось сохранить сообщения',
+          description: error.error || 'Не удалось сохранить сообщения',
           variant: 'destructive'
         });
       }
@@ -295,11 +372,11 @@ export function BotManagementView({ projectId }: BotManagementViewProps) {
   const handleSaveFeatures = async () => {
     try {
       setSaving(true);
-      const response = await fetch(`/api/projects/${projectId}/bot`, {
+      const response = await fetch(`/api/projects/${projectId}/bot/features`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          features
+          functionalSettings: features
         })
       });
 
@@ -310,9 +387,10 @@ export function BotManagementView({ projectId }: BotManagementViewProps) {
         });
         await loadData();
       } else {
+        const error = await response.json();
         toast({
           title: 'Ошибка',
-          description: 'Не удалось сохранить настройки',
+          description: error.error || 'Не удалось сохранить настройки',
           variant: 'destructive'
         });
       }
@@ -376,7 +454,33 @@ export function BotManagementView({ projectId }: BotManagementViewProps) {
                 ) : (
                   <Play className='mr-2 h-4 w-4' />
                 )}
-                Перезапустить бота
+                Запустить бота
+              </Button>
+              <Button
+                size='sm'
+                variant='outline'
+                onClick={handleRestartBot}
+                disabled={starting}
+              >
+                {starting ? (
+                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                ) : (
+                  <RefreshCw className='mr-2 h-4 w-4' />
+                )}
+                Перезапустить
+              </Button>
+              <Button
+                size='sm'
+                variant='destructive'
+                onClick={handleStopAllBots}
+                disabled={starting}
+              >
+                {starting ? (
+                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                ) : (
+                  <X className='mr-2 h-4 w-4' />
+                )}
+                🚨 Остановить все
               </Button>
             </>
           )}
@@ -708,9 +812,9 @@ export function BotManagementView({ projectId }: BotManagementViewProps) {
                     </p>
                   </div>
                   <Switch
-                    checked={features.enableReferrals}
+                    checked={features.showReferral}
                     onCheckedChange={(checked) =>
-                      setFeatures({ ...features, enableReferrals: checked })
+                      setFeatures({ ...features, showReferral: checked })
                     }
                   />
                 </div>
@@ -726,28 +830,9 @@ export function BotManagementView({ projectId }: BotManagementViewProps) {
                     </p>
                   </div>
                   <Switch
-                    checked={features.enableHistory}
+                    checked={features.showHistory}
                     onCheckedChange={(checked) =>
-                      setFeatures({ ...features, enableHistory: checked })
-                    }
-                  />
-                </div>
-
-                <div className='flex items-center justify-between'>
-                  <div className='space-y-1'>
-                    <div className='flex items-center space-x-2'>
-                      <AlertCircle className='h-4 w-4' />
-                      <Label className='font-medium'>Уведомления</Label>
-                    </div>
-                    <p className='text-muted-foreground text-sm'>
-                      Автоматические уведомления о начислениях и истечении
-                      бонусов
-                    </p>
-                  </div>
-                  <Switch
-                    checked={features.enableNotifications}
-                    onCheckedChange={(checked) =>
-                      setFeatures({ ...features, enableNotifications: checked })
+                      setFeatures({ ...features, showHistory: checked })
                     }
                   />
                 </div>
@@ -756,16 +841,34 @@ export function BotManagementView({ projectId }: BotManagementViewProps) {
                   <div className='space-y-1'>
                     <div className='flex items-center space-x-2'>
                       <Gift className='h-4 w-4' />
-                      <Label className='font-medium'>Запрос бонусов</Label>
+                      <Label className='font-medium'>Показывать баланс</Label>
                     </div>
                     <p className='text-muted-foreground text-sm'>
-                      Позволяет пользователям запрашивать начисление бонусов
+                      Показывать кнопку "💰 Баланс" в меню бота
                     </p>
                   </div>
                   <Switch
-                    checked={features.enableBonusRequests}
+                    checked={features.showBalance}
                     onCheckedChange={(checked) =>
-                      setFeatures({ ...features, enableBonusRequests: checked })
+                      setFeatures({ ...features, showBalance: checked })
+                    }
+                  />
+                </div>
+
+                <div className='flex items-center justify-between'>
+                  <div className='space-y-1'>
+                    <div className='flex items-center space-x-2'>
+                      <Target className='h-4 w-4' />
+                      <Label className='font-medium'>Показывать уровень</Label>
+                    </div>
+                    <p className='text-muted-foreground text-sm'>
+                      Показывать кнопку "🏆 Уровень" в меню бота
+                    </p>
+                  </div>
+                  <Switch
+                    checked={features.showLevel}
+                    onCheckedChange={(checked) =>
+                      setFeatures({ ...features, showLevel: checked })
                     }
                   />
                 </div>
@@ -774,16 +877,16 @@ export function BotManagementView({ projectId }: BotManagementViewProps) {
                   <div className='space-y-1'>
                     <div className='flex items-center space-x-2'>
                       <MessageSquare className='h-4 w-4' />
-                      <Label className='font-medium'>Поддержка</Label>
+                      <Label className='font-medium'>Показывать помощь</Label>
                     </div>
                     <p className='text-muted-foreground text-sm'>
-                      Возможность связаться с поддержкой через бота
+                      Показывать кнопку "ℹ️ Помощь" в меню бота
                     </p>
                   </div>
                   <Switch
-                    checked={features.enableSupport}
+                    checked={features.showHelp}
                     onCheckedChange={(checked) =>
-                      setFeatures({ ...features, enableSupport: checked })
+                      setFeatures({ ...features, showHelp: checked })
                     }
                   />
                 </div>

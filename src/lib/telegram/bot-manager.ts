@@ -10,11 +10,19 @@
 // @ts-nocheck
 // Временно отключаем проверку типов для совместимости с Prisma
 
-import { Bot, Context, SessionFlavor, webhookCallback } from 'grammy';
+import {
+  Bot,
+  Context,
+  SessionFlavor,
+  webhookCallback,
+  GrammyError,
+  HttpError
+} from 'grammy';
 import { createBot } from './bot';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import type { BotSettings } from '@/types/bonus';
+import { setupGlobalErrorHandler } from './global-error-handler';
 
 // Типизация контекста (совпадает с bot.ts)
 interface SessionData {
@@ -41,10 +49,15 @@ interface BotInstance {
 class BotManager {
   private bots: Map<string, BotInstance> = new Map();
   private readonly WEBHOOK_BASE_URL: string;
+  private readonly operationLocks: Map<string, Promise<any>> = new Map();
 
   constructor() {
     this.WEBHOOK_BASE_URL =
       process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:5006';
+
+    // Активируем глобальный обработчик ошибок для 409 конфликтов
+    setupGlobalErrorHandler();
+
     logger.info('BotManager инициализирован', {
       webhookBaseUrl: this.WEBHOOK_BASE_URL,
       component: 'bot-manager'
@@ -59,15 +72,257 @@ class BotManager {
   }
 
   /**
-   * Создание и запуск нового бота
+   * Получение всех активных ботов
+   */
+  getAllBots(): Array<[string, BotInstance]> {
+    return Array.from(this.bots.entries());
+  }
+
+  /**
+   * Отправка расширенного уведомления с медиа и кнопками
+   */
+  async sendRichBroadcastMessage(
+    projectId: string,
+    userIds: string[],
+    message: string,
+    options: {
+      imageUrl?: string;
+      buttons?: Array<{
+        text: string;
+        url?: string;
+        callback_data?: string;
+      }>;
+      parseMode?: 'Markdown' | 'HTML';
+    } = {}
+  ): Promise<{
+    success: boolean;
+    sentCount: number;
+    failedCount: number;
+    errors: string[];
+  }> {
+    try {
+      const botInstance = this.bots.get(projectId);
+      if (!botInstance || !botInstance.isActive) {
+        throw new Error('Бот не активен для этого проекта');
+      }
+
+      const { imageUrl, buttons, parseMode = 'Markdown' } = options;
+      let sentCount = 0;
+      let failedCount = 0;
+      const errors: string[] = [];
+
+      // Создаем inline keyboard если есть кнопки
+      let replyMarkup = undefined;
+      if (buttons && buttons.length > 0) {
+        const { InlineKeyboard } = await import('grammy');
+        const keyboard = new InlineKeyboard();
+
+        buttons.forEach((button, index) => {
+          if (button.url) {
+            keyboard.url(button.text, button.url);
+          } else if (button.callback_data) {
+            keyboard.text(button.text, button.callback_data);
+          }
+
+          // Добавляем перенос строки каждые 2 кнопки
+          if ((index + 1) % 2 === 0 && index < buttons.length - 1) {
+            keyboard.row();
+          }
+        });
+
+        replyMarkup = keyboard;
+      }
+
+      // Отправляем сообщения пользователям
+      for (const userId of userIds) {
+        try {
+          // Получаем пользователя из БД
+          const user = await db.user.findUnique({
+            where: { id: userId }
+          });
+
+          if (!user || !user.telegramId) {
+            failedCount++;
+            errors.push(
+              `Пользователь ${userId}: не найден или не привязан к Telegram`
+            );
+            continue;
+          }
+
+          // Отправляем фото с подписью если есть изображение
+          if (imageUrl) {
+            await botInstance.bot.api.sendPhoto(
+              user.telegramId.toString(),
+              imageUrl,
+              {
+                caption: message,
+                parse_mode: parseMode,
+                reply_markup: replyMarkup
+              }
+            );
+          } else {
+            // Отправляем обычное сообщение
+            await botInstance.bot.api.sendMessage(
+              user.telegramId.toString(),
+              message,
+              {
+                parse_mode: parseMode,
+                reply_markup: replyMarkup
+              }
+            );
+          }
+
+          sentCount++;
+          logger.info(
+            `Расширенное уведомление отправлено пользователю ${userId}`,
+            {
+              projectId,
+              userId,
+              messageLength: message.length,
+              hasImage: !!imageUrl,
+              buttonsCount: buttons?.length || 0
+            },
+            'bot-manager'
+          );
+        } catch (error) {
+          failedCount++;
+          const errorMsg =
+            error instanceof Error ? error.message : 'Unknown error';
+          errors.push(`Пользователь ${userId}: ${errorMsg}`);
+          logger.error(
+            `Ошибка отправки расширенного уведомления пользователю ${userId}`,
+            {
+              projectId,
+              userId,
+              error: errorMsg
+            },
+            'bot-manager'
+          );
+        }
+      }
+
+      logger.info(
+        `Расширенные уведомления отправлены`,
+        {
+          projectId,
+          totalUsers: userIds.length,
+          sentCount,
+          failedCount,
+          errorsCount: errors.length
+        },
+        'bot-manager'
+      );
+
+      return {
+        success: sentCount > 0,
+        sentCount,
+        failedCount,
+        errors
+      };
+    } catch (error) {
+      logger.error(
+        `Ошибка отправки расширенных уведомлений`,
+        {
+          projectId,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        },
+        'bot-manager'
+      );
+
+      return {
+        success: false,
+        sentCount: 0,
+        failedCount: userIds.length,
+        errors: [error instanceof Error ? error.message : 'Unknown error']
+      };
+    }
+  }
+
+  /**
+   * Экстренная остановка ВСЕХ ботов (для решения 409 конфликтов)
+   */
+  async emergencyStopAll(): Promise<void> {
+    logger.warn(`🚨 ЭКСТРЕННАЯ ОСТАНОВКА ВСЕХ БОТОВ`, {
+      botCount: this.bots.size,
+      component: 'bot-manager'
+    });
+
+    const promises = Array.from(this.bots.keys()).map(async (projectId) => {
+      try {
+        await this.stopBot(projectId);
+        logger.info(`Экстренная остановка бота ${projectId} - успешно`, {
+          projectId,
+          component: 'bot-manager'
+        });
+      } catch (error) {
+        logger.error(`Экстренная остановка бота ${projectId} - ошибка`, {
+          projectId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          component: 'bot-manager'
+        });
+      }
+    });
+
+    await Promise.allSettled(promises);
+
+    // Принудительно очищаем все операции
+    this.operationLocks.clear();
+    this.bots.clear();
+
+    logger.warn(`🚨 Экстренная остановка завершена`, {
+      component: 'bot-manager'
+    });
+
+    // Дополнительная задержка для очистки Telegram API
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+  }
+
+  /**
+   * Создание и запуск нового бота с защитой от race condition
    */
   async createBot(
+    projectId: string,
+    botSettings: BotSettings
+  ): Promise<BotInstance> {
+    // Проверяем, не выполняется ли уже операция для этого проекта
+    const existingOperation = this.operationLocks.get(projectId);
+    if (existingOperation) {
+      logger.info(
+        `Операция создания бота уже выполняется, ожидаем завершения`,
+        {
+          projectId,
+          component: 'bot-manager'
+        }
+      );
+      return existingOperation;
+    }
+
+    // Создаем новую операцию с блокировкой
+    const operation = this._createBotInternal(projectId, botSettings);
+    this.operationLocks.set(projectId, operation);
+
+    try {
+      const result = await operation;
+      return result;
+    } finally {
+      // Убираем блокировку после завершения
+      this.operationLocks.delete(projectId);
+    }
+  }
+
+  /**
+   * Внутренний метод создания бота
+   */
+  private async _createBotInternal(
     projectId: string,
     botSettings: BotSettings
   ): Promise<BotInstance> {
     try {
       // КРИТИЧНО: Останавливаем существующий бот если есть
       await this.stopBot(projectId);
+
+      // Добавляем задержку для избежания конфликтов Telegram API
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Создаем новый экземпляр бота
       const bot = createBot(botSettings.botToken, projectId, botSettings);
@@ -128,27 +383,133 @@ class BotManager {
             component: 'bot-manager'
           });
 
-          // Используем промис для контроля процесса
-          const startPromise = bot.start({
-            onStart: (botInfo) => {
-              logger.info(`Polling запущен для бота @${botInfo.username}`, {
+          // Согласно документации Grammy: двойная защита от ошибок
+          bot.catch((err) => {
+            const ctx = err.ctx;
+            const e = err.error;
+
+            logger.error(
+              `Ошибка при обработке обновления ${ctx?.update?.update_id}:`,
+              {
                 projectId,
-                botId: botInfo.id,
-                username: botInfo.username,
+                error: e instanceof Error ? e.message : 'Неизвестная ошибка',
+                component: 'bot-manager'
+              }
+            );
+
+            if (e instanceof GrammyError) {
+              logger.error('Ошибка в запросе:', {
+                projectId,
+                description: e.description,
+                error_code: e.error_code,
                 component: 'bot-manager'
               });
-              logger.info(
-                `Реальные пользователи могут писать боту в Telegram`,
-                {
-                  projectId,
-                  component: 'bot-manager'
-                }
-              );
-            },
-            drop_pending_updates: true // Пропускаем старые обновления
+            } else if (e instanceof HttpError) {
+              logger.error('Не удалось связаться с Telegram:', {
+                projectId,
+                error: e.message,
+                component: 'bot-manager'
+              });
+            } else {
+              logger.error('Неизвестная ошибка:', {
+                projectId,
+                error: e instanceof Error ? e.message : String(e),
+                component: 'bot-manager'
+              });
+            }
           });
 
-          isPolling = true;
+          // Согласно документации Grammy: правильный запуск с retry
+          try {
+            await bot.start({
+              onStart: (botInfo) => {
+                logger.info(`Polling запущен для бота @${botInfo.username}`, {
+                  projectId,
+                  botId: botInfo.id,
+                  username: botInfo.username,
+                  component: 'bot-manager'
+                });
+                logger.info(
+                  `Реальные пользователи могут писать боту в Telegram`,
+                  {
+                    projectId,
+                    component: 'bot-manager'
+                  }
+                );
+                isPolling = true; // Помечаем что polling работает
+              },
+              drop_pending_updates: true // Пропускаем старые обновления
+            });
+          } catch (error) {
+            const errorMessage =
+              error instanceof Error ? error.message : 'Неизвестная ошибка';
+
+            if (
+              errorMessage.includes('409') ||
+              errorMessage.includes('terminated by other getUpdates')
+            ) {
+              logger.warn(`409 конфликт при запуске polling - пробуем retry`, {
+                projectId,
+                error: errorMessage,
+                component: 'bot-manager'
+              });
+
+              // Retry механизм согласно документации Grammy
+              try {
+                // Сначала удаляем webhook принудительно
+                await bot.api.deleteWebhook({ drop_pending_updates: true });
+                logger.info(`Webhook удален для retry`, {
+                  projectId,
+                  component: 'bot-manager'
+                });
+
+                // Ждем немного
+                await new Promise((resolve) => setTimeout(resolve, 2000));
+
+                // Пробуем снова
+                await bot.start({
+                  onStart: (botInfo) => {
+                    logger.info(
+                      `Polling запущен после retry для бота @${botInfo.username}`,
+                      {
+                        projectId,
+                        botId: botInfo.id,
+                        username: botInfo.username,
+                        component: 'bot-manager'
+                      }
+                    );
+                    isPolling = true;
+                  },
+                  drop_pending_updates: true
+                });
+
+                logger.info(`Retry успешен для бота ${projectId}`, {
+                  projectId,
+                  component: 'bot-manager'
+                });
+              } catch (retryError) {
+                logger.error(`Retry не удался для бота ${projectId}`, {
+                  projectId,
+                  error:
+                    retryError instanceof Error
+                      ? retryError.message
+                      : 'Unknown',
+                  component: 'bot-manager'
+                });
+                isPolling = false;
+                throw retryError;
+              }
+            } else {
+              logger.error(`Ошибка запуска polling`, {
+                projectId,
+                error: errorMessage,
+                component: 'bot-manager'
+              });
+              isPolling = false;
+              throw error; // Пробрасываем серьезные ошибки
+            }
+          }
+
           logger.info(`Polling активирован для бота`, {
             projectId,
             component: 'bot-manager'
@@ -156,12 +517,53 @@ class BotManager {
 
           // НЕ ждем завершения start() - он работает бесконечно
         } catch (error) {
-          logger.error(`Ошибка запуска polling для бота`, {
-            projectId,
-            error:
-              error instanceof Error ? error.message : 'Неизвестная ошибка',
-            component: 'bot-manager'
-          });
+          const errorMessage =
+            error instanceof Error ? error.message : 'Неизвестная ошибка';
+
+          // Проверяем, является ли это 409 конфликтом
+          if (
+            errorMessage.includes('409') ||
+            errorMessage.includes('terminated by other getUpdates')
+          ) {
+            logger.warn(
+              `Конфликт polling обнаружен, пытаемся остановить предыдущий экземпляр`,
+              {
+                projectId,
+                error: errorMessage,
+                component: 'bot-manager'
+              }
+            );
+
+            // Пытаемся очистить конфликт
+            try {
+              await bot.api.deleteWebhook({ drop_pending_updates: true });
+              await new Promise((resolve) => setTimeout(resolve, 2000)); // Ждем 2 секунды
+
+              // Второй шанс запуска
+              logger.info(`Повторная попытка запуска polling`, {
+                projectId,
+                component: 'bot-manager'
+              });
+
+              // Делаем еще одну попытку (без дополнительного try/catch)
+              isPolling = false; // Сбрасываем флаг
+            } catch (retryError) {
+              logger.error(`Не удалось разрешить конфликт polling`, {
+                projectId,
+                retryError:
+                  retryError instanceof Error
+                    ? retryError.message
+                    : 'Неизвестная ошибка',
+                component: 'bot-manager'
+              });
+            }
+          } else {
+            logger.error(`Ошибка запуска polling для бота`, {
+              projectId,
+              error: errorMessage,
+              component: 'bot-manager'
+            });
+          }
           isPolling = false;
         }
       } else {
@@ -234,8 +636,30 @@ class BotManager {
       this.bots.set(projectId, botInstance);
       logger.info(`Бот для проекта ${projectId} создан и активирован`, {
         projectId,
+        isPolling,
         component: 'bot-manager'
       });
+
+      // Дополнительная диагностика состояния бота
+      try {
+        const botInfo = await bot.api.getMe();
+        logger.info(`Диагностика бота ${projectId}:`, {
+          projectId,
+          botId: botInfo.id,
+          username: botInfo.username,
+          canJoinGroups: botInfo.can_join_groups,
+          canReadAllGroupMessages: botInfo.can_read_all_group_messages,
+          supportsInlineQueries: botInfo.supports_inline_queries,
+          isPolling,
+          component: 'bot-manager'
+        });
+      } catch (error) {
+        logger.error(`Ошибка диагностики бота ${projectId}:`, {
+          projectId,
+          error: error instanceof Error ? error.message : 'Unknown',
+          component: 'bot-manager'
+        });
+      }
 
       return botInstance;
     } catch (error) {
@@ -288,32 +712,74 @@ class BotManager {
   }
 
   /**
-   * Остановка и удаление бота
+   * Остановка и удаление бота (форсированная)
    */
   async stopBot(projectId: string): Promise<void> {
     const botInstance = this.bots.get(projectId);
 
     if (botInstance) {
       try {
+        // Проверяем состояние ДО изменения
+        const wasPolling = botInstance.isPolling;
+
+        // КРИТИЧНО: Принудительно помечаем как неактивный
+        botInstance.isPolling = false;
+        botInstance.isActive = false;
+
         // Сначала останавливаем polling если активен
-        if (botInstance.isPolling) {
+        if (wasPolling === true) {
           logger.info(`Останавливаем polling для бота ${projectId}`, {
             projectId,
             component: 'bot-manager'
           });
-          await botInstance.bot.stop();
-          logger.info(`Polling остановлен для бота ${projectId}`, {
+
+          try {
+            // Даем боту 2 секунды на graceful shutdown
+            const stopPromise = botInstance.bot.stop();
+            const timeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Stop timeout')), 2000)
+            );
+
+            await Promise.race([stopPromise, timeoutPromise]);
+
+            logger.info(`Polling остановлен для бота ${projectId}`, {
+              projectId,
+              component: 'bot-manager'
+            });
+          } catch (stopError) {
+            logger.warn(
+              `Принудительная остановка polling для бота ${projectId}`,
+              {
+                projectId,
+                error:
+                  stopError instanceof Error ? stopError.message : 'Timeout',
+                component: 'bot-manager'
+              }
+            );
+            // Продолжаем даже если stop() не сработал
+          }
+        }
+
+        // Затем удаляем webhook принудительно
+        try {
+          await botInstance.bot.api.deleteWebhook({
+            drop_pending_updates: true
+          });
+          logger.info(`Webhook удален для бота ${projectId}`, {
             projectId,
             component: 'bot-manager'
           });
+        } catch (webhookError) {
+          logger.warn(`Ошибка удаления webhook для бота ${projectId}`, {
+            projectId,
+            error:
+              webhookError instanceof Error
+                ? webhookError.message
+                : 'Неизвестная ошибка',
+            component: 'bot-manager'
+          });
+          // Продолжаем даже если webhook не удалился
         }
-
-        // Затем удаляем webhook
-        await botInstance.bot.api.deleteWebhook({ drop_pending_updates: true });
-        logger.info(`Webhook удален для бота ${projectId}`, {
-          projectId,
-          component: 'bot-manager'
-        });
       } catch (error) {
         logger.warn(`Ошибка остановки бота ${projectId}`, {
           projectId,
@@ -322,6 +788,7 @@ class BotManager {
         });
       }
 
+      // КРИТИЧНО: Удаляем из map в любом случае
       this.bots.delete(projectId);
       logger.info(`Бот ${projectId} удален из менеджера`, {
         projectId,

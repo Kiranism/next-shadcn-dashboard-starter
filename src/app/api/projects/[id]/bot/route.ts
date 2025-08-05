@@ -74,6 +74,24 @@ export async function POST(
       );
     }
 
+    // Подготавливаем настройки сообщений по умолчанию
+    const defaultMessageSettings = {
+      welcomeMessage:
+        'Добро пожаловать! 🎉\n\nОтправьте свой номер телефона для привязки аккаунта.',
+      balanceMessage: 'Ваш баланс бонусов: {balance}',
+      helpMessage:
+        'Доступные команды:\n/start - начать работу\n/balance - проверить баланс\n/help - показать помощь'
+    };
+
+    // Подготавливаем функциональные настройки по умолчанию
+    const defaultFunctionalSettings = {
+      showBalance: true,
+      showLevel: true,
+      showReferral: true,
+      showHistory: true,
+      showHelp: true
+    };
+
     // Создаем или обновляем настройки бота в базе данных
     const botSettings = await db.botSettings.upsert({
       where: { projectId: id },
@@ -81,8 +99,10 @@ export async function POST(
         botToken: body.botToken,
         botUsername: body.botUsername || null,
         welcomeMessage:
-          body.welcomeMessage ||
-          'Добро пожаловать! 🎉\n\nЭто бот бонусной программы.',
+          body.welcomeMessage || defaultMessageSettings.welcomeMessage,
+        messageSettings: body.messageSettings || defaultMessageSettings,
+        functionalSettings:
+          body.functionalSettings || defaultFunctionalSettings,
         isActive: body.isActive !== undefined ? body.isActive : true
       },
       create: {
@@ -90,8 +110,10 @@ export async function POST(
         botToken: body.botToken,
         botUsername: body.botUsername || null,
         welcomeMessage:
-          body.welcomeMessage ||
-          'Добро пожаловать! 🎉\n\nЭто бот бонусной программы.',
+          body.welcomeMessage || defaultMessageSettings.welcomeMessage,
+        messageSettings: body.messageSettings || defaultMessageSettings,
+        functionalSettings:
+          body.functionalSettings || defaultFunctionalSettings,
         isActive: body.isActive !== undefined ? body.isActive : true
       }
     });

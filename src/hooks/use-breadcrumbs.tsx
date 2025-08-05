@@ -8,16 +8,31 @@ type BreadcrumbItem = {
   link: string;
 };
 
-// This allows to add custom title as well
+// Словарь для перевода сегментов URL на русский
+const segmentTranslations: Record<string, string> = {
+  dashboard: 'Панель управления',
+  projects: 'Проекты',
+  settings: 'Настройки',
+  integration: 'Интеграция',
+  users: 'Пользователи',
+  analytics: 'Аналитика',
+  bot: 'Бот',
+  referral: 'Реферальная программа',
+  'bonus-levels': 'Уровни бонусов',
+  bonuses: 'Бонусы',
+  overview: 'Обзор'
+};
+
+// Пользовательские маршруты с полными переводами
 const routeMapping: Record<string, BreadcrumbItem[]> = {
-  '/dashboard': [{ title: 'Dashboard', link: '/dashboard' }],
-  '/dashboard/employee': [
-    { title: 'Dashboard', link: '/dashboard' },
-    { title: 'Employee', link: '/dashboard/employee' }
+  '/dashboard': [{ title: 'Панель управления', link: '/dashboard' }],
+  '/dashboard/projects': [
+    { title: 'Панель управления', link: '/dashboard' },
+    { title: 'Проекты', link: '/dashboard/projects' }
   ],
-  '/dashboard/product': [
-    { title: 'Dashboard', link: '/dashboard' },
-    { title: 'Product', link: '/dashboard/product' }
+  '/dashboard/bonuses': [
+    { title: 'Панель управления', link: '/dashboard' },
+    { title: 'Бонусы', link: '/dashboard/bonuses' }
   ]
   // Add more custom mappings as needed
 };
@@ -35,8 +50,12 @@ export function useBreadcrumbs() {
     const segments = pathname.split('/').filter(Boolean);
     return segments.map((segment, index) => {
       const path = `/${segments.slice(0, index + 1).join('/')}`;
+      // Используем перевод если есть, иначе делаем первую букву заглавной
+      const title =
+        segmentTranslations[segment] ||
+        segment.charAt(0).toUpperCase() + segment.slice(1);
       return {
-        title: segment.charAt(0).toUpperCase() + segment.slice(1),
+        title,
         link: path
       };
     });
