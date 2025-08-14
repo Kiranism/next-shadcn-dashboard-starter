@@ -15,10 +15,10 @@ import { botManager } from '@/lib/telegram/bot-manager';
 // POST /api/projects/[id]/bot/restart - Принудительный перезапуск бота
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: projectId } = await params;
+    const { id: projectId } = await context.params;
 
     // Проверяем существование проекта
     const project = await db.project.findUnique({
@@ -46,7 +46,7 @@ export async function POST(
     // Создаем новый экземпляр бота
     const botInstance = await botManager.createBot(
       projectId,
-      project.botSettings
+      project.botSettings as any
     );
     logger.info(
       'Bot restarted successfully',

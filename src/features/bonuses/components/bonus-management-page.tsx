@@ -11,6 +11,7 @@
 
 import { useState, useMemo, useCallback, memo } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import {
   Card,
   CardContent,
@@ -588,9 +589,11 @@ const UserCard = memo<UserCardProps>(
               className='rounded border-gray-300'
             />
 
-            <img
-              src={user.avatar}
+            <Image
+              src={user.avatar || '/default-avatar.png'}
               alt={user.name}
+              width={40}
+              height={40}
               className='h-10 w-10 rounded-full object-cover'
             />
 

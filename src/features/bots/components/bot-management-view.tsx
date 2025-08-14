@@ -844,7 +844,7 @@ export function BotManagementView({ projectId }: BotManagementViewProps) {
                       <Label className='font-medium'>Показывать баланс</Label>
                     </div>
                     <p className='text-muted-foreground text-sm'>
-                      Показывать кнопку "💰 Баланс" в меню бота
+                      Показывать кнопку &quot;💰 Баланс&quot; в меню бота
                     </p>
                   </div>
                   <Switch
@@ -862,7 +862,7 @@ export function BotManagementView({ projectId }: BotManagementViewProps) {
                       <Label className='font-medium'>Показывать уровень</Label>
                     </div>
                     <p className='text-muted-foreground text-sm'>
-                      Показывать кнопку "🏆 Уровень" в меню бота
+                      Показывать кнопку &quot;🏆 Уровень&quot; в меню бота
                     </p>
                   </div>
                   <Switch
@@ -880,7 +880,7 @@ export function BotManagementView({ projectId }: BotManagementViewProps) {
                       <Label className='font-medium'>Показывать помощь</Label>
                     </div>
                     <p className='text-muted-foreground text-sm'>
-                      Показывать кнопку "ℹ️ Помощь" в меню бота
+                      Показывать кнопку &quot;ℹ️ Помощь&quot; в меню бота
                     </p>
                   </div>
                   <Switch

@@ -17,7 +17,7 @@ import type {
   ReferralStats
 } from '@/types/bonus';
 import { BonusService } from './user.service';
-import crypto from 'crypto';
+// Crypto импорт только для server-side
 
 export class ReferralService {
   /**
@@ -36,10 +36,10 @@ export class ReferralService {
 
       return {
         ...program,
-        referrerBonus: Number(program.bonusPercent), // временно используем bonusPercent как referrerBonus
-        refereeBonus: Number(program.referrerBonus), // временно используем referrerBonus как refereeBonus
-        minPurchaseAmount: 0, // временное значение
-        cookieLifetime: 30, // временное значение
+        referrerBonus: Number(program.referrerBonus), // правильное поле
+        refereeBonus: Number(program.bonusPercent), // правильное поле для покупателя
+        minPurchaseAmount: 0, // TODO: добавить в схему БД
+        cookieLifetime: 30, // временное значение до добавления в схему
         project: program.project
           ? {
               ...program.project,
@@ -192,8 +192,15 @@ export class ReferralService {
    */
   static generateReferralCode(userId: string): string {
     // Создаём короткий уникальный код на основе userId
-    const hash = crypto.createHash('md5').update(userId).digest('hex');
-    return hash.substring(0, 8).toUpperCase();
+    if (typeof window === 'undefined') {
+      // Server-side
+      const { createHash } = require('crypto');
+      const hash = createHash('md5').update(userId).digest('hex');
+      return hash.substring(0, 8).toUpperCase();
+    } else {
+      // Client-side fallback
+      return Math.random().toString(36).substring(2, 10).toUpperCase();
+    }
   }
 
   /**
@@ -381,31 +388,15 @@ export class ReferralService {
         return { bonusAwarded: false };
       }
 
-      // Начисляем бонус рефереру
-      await BonusService.awardPurchaseBonus(
-        referrer.id,
-        bonusAmount,
-        `referral-${userId}`,
-        `Реферальный бонус за покупку ${user.firstName || 'пользователя'} (${bonusAmount}₽)`,
-        'REFERRAL',
-        { referredUserId: userId, originalPurchase: purchaseAmount }
-      );
-
-      // Создаём транзакцию с отметкой реферального бонуса
-      await db.transaction.create({
-        data: {
-          userId: referrer.id,
-          amount: bonusAmount,
-          type: 'EARN',
-          description: `Реферальный бонус за покупку ${user.firstName || 'пользователя'}`,
-          isReferralBonus: true,
-          referralUserId: userId,
-          metadata: {
-            originalPurchase: purchaseAmount,
-            referralPercent: referralProgram.referrerBonus
-          }
-        }
+      // Начисляем бонус рефереру (awardBonus уже создаёт транзакцию EARN)
+      const bonus = await BonusService.awardBonus({
+        userId: referrer.id,
+        amount: bonusAmount,
+        type: 'REFERRAL',
+        description: `Реферальный бонус за покупку ${user.firstName || 'пользователя'} (${bonusAmount}₽)`
       });
+
+      // Дополнительная транзакция EARN не создаётся, чтобы избежать дублирования
 
       logger.info('Начислен реферальный бонус', {
         referrerId: referrer.id,

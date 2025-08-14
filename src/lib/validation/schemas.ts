@@ -11,7 +11,17 @@ import { z } from 'zod';
 
 // ===== БАЗОВЫЕ ТИПЫ =====
 
-export const uuidSchema = z.string().uuid('Неверный формат UUID');
+// Поддерживаем как UUID, так и CUID (используется в Prisma @default(cuid()))
+export const uuidSchema = z.string().refine(
+  (val) =>
+    // UUID v1-5
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      val
+    ) ||
+    // CUID-подобные идентификаторы (начинаются с 'c', далее латиница/цифры, длина >= 21)
+    /^c[0-9a-z]{20,}$/i.test(val),
+  'Неверный формат идентификатора'
+);
 
 export const emailSchema = z
   .string()
@@ -460,7 +470,7 @@ export function safeValidate<T>(
   }
 }
 
-export default {
+const validationSchemas = {
   // Основные схемы
   createProjectSchema,
   updateProjectSchema,
@@ -481,3 +491,5 @@ export default {
   validateWithSchema,
   safeValidate
 };
+
+export default validationSchemas;

@@ -106,7 +106,7 @@ model User {
   firstName        String?  @map("first_name")
   lastName         String?  @map("last_name")
   birthDate        DateTime? @map("birth_date") @db.Date
-  telegramId       BigInt?  @unique @map("telegram_id")
+  telegramId       BigInt?  @map("telegram_id")
   telegramUsername String?  @map("telegram_username")
   isActive         Boolean  @default(true) @map("is_active")
   registeredAt     DateTime @default(now()) @map("registered_at")
@@ -139,6 +139,7 @@ model User {
   // Уникальные ограничения
   @@unique([projectId, email])
   @@unique([projectId, phone])
+  @@unique([projectId, telegramId])
   @@map("users")
 }
 

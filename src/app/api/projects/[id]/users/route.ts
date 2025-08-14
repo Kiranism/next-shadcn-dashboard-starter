@@ -11,60 +11,56 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { UserService } from '@/lib/services/user.service';
+import { withApiRateLimit } from '@/lib/with-rate-limit';
+import { createUserSchema, validateWithSchema } from '@/lib/validation/schemas';
 
-export async function GET(
+async function getHandler(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const { id } = await context.params;
 
-    const users = await db.user.findMany({
-      where: { projectId: id },
-      orderBy: { registeredAt: 'desc' }
-    });
-
-    // Форматируем данные для совместимости с UI
-    const formattedUsers = await Promise.all(
-      users.map(async (user) => {
-        // Получаем реальный баланс пользователя
-        let userBalance = { currentBalance: 0, totalEarned: 0, totalSpent: 0 };
-        try {
-          userBalance = await UserService.getUserBalance(user.id);
-        } catch (error) {
-          logger.warn('Не удалось получить баланс пользователя', {
-            userId: user.id,
-            error
-          });
-        }
-
-        return {
-          id: user.id,
-          name:
-            `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
-            'Без имени',
-          email: user.email,
-          phone: user.phone,
-          bonusBalance: Number(userBalance.currentBalance),
-          totalEarned: Number(userBalance.totalEarned),
-          createdAt: user.registeredAt,
-          updatedAt: user.updatedAt,
-          avatar: `https://api.slingacademy.com/public/sample-users/${Math.floor(Math.random() * 10) + 1}.png`,
-          // Дополнительные поля для project-users-view
-          firstName: user.firstName,
-          lastName: user.lastName,
-          birthDate: user.birthDate,
-          registeredAt: user.registeredAt,
-          totalBonuses: Number(userBalance.totalEarned),
-          activeBonuses: Number(userBalance.currentBalance),
-          lastActivity: user.updatedAt
-        };
-      })
+    // Оптимизированная загрузка: используем сервис без N+1
+    const total = await db.user.count({ where: { projectId: id } });
+    const { users: enrichedUsers } = await UserService.getProjectUsers(
+      id,
+      1,
+      Math.max(total, 1)
     );
+
+    // Форматируем под ожидаемый UI
+    const formattedUsers = enrichedUsers.map((user, index) => {
+      const currentBalance =
+        Number(user.totalEarned || 0) - Number(user.totalSpent || 0);
+      return {
+        id: user.id,
+        name:
+          `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+          user.email ||
+          'Без имени',
+        email: user.email,
+        phone: user.phone,
+        bonusBalance: currentBalance,
+        totalEarned: Number(user.totalEarned || 0),
+        createdAt: user.registeredAt,
+        updatedAt: user.updatedAt,
+        avatar: `https://api.slingacademy.com/public/sample-users/${(index % 10) + 1}.png`,
+        // Дополнительные поля для project-users-view
+        firstName: user.firstName,
+        lastName: user.lastName,
+        birthDate: user.birthDate,
+        registeredAt: user.registeredAt,
+        totalBonuses: Number(user.totalEarned || 0),
+        activeBonuses: currentBalance,
+        lastActivity: user.updatedAt,
+        currentLevel: user.currentLevel || user.level?.name || undefined
+      };
+    });
 
     return NextResponse.json(formattedUsers);
   } catch (error) {
-    const { id } = await params;
+    const { id } = await context.params;
     logger.error('Ошибка получения пользователей', { projectId: id, error });
     return NextResponse.json(
       { error: 'Внутренняя ошибка сервера' },
@@ -73,12 +69,12 @@ export async function GET(
   }
 }
 
-export async function POST(
+async function postHandler(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const { id } = await context.params;
     const body = await request.json();
 
     // Проверяем существование проекта
@@ -90,20 +86,19 @@ export async function POST(
       return NextResponse.json({ error: 'Проект не найден' }, { status: 404 });
     }
 
-    // Проверяем обязательные поля
-    if (!body.email && !body.phone) {
-      return NextResponse.json(
-        { error: 'Необходимо указать email или телефон' },
-        { status: 400 }
-      );
-    }
+    // Валидация входных данных
+    const validated = validateWithSchema(createUserSchema, {
+      ...body,
+      projectId: id,
+      birthDate: body.birthDate ? new Date(body.birthDate) : undefined
+    });
 
     // Проверяем уникальность email в рамках проекта
-    if (body.email) {
+    if (validated.email) {
       const existingUser = await db.user.findFirst({
         where: {
           projectId: id,
-          email: body.email
+          email: validated.email
         }
       });
 
@@ -116,11 +111,11 @@ export async function POST(
     }
 
     // Проверяем уникальность телефона в рамках проекта
-    if (body.phone) {
+    if (validated.phone) {
       const existingUser = await db.user.findFirst({
         where: {
           projectId: id,
-          phone: body.phone
+          phone: validated.phone
         }
       });
 
@@ -136,11 +131,11 @@ export async function POST(
     const newUser = await db.user.create({
       data: {
         projectId: id,
-        firstName: body.firstName || null,
-        lastName: body.lastName || null,
-        email: body.email || null,
-        phone: body.phone || null,
-        birthDate: body.birthDate ? new Date(body.birthDate) : null
+        firstName: validated.firstName || null,
+        lastName: validated.lastName || null,
+        email: validated.email || null,
+        phone: validated.phone || null,
+        birthDate: validated.birthDate ? new Date(validated.birthDate) : null
       }
     });
 
@@ -176,8 +171,16 @@ export async function POST(
 
     return NextResponse.json(formattedUser, { status: 201 });
   } catch (error) {
-    const { id } = await params;
-    logger.error('Ошибка создания пользователя', { projectId: id, error });
+    const { id } = await context.params;
+    logger.error('Ошибка создания пользователя', {
+      projectId: id,
+      error:
+        error instanceof Error
+          ? error.message
+          : typeof error === 'string'
+            ? error
+            : JSON.stringify(error)
+    });
     return NextResponse.json(
       { error: 'Внутренняя ошибка сервера' },
       { status: 500 }
@@ -185,12 +188,12 @@ export async function POST(
   }
 }
 
-export async function PUT(
+async function putHandler(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: projectId } = await params;
+    const { id: projectId } = await context.params;
     const body = await request.json();
     const { operation, userIds, data } = body;
 
@@ -382,7 +385,7 @@ export async function PUT(
       }
     });
   } catch (error: any) {
-    const { id: projectId } = await params;
+    const { id: projectId } = await context.params;
     logger.error('Error in bulk user operations', {
       projectId,
       error: error.message
@@ -394,3 +397,7 @@ export async function PUT(
     );
   }
 }
+
+export const GET = withApiRateLimit(getHandler);
+export const POST = withApiRateLimit(postHandler);
+export const PUT = withApiRateLimit(putHandler);

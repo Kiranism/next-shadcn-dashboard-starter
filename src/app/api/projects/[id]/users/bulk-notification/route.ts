@@ -12,6 +12,7 @@ import { db } from '@/lib/db';
 import { botManager } from '@/lib/telegram/bot-manager';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
+import { withApiRateLimit } from '@/lib/with-rate-limit';
 
 const notificationSchema = z.object({
   userIds: z.array(z.string().uuid()),
@@ -31,12 +32,12 @@ const notificationSchema = z.object({
 });
 
 // POST /api/projects/[id]/users/bulk-notification - Отправка расширенных уведомлений
-export async function POST(
+async function postHandler(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id: projectId } = await params;
+    const { id: projectId } = params;
     const body = await request.json();
 
     // Валидация данных
@@ -127,7 +128,7 @@ export async function POST(
       logger.warn(
         'Ошибка валидации данных уведомления',
         {
-          projectId: (await params).id,
+          projectId: params.id,
           errors: error.errors
         },
         'bulk-notification-api'
@@ -145,7 +146,7 @@ export async function POST(
     logger.error(
       'Ошибка отправки расширенных уведомлений',
       {
-        projectId: (await params).id,
+        projectId: params.id,
         error: error instanceof Error ? error.message : 'Unknown error'
       },
       'bulk-notification-api'
@@ -160,3 +161,5 @@ export async function POST(
     );
   }
 }
+
+export const POST = withApiRateLimit(postHandler);

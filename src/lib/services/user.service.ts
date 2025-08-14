@@ -35,7 +35,7 @@ export class UserService {
           data.utmSource,
           data.referralCode
         );
-        if (referrer && referrer.id !== data.projectId) {
+        if (referrer) {
           referredBy = referrer.id;
         }
       }
@@ -110,9 +110,12 @@ export class UserService {
   }
 
   // Получение пользователя по Telegram ID
-  static async getUserByTelegramId(telegramId: bigint): Promise<User | null> {
-    const user = await db.user.findUnique({
-      where: { telegramId },
+  static async getUserByTelegramId(
+    projectId: string,
+    telegramId: bigint
+  ): Promise<User | null> {
+    const user = await db.user.findFirst({
+      where: { projectId, telegramId },
       include: {
         project: true,
         bonuses: true,
@@ -220,6 +223,7 @@ export class UserService {
   ): Promise<{ users: UserWithBonuses[]; total: number }> {
     const skip = (page - 1) * limit;
 
+    // Загружаем пользователей страницы и общее количество
     const [users, total] = await Promise.all([
       db.user.findMany({
         where: { projectId },
@@ -227,66 +231,82 @@ export class UserService {
         take: limit,
         include: {
           project: true,
-          bonuses: {
-            where: {
-              isUsed: false,
-              OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }]
-            }
-          },
-          transactions: true,
+          // Убираем загрузку бонусов/транзакций для предотвращения N+1
           referrer: true,
           referrals: true
         },
-        orderBy: {
-          registeredAt: 'desc'
-        }
+        orderBy: { registeredAt: 'desc' }
       }),
-      db.user.count({
-        where: { projectId }
-      })
+      db.user.count({ where: { projectId } })
     ]);
 
-    // Преобразуем в UserWithBonuses с расчётом уровней
-    const usersWithBonuses: UserWithBonuses[] = await Promise.all(
-      users.map(async (user) => {
-        const activeBonuses = user.bonuses.reduce(
-          (sum, bonus) => sum + Number(bonus.amount),
-          0
-        );
+    if (users.length === 0) {
+      return { users: [], total };
+    }
 
-        const totalEarned = await db.transaction.aggregate({
-          where: { userId: user.id, type: 'EARN' },
+    const userIds = users.map((u) => u.id);
+
+    // Выполняем агрегаты ОДНИМ запросом для всех пользователей страницы
+    const [txByUserAndType, activeBonusesByUser, projectLevels] =
+      await Promise.all([
+        db.transaction.groupBy({
+          by: ['userId', 'type'],
+          where: { userId: { in: userIds } },
           _sum: { amount: true }
-        });
-
-        const totalSpent = await db.transaction.aggregate({
-          where: { userId: user.id, type: 'SPEND' },
+        }),
+        db.bonus.groupBy({
+          by: ['userId'],
+          where: {
+            userId: { in: userIds },
+            isUsed: false,
+            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }]
+          },
           _sum: { amount: true }
-        });
+        }),
+        BonusLevelService.getBonusLevels(projectId)
+      ]);
 
-        // Получаем информацию об уровне
-        const progress = await BonusLevelService.calculateProgressToNextLevel(
-          projectId,
-          Number(user.totalPurchases)
-        );
+    // Преобразуем агрегаты в быстрые словари
+    const earnedMap = new Map<string, number>();
+    const spentMap = new Map<string, number>();
+    for (const row of txByUserAndType) {
+      const sum = Number(row._sum?.amount || 0);
+      if (row.type === 'EARN') earnedMap.set(row.userId, sum);
+      else if (row.type === 'SPEND') spentMap.set(row.userId, sum);
+    }
 
-        return {
-          ...user,
-          totalPurchases: Number(user.totalPurchases),
-          activeBonuses,
-          totalEarned: Number(totalEarned._sum.amount || 0),
-          totalSpent: Number(totalSpent._sum.amount || 0),
-          level: progress.currentLevel,
-          progressToNext: progress.nextLevel
-            ? {
-                nextLevel: progress.nextLevel,
-                amountNeeded: progress.amountNeeded,
-                progressPercent: progress.progressPercent
-              }
-            : undefined
-        };
-      })
-    );
+    const activeBonusMap = new Map<string, number>();
+    for (const row of activeBonusesByUser) {
+      activeBonusMap.set(row.userId, Number(row._sum?.amount || 0));
+    }
+
+    // Считаем уровень на основе уже загруженных уровней (без доп. запросов)
+    const usersWithBonuses: UserWithBonuses[] = users.map((user) => {
+      const activeBonuses = activeBonusMap.get(user.id) ?? 0;
+      const totalEarned = earnedMap.get(user.id) ?? 0;
+      const totalSpent = spentMap.get(user.id) ?? 0;
+
+      const progress = BonusLevelService.calculateProgressToNextLevelFromLevels(
+        projectLevels as any,
+        Number(user.totalPurchases)
+      );
+
+      return {
+        ...user,
+        totalPurchases: Number(user.totalPurchases),
+        activeBonuses,
+        totalEarned,
+        totalSpent,
+        level: progress.currentLevel,
+        progressToNext: progress.nextLevel
+          ? {
+              nextLevel: progress.nextLevel,
+              amountNeeded: progress.amountNeeded,
+              progressPercent: progress.progressPercent
+            }
+          : undefined
+      };
+    });
 
     return { users: usersWithBonuses, total };
   }
@@ -415,29 +435,7 @@ export class BonusService {
     description?: string,
     metadata?: Record<string, any>
   ): Promise<Transaction[]> {
-    const availableBonuses = await db.bonus.findMany({
-      where: {
-        userId,
-        isUsed: false,
-        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }]
-      },
-      orderBy: {
-        expiresAt: 'asc' // Используем сначала те, что скоро истекают
-      }
-    });
-
-    const totalAvailable = availableBonuses.reduce(
-      (sum: number, bonus: any) => sum + Number(bonus.amount),
-      0
-    );
-
-    if (totalAvailable < amount) {
-      throw new Error(
-        `Недостаточно бонусов. Доступно: ${totalAvailable}, требуется: ${amount}`
-      );
-    }
-
-    // Получаем информацию о пользователе и его уровне
+    // Получаем пользователя для контекста уровня и уведомлений
     const user = await db.user.findUnique({
       where: { id: userId },
       include: { project: true }
@@ -452,51 +450,80 @@ export class BonusService {
       Number(user.totalPurchases)
     );
 
-    const transactions: Transaction[] = [];
-    let remainingAmount = amount;
-
-    for (const bonus of availableBonuses) {
-      if (remainingAmount <= 0) break;
-
-      const bonusAmount = Number(bonus.amount);
-      const spendFromThisBonus = Math.min(bonusAmount, remainingAmount);
-
-      // Создаем транзакцию списания с контекстом уровня
-      const transaction = await this.createTransaction({
-        userId,
-        bonusId: bonus.id,
-        amount: spendFromThisBonus,
-        type: 'SPEND',
-        description: description || 'Списание бонусов',
-        metadata,
-        userLevel: currentLevel?.name,
-        appliedPercent: currentLevel?.paymentPercent
+    const transactions = await db.$transaction(async (tx) => {
+      const availableBonuses = await tx.bonus.findMany({
+        where: {
+          userId,
+          isUsed: false,
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }]
+        },
+        orderBy: { expiresAt: 'asc' }
       });
 
-      transactions.push(transaction);
+      const totalAvailable = availableBonuses.reduce(
+        (sum: number, bonus: any) => sum + Number(bonus.amount),
+        0
+      );
 
-      // Если бонус полностью использован, помечаем его как использованный
-      if (spendFromThisBonus === bonusAmount) {
-        await db.bonus.update({
-          where: { id: bonus.id },
-          data: { isUsed: true }
-        });
+      if (totalAvailable < amount) {
+        throw new Error(
+          `Недостаточно бонусов. Доступно: ${totalAvailable}, требуется: ${amount}`
+        );
       }
 
-      remainingAmount -= spendFromThisBonus;
-    }
+      const created: Transaction[] = [];
+      let remainingAmount = amount;
 
-    // Отправляем уведомление о списании бонусов (неблокирующе)
+      for (const bonus of availableBonuses) {
+        if (remainingAmount <= 0) break;
+
+        const bonusAmount = Number(bonus.amount);
+        const spendFromThisBonus = Math.min(bonusAmount, remainingAmount);
+
+        const transaction = await tx.transaction.create({
+          data: {
+            userId,
+            bonusId: bonus.id,
+            amount: spendFromThisBonus,
+            type: 'SPEND',
+            description: description || 'Списание бонусов',
+            metadata,
+            userLevel: currentLevel?.name,
+            appliedPercent: currentLevel?.paymentPercent
+          },
+          include: { user: true, bonus: true }
+        });
+
+        created.push(transaction);
+
+        const newAmount = bonusAmount - spendFromThisBonus;
+        if (newAmount <= 0) {
+          await tx.bonus.update({
+            where: { id: bonus.id },
+            data: { isUsed: true }
+          });
+        } else {
+          await tx.bonus.update({
+            where: { id: bonus.id },
+            data: { amount: newAmount }
+          });
+        }
+
+        remainingAmount -= spendFromThisBonus;
+      }
+
+      return created;
+    });
+
+    // Неблокирующее уведомление
     if (transactions.length > 0) {
       try {
-        if (user) {
-          await sendBonusSpentNotification(
-            user,
-            amount,
-            description || 'Списание бонусов',
-            user.projectId
-          );
-        }
+        await sendBonusSpentNotification(
+          user,
+          amount,
+          description || 'Списание бонусов',
+          user.projectId
+        );
       } catch (error) {
         logger.error('Ошибка отправки уведомления о списании бонусов', {
           userId,
@@ -504,7 +531,6 @@ export class BonusService {
           error: error instanceof Error ? error.message : 'Неизвестная ошибка',
           component: 'bonus-service'
         });
-        // Не блокируем основной процесс
       }
     }
 
@@ -588,23 +614,8 @@ export class BonusService {
         `Бонус за покупку на сумму ${purchaseAmount}₽ (заказ ${orderId})`
     });
 
-    // Создаём транзакцию с контекстом уровня
-    await this.createTransaction({
-      userId,
-      bonusId: bonus.id,
-      amount: bonusAmount,
-      type: 'EARN',
-      description: `Покупка: ${purchaseAmount}₽, бонус: ${bonusPercent}% (${bonusAmount}₽)`,
-      metadata: {
-        orderId,
-        purchaseAmount,
-        bonusPercent,
-        userLevel: levelUpdateResult.newLevel,
-        ...metadata
-      },
-      userLevel: levelUpdateResult.newLevel,
-      appliedPercent: bonusPercent
-    });
+    // Дополнительная EARN-транзакция не создаётся, чтобы избежать дублирования.
+    // Подробности покупки уже отражены в описании бонуса.
 
     // Обрабатываем реферальную систему
     const referralInfo = await ReferralService.processReferralBonus(

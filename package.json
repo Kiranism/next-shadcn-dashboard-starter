@@ -15,7 +15,16 @@
     "lint:strict": "eslint --max-warnings=0 src",
     "format": "prettier --write .",
     "format:check": "prettier -c -w .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test:webhook": "tsx scripts/test-webhook-integration.ts",
+    "tunnel": "ngrok http 5006",
+    "deploy:vercel": "vercel --prod",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "db:migrate": "prisma migrate deploy",
+    "db:generate": "prisma generate",
+    "db:reset": "prisma migrate reset",
+    "production:check": "pnpm lint && pnpm build && npx tsc --noEmit"
   },
   "lint-staged": {
     "**/*.{js,jsx,tsx,ts,css,less,scss,sass}": [

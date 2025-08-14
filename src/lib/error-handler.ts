@@ -375,7 +375,7 @@ export const Validators = {
   }
 };
 
-export default {
+const errorHandlerExports = {
   BusinessError,
   CommonErrors,
   handleUnknownError,
@@ -383,3 +383,5 @@ export default {
   withErrorHandler,
   Validators
 };
+
+export default errorHandlerExports;

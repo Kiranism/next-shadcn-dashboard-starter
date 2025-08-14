@@ -160,94 +160,52 @@ export async function sendRichBroadcastMessage(
 ): Promise<{ sent: number; failed: number }> {
   try {
     const { db } = await import('@/lib/db');
-    const botInstance = botManager.getBot(projectId);
 
-    if (!botInstance || !botInstance.isActive) {
-      return { sent: 0, failed: 0 };
-    }
-
-    // Получаем пользователей из базы данных
-    let users: User[] = [];
-    if (userIds && userIds.length > 0) {
-      users = (await db.user.findMany({
-        where: {
-          id: { in: userIds },
-          projectId,
-          telegramId: { not: null },
-          isActive: true
-        }
-      })) as User[];
-    } else {
-      users = (await db.user.findMany({
-        where: {
-          projectId,
-          telegramId: { not: null },
-          isActive: true
-        }
-      })) as User[];
-    }
-
-    let sent = 0;
-    let failed = 0;
-
-    // Создаем клавиатуру если есть кнопки
-    let replyMarkup;
-    if (notification.buttons && notification.buttons.length > 0) {
-      const keyboard = notification.buttons.map((button) => {
-        if (button.url) {
-          return [{ text: button.text, url: button.url }];
-        } else if (button.callback_data) {
-          return [{ text: button.text, callback_data: button.callback_data }];
-        }
-        return [{ text: button.text, callback_data: 'no_action' }];
+    // Проверяем/создаём активного бота через BotManager
+    let instance = botManager.getBot(projectId);
+    if (!instance || !instance.isActive) {
+      const settings = await db.botSettings.findUnique({
+        where: { projectId }
       });
-
-      replyMarkup = { inline_keyboard: keyboard };
-    }
-
-    for (const user of users) {
-      if (user.telegramId) {
-        try {
-          const telegramId = Number(user.telegramId);
-
-          if (notification.imageUrl) {
-            // Отправляем фото с текстом
-            await botInstance.bot.api.sendPhoto(
-              telegramId,
-              notification.imageUrl,
-              {
-                caption: notification.message,
-                parse_mode: notification.parseMode || 'Markdown',
-                reply_markup: replyMarkup
-              }
-            );
-          } else {
-            // Отправляем обычное текстовое сообщение
-            await botInstance.bot.api.sendMessage(
-              telegramId,
-              notification.message,
-              {
-                parse_mode: notification.parseMode || 'Markdown',
-                reply_markup: replyMarkup
-              }
-            );
-          }
-
-          sent++;
-
-          // Небольшая задержка чтобы не превысить лимиты Telegram API
-          await new Promise((resolve) => setTimeout(resolve, 50));
-        } catch (error) {
-          console.error(`Ошибка отправки пользователю ${user.id}:`, error);
-          failed++;
-        }
+      if (!settings || !settings.botToken || settings.isActive === false) {
+        return { sent: 0, failed: 0 };
+      }
+      try {
+        instance = await botManager.createBot(projectId, settings as any);
+      } catch {
+        return { sent: 0, failed: 0 };
       }
     }
 
-    console.log(`📢 Рассылка завершена: отправлено ${sent}, ошибок ${failed}`);
-    return { sent, failed };
+    // Готовим список пользователей
+    let targetUserIds: string[];
+    if (userIds && userIds.length > 0) {
+      targetUserIds = userIds;
+    } else {
+      const dbUsers = await db.user.findMany({
+        where: { projectId, telegramId: { not: null }, isActive: true },
+        select: { id: true }
+      });
+      targetUserIds = dbUsers.map((u) => u.id);
+    }
+
+    if (targetUserIds.length === 0) {
+      return { sent: 0, failed: 0 };
+    }
+
+    const result = await botManager.sendRichBroadcastMessage(
+      projectId,
+      targetUserIds,
+      notification.message,
+      {
+        imageUrl: notification.imageUrl,
+        buttons: notification.buttons,
+        parseMode: notification.parseMode || 'Markdown'
+      }
+    );
+
+    return { sent: result.sentCount, failed: result.failedCount };
   } catch (error) {
-    console.error('Ошибка массовой рассылки:', error);
     return { sent: 0, failed: 0 };
   }
 }

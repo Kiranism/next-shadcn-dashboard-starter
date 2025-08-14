@@ -13,10 +13,10 @@ import { logger } from '@/lib/logger';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: projectId } = await params;
+    const { id: projectId } = await context.params;
     const body = await request.json();
     const { email, phone, amount, orderId, description } = body;
 
@@ -110,7 +110,7 @@ export async function POST(
       }
     });
   } catch (error) {
-    const { id: projectId } = await params;
+    const { id: projectId } = await context.params;
     logger.error('Error spending bonuses', {
       projectId,
       error: error instanceof Error ? error.message : 'Неизвестная ошибка'

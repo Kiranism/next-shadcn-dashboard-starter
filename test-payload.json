@@ -1,0 +1,11 @@
+{
+  "action": "purchase",
+  "payload": {
+    "userEmail": "test@example.com",
+    "userPhone": "+79123456789",
+    "userName": "Test User",
+    "purchaseAmount": 1000,
+    "orderId": "ORDER-123",
+    "description": "Test purchase from Tilda"
+  }
+}

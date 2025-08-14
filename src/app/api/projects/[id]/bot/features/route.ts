@@ -53,7 +53,7 @@ export async function PUT(
     // КРИТИЧНО: Перезапускаем бота с новыми настройками если он активен
     try {
       if (updatedSettings.isActive) {
-        await botManager.createBot(id, updatedSettings);
+        await botManager.createBot(id, updatedSettings as any);
         logger.info(
           'Bot restarted with new functional settings',
           {

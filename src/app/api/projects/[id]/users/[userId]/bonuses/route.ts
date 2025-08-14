@@ -10,13 +10,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { UserService, BonusService } from '@/lib/services/user.service';
 import { db } from '@/lib/db';
+import { withApiRateLimit } from '@/lib/with-rate-limit';
 
-export async function POST(
+async function postHandler(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; userId: string }> }
+  { params }: { params: { id: string; userId: string } }
 ) {
   try {
-    const { id: projectId, userId } = await params;
+    const { id: projectId, userId } = params;
     const body = await request.json();
 
     const { amount, type, description } = body;
@@ -131,12 +132,12 @@ export async function POST(
   }
 }
 
-export async function GET(
+async function getHandler(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; userId: string }> }
+  { params }: { params: { id: string; userId: string } }
 ) {
   try {
-    const { id: projectId, userId } = await params;
+    const { id: projectId, userId } = params;
 
     // Проверяем существование пользователя в проекте
     const user = await db.user.findFirst({
@@ -174,3 +175,6 @@ export async function GET(
     );
   }
 }
+
+export const POST = withApiRateLimit(postHandler);
+export const GET = withApiRateLimit(getHandler);

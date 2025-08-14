@@ -1,0 +1,193 @@
+version: '3.8'
+
+services:
+  # PostgreSQL база данных
+  postgres:
+    image: postgres:15-alpine
+    container_name: bonus_system_db_prod
+    environment:
+      POSTGRES_USER: ${DB_USER:-bonus_admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-bonus_system}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+      - ./database/backups:/backups
+    ports:
+      - "127.0.0.1:5432:5432"  # Только localhost доступ
+    restart: unless-stopped
+    networks:
+      - bonus_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-bonus_admin} -d ${DB_NAME:-bonus_system}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+
+  # Redis для кэширования и сессий
+  redis:
+    image: redis:7-alpine
+    container_name: bonus_system_redis_prod
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "127.0.0.1:6379:6379"  # Только localhost доступ
+    restart: unless-stopped
+    networks:
+      - bonus_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+
+  # Next.js приложение
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile.production
+    container_name: bonus_system_app_prod
+    environment:
+      # Core settings
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: "0.0.0.0"
+      
+      # Database
+      DATABASE_URL: "postgresql://${DB_USER:-bonus_admin}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-bonus_system}"
+      
+      # Redis
+      REDIS_URL: "redis://:${REDIS_PASSWORD}@redis:6379"
+      
+      # App URLs
+      NEXT_PUBLIC_APP_URL: "${APP_URL}"
+      NEXTAUTH_URL: "${APP_URL}"
+      WEBHOOK_BASE_URL: "${APP_URL}"
+      
+      # Security
+      NEXTAUTH_SECRET: "${NEXTAUTH_SECRET}"
+      CRON_SECRET: "${CRON_SECRET}"
+      
+      # Auth (Clerk)
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}"
+      CLERK_SECRET_KEY: "${CLERK_SECRET_KEY}"
+      NEXT_PUBLIC_CLERK_SIGN_IN_URL: "/auth/sign-in"
+      NEXT_PUBLIC_CLERK_SIGN_UP_URL: "/auth/sign-up"
+      NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL: "/dashboard"
+      NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL: "/dashboard"
+      
+      # Monitoring (Sentry)
+      NEXT_PUBLIC_SENTRY_DSN: "${SENTRY_DSN}"
+      NEXT_PUBLIC_SENTRY_ORG: "${SENTRY_ORG}"
+      NEXT_PUBLIC_SENTRY_PROJECT: "${SENTRY_PROJECT}"
+      SENTRY_AUTH_TOKEN: "${SENTRY_AUTH_TOKEN}"
+      NEXT_PUBLIC_SENTRY_DISABLED: "false"
+      
+      # Telegram Bots
+      TELEGRAM_BOT_TOKEN_1: "${TELEGRAM_BOT_TOKEN_1}"
+      TELEGRAM_BOT_TOKEN_2: "${TELEGRAM_BOT_TOKEN_2}"
+      TELEGRAM_BOT_TOKEN_3: "${TELEGRAM_BOT_TOKEN_3}"
+      
+    ports:
+      - "127.0.0.1:3000:3000"  # Только localhost доступ
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - bonus_network
+    volumes:
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+      - /etc/localtime:/etc/localtime:ro  # Синхронизация времени
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: bonus_system_nginx_prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/sites-available:/etc/nginx/sites-available:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./logs/nginx:/var/log/nginx
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+    networks:
+      - bonus_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Backup сервис
+  backup:
+    image: postgres:15-alpine
+    container_name: bonus_system_backup_prod
+    environment:
+      PGPASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./database/backups:/backups
+      - ./scripts/backup.sh:/backup.sh:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - bonus_network
+    # Запуск через cron на хосте:
+    # 0 2 * * * docker-compose -f docker-compose.production.yml run --rm backup /backup.sh
+
+volumes:
+  postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/bonus-system/postgres
+  redis_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/bonus-system/redis
+
+networks:
+  bonus_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

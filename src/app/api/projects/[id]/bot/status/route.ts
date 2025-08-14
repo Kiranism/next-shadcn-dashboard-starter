@@ -15,10 +15,10 @@ import { TelegramBotValidationService } from '@/lib/services/telegram-bot-valida
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: projectId } = await params;
+    const { id: projectId } = await context.params;
 
     // Получаем проект с настройками бота
     const project = await db.project.findUnique({
@@ -88,7 +88,7 @@ export async function GET(
 
     return NextResponse.json(statusInfo);
   } catch (error: any) {
-    const { id: projectId } = await params;
+    const { id: projectId } = await context.params;
     logger.error('Error checking bot status', {
       projectId,
       error: error.message

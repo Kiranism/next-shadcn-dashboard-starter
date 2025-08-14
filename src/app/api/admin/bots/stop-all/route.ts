@@ -7,12 +7,12 @@
  * @author: AI Assistant + User
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { botManager } from '@/lib/telegram/bot-manager';
 import { logger } from '@/lib/logger';
 
 // POST /api/admin/bots/stop-all - Экстренная остановка всех ботов
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     logger.info('Запрос на экстренную остановку всех ботов', {}, 'admin-api');
 

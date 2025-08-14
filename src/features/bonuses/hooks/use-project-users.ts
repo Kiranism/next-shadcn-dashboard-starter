@@ -196,18 +196,14 @@ export function useProjectUsers({
           id: newUser.id,
           name:
             `${newUser.firstName || ''} ${newUser.lastName || ''}`.trim() ||
-            newUser.email,
+            'Без имени',
           email: newUser.email || '',
           phone: newUser.phone || '',
           avatar: `https://api.slingacademy.com/public/sample-users/${Math.floor(Math.random() * 10) + 1}.png`,
           bonusBalance: 0,
           totalEarned: 0,
           createdAt: new Date(),
-          updatedAt: new Date(),
-          firstName: newUser.firstName,
-          lastName: newUser.lastName,
-          birthDate: newUser.birthDate,
-          registeredAt: new Date()
+          updatedAt: new Date()
         };
 
         setUsers((prev) => [formattedUser, ...prev]);
@@ -252,7 +248,7 @@ export function useProjectUsers({
   const refreshUsers = useCallback(async () => {
     logger.info('Refreshing users list', { projectId }, 'use-project-users');
     await loadUsers();
-  }, [loadUsers]);
+  }, [loadUsers, projectId]);
 
   /**
    * Поиск пользователей

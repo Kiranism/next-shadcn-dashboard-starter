@@ -37,15 +37,14 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
           ? 'inline_query'
           : 'other';
 
-    console.log(
-      `📨 Получено обновление от ${ctx.from?.username || ctx.from?.id}:`,
-      {
-        updateType,
-        updateId: ctx.update.update_id,
-        projectId,
-        timestamp: new Date().toISOString()
-      }
-    );
+    logger.info(`📨 Получено обновление от пользователя`, {
+      fromId: ctx.from?.id,
+      username: ctx.from?.username,
+      updateType,
+      updateId: ctx.update.update_id,
+      projectId,
+      component: 'telegram-bot'
+    });
 
     await next();
   });
@@ -68,7 +67,7 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
   // Стартовая команда
   bot.command('start', async (ctx) => {
     const telegramId = BigInt(ctx.from!.id);
-    const user = await UserService.getUserByTelegramId(telegramId);
+    const user = await UserService.getUserByTelegramId(projectId, telegramId);
     const settings = await getBotSettings();
 
     if (user && user.projectId === projectId) {
@@ -263,7 +262,7 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
   // Команда проверки баланса
   bot.command('balance', async (ctx) => {
     const telegramId = BigInt(ctx.from!.id);
-    const user = await UserService.getUserByTelegramId(telegramId);
+    const user = await UserService.getUserByTelegramId(projectId, telegramId);
 
     if (!user) {
       await ctx.reply(
@@ -294,7 +293,7 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
   // Команда истории операций
   bot.command('history', async (ctx) => {
     const telegramId = BigInt(ctx.from!.id);
-    const user = await UserService.getUserByTelegramId(telegramId);
+    const user = await UserService.getUserByTelegramId(projectId, telegramId);
 
     if (!user) {
       await ctx.reply(
@@ -339,7 +338,7 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
   // Команда уровня пользователя
   bot.command('level', async (ctx) => {
     const telegramId = BigInt(ctx.from!.id);
-    const user = await UserService.getUserByTelegramId(telegramId);
+    const user = await UserService.getUserByTelegramId(projectId, telegramId);
 
     if (!user) {
       await ctx.reply(
@@ -403,7 +402,7 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
   // Команда реферальной программы
   bot.command('referral', async (ctx) => {
     const telegramId = BigInt(ctx.from!.id);
-    const user = await UserService.getUserByTelegramId(telegramId);
+    const user = await UserService.getUserByTelegramId(projectId, telegramId);
 
     if (!user) {
       await ctx.reply(
@@ -454,7 +453,7 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
   // Команда получения реферальной ссылки
   bot.command('invite', async (ctx) => {
     const telegramId = BigInt(ctx.from!.id);
-    const user = await UserService.getUserByTelegramId(telegramId);
+    const user = await UserService.getUserByTelegramId(projectId, telegramId);
 
     if (!user) {
       await ctx.reply(
@@ -497,8 +496,8 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
       }
 
       const referralLink = await ReferralService.generateReferralLink(
-        'https://example.com', // TODO: добавить websiteUrl в схему Project
-        referralCode
+        user.id,
+        'https://example.com' // TODO: добавить websiteUrl в схему Project
       );
 
       await ctx.reply(
@@ -537,7 +536,7 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
   bot.callbackQuery('check_balance', async (ctx) => {
     await ctx.answerCallbackQuery();
     const telegramId = BigInt(ctx.from.id);
-    const user = await UserService.getUserByTelegramId(telegramId);
+    const user = await UserService.getUserByTelegramId(projectId, telegramId);
 
     if (!user) {
       await ctx.editMessageText(
@@ -574,7 +573,7 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
   bot.callbackQuery('check_level', async (ctx) => {
     await ctx.answerCallbackQuery();
     const telegramId = BigInt(ctx.from.id);
-    const user = await UserService.getUserByTelegramId(telegramId);
+    const user = await UserService.getUserByTelegramId(projectId, telegramId);
 
     if (!user) {
       await ctx.editMessageText(
@@ -646,7 +645,7 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
   bot.callbackQuery('check_referral', async (ctx) => {
     await ctx.answerCallbackQuery();
     const telegramId = BigInt(ctx.from.id);
-    const user = await UserService.getUserByTelegramId(telegramId);
+    const user = await UserService.getUserByTelegramId(projectId, telegramId);
 
     if (!user) {
       await ctx.editMessageText(
@@ -703,7 +702,7 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
   bot.callbackQuery('get_invite_link', async (ctx) => {
     await ctx.answerCallbackQuery();
     const telegramId = BigInt(ctx.from.id);
-    const user = await UserService.getUserByTelegramId(telegramId);
+    const user = await UserService.getUserByTelegramId(projectId, telegramId);
 
     if (!user) {
       await ctx.editMessageText(
@@ -736,8 +735,8 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
       }
 
       const referralLink = await ReferralService.generateReferralLink(
-        'https://example.com', // TODO: добавить websiteUrl в схему Project
-        referralCode
+        user.id,
+        'https://example.com' // TODO: добавить websiteUrl в схему Project
       );
 
       const keyboard = new InlineKeyboard()
@@ -769,7 +768,7 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
   bot.callbackQuery('view_history', async (ctx) => {
     await ctx.answerCallbackQuery();
     const telegramId = BigInt(ctx.from.id);
-    const user = await UserService.getUserByTelegramId(telegramId);
+    const user = await UserService.getUserByTelegramId(projectId, telegramId);
 
     if (!user) {
       await ctx.editMessageText('❌ Ваш аккаунт не привязан.');
@@ -852,7 +851,7 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
     await ctx.answerCallbackQuery();
 
     const telegramId = BigInt(ctx.from.id);
-    const user = await UserService.getUserByTelegramId(telegramId);
+    const user = await UserService.getUserByTelegramId(projectId, telegramId);
 
     if (user && user.projectId === projectId) {
       const balance = await UserService.getUserBalance(user.id);

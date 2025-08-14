@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # PostgreSQL база данных
+  postgres:
+    image: postgres:15
+    container_name: bonus_system_db
+    environment:
+      POSTGRES_USER: bonus_admin
+      POSTGRES_PASSWORD: your_secure_password_here
+      POSTGRES_DB: bonus_system
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+    ports:
+      - "5433:5432"
+    restart: unless-stopped
+    networks:
+      - bonus_network
+
+  # Next.js приложение
+  app:
+    build: .
+    container_name: bonus_system_app
+    environment:
+      # Database
+      DATABASE_URL: "postgresql://bonus_admin:your_secure_password_here@postgres:5432/bonus_system"
+      
+      # Clerk Auth
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}"
+      CLERK_SECRET_KEY: "${CLERK_SECRET_KEY}"
+      NEXT_PUBLIC_CLERK_SIGN_IN_URL: "/auth/sign-in"
+      NEXT_PUBLIC_CLERK_SIGN_UP_URL: "/auth/sign-up"
+      NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL: "/dashboard"
+      NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL: "/dashboard"
+      
+      # App Config
+      NEXTAUTH_URL: "${NEXTAUTH_URL:-http://localhost:3000}"
+      NEXTAUTH_SECRET: "${NEXTAUTH_SECRET}"
+      
+      # Webhook & API
+      WEBHOOK_BASE_URL: "${WEBHOOK_BASE_URL:-http://localhost:3000}"
+      CRON_SECRET: "${CRON_SECRET}"
+      
+      # Telegram Bots (опционально)
+      # TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}"
+      
+      # Production settings
+      NODE_ENV: production
+    
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - bonus_network
+    volumes:
+      - ./logs:/app/logs
+
+volumes:
+  postgres_data:
+
+networks:
+  bonus_network:
+    driver: bridge

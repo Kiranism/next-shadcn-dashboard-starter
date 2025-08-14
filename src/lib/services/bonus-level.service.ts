@@ -323,6 +323,78 @@ export class BonusLevelService {
   }
 
   /**
+   * Рассчитать прогресс до следующего уровня на основе уже загруженных уровней
+   * Полезно для пакетной обработки, чтобы избежать N+1 запросов
+   */
+  static calculateProgressToNextLevelFromLevels(
+    levels: BonusLevel[],
+    totalPurchases: number
+  ): {
+    currentLevel: BonusLevel | null;
+    nextLevel: BonusLevel | null;
+    amountNeeded: number;
+    progressPercent: number;
+  } {
+    if (!levels || levels.length === 0) {
+      return {
+        currentLevel: null,
+        nextLevel: null,
+        amountNeeded: 0,
+        progressPercent: 0
+      };
+    }
+
+    // Определяем текущий уровень
+    const sortedDesc = [...levels].sort((a, b) => b.minAmount - a.minAmount);
+    let currentLevel: BonusLevel | null = null;
+    for (const level of sortedDesc) {
+      if (totalPurchases >= level.minAmount) {
+        if (!level.maxAmount || totalPurchases <= level.maxAmount) {
+          currentLevel = level;
+          break;
+        }
+      }
+    }
+    if (!currentLevel) {
+      currentLevel = [...levels].sort((a, b) => a.order - b.order)[0] || null;
+    }
+
+    // Находим следующий уровень
+    const sortedAsc = [...levels].sort((a, b) => a.minAmount - b.minAmount);
+    const currentIndex = currentLevel
+      ? sortedAsc.findIndex((l) => l.id === currentLevel!.id)
+      : -1;
+    const nextLevel =
+      currentIndex >= 0 && currentIndex < sortedAsc.length - 1
+        ? sortedAsc[currentIndex + 1]
+        : null;
+
+    if (!nextLevel) {
+      return {
+        currentLevel,
+        nextLevel: null,
+        amountNeeded: 0,
+        progressPercent: 100
+      };
+    }
+
+    const amountNeeded = nextLevel.minAmount - totalPurchases;
+    const progressRange = nextLevel.minAmount - currentLevel.minAmount;
+    const progressMade = totalPurchases - currentLevel.minAmount;
+    const progressPercent =
+      progressRange > 0
+        ? Math.min(100, Math.max(0, (progressMade / progressRange) * 100))
+        : 0;
+
+    return {
+      currentLevel,
+      nextLevel,
+      amountNeeded: Math.max(0, amountNeeded),
+      progressPercent: Math.round(progressPercent)
+    };
+  }
+
+  /**
    * Обновить уровень пользователя после покупки
    */
   static async updateUserLevel(

@@ -14,10 +14,10 @@ import { ReferralService } from '@/lib/services/referral.service';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: projectId } = await params;
+    const { id: projectId } = await context.params;
 
     // Проверяем существование проекта
     const project = await db.project.findUnique({
@@ -41,7 +41,7 @@ export async function GET(
       data: referralProgram
     });
   } catch (error: any) {
-    const { id: projectId } = await params;
+    const { id: projectId } = await context.params;
     logger.error('Error retrieving referral program settings', {
       projectId,
       error: error.message
@@ -56,10 +56,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: projectId } = await params;
+    const { id: projectId } = await context.params;
     const body = await request.json();
 
     // Проверяем существование проекта
@@ -119,7 +119,7 @@ export async function PUT(
       }
     });
   } catch (error: any) {
-    const { id: projectId } = await params;
+    const { id: projectId } = await context.params;
     logger.error('Error updating referral program settings', {
       projectId,
       error: error.message

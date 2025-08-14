@@ -322,22 +322,9 @@ export interface BotSettings {
   lastUpdate?: Date;
 
   // Настройки сообщений
-  messageSettings: {
-    welcomeMessage?: string;
-    balanceMessage?: string;
-    helpMessage?: string;
-    linkSuccessMessage?: string;
-    linkErrorMessage?: string;
-  };
-
-  // Настройки функционала
-  functionalSettings: {
-    showBalance: boolean;
-    showLevel: boolean;
-    showReferral: boolean;
-    showHistory: boolean;
-    showHelp: boolean;
-  };
+  welcomeMessage?: any; // Json из Prisma
+  messageSettings?: any; // Json из Prisma
+  functionalSettings?: any; // Json из Prisma
 
   createdAt: Date;
   updatedAt: Date;

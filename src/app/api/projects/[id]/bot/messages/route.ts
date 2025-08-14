@@ -14,10 +14,10 @@ import { logger } from '@/lib/logger';
 // PUT /api/projects/[id]/bot/messages - Обновление сообщений бота
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const { id } = await context.params;
     const body = await request.json();
 
     // Проверяем существование проекта
@@ -53,7 +53,7 @@ export async function PUT(
     try {
       const { botManager } = await import('@/lib/telegram/bot-manager');
       if (updatedSettings.isActive) {
-        await botManager.createBot(id, updatedSettings);
+        await botManager.createBot(id, updatedSettings as any);
         logger.info(
           'Bot restarted with new message settings',
           {
@@ -91,7 +91,7 @@ export async function PUT(
     logger.error(
       'Error updating bot messages',
       {
-        projectId: (await params).id,
+        projectId: (await context.params).id,
         error: error instanceof Error ? error.message : 'Unknown error'
       },
       'bot-api'

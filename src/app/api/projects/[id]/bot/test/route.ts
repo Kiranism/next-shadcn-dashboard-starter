@@ -16,10 +16,10 @@ import { BotStatus } from '@prisma/client';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: projectId } = await params;
+    const { id: projectId } = await context.params;
     const body = await request.json();
     const { testChatId } = body;
 
@@ -114,7 +114,7 @@ export async function POST(
       }
     });
   } catch (error: any) {
-    const { id: projectId } = await params;
+    const { id: projectId } = await context.params;
     logger.error('Error testing bot', {
       projectId,
       error: error.message

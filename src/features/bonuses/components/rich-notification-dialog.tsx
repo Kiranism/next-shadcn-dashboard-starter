@@ -10,6 +10,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -144,14 +145,11 @@ export function RichNotificationDialog({
         userIds: selectedUserIds
       };
 
-      const response = await fetch(
-        `/api/projects/${projectId}/users/bulk-notification`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }
-      );
+      const response = await fetch(`/api/projects/${projectId}/notifications`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
 
       const result = await response.json();
 
@@ -379,9 +377,11 @@ export function RichNotificationDialog({
                 <div className='space-y-3'>
                   {imageUrl && (
                     <div className='overflow-hidden rounded border bg-white'>
-                      <img
+                      <Image
                         src={imageUrl}
                         alt='Preview'
+                        width={400}
+                        height={128}
                         className='h-32 w-full object-cover'
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';

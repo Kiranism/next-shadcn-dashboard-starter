@@ -80,7 +80,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className='flex flex-1 flex-col space-y-6'>
+    <div className='flex flex-1 flex-col space-y-6 px-6'>
       {/* Header */}
       <div className='flex items-center justify-between'>
         <div>

@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withValidation } from '@/lib/validation/middleware';
+// import { withValidation } from '@/lib/validation/middleware'; // Не используется
 import { withErrorHandler, CommonErrors } from '@/lib/error-handler';
 import { withApiRateLimit } from '@/lib/with-rate-limit';
 import { logger, createRequestLogger } from '@/lib/logger';
@@ -22,21 +22,18 @@ import {
   notificationSchema,
   validateWithSchema
 } from '@/lib/validation/schemas';
-import { z } from 'zod';
+// import { z } from 'zod'; // Не используется
 
 // ===== GET: Получение списка пользователей проекта =====
 
 const getUsersHandler = withErrorHandler(
-  async (
-    request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
-  ) => {
+  async (request: NextRequest, { params }: { params: { id: string } }) => {
     const requestId = crypto.randomUUID();
     const requestLogger = createRequestLogger(requestId);
     const perf = logger.startPerformance();
 
     try {
-      const { id: projectId } = await params;
+      const { id: projectId } = params;
 
       // Валидация projectId
       if (!projectId || !/^[a-zA-Z0-9_-]+$/.test(projectId)) {
@@ -110,13 +107,10 @@ const getUsersHandler = withErrorHandler(
       const users = await db.user.findMany({
         where: whereCondition,
         orderBy: {
-          [validatedQuery.sortBy]: validatedQuery.sortOrder
+          [validatedQuery.sortBy as any]: validatedQuery.sortOrder
         },
-        skip: (validatedQuery.page - 1) * validatedQuery.limit,
-        take: validatedQuery.limit,
-        include: {
-          bonusLevel: true
-        }
+        skip: ((validatedQuery.page || 1) - 1) * (validatedQuery.limit || 10),
+        take: validatedQuery.limit || 10
       });
 
       // Обогащаем данные пользователей балансами
@@ -156,14 +150,7 @@ const getUsersHandler = withErrorHandler(
 
               // Уровень
               currentLevel: user.currentLevel,
-              bonusLevel: user.bonusLevel
-                ? {
-                    id: user.bonusLevel.id,
-                    name: user.bonusLevel.name,
-                    color: user.bonusLevel.color,
-                    bonusPercentage: Number(user.bonusLevel.bonusPercentage)
-                  }
-                : null,
+              bonusLevel: null, // Убираем bonusLevel, так как его нет в схеме
 
               // UI данные
               avatar: `https://api.slingacademy.com/public/sample-users/${(index % 10) + 1}.png`,
@@ -201,18 +188,18 @@ const getUsersHandler = withErrorHandler(
       // Убираем null значения (отфильтрованные пользователи)
       const filteredUsers = enrichedUsers.filter((user) => user !== null);
 
-      const totalPages = Math.ceil(totalCount / validatedQuery.limit);
+      const totalPages = Math.ceil(totalCount / (validatedQuery.limit || 10));
 
       const response = {
         success: true,
         data: filteredUsers,
         pagination: {
-          page: validatedQuery.page,
-          limit: validatedQuery.limit,
+          page: validatedQuery.page || 1,
+          limit: validatedQuery.limit || 10,
           total: totalCount,
           totalPages,
-          hasNext: validatedQuery.page < totalPages,
-          hasPrev: validatedQuery.page > 1
+          hasNext: (validatedQuery.page || 1) < totalPages,
+          hasPrev: (validatedQuery.page || 1) > 1
         },
         filters: {
           search: validatedQuery.search,
@@ -222,15 +209,13 @@ const getUsersHandler = withErrorHandler(
         }
       };
 
-      logger.endPerformance(
-        perf,
-        'info',
+      requestLogger.info(
         `Fetched ${filteredUsers.length} users`,
         {
           projectId,
           totalCount,
           filteredCount: filteredUsers.length,
-          page: validatedQuery.page
+          page: validatedQuery.page || 1
         },
         'users-api'
       );
@@ -254,21 +239,19 @@ const getUsersHandler = withErrorHandler(
 // ===== POST: Создание нового пользователя =====
 
 const createUserHandler = withErrorHandler(
-  async (
-    request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
-  ) => {
+  async (request: NextRequest, { params }: { params: { id: string } }) => {
     const requestId = crypto.randomUUID();
     const requestLogger = createRequestLogger(requestId);
 
     try {
-      const { id: projectId } = await params;
+      const { id: projectId } = params;
       const body = await request.json();
 
       // Валидация данных
       const validatedData = validateWithSchema(createUserSchema, {
         ...body,
-        projectId
+        projectId,
+        birthDate: body.birthDate ? new Date(body.birthDate) : undefined
       });
 
       requestLogger.info(
@@ -291,7 +274,7 @@ const createUserHandler = withErrorHandler(
       }
 
       // Создаем пользователя через сервис
-      const newUser = await UserService.createUser(validatedData);
+      const newUser = await UserService.createUser(validatedData as any);
 
       requestLogger.info(
         'User created successfully',
@@ -338,15 +321,12 @@ const createUserHandler = withErrorHandler(
 // ===== PUT: Массовые операции с пользователями =====
 
 const bulkOperationsHandler = withErrorHandler(
-  async (
-    request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
-  ) => {
+  async (request: NextRequest, { params }: { params: { id: string } }) => {
     const requestId = crypto.randomUUID();
     const requestLogger = createRequestLogger(requestId);
 
     try {
-      const { id: projectId } = await params;
+      const { id: projectId } = params;
       const body = await request.json();
 
       requestLogger.info(
@@ -390,14 +370,15 @@ async function handleBulkBonusAward(
   const results = await Promise.allSettled(
     validatedData.userIds.map(async (userId) => {
       try {
-        const result = await BonusService.awardBonus(
+        const result = await BonusService.awardBonus({
           userId,
-          validatedData.amount,
-          validatedData.description,
-          validatedData.expiresAt
+          amount: validatedData.amount,
+          description: validatedData.description,
+          type: 'MANUAL',
+          expiresAt: validatedData.expiresAt
             ? new Date(validatedData.expiresAt)
             : undefined
-        );
+        });
         return { userId, success: true, bonusId: result.id };
       } catch (error) {
         requestLogger.warn(

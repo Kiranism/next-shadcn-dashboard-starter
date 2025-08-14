@@ -138,9 +138,9 @@ async function handleTildaOrder(projectId: string, orderData: any) {
 // Обработчик POST запросов (без rate limiting)
 async function handlePOST(
   request: NextRequest,
-  { params }: { params: Promise<{ webhookSecret: string }> }
+  { params }: { params: { webhookSecret: string } }
 ) {
-  const { webhookSecret } = await params;
+  const { webhookSecret } = params;
   const method = request.method;
   const endpoint = request.url;
 
@@ -325,16 +325,8 @@ async function handlePurchase(
   projectId: string,
   payload: WebhookPurchasePayload
 ) {
-  const {
-    userEmail,
-    userPhone,
-    purchaseAmount,
-    orderId,
-    description,
-    utmSource,
-    utmMedium,
-    utmCampaign
-  } = payload;
+  const { userEmail, userPhone, purchaseAmount, orderId, description } =
+    payload;
 
   if (!userEmail && !userPhone) {
     throw new Error('Должен быть указан email или телефон пользователя');
@@ -425,9 +417,9 @@ async function handleSpendBonuses(
 // Обработчик GET запросов (для проверки)
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ webhookSecret: string }> }
+  context: { params: Promise<{ webhookSecret: string }> }
 ) {
-  const { webhookSecret } = await params;
+  const { webhookSecret } = await context.params;
 
   const project = await ProjectService.getProjectByWebhookSecret(webhookSecret);
 

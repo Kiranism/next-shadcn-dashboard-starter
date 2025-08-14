@@ -14,15 +14,16 @@ import {
   sendRichBroadcastMessage,
   type RichNotification
 } from '@/lib/telegram/notifications';
+import { botManager } from '@/lib/telegram/bot-manager';
 import { withApiRateLimit } from '@/lib/with-rate-limit';
 import { withErrorHandler } from '@/lib/error-handler';
 
 // POST /api/projects/[id]/notifications - Отправка расширенных уведомлений
 async function sendNotificationsHandler(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
-  const { id: projectId } = await params;
+  const { id: projectId } = params;
   const body = await request.json();
 
   // Проверяем существование проекта
@@ -82,6 +83,53 @@ async function sendNotificationsHandler(
   }
 
   try {
+    // Проверяем и создаем бота если нужно
+    let botInstance = botManager.getBot(projectId);
+
+    if (!botInstance || !botInstance.isActive) {
+      logger.info(
+        `Бот для проекта ${projectId} не найден, пытаемся создать...`,
+        {
+          projectId,
+          component: 'notifications-api'
+        }
+      );
+
+      // Получаем настройки бота из базы данных
+      const botSettings = await db.botSettings.findUnique({
+        where: { projectId }
+      });
+
+      if (!botSettings || !botSettings.botToken) {
+        logger.error(`Настройки бота не найдены для проекта ${projectId}`, {
+          projectId,
+          component: 'notifications-api'
+        });
+        return NextResponse.json(
+          { error: 'Настройки бота не найдены' },
+          { status: 400 }
+        );
+      }
+
+      try {
+        botInstance = await botManager.createBot(projectId, botSettings as any);
+        logger.info(`Бот успешно создан для проекта ${projectId}`, {
+          projectId,
+          component: 'notifications-api'
+        });
+      } catch (error) {
+        logger.error(`Ошибка создания бота для проекта ${projectId}`, {
+          projectId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          component: 'notifications-api'
+        });
+        return NextResponse.json(
+          { error: 'Ошибка создания бота' },
+          { status: 500 }
+        );
+      }
+    }
+
     // Создаем объект уведомления
     const notification: RichNotification = {
       message: message.trim(),
@@ -140,9 +188,9 @@ async function sendNotificationsHandler(
 // GET /api/projects/[id]/notifications/stats - Статистика уведомлений
 async function getNotificationStatsHandler(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
-  const { id: projectId } = await params;
+  const { id: projectId } = params;
 
   // Проверяем существование проекта
   const project = await db.project.findUnique({

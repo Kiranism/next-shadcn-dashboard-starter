@@ -14,10 +14,10 @@ import { ReferralService } from '@/lib/services/referral.service';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: projectId } = await params;
+    const { id: projectId } = await context.params;
     const { searchParams } = new URL(request.url);
 
     // Получаем параметры фильтрации
@@ -160,7 +160,7 @@ export async function GET(
       data: stats
     });
   } catch (error: any) {
-    const { id: projectId } = await params;
+    const { id: projectId } = await context.params;
     logger.error('Error retrieving referral stats', {
       projectId,
       error: error.message

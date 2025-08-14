@@ -1,0 +1,106 @@
+# Production оптимизированный Dockerfile для SaaS Bonus System
+FROM node:18-alpine AS base
+
+# Установка системных зависимостей
+RUN apk add --no-cache \
+    libc6-compat \
+    curl \
+    bash \
+    && rm -rf /var/cache/apk/*
+
+# Установка pnpm глобально
+RUN corepack enable pnpm
+
+# ====================================
+# Этап зависимостей
+# ====================================
+FROM base AS deps
+WORKDIR /app
+
+# Копирование файлов пакетов
+COPY package.json pnpm-lock.yaml ./
+
+# Установка production зависимостей
+RUN pnpm install --frozen-lockfile --prod
+
+# Установка dev зависимостей в отдельный слой
+RUN pnpm install --frozen-lockfile
+
+# ====================================
+# Этап сборки
+# ====================================
+FROM base AS builder
+WORKDIR /app
+
+# Копирование node_modules
+COPY --from=deps /app/node_modules ./node_modules
+
+# Копирование исходного кода
+COPY . .
+
+# Генерация Prisma клиента
+RUN pnpm dlx prisma generate
+
+# Сборка приложения
+ENV NEXT_TELEMETRY_DISABLED 1
+ENV NODE_ENV production
+
+RUN pnpm build
+
+# ====================================
+# Production образ
+# ====================================
+FROM base AS runner
+WORKDIR /app
+
+# Установка runtime зависимостей
+RUN apk add --no-cache \
+    curl \
+    tini \
+    && rm -rf /var/cache/apk/*
+
+ENV NODE_ENV production
+ENV NEXT_TELEMETRY_DISABLED 1
+
+# Создание пользователя для безопасности
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# Создание необходимых директорий
+RUN mkdir -p /app/logs /app/uploads && \
+    chown -R nextjs:nodejs /app
+
+# Копирование public файлов
+COPY --from=builder /app/public ./public
+
+# Копирование standalone сборки
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Копирование Prisma клиента
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+
+# Health check скрипт
+COPY --chown=nextjs:nodejs scripts/health-check.sh /health-check.sh
+RUN chmod +x /health-check.sh
+
+# Переключение на непривилегированного пользователя
+USER nextjs
+
+# Открытие порта
+EXPOSE 3000
+
+# Переменные окружения
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD /health-check.sh
+
+# Точка входа с tini для правильной обработки сигналов
+ENTRYPOINT ["/sbin/tini", "--"]
+
+# Команда запуска
+CMD ["node", "server.js"]

@@ -17,10 +17,10 @@ import { logger } from '@/lib/logger';
 // GET /api/projects/[id]/bot - Получение настроек бота
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const { id } = await context.params;
 
     // Проверяем существование проекта
     const project = await ProjectService.getProjectById(id);
@@ -35,7 +35,11 @@ export async function GET(
 
     return NextResponse.json(botSettings);
   } catch (error) {
-    console.error('Ошибка получения настроек бота:', error);
+    logger.error(
+      'Ошибка получения настроек бота',
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      'bot-api'
+    );
     return NextResponse.json(
       { error: 'Ошибка получения настроек бота' },
       { status: 500 }
@@ -46,10 +50,10 @@ export async function GET(
 // POST /api/projects/[id]/bot - Создание/обновление настроек бота
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const { id } = await context.params;
     const body = await request.json();
 
     // Проверяем существование проекта
@@ -130,19 +134,31 @@ export async function POST(
               : 'Добро пожаловать! 🎉\n\nЭто бот бонусной программы.'
         };
         await botManager.createBot(id, botSettingsForManager as BotSettings);
-        console.log(`✅ Бот для проекта ${id} создан и активирован`);
+        logger.info(
+          '✅ Бот создан и активирован',
+          { projectId: id },
+          'bot-api'
+        );
       } else {
         await botManager.stopBot(id);
-        console.log(`🔄 Бот для проекта ${id} деактивирован`);
+        logger.info('🔄 Бот деактивирован', { projectId: id }, 'bot-api');
       }
     } catch (error) {
-      console.error('Ошибка управления ботом через BotManager:', error);
+      logger.error(
+        'Ошибка управления ботом через BotManager',
+        { error: error instanceof Error ? error.message : 'Unknown error' },
+        'bot-api'
+      );
       // Не возвращаем ошибку, так как настройки сохранены в БД
     }
 
     return NextResponse.json(botSettings, { status: 201 });
   } catch (error) {
-    console.error('Ошибка настройки бота:', error);
+    logger.error(
+      'Ошибка настройки бота',
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      'bot-api'
+    );
 
     if (error instanceof Error && error.message.includes('Unique constraint')) {
       return NextResponse.json(
@@ -161,10 +177,10 @@ export async function POST(
 // PUT /api/projects/[id]/bot - Обновление настроек бота
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const { id } = await context.params;
     const body = await request.json();
 
     // Проверяем существование настроек бота
@@ -213,18 +229,26 @@ export async function PUT(
               : 'Добро пожаловать! 🎉\n\nЭто бот бонусной программы.'
         };
         await botManager.updateBot(id, botSettingsForManager as BotSettings);
-        console.log(`🔄 Бот для проекта ${id} обновлен`);
+        logger.info('🔄 Бот обновлен', { projectId: id }, 'bot-api');
       } else {
         await botManager.stopBot(id);
-        console.log(`🔄 Бот для проекта ${id} деактивирован`);
+        logger.info('🔄 Бот деактивирован', { projectId: id }, 'bot-api');
       }
     } catch (error) {
-      console.error('Ошибка обновления бота через BotManager:', error);
+      logger.error(
+        'Ошибка обновления бота через BotManager',
+        { error: error instanceof Error ? error.message : 'Unknown error' },
+        'bot-api'
+      );
     }
 
     return NextResponse.json(updatedBot);
   } catch (error) {
-    console.error('Ошибка обновления настроек бота:', error);
+    logger.error(
+      'Ошибка обновления настроек бота',
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      'bot-api'
+    );
     return NextResponse.json(
       { error: 'Ошибка обновления настроек бота' },
       { status: 500 }
@@ -235,10 +259,10 @@ export async function PUT(
 // DELETE /api/projects/[id]/bot - Деактивация бота
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const { id } = await context.params;
 
     const botSettings = await db.botSettings.findUnique({
       where: { projectId: id }
@@ -260,9 +284,13 @@ export async function DELETE(
     // Останавливаем бота в BotManager
     try {
       await botManager.stopBot(id);
-      console.log(`🛑 Бот для проекта ${id} остановлен через API`);
+      logger.info('🛑 Бот остановлен через API', { projectId: id }, 'bot-api');
     } catch (error) {
-      console.error('Ошибка остановки бота через BotManager:', error);
+      logger.error(
+        'Ошибка остановки бота через BotManager',
+        { error: error instanceof Error ? error.message : 'Unknown error' },
+        'bot-api'
+      );
     }
 
     return NextResponse.json({
@@ -270,7 +298,11 @@ export async function DELETE(
       bot: deactivatedBot
     });
   } catch (error) {
-    console.error('Ошибка деактивации бота:', error);
+    logger.error(
+      'Ошибка деактивации бота',
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      'bot-api'
+    );
     return NextResponse.json(
       { error: 'Ошибка деактивации бота' },
       { status: 500 }

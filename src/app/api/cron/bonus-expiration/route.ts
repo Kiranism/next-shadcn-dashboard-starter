@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import {
   processBonusExpiration,
   scheduleExpirationWarnings
@@ -71,7 +72,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log('🔄 Запуск cron job для обработки истечения бонусов...');
+    logger.info(
+      '🔄 Запуск cron job для обработки истечения бонусов',
+      {},
+      'bonus-expiration-cron'
+    );
 
     // 1. Обрабатываем истекшие бонусы
     const expirationResult = await processBonusExpiration(
@@ -93,8 +98,13 @@ export async function GET(request: NextRequest) {
         }
       });
 
-      console.log(
-        `💸 Обработано ${expirationResult.summary.totalExpiredBonuses} истекших бонусов на сумму ${expirationResult.summary.totalExpiredAmount}`
+      logger.info(
+        '💸 Обработано истекших бонусов',
+        {
+          count: expirationResult.summary.totalExpiredBonuses,
+          amount: expirationResult.summary.totalExpiredAmount
+        },
+        'bonus-expiration-cron'
       );
     }
 
@@ -134,7 +144,11 @@ export async function GET(request: NextRequest) {
       nextRunAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
     };
 
-    console.log('✅ Cron job завершен успешно:', report);
+    logger.info(
+      '✅ Cron job завершен успешно',
+      { report },
+      'bonus-expiration-cron'
+    );
 
     return NextResponse.json({
       success: true,
@@ -142,7 +156,11 @@ export async function GET(request: NextRequest) {
       report
     });
   } catch (error) {
-    console.error('❌ Ошибка в cron job:', error);
+    logger.error(
+      '❌ Ошибка в cron job',
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      'bonus-expiration-cron'
+    );
 
     return NextResponse.json(
       {
@@ -160,12 +178,20 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔧 Ручной запуск обработки истечения бонусов...');
+    logger.info(
+      '🔧 Ручной запуск обработки истечения бонусов',
+      {},
+      'bonus-expiration-cron'
+    );
 
     // Переиспользуем логику GET запроса
     return await GET(request);
   } catch (error) {
-    console.error('❌ Ошибка в ручном запуске:', error);
+    logger.error(
+      '❌ Ошибка в ручном запуске',
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      'bonus-expiration-cron'
+    );
 
     return NextResponse.json(
       {
@@ -192,12 +218,14 @@ export async function HEAD(request: NextRequest) {
 // Заглушка для отправки email уведомлений
 async function sendEmailNotification(notification: any): Promise<void> {
   // В реальном проекте здесь была бы интеграция с email сервисом
-  console.log(
-    `📧 Отправка email уведомления пользователю ${notification.userId}:`,
+  logger.info(
+    '📧 Отправка email уведомления',
     {
+      userId: notification.userId,
       title: notification.title,
       message: notification.message
-    }
+    },
+    'email-notifications'
   );
 
   // Симуляция задержки отправки

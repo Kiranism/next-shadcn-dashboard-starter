@@ -13,10 +13,10 @@ import { logger } from '@/lib/logger';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const { id } = await context.params;
 
     // Получаем проект без связанных данных
     const project = await db.project.findUnique({
@@ -42,7 +42,7 @@ export async function GET(
 
     return NextResponse.json(response);
   } catch (error) {
-    const { id } = await params;
+    const { id } = await context.params;
     logger.error('Ошибка получения проекта', {
       projectId: id,
       error: error instanceof Error ? error.message : 'Неизвестная ошибка'
@@ -56,10 +56,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const { id } = await context.params;
     const body = await request.json();
 
     const updatedProject = await db.project.update({
@@ -75,7 +75,7 @@ export async function PUT(
 
     return NextResponse.json(updatedProject);
   } catch (error) {
-    const { id } = await params;
+    const { id } = await context.params;
     logger.error('Ошибка обновления проекта', { projectId: id, error });
     return NextResponse.json(
       { error: 'Внутренняя ошибка сервера' },
@@ -86,10 +86,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const { id } = await context.params;
 
     // Проверяем существование проекта
     const project = await db.project.findUnique({
@@ -112,7 +112,7 @@ export async function DELETE(
       { status: 200 }
     );
   } catch (error) {
-    const { id } = await params;
+    const { id } = await context.params;
     logger.error('Ошибка удаления проекта', { projectId: id, error });
     return NextResponse.json(
       { error: 'Внутренняя ошибка сервера' },
