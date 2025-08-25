@@ -7,8 +7,7 @@
  * @author: AI Assistant + User
  */
 
-// @ts-nocheck
-// Временно отключаем проверку типов для совместимости с Prisma
+// Типизация восстановлена для обеспечения безопасности типов
 
 import {
   Bot,
@@ -35,7 +34,7 @@ type MyContext = Context & SessionFlavor<SessionData>;
 
 interface BotInstance {
   bot: Bot<MyContext>;
-  webhook: any | null; // null в dev режиме (polling), webhookCallback в prod режиме
+  webhook: ReturnType<typeof webhookCallback> | null; // null в dev режиме (polling), webhookCallback в prod режиме
   isActive: boolean;
   projectId: string;
   lastUpdated: Date;

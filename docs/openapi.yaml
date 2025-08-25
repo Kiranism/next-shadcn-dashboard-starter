@@ -1,0 +1,1020 @@
+openapi: 3.0.3
+info:
+  title: SaaS Bonus System API
+  description: |
+    API для управления бонусными программами с поддержкой мультитенантности и интеграцией с Telegram ботами.
+    
+    ## Основные возможности:
+    - Управление проектами (тенантами)
+    - Управление пользователями и бонусами
+    - Webhook интеграция для внешних систем
+    - Управление Telegram ботами
+    - Аналитика и статистика
+    - Реферальная программа
+    - Многоуровневая система бонусов
+  version: 1.0.0
+  contact:
+    email: support@saas-bonus.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.saas-bonus.com
+    description: Production server
+  - url: http://localhost:5006
+    description: Development server
+
+security:
+  - ClerkAuth: []
+
+tags:
+  - name: Webhook
+    description: Webhook endpoints для интеграции с внешними системами
+  - name: Projects
+    description: Управление проектами (тенантами)
+  - name: Users
+    description: Управление пользователями проекта
+  - name: Bonuses
+    description: Операции с бонусами
+  - name: Analytics
+    description: Аналитика и статистика
+  - name: Telegram
+    description: Управление Telegram ботами
+  - name: Referral
+    description: Реферальная программа
+
+paths:
+  /api/webhook/{webhookSecret}:
+    post:
+      tags:
+        - Webhook
+      summary: Обработка webhook запросов
+      description: |
+        Универсальный endpoint для обработки различных действий:
+        - Регистрация пользователей
+        - Начисление бонусов за покупки
+        - Списание бонусов
+        - Интеграция с Tilda
+      parameters:
+        - name: webhookSecret
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Уникальный секретный ключ проекта
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/RegisterUserRequest'
+                - $ref: '#/components/schemas/PurchaseRequest'
+                - $ref: '#/components/schemas/SpendBonusesRequest'
+                - $ref: '#/components/schemas/TildaOrderRequest'
+      responses:
+        '200':
+          description: Успешная обработка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookResponse'
+        '201':
+          description: Пользователь создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCreatedResponse'
+        '400':
+          description: Некорректные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Неверный webhook secret
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Проект деактивирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Превышен лимит запросов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/projects:
+    get:
+      tags:
+        - Projects
+      summary: Получить список проектов
+      security:
+        - ClerkAuth: []
+      responses:
+        '200':
+          description: Список проектов
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  projects:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Project'
+    
+    post:
+      tags:
+        - Projects
+      summary: Создать новый проект
+      security:
+        - ClerkAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProjectRequest'
+      responses:
+        '201':
+          description: Проект создан
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  project:
+                    $ref: '#/components/schemas/Project'
+
+  /api/projects/{id}:
+    get:
+      tags:
+        - Projects
+      summary: Получить информацию о проекте
+      security:
+        - ClerkAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Информация о проекте
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  project:
+                    $ref: '#/components/schemas/Project'
+        '404':
+          description: Проект не найден
+
+    patch:
+      tags:
+        - Projects
+      summary: Обновить проект
+      security:
+        - ClerkAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProjectRequest'
+      responses:
+        '200':
+          description: Проект обновлен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  project:
+                    $ref: '#/components/schemas/Project'
+
+  /api/projects/{id}/users:
+    get:
+      tags:
+        - Users
+      summary: Получить список пользователей проекта
+      security:
+        - ClerkAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Поиск по имени, email или телефону
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Список пользователей
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UserWithBalance'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+  /api/projects/{id}/users/{userId}/bonuses:
+    post:
+      tags:
+        - Bonuses
+      summary: Начислить бонусы пользователю
+      security:
+        - ClerkAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AwardBonusRequest'
+      responses:
+        '200':
+          description: Бонусы начислены
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  bonus:
+                    $ref: '#/components/schemas/Bonus'
+                  balance:
+                    $ref: '#/components/schemas/UserBalance'
+
+    get:
+      tags:
+        - Bonuses
+      summary: Получить баланс пользователя
+      security:
+        - ClerkAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Баланс пользователя
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  balance:
+                    $ref: '#/components/schemas/UserBalance'
+
+  /api/projects/{id}/analytics:
+    get:
+      tags:
+        - Analytics
+      summary: Получить аналитику проекта
+      security:
+        - ClerkAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Начальная дата периода
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Конечная дата периода
+      responses:
+        '200':
+          description: Аналитические данные
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  analytics:
+                    $ref: '#/components/schemas/Analytics'
+
+  /api/projects/{id}/bot/setup:
+    post:
+      tags:
+        - Telegram
+      summary: Настроить Telegram бота
+      security:
+        - ClerkAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BotSetupRequest'
+      responses:
+        '200':
+          description: Бот настроен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  botSettings:
+                    $ref: '#/components/schemas/BotSettings'
+
+  /api/projects/{id}/bot/status:
+    get:
+      tags:
+        - Telegram
+      summary: Получить статус бота
+      security:
+        - ClerkAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Статус бота
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  status:
+                    $ref: '#/components/schemas/BotStatus'
+
+  /api/projects/{id}/referral-program:
+    get:
+      tags:
+        - Referral
+      summary: Получить настройки реферальной программы
+      security:
+        - ClerkAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Настройки реферальной программы
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  referralProgram:
+                    $ref: '#/components/schemas/ReferralProgram'
+
+    post:
+      tags:
+        - Referral
+      summary: Обновить настройки реферальной программы
+      security:
+        - ClerkAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateReferralProgramRequest'
+      responses:
+        '200':
+          description: Настройки обновлены
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  referralProgram:
+                    $ref: '#/components/schemas/ReferralProgram'
+
+components:
+  securitySchemes:
+    ClerkAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Clerk JWT токен для аутентификации
+
+  schemas:
+    # Webhook Requests
+    RegisterUserRequest:
+      type: object
+      required:
+        - action
+        - payload
+      properties:
+        action:
+          type: string
+          enum: [register_user]
+        payload:
+          type: object
+          properties:
+            email:
+              type: string
+              format: email
+            phone:
+              type: string
+            firstName:
+              type: string
+            lastName:
+              type: string
+            birthDate:
+              type: string
+              format: date
+            utmSource:
+              type: string
+            utmMedium:
+              type: string
+            utmCampaign:
+              type: string
+            utmContent:
+              type: string
+            utmTerm:
+              type: string
+            referralCode:
+              type: string
+
+    PurchaseRequest:
+      type: object
+      required:
+        - action
+        - payload
+      properties:
+        action:
+          type: string
+          enum: [purchase]
+        payload:
+          type: object
+          required:
+            - amount
+            - orderId
+          properties:
+            email:
+              type: string
+              format: email
+            phone:
+              type: string
+            amount:
+              type: number
+              minimum: 0
+            orderId:
+              type: string
+            description:
+              type: string
+
+    SpendBonusesRequest:
+      type: object
+      required:
+        - action
+        - payload
+      properties:
+        action:
+          type: string
+          enum: [spend_bonuses]
+        payload:
+          type: object
+          required:
+            - amount
+            - orderId
+          properties:
+            email:
+              type: string
+              format: email
+            phone:
+              type: string
+            amount:
+              type: number
+              minimum: 0
+            orderId:
+              type: string
+            description:
+              type: string
+
+    TildaOrderRequest:
+      type: array
+      items:
+        type: object
+        properties:
+          name:
+            type: string
+          email:
+            type: string
+            format: email
+          phone:
+            type: string
+          payment:
+            type: object
+            properties:
+              amount:
+                type: string
+              orderid:
+                type: string
+              systranid:
+                type: string
+              products:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    quantity:
+                      type: number
+                    price:
+                      type: number
+
+    # Models
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        domain:
+          type: string
+        webhookSecret:
+          type: string
+        bonusPercentage:
+          type: number
+        bonusExpiryDays:
+          type: integer
+        isActive:
+          type: boolean
+        botToken:
+          type: string
+        botUsername:
+          type: string
+        botStatus:
+          type: string
+          enum: [INACTIVE, ACTIVE, ERROR]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        birthDate:
+          type: string
+          format: date
+        telegramId:
+          type: string
+        telegramUsername:
+          type: string
+        isActive:
+          type: boolean
+        totalPurchases:
+          type: number
+        currentLevel:
+          type: string
+        referralCode:
+          type: string
+        referredBy:
+          type: string
+        registeredAt:
+          type: string
+          format: date-time
+
+    UserWithBalance:
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - type: object
+          properties:
+            currentBalance:
+              type: number
+            totalEarned:
+              type: number
+            totalSpent:
+              type: number
+
+    Bonus:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        amount:
+          type: number
+        type:
+          type: string
+          enum: [PURCHASE, BIRTHDAY, MANUAL, REFERRAL, PROMO]
+        description:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        isUsed:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    UserBalance:
+      type: object
+      properties:
+        currentBalance:
+          type: number
+        totalEarned:
+          type: number
+        totalSpent:
+          type: number
+        bonuses:
+          type: array
+          items:
+            $ref: '#/components/schemas/Bonus'
+
+    Analytics:
+      type: object
+      properties:
+        overview:
+          type: object
+          properties:
+            totalUsers:
+              type: integer
+            activeUsers:
+              type: integer
+            totalBonuses:
+              type: number
+            activeBonuses:
+              type: number
+            totalTransactions:
+              type: integer
+            newUsersLast30Days:
+              type: integer
+            newUsersLast7Days:
+              type: integer
+            transactionsLast30Days:
+              type: integer
+            transactionsLast7Days:
+              type: integer
+            expiringBonuses:
+              type: object
+              properties:
+                amount:
+                  type: number
+                count:
+                  type: integer
+        charts:
+          type: object
+          properties:
+            dailyActivity:
+              type: array
+              items:
+                type: object
+                properties:
+                  date:
+                    type: string
+                    format: date
+                  earnedTransactions:
+                    type: integer
+                  spentTransactions:
+                    type: integer
+                  earnedAmount:
+                    type: number
+                  spentAmount:
+                    type: number
+            transactionTypes:
+              type: array
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  count:
+                    type: integer
+                  amount:
+                    type: number
+        topUsers:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              contact:
+                type: string
+              transactionCount:
+                type: integer
+              totalEarned:
+                type: number
+              totalSpent:
+                type: number
+        userLevels:
+          type: array
+          items:
+            type: object
+            properties:
+              level:
+                type: string
+              userCount:
+                type: integer
+              avgPurchases:
+                type: number
+        bonusLevels:
+          type: array
+          items:
+            $ref: '#/components/schemas/BonusLevel'
+
+    BonusLevel:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        minAmount:
+          type: number
+        maxAmount:
+          type: number
+        bonusPercent:
+          type: integer
+        paymentPercent:
+          type: integer
+        order:
+          type: integer
+
+    BotSettings:
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        botToken:
+          type: string
+        botUsername:
+          type: string
+        isActive:
+          type: boolean
+        welcomeMessage:
+          type: object
+        messageSettings:
+          type: object
+        functionalSettings:
+          type: object
+
+    BotStatus:
+      type: object
+      properties:
+        isActive:
+          type: boolean
+        status:
+          type: string
+          enum: [INACTIVE, ACTIVE, ERROR]
+        lastChecked:
+          type: string
+          format: date-time
+        error:
+          type: string
+
+    ReferralProgram:
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        isActive:
+          type: boolean
+        bonusPercent:
+          type: integer
+        referrerBonus:
+          type: number
+        description:
+          type: string
+
+    # Requests
+    CreateProjectRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        domain:
+          type: string
+        bonusPercentage:
+          type: number
+          default: 5
+        bonusExpiryDays:
+          type: integer
+          default: 365
+
+    UpdateProjectRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        domain:
+          type: string
+        bonusPercentage:
+          type: number
+        bonusExpiryDays:
+          type: integer
+        isActive:
+          type: boolean
+
+    AwardBonusRequest:
+      type: object
+      required:
+        - amount
+      properties:
+        amount:
+          type: number
+          minimum: 0
+        type:
+          type: string
+          enum: [MANUAL, BIRTHDAY, PROMO]
+          default: MANUAL
+        description:
+          type: string
+        expiryDays:
+          type: integer
+
+    BotSetupRequest:
+      type: object
+      required:
+        - botToken
+      properties:
+        botToken:
+          type: string
+        welcomeMessage:
+          type: string
+
+    UpdateReferralProgramRequest:
+      type: object
+      properties:
+        isActive:
+          type: boolean
+        bonusPercent:
+          type: integer
+          minimum: 0
+          maximum: 100
+        referrerBonus:
+          type: number
+          minimum: 0
+        description:
+          type: string
+
+    # Responses
+    WebhookResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+
+    UserCreatedResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        user:
+          $ref: '#/components/schemas/User'
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          default: false
+        error:
+          type: string
+        code:
+          type: string
+        details:
+          type: object
+
+    Pagination:
+      type: object
+      properties:
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        totalPages:
+          type: integer

@@ -23,12 +23,9 @@ export async function POST(request: NextRequest) {
 
     // TODO: логгер
     const botInstance = botManager.getBot(projectId);
-    // TODO: логгер
-    // console.log(`🤖 Найден бот:`, !!botInstance);
-    // TODO: логгер
-    // console.log(`🔄 Активен:`, botInstance?.isActive);
-    // TODO: логгер
-    // console.log(`📋 Всего ботов в менеджере:`, Array.from(botManager['bots'].keys()));
+    logger.debug('🤖 Найден бот:', { found: !!botInstance });
+    logger.debug('🔄 Активен:', { isActive: botInstance?.isActive });
+    logger.debug('📋 Всего ботов в менеджере:', { bots: Array.from(botManager['bots'].keys()) });
     
     if (!botInstance) {
       return NextResponse.json(
@@ -55,8 +52,7 @@ export async function POST(request: NextRequest) {
     // Симулируем сообщение /start от пользователя
     const testMessage = message || '/start';
     
-    // TODO: логгер
-    // console.log(`📤 Отправляем тестовое сообщение боту: "${testMessage}"`);
+    logger.info(`📤 Отправляем тестовое сообщение боту:`, { message: testMessage });
     
     const mockUpdate = {
       update_id: Date.now(),
@@ -82,11 +78,9 @@ export async function POST(request: NextRequest) {
 
     try {
       // Обрабатываем обновление через бота напрямую (минуя webhook)
-      // TODO: логгер
-      // console.log(`🤖 Обрабатываем обновление через бота...`);
+      logger.debug('🤖 Обрабатываем обновление через бота...');
       await botInstance.bot.handleUpdate(mockUpdate);
-      // TODO: логгер
-      // console.log(`✅ Обновление обработано успешно`);
+      logger.info('✅ Обновление обработано успешно');
 
       return NextResponse.json({
         success: true,
@@ -97,8 +91,7 @@ export async function POST(request: NextRequest) {
         processedAt: new Date().toISOString()
       });
     } catch (botError) {
-      // TODO: логгер
-      // console.error(`❌ Ошибка обработки обновления ботом:`, botError);
+      logger.error('❌ Ошибка обработки обновления ботом:', { error: botError });
       return NextResponse.json({
         success: false,
         error: `Ошибка обработки сообщения ботом: ${botError}`,
@@ -108,8 +101,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    // TODO: логгер
-    // console.error('Ошибка тестирования бота:', error);
+    logger.error('Ошибка тестирования бота:', { error });
     return NextResponse.json(
       { error: 'Ошибка тестирования бота' },
       { status: 500 }
@@ -175,8 +167,7 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    // TODO: логгер
-    // console.error('Ошибка проверки бота:', error);
+    logger.error('Ошибка проверки бота:', { error });
     return NextResponse.json(
       { error: 'Ошибка проверки бота' },
       { status: 500 }
