@@ -1,0 +1,342 @@
+nohup: ignoring input
+
+> saas-bonus-system@1.0.0 build /workspace
+> next build
+
+   ▲ Next.js 15.3.2
+   - Experiments (use with caution):
+     · clientTraceMetadata
+
+   Creating an optimized production build ...
+
+
+Retrying 1/3...
+
+
+Retrying 1/3...
+
+
+Retrying 1/3...
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (251kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ✓ Compiled successfully in 33.0s
+   Linting and checking validity of types ...
+
+./src/app/api/admin/bots/init/route.ts
+15:28  Warning: 'request' is defined but never used.  @typescript-eslint/no-unused-vars
+50:27  Warning: 'request' is defined but never used.  @typescript-eslint/no-unused-vars
+58:36  Warning: '_' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/cron/bonus-expiration/route.ts
+210:28  Warning: 'request' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/dashboard/stats/route.ts
+58:17  Warning: 'projectId' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/health/route.ts
+31:27  Warning: 'request' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/projects/[id]/users/[userId]/bonuses/route.ts
+127:5  Warning: Unexpected console statement.  no-console
+171:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/projects/[id]/users/debug/route.ts
+22:5  Warning: Unexpected console statement.  no-console
+40:5  Warning: Unexpected console statement.  no-console
+57:5  Warning: Unexpected console statement.  no-console
+67:5  Warning: Unexpected console statement.  no-console
+76:5  Warning: Unexpected console statement.  no-console
+
+./src/app/dashboard/page.tsx
+65:9  Warning: Unexpected console statement.  no-console
+
+./src/app/dashboard/projects/[id]/integration/page.tsx
+38:5  Warning: Unexpected console statement.  no-console
+
+./src/components/layout/page-container.tsx
+5:3  Warning: 'scrollable' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/ui/chart.tsx
+12:4  Warning: 'key' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/features/auth/components/github-auth-button.tsx
+8:9  Warning: 'searchParams' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+17:22  Warning: Unexpected console statement.  no-console
+
+./src/features/auth/components/user-auth-form.tsx
+27:9  Warning: 'searchParams' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+37:27  Warning: 'data' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/features/bonuses/components/bonus-addition-dialog.tsx
+87:7  Warning: Unexpected console statement.  no-console
+
+./src/features/bonuses/components/bonus-deduction-dialog.tsx
+80:7  Warning: Unexpected console statement.  no-console
+
+./src/features/bonuses/components/bonus-management-page.tsx
+47:10  Warning: 'BulkActionsToolbar' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/features/bonuses/components/bonus-stats-cards.tsx
+21:3  Warning: 'Target' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/features/bonuses/components/bulk-actions-toolbar.tsx
+9:3  Warning: 'DropdownMenuSeparator' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/features/bonuses/components/bulk-bonus-dialog.tsx
+149:7  Warning: Unexpected console statement.  no-console
+
+./src/features/bonuses/components/bulk-notification-dialog.tsx
+65:7  Warning: Unexpected console statement.  no-console
+76:7  Warning: Unexpected console statement.  no-console
+
+./src/features/bonuses/components/enhanced-bulk-actions-toolbar.tsx
+12:10  Warning: 'useState' is defined but never used.  @typescript-eslint/no-unused-vars
+43:3  Warning: 'selectedUserIds' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/features/bonuses/components/rich-notification-dialog.tsx
+37:10  Warning: 'Badge' is defined but never used.  @typescript-eslint/no-unused-vars
+38:16  Warning: 'CardContent' is defined but never used.  @typescript-eslint/no-unused-vars
+39:10  Warning: 'ScrollArea' is defined but never used.  @typescript-eslint/no-unused-vars
+40:10  Warning: 'Switch' is defined but never used.  @typescript-eslint/no-unused-vars
+49:3  Warning: 'Mail' is defined but never used.  @typescript-eslint/no-unused-vars
+50:3  Warning: 'User' is defined but never used.  @typescript-eslint/no-unused-vars
+100:10  Warning: 'previewMode' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+100:23  Warning: 'setPreviewMode' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+165:11  Warning: Unexpected console statement.  no-console
+181:7  Warning: Unexpected console statement.  no-console
+
+./src/features/bonuses/components/users-table.tsx
+27:3  Warning: 'Settings' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/features/bonuses/utils/bonus-expiration.ts
+132:11  Warning: 'user' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./src/features/bonuses/utils/production.ts
+182:5  Warning: Unexpected console statement.  no-console
+
+./src/features/bots/components/bot-management-view.tsx
+19:3  Warning: 'Power' is defined but never used.  @typescript-eslint/no-unused-vars
+149:7  Warning: Unexpected console statement.  no-console
+180:7  Warning: Unexpected console statement.  no-console
+410:6  Warning: React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/features/bots/components/bot-test-dialog.tsx
+113:6  Warning: React Hook useEffect has a missing dependency: 'loadBotStatus'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+124:7  Warning: Unexpected console statement.  no-console
+161:7  Warning: Unexpected console statement.  no-console
+
+./src/features/profile/components/profile-create-form.tsx
+40:9  Warning: 'params' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+41:9  Warning: 'router' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+42:19  Warning: 'setLoading' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+43:10  Warning: 'open' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+48:10  Warning: 'previousStep' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./src/features/projects/components/bonus-award-dialog.tsx
+44:15  Warning: 'BonusType' is defined but never used.  @typescript-eslint/no-unused-vars
+137:7  Warning: Unexpected console statement.  no-console
+
+./src/features/projects/components/bonus-level-dialog.tsx
+145:7  Warning: Unexpected console statement.  no-console
+
+./src/features/projects/components/bonus-levels-view.tsx
+17:3  Warning: 'GripVertical' is defined but never used.  @typescript-eslint/no-unused-vars
+18:3  Warning: 'Edit' is defined but never used.  @typescript-eslint/no-unused-vars
+19:3  Warning: 'Trash2' is defined but never used.  @typescript-eslint/no-unused-vars
+55:10  Warning: 'Badge' is defined but never used.  @typescript-eslint/no-unused-vars
+111:7  Warning: Unexpected console statement.  no-console
+125:6  Warning: React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+168:9  Warning: Unexpected console statement.  no-console
+213:7  Warning: Unexpected console statement.  no-console
+249:7  Warning: Unexpected console statement.  no-console
+
+./src/features/projects/components/project-analytics-view.tsx
+100:7  Warning: Unexpected console statement.  no-console
+133:6  Warning: React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+558:41  Warning: 'index' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/features/projects/components/project-settings-view.tsx
+16:3  Warning: 'Save' is defined but never used.  @typescript-eslint/no-unused-vars
+84:7  Warning: Unexpected console statement.  no-console
+97:6  Warning: React Hook useEffect has a missing dependency: 'loadProject'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+99:9  Warning: 'handleSave' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+133:7  Warning: Unexpected console statement.  no-console
+160:7  Warning: Unexpected console statement.  no-console
+
+./src/features/projects/components/project-users-view.tsx
+21:3  Warning: 'Calendar' is defined but never used.  @typescript-eslint/no-unused-vars
+24:11  Warning: 'UserIcon' is defined but never used.  @typescript-eslint/no-unused-vars
+27:3  Warning: 'TrendingUp' is defined but never used.  @typescript-eslint/no-unused-vars
+53:30  Warning: 'Bonus' is defined but never used.  @typescript-eslint/no-unused-vars
+137:9  Warning: Unexpected console statement.  no-console
+181:9  Warning: Unexpected console statement.  no-console
+185:7  Warning: Unexpected console statement.  no-console
+198:6  Warning: React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+201:5  Warning: Unexpected console statement.  no-console
+208:7  Warning: Unexpected console statement.  no-console
+811:17  Warning: Unexpected console statement.  no-console
+
+./src/features/projects/components/projects-view-page.tsx
+63:7  Warning: Unexpected console statement.  no-console
+246:10  Warning: 'loading' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+246:19  Warning: 'setLoading' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+248:9  Warning: The 'loadBotSettings' function makes the dependencies of useEffect Hook (at line 262) change on every render. Move it inside the useEffect callback. Alternatively, wrap the definition of 'loadBotSettings' in its own useCallback() Hook.  react-hooks/exhaustive-deps
+256:7  Warning: Unexpected console statement.  no-console
+
+./src/features/projects/components/referral-program-view.tsx
+24:3  Warning: 'Eye' is defined but never used.  @typescript-eslint/no-unused-vars
+25:3  Warning: 'Calendar' is defined but never used.  @typescript-eslint/no-unused-vars
+26:3  Warning: 'Download' is defined but never used.  @typescript-eslint/no-unused-vars
+32:3  Warning: 'CardDescription' is defined but never used.  @typescript-eslint/no-unused-vars
+80:7  Warning: Unexpected console statement.  no-console
+93:6  Warning: React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/features/projects/components/referral-settings-form.tsx
+110:7  Warning: Unexpected console statement.  no-console
+
+./src/features/projects/components/referral-stats-view.tsx
+17:3  Warning: 'Calendar' is defined but never used.  @typescript-eslint/no-unused-vars
+69:7  Warning: Unexpected console statement.  no-console
+82:6  Warning: React Hook useEffect has a missing dependency: 'loadStats'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+109:7  Warning: Unexpected console statement.  no-console
+
+./src/features/projects/components/user-create-dialog.tsx
+115:7  Warning: Unexpected console statement.  no-console
+
+./src/hooks/use-api.ts
+12:15  Warning: 'ApiResponse' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/instrumentation.ts
+40:7  Warning: Unexpected console statement.  no-console
+
+./src/lib/logger.ts
+79:28  Warning: 'logEntry' is defined but never used.  @typescript-eslint/no-unused-vars
+117:33  Warning: Unexpected console statement.  no-console
+120:9  Warning: Unexpected console statement.  no-console
+123:9  Warning: Unexpected console statement.  no-console
+126:9  Warning: Unexpected console statement.  no-console
+314:7  Warning: Unexpected console statement.  no-console
+320:7  Warning: Unexpected console statement.  no-console
+
+./src/lib/queues/webhook.queue.ts
+171:19  Warning: 'projectId' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+196:36  Warning: 'result' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/lib/services/referral.service.ts
+392:13  Warning: 'bonus' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./src/lib/services/user.service.ts
+13:3  Warning: 'TransactionType' is defined but never used.  @typescript-eslint/no-unused-vars
+16:10  Warning: 'ProjectService' is defined but never used.  @typescript-eslint/no-unused-vars
+549:5  Warning: 'metadata' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/lib/telegram/bot.ts
+942:14  Warning: 'err' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/lib/telegram/global-error-handler.ts
+19:52  Warning: 'promise' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/lib/utils/decimal.ts
+9:10  Warning: 'Decimal' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/lib/validation/middleware.ts
+15:3  Warning: 'CommonErrors' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/lib/with-rate-limit-redis.ts
+38:5  Warning: 'skipSuccessfulRequests' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+39:5  Warning: 'skipFailedRequests' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+45:13  Warning: 'rateLimitKey' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./src/types/data-table.ts
+7:24  Warning: 'TData' is defined but never used.  @typescript-eslint/no-unused-vars
+7:47  Warning: 'TValue' is defined but never used.  @typescript-eslint/no-unused-vars
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+   Collecting page data ...
+ℹ️ 2025-08-25T21:15:06.552Z  🛡️ Глобальный обработчик ошибок активирован {"component":"global-error-handler","features":["unhandledRejection","uncaughtException","SIGTERM","SIGINT"]}
+ℹ️ 2025-08-25T21:15:06.552Z  BotManager инициализирован {"webhookBaseUrl":"http://localhost:5006","component":"bot-manager"}
+ℹ️ 2025-08-25T21:15:06.608Z  🛡️ Глобальный обработчик ошибок активирован {"component":"global-error-handler","features":["unhandledRejection","uncaughtException","SIGTERM","SIGINT"]}
+ℹ️ 2025-08-25T21:15:06.609Z  BotManager инициализирован {"webhookBaseUrl":"http://localhost:5006","component":"bot-manager"}
+ℹ️ 2025-08-25T21:15:06.717Z  🛡️ Глобальный обработчик ошибок активирован {"component":"global-error-handler","features":["unhandledRejection","uncaughtException","SIGTERM","SIGINT"]}
+ℹ️ 2025-08-25T21:15:06.718Z  BotManager инициализирован {"webhookBaseUrl":"http://localhost:5006","component":"bot-manager"}
+ℹ️ 2025-08-25T21:15:06.722Z  🛡️ Глобальный обработчик ошибок активирован {"component":"global-error-handler","features":["unhandledRejection","uncaughtException","SIGTERM","SIGINT"]}
+ℹ️ 2025-08-25T21:15:06.729Z  🛡️ Глобальный обработчик ошибок активирован {"component":"global-error-handler","features":["unhandledRejection","uncaughtException","SIGTERM","SIGINT"]}
+   Generating static pages (0/15) ...
+ℹ️ 2025-08-25T21:15:10.042Z  🛡️ Глобальный обработчик ошибок активирован {"component":"global-error-handler","features":["unhandledRejection","uncaughtException","SIGTERM","SIGINT"]}
+ℹ️ 2025-08-25T21:15:10.043Z  BotManager инициализирован {"webhookBaseUrl":"http://localhost:5006","component":"bot-manager"}
+   Generating static pages (3/15) 
+   Generating static pages (7/15) 
+ℹ️ 2025-08-25T21:15:10.127Z  🛡️ Глобальный обработчик ошибок активирован {"component":"global-error-handler","features":["unhandledRejection","uncaughtException","SIGTERM","SIGINT"]}
+   Generating static pages (11/15) 
+ ✓ Generating static pages (15/15)
+ℹ️ 2025-08-25T21:15:10.304Z  📴 Получен сигнал SIGINT, начинаем graceful shutdown {"component":"global-error-handler"}
+ℹ️ 2025-08-25T21:15:10.305Z  ✅ Все боты остановлены перед завершением {"component":"global-error-handler"}
+⚠️ 2025-08-25T21:15:10.305Z  🚨 ЭКСТРЕННАЯ ОСТАНОВКА ВСЕХ БОТОВ {"botCount":0,"component":"bot-manager"}
+   Finalizing page optimization ...
+   Collecting build traces ...
+ℹ️ 2025-08-25T21:15:10.989Z  📴 Получен сигнал SIGINT, начинаем graceful shutdown {"component":"global-error-handler"}
+ℹ️ 2025-08-25T21:15:10.990Z  ✅ Все боты остановлены перед завершением {"component":"global-error-handler"}
+⚠️ 2025-08-25T21:15:10.990Z  🚨 ЭКСТРЕННАЯ ОСТАНОВКА ВСЕХ БОТОВ {"botCount":0,"component":"bot-manager"}
+ℹ️ 2025-08-25T21:15:10.990Z  📴 Получен сигнал SIGINT, начинаем graceful shutdown {"component":"global-error-handler"}
+ℹ️ 2025-08-25T21:15:10.991Z  ✅ Все боты остановлены перед завершением {"component":"global-error-handler"}
+⚠️ 2025-08-25T21:15:10.991Z  🚨 ЭКСТРЕННАЯ ОСТАНОВКА ВСЕХ БОТОВ {"botCount":0,"component":"bot-manager"}
+
+Route (app)                                              Size  First Load JS
+┌ ƒ /                                                   411 B         213 kB
+├ ƒ /_not-found                                         411 B         213 kB
+├ ƒ /api/admin/bots/init                                410 B         213 kB
+├ ƒ /api/admin/bots/stop-all                            410 B         213 kB
+├ ƒ /api/cron/bonus-expiration                          411 B         213 kB
+├ ƒ /api/dashboard/stats                                410 B         213 kB
+├ ƒ /api/dev/bot-test                                   410 B         213 kB
+├ ƒ /api/health                                         410 B         213 kB
+├ ƒ /api/projects                                       411 B         213 kB
+├ ƒ /api/projects/[id]                                  410 B         213 kB
+├ ƒ /api/projects/[id]/analytics                        411 B         213 kB
+├ ƒ /api/projects/[id]/bonus-levels                     411 B         213 kB
+├ ƒ /api/projects/[id]/bonus-levels/[levelId]           411 B         213 kB
+├ ƒ /api/projects/[id]/bonus-levels/reorder             411 B         213 kB
+├ ƒ /api/projects/[id]/bonus-levels/reset-defaults      411 B         213 kB
+├ ƒ /api/projects/[id]/bot                              411 B         213 kB
+├ ƒ /api/projects/[id]/bot/features                     411 B         213 kB
+├ ƒ /api/projects/[id]/bot/messages                     410 B         213 kB
+├ ƒ /api/projects/[id]/bot/restart                      410 B         213 kB
+├ ƒ /api/projects/[id]/bot/setup                        410 B         213 kB
+├ ƒ /api/projects/[id]/bot/status                       411 B         213 kB
+├ ƒ /api/projects/[id]/bot/test                         411 B         213 kB
+├ ƒ /api/projects/[id]/notifications                    410 B         213 kB
+├ ƒ /api/projects/[id]/referral-program                 410 B         213 kB
+├ ƒ /api/projects/[id]/referral-program/stats           411 B         213 kB
+├ ƒ /api/projects/[id]/users                            410 B         213 kB
+├ ƒ /api/projects/[id]/users/[userId]/bonuses           410 B         213 kB
+├ ƒ /api/projects/[id]/users/[userId]/bonuses/deduct    411 B         213 kB
+├ ƒ /api/projects/[id]/users/balance                    409 B         213 kB
+├ ƒ /api/projects/[id]/users/bulk-notification          411 B         213 kB
+├ ƒ /api/projects/[id]/users/debug                      409 B         213 kB
+├ ƒ /api/projects/[id]/users/spend                      410 B         213 kB
+├ ƒ /api/telegram/webhook/[projectId]                   411 B         213 kB
+├ ƒ /api/webhook/[webhookSecret]                        410 B         213 kB
+├ ƒ /auth/sign-in/[[...sign-in]]                      2.29 kB         244 kB
+├ ƒ /auth/sign-up/[[...sign-up]]                      2.29 kB         244 kB
+├ ƒ /dashboard                                        7.04 kB         227 kB
+├ ƒ /dashboard/bonuses                                12.2 kB         316 kB
+├ ƒ /dashboard/profile/[[...profile]]                 2.27 kB         242 kB
+├ ƒ /dashboard/projects                               9.87 kB         269 kB
+├ ƒ /dashboard/projects/[id]                            411 B         213 kB
+├ ƒ /dashboard/projects/[id]/analytics                 117 kB         337 kB
+├ ƒ /dashboard/projects/[id]/bonus-levels             22.2 kB         287 kB
+├ ƒ /dashboard/projects/[id]/bot                      12.3 kB         254 kB
+├ ƒ /dashboard/projects/[id]/integration              8.54 kB         233 kB
+├ ƒ /dashboard/projects/[id]/referral                 13.8 kB         289 kB
+├ ƒ /dashboard/projects/[id]/settings                 11.5 kB         247 kB
+└ ƒ /dashboard/projects/[id]/users                    8.66 kB         313 kB
++ First Load JS shared by all                          212 kB
+  ├ chunks/7461-7e5c2f1276eee4c8.js                    120 kB
+  ├ chunks/78211f82-ac94f4c487abc97d.js               36.7 kB
+  ├ chunks/a0b88556-6abd342e17a96ffe.js               53.4 kB
+  └ other shared chunks (total)                       2.58 kB
+
+
+ƒ Middleware                                           125 kB
+
+ƒ  (Dynamic)  server-rendered on demand
+
