@@ -543,7 +543,7 @@ class BotManager {
       // Создаем и сохраняем BotInstance ПОСЛЕ настройки
       const botInstance: BotInstance = {
         bot,
-        webhook, // null в dev режиме, webhookCallback в prod режиме
+        webhook: webhook as any, // null в dev режиме, webhookCallback в prod режиме
         isActive: botSettings.isActive,
         projectId,
         lastUpdated: new Date(),
@@ -746,7 +746,7 @@ class BotManager {
           };
           await this.createBot(
             botSettings.projectId,
-            botSettingsForManager as BotSettings
+            botSettingsForManager as any
           );
         } catch (error) {
           logger.error(`Ошибка загрузки бота ${botSettings.projectId}`, {

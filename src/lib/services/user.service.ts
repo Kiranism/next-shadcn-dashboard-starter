@@ -66,10 +66,7 @@ export class UserService {
         component: 'user-service'
       });
 
-      return {
-        ...user,
-        totalPurchases: Number(user.totalPurchases)
-      };
+      return user as any;
     } catch (error) {
       logger.error('Ошибка создания пользователя', {
         data,
@@ -102,10 +99,7 @@ export class UserService {
 
     if (!user) return null;
 
-    return {
-      ...user,
-      totalPurchases: Number(user.totalPurchases)
-    };
+    return user as any;
   }
 
   // Получение пользователя по Telegram ID
@@ -124,10 +118,7 @@ export class UserService {
 
     if (!user) return null;
 
-    return {
-      ...user,
-      totalPurchases: Number(user.totalPurchases)
-    };
+    return user as any;
   }
 
   // Привязка Telegram аккаунта к пользователю
@@ -158,10 +149,7 @@ export class UserService {
       }
     });
 
-    return {
-      ...updatedUser,
-      totalPurchases: Number(updatedUser.totalPurchases)
-    };
+    return updatedUser as any;
   }
 
   // Получение баланса пользователя с учётом уровня
@@ -280,7 +268,7 @@ export class UserService {
     }
 
     // Считаем уровень на основе уже загруженных уровней (без доп. запросов)
-    const usersWithBonuses: UserWithBonuses[] = users.map((user) => {
+    const usersWithBonuses = users.map((user) => {
       const activeBonuses = activeBonusMap.get(user.id) ?? 0;
       const totalEarned = earnedMap.get(user.id) ?? 0;
       const totalSpent = spentMap.get(user.id) ?? 0;
@@ -307,7 +295,7 @@ export class UserService {
       };
     });
 
-    return { users: usersWithBonuses, total };
+    return { users: usersWithBonuses as any, total };
   }
 
   // Получить расширенную информацию о пользователе с уровнем
@@ -360,7 +348,7 @@ export class UserService {
       activeBonuses,
       totalEarned: Number(totalEarned._sum.amount || 0),
       totalSpent: Number(totalSpent._sum.amount || 0),
-      level: progress.currentLevel,
+      level: progress.currentLevel || undefined,
       progressToNext: progress.nextLevel
         ? {
             nextLevel: progress.nextLevel,
@@ -368,7 +356,7 @@ export class UserService {
             progressPercent: progress.progressPercent
           }
         : undefined
-    };
+    } as any;
   }
 }
 
@@ -413,7 +401,7 @@ export class BonusService {
 
     // Отправляем уведомление в Telegram (неблокирующе)
     try {
-      await sendBonusNotification(user, bonus, user.projectId);
+      await sendBonusNotification(user as any, bonus as any, user.projectId);
     } catch (error) {
       logger.error('Ошибка отправки уведомления о бонусах', {
         userId: data.userId,
@@ -424,7 +412,7 @@ export class BonusService {
       // Не блокируем основной процесс
     }
 
-    return bonus;
+    return bonus as any;
   }
 
   // Списание бонусов пользователя
@@ -493,7 +481,7 @@ export class BonusService {
           include: { user: true, bonus: true }
         });
 
-        created.push(transaction);
+        created.push(transaction as any);
 
         const newAmount = bonusAmount - spendFromThisBonus;
         if (newAmount <= 0) {
@@ -518,7 +506,7 @@ export class BonusService {
     if (transactions.length > 0) {
       try {
         await sendBonusSpentNotification(
-          user,
+          user as any,
           amount,
           description || 'Списание бонусов',
           user.projectId
@@ -548,7 +536,7 @@ export class BonusService {
       }
     });
 
-    return transaction;
+    return transaction as any;
   }
 
   // Начисление за покупку с учётом уровня и реферальной системы
@@ -685,6 +673,6 @@ export class BonusService {
       })
     ]);
 
-    return { transactions, total };
+    return { transactions: transactions as any, total };
   }
 }

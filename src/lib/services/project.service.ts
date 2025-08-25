@@ -109,7 +109,7 @@ export class ProjectService {
       db.project.count()
     ]);
 
-    return { projects, total };
+    return { projects: projects as any, total };
   }
 
   // Обновление проекта

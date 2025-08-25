@@ -17,8 +17,10 @@ export function convertDecimalToNumber<T extends Record<string, any>>(
   const result = { ...obj };
 
   for (const key in result) {
-    if (result[key] instanceof Decimal) {
-      (result as any)[key] = Number(result[key]);
+    const value = result[key];
+    // Проверяем, является ли значение Decimal (у него есть методы toNumber или toString)
+    if (value && typeof value === 'object' && 'toNumber' in value) {
+      (result as any)[key] = Number(value);
     }
   }
 
