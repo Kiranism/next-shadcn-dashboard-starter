@@ -16,6 +16,12 @@
     "format": "prettier --write .",
     "format:check": "prettier -c -w .",
     "prepare": "husky",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest --testPathPattern=services",
+    "test:integration": "jest --testPathPattern=api",
+    "test:components": "jest --testPathPattern=components",
     "test:webhook": "tsx scripts/test-webhook-integration.ts",
     "tunnel": "ngrok http 5006",
     "deploy:vercel": "vercel --prod",
@@ -24,7 +30,7 @@
     "db:migrate": "prisma migrate deploy",
     "db:generate": "prisma generate",
     "db:reset": "prisma migrate reset",
-    "production:check": "pnpm lint && pnpm build && npx tsc --noEmit"
+    "production:check": "pnpm lint && pnpm test && pnpm build && npx tsc --noEmit"
   },
   "lint-staged": {
     "**/*.{js,jsx,tsx,ts,css,less,scss,sass}": [
