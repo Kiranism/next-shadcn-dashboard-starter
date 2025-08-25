@@ -13,7 +13,7 @@ import { logger } from '@/lib/logger';
 // Создаем Redis клиент с retry стратегией
 const createRedisClient = () => {
   const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-  
+
   const client = new Redis(redisUrl, {
     maxRetriesPerRequest: 3,
     retryStrategy: (times) => {
@@ -27,7 +27,7 @@ const createRedisClient = () => {
         return true;
       }
       return false;
-    },
+    }
   });
 
   client.on('error', (error) => {
@@ -66,8 +66,8 @@ export class CacheService {
    * Сохранить значение в кэш
    */
   static async set<T>(
-    key: string, 
-    value: T, 
+    key: string,
+    value: T,
     ttlSeconds: number = CacheService.DEFAULT_TTL
   ): Promise<void> {
     try {
@@ -110,7 +110,7 @@ export class CacheService {
     await Promise.all([
       this.deletePattern(`project:${projectId}:*`),
       this.deletePattern(`analytics:${projectId}:*`),
-      this.deletePattern(`users:${projectId}:*`),
+      this.deletePattern(`users:${projectId}:*`)
     ]);
   }
 
@@ -130,10 +130,10 @@ export class CacheService {
 
     // Если нет в кэше, получаем данные
     const data = await fetcher();
-    
+
     // Сохраняем в кэш
     await this.set(key, data, ttlSeconds);
-    
+
     return data;
   }
 }
@@ -155,7 +155,7 @@ export class RateLimiter {
     try {
       // Инкрементируем счетчик
       const count = await redis.incr(redisKey);
-      
+
       // Устанавливаем TTL при первом запросе
       if (count === 1) {
         await redis.expire(redisKey, windowSeconds);
@@ -184,19 +184,15 @@ export class RateLimiter {
       keyPrefix?: string;
     } = {}
   ): Promise<{ success: boolean; headers: Record<string, string> }> {
-    const { 
-      limit = 100, 
-      window = 60, 
-      keyPrefix = 'api' 
-    } = options;
+    const { limit = 100, window = 60, keyPrefix = 'api' } = options;
 
     const key = `${keyPrefix}:${identifier}`;
     const result = await this.checkLimit(key, limit, window);
 
-    const headers = {
+    const headers: Record<string, string> = {
       'X-RateLimit-Limit': limit.toString(),
       'X-RateLimit-Remaining': result.remaining.toString(),
-      'X-RateLimit-Reset': result.resetAt.toISOString(),
+      'X-RateLimit-Reset': result.resetAt.toISOString()
     };
 
     if (!result.allowed) {
@@ -207,7 +203,7 @@ export class RateLimiter {
 
     return {
       success: result.allowed,
-      headers,
+      headers
     };
   }
 }
@@ -217,10 +213,7 @@ export class DistributedLock {
   /**
    * Получить блокировку
    */
-  static async acquire(
-    key: string,
-    ttlSeconds: number = 10
-  ): Promise<boolean> {
+  static async acquire(key: string, ttlSeconds: number = 10): Promise<boolean> {
     const lockKey = `lock:${key}`;
     const lockValue = Date.now().toString();
 
@@ -263,7 +256,7 @@ export class DistributedLock {
 
     for (let i = 0; i < retries; i++) {
       const acquired = await this.acquire(key, ttl);
-      
+
       if (acquired) {
         try {
           return await fn();
@@ -273,7 +266,7 @@ export class DistributedLock {
       }
 
       // Ждем перед повторной попыткой
-      await new Promise(resolve => setTimeout(resolve, 100 * (i + 1)));
+      await new Promise((resolve) => setTimeout(resolve, 100 * (i + 1)));
     }
 
     logger.warn('Failed to acquire lock after retries:', { key, retries });

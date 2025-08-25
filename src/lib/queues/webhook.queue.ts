@@ -390,7 +390,7 @@ async function processSpendBonuses(
   }
 
   // Списываем бонусы
-  const result = await BonusService.spendBonuses(
+  const transactions = await BonusService.spendBonuses(
     user.id,
     amount,
     description || `Списание бонусов для заказа ${orderId}`,
@@ -400,16 +400,18 @@ async function processSpendBonuses(
   // Получаем обновленный баланс
   const balance = await UserService.getUserBalance(user.id);
 
+  // Считаем общую сумму списанных бонусов
+  const totalSpent = transactions.reduce((sum, t) => sum + Number(t.amount), 0);
+
   return {
     success: true,
-    message: result.insufficientFunds
-      ? 'Бонусы списаны частично (недостаточно средств)'
-      : 'Бонусы успешно списаны',
+    message: 'Бонусы успешно списаны',
     user,
-    spent: result.spent,
-    remaining: result.remaining,
-    balance,
-    insufficientFunds: result.insufficientFunds
+    spent: {
+      amount: totalSpent,
+      transactionsCount: transactions.length
+    },
+    balance
   };
 }
 

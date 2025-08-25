@@ -1,7 +1,11 @@
 // Типизация восстановлена для обеспечения безопасности типов
 
 import { db } from '@/lib/db';
-import type { CreateProjectInput, UpdateProjectInput, Project } from '@/types/bonus';
+import type {
+  CreateProjectInput,
+  UpdateProjectInput,
+  Project
+} from '@/types/bonus';
 
 export class ProjectService {
   // Создание нового проекта
@@ -11,19 +15,19 @@ export class ProjectService {
         name: data.name,
         domain: data.domain,
         bonusPercentage: data.bonusPercentage || 1.0,
-        bonusExpiryDays: data.bonusExpiryDays || 365,
+        bonusExpiryDays: data.bonusExpiryDays || 365
       },
       include: {
         botSettings: true,
         _count: {
           select: {
-            users: true,
-          },
-        },
-      },
+            users: true
+          }
+        }
+      }
     });
 
-    return project;
+    return project as any;
   }
 
   // Получение проекта по ID
@@ -34,13 +38,13 @@ export class ProjectService {
         botSettings: true,
         _count: {
           select: {
-            users: true,
-          },
-        },
-      },
+            users: true
+          }
+        }
+      }
     });
 
-    return project;
+    return project as any;
   }
 
   // Получение проекта по webhook secret
@@ -53,13 +57,13 @@ export class ProjectService {
         botSettings: true,
         _count: {
           select: {
-            users: true,
-          },
-        },
-      },
+            users: true
+          }
+        }
+      }
     });
 
-    return project;
+    return project as any;
   }
 
   // Получение проекта по домену
@@ -70,13 +74,13 @@ export class ProjectService {
         botSettings: true,
         _count: {
           select: {
-            users: true,
-          },
-        },
-      },
+            users: true
+          }
+        }
+      }
     });
 
-    return project;
+    return project as any;
   }
 
   // Получение всех проектов с пагинацией
@@ -94,15 +98,15 @@ export class ProjectService {
           botSettings: true,
           _count: {
             select: {
-              users: true,
-            },
-          },
+              users: true
+            }
+          }
         },
         orderBy: {
-          createdAt: 'desc',
-        },
+          createdAt: 'desc'
+        }
       }),
-      db.project.count(),
+      db.project.count()
     ]);
 
     return { projects, total };
@@ -120,13 +124,13 @@ export class ProjectService {
         botSettings: true,
         _count: {
           select: {
-            users: true,
-          },
-        },
-      },
+            users: true
+          }
+        }
+      }
     });
 
-    return project;
+    return project as any;
   }
 
   // Деактивация проекта
@@ -138,13 +142,13 @@ export class ProjectService {
         botSettings: true,
         _count: {
           select: {
-            users: true,
-          },
-        },
-      },
+            users: true
+          }
+        }
+      }
     });
 
-    return project;
+    return project as any;
   }
 
   // Получение статистики проекта
@@ -152,38 +156,38 @@ export class ProjectService {
     const [users, bonuses, transactions, activeBonuses, expiredBonuses] =
       await Promise.all([
         db.user.count({
-          where: { projectId, isActive: true },
+          where: { projectId, isActive: true }
         }),
         db.bonus.count({
-          where: { user: { projectId } },
+          where: { user: { projectId } }
         }),
         db.transaction.count({
-          where: { user: { projectId } },
+          where: { user: { projectId } }
         }),
         db.bonus.count({
           where: {
             user: { projectId },
             isUsed: false,
-            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-          },
+            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }]
+          }
         }),
         db.bonus.count({
           where: {
             user: { projectId },
             expiresAt: { lt: new Date() },
-            isUsed: false,
-          },
-        }),
+            isUsed: false
+          }
+        })
       ]);
 
     const spentBonuses = await db.transaction.aggregate({
       where: {
         user: { projectId },
-        type: 'SPEND',
+        type: 'SPEND'
       },
       _sum: {
-        amount: true,
-      },
+        amount: true
+      }
     });
 
     return {
@@ -192,7 +196,7 @@ export class ProjectService {
       totalTransactions: transactions,
       activeBonuses,
       expiredBonuses,
-      spentBonuses: Number(spentBonuses._sum.amount || 0),
+      spentBonuses: Number(spentBonuses._sum.amount || 0)
     };
   }
-} 
+}
