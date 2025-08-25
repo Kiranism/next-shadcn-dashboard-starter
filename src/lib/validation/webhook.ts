@@ -90,6 +90,8 @@ export const WebhookRequestSchema = z.discriminatedUnion('action', [
 
 // Типы для TypeScript
 export type TildaOrder = z.infer<typeof TildaOrderSchema>;
+export type TildaProduct = z.infer<typeof TildaProductSchema>;
+export type TildaPayment = z.infer<typeof TildaPaymentSchema>;
 export type RegisterUserPayload = z.infer<typeof RegisterUserSchema>['payload'];
 export type PurchasePayload = z.infer<typeof PurchaseSchema>['payload'];
 export type SpendBonusesPayload = z.infer<typeof SpendBonusesSchema>['payload'];

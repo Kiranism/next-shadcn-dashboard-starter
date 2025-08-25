@@ -13,6 +13,12 @@ import { ProjectService } from '@/lib/services/project.service';
 import { UserService, BonusService } from '@/lib/services/user.service';
 import { logger } from '@/lib/logger';
 import { withWebhookRateLimit } from '@/lib/with-rate-limit';
+import { 
+  validateTildaOrder, 
+  validateWebhookRequest,
+  type TildaOrder,
+  type TildaProduct
+} from '@/lib/validation/webhook';
 import type {
   WebhookRegisterUserPayload,
   WebhookPurchasePayload,
@@ -54,7 +60,7 @@ async function logWebhookRequest(
 }
 
 // Обработчик заказа от Tilda
-async function handleTildaOrder(projectId: string, orderData: any) {
+async function handleTildaOrder(projectId: string, orderData: TildaOrder) {
   const { name, email, phone, payment, utm_ref } = orderData;
 
   if (!email && !phone) {
@@ -87,7 +93,7 @@ async function handleTildaOrder(projectId: string, orderData: any) {
 
     // Создаем описание заказа с товарами
     const productNames =
-      payment.products?.map((p: any) => p.name).join(', ') || 'Заказ Tilda';
+      payment.products?.map((p: TildaProduct) => p.name).join(', ') || 'Заказ Tilda';
     const description = `Заказ #${orderId}: ${productNames}`;
 
     const result = await BonusService.awardPurchaseBonus(
@@ -177,19 +183,21 @@ async function handlePOST(
 
     // Проверяем, это webhook от Tilda или наш стандартный webhook
     if (Array.isArray(body) && body.length > 0 && body[0].payment) {
-      // Это webhook от Tilda
-      response = await handleTildaOrder(project.id, body[0]);
+      // Это webhook от Tilda - валидируем данные
+      const validatedOrder = validateTildaOrder(body[0]);
+      response = await handleTildaOrder(project.id, validatedOrder);
       status = 200;
       success = true;
     } else {
-      // Это наш стандартный webhook
-      const { action, ...payload } = body;
+      // Это наш стандартный webhook - валидируем данные
+      const validatedRequest = validateWebhookRequest(body);
+      const { action, payload } = validatedRequest;
 
       switch (action) {
         case 'register_user':
           response = await handleRegisterUser(
             project.id,
-            payload as WebhookRegisterUserPayload
+            payload
           );
           status = 201;
           success = true;
@@ -198,7 +206,7 @@ async function handlePOST(
         case 'purchase':
           response = await handlePurchase(
             project.id,
-            payload as WebhookPurchasePayload
+            payload
           );
           status = 200;
           success = true;
@@ -207,7 +215,7 @@ async function handlePOST(
         case 'spend_bonuses':
           response = await handleSpendBonuses(
             project.id,
-            payload as WebhookSpendBonusesPayload
+            payload
           );
           status = 200;
           success = true;
