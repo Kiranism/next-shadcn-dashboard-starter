@@ -1,5 +1,4 @@
-// @ts-nocheck
-// Временно отключаем проверку типов для совместимости с Prisma
+// Типизация восстановлена для обеспечения безопасности типов
 
 import { db } from '@/lib/db';
 import type { CreateProjectInput, UpdateProjectInput, Project } from '@/types/bonus';
