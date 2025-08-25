@@ -1,79 +1,190 @@
-# 🚀 Быстрый запуск webhook тестирования
+# 🚀 Quick Start Guide
 
-## ✅ Текущий статус
-- ✅ Next.js сервер запущен на `localhost:5006`
-- ✅ Проект полностью готов к работе
-- ✅ Ngrok установлен
+## 🎯 Выберите способ установки:
 
-## 🌐 Создание публичного URL (2 минуты)
-
-### 1️⃣ Откройте новый терминал
-```
-Ctrl + Shift + P -> "Terminal: Create New Terminal"
-```
-
-### 2️⃣ Запустите ngrok
-```bash
-ngrok http 5006
-```
-
-### 3️⃣ Скопируйте HTTPS URL
-Ngrok покажет что-то вроде:
-```
-Forwarding  https://abc123.ngrok.io -> http://localhost:5006
-```
-
-## 🔗 Настройка webhook'а
-
-### Для Tilda:
-```
-https://abc123.ngrok.io/api/webhook/[ваш-webhook-secret]
-```
-
-### Для других сервисов:
-```
-https://abc123.ngrok.io/api/webhook/[ваш-webhook-secret]
-```
-
-## 🧪 Тестирование
-
-### Автоматический тест:
-```bash
-pnpm test:webhook
-```
-
-### Ручной тест через curl:
-```bash
-curl -X POST https://abc123.ngrok.io/api/webhook/test-secret \
-  -H "Content-Type: application/json" \
-  -d '{"action": "purchase", "userEmail": "test@test.com", "purchaseAmount": 1000, "orderId": "TEST_001"}'
-```
-
-## 📋 Полезные команды
+### Вариант 1: Быстрый старт с Docker (Рекомендуется)
+**Время: 5 минут**
 
 ```bash
-# Проверить статус сервера
-curl http://localhost:5006
+# 1. Клонируйте репозиторий
+git clone https://github.com/your-username/saas-bonus-system.git
+cd saas-bonus-system
 
-# Перезапустить dev сервер
+# 2. Запустите базы данных
+docker-compose up -d
+
+# 3. Установите зависимости
+pnpm install
+
+# 4. Настройте окружение
+cp env.example.txt .env.local
+# Отредактируйте .env.local (см. ниже)
+
+# 5. Примените миграции
+pnpm prisma:migrate
+
+# 6. Запустите приложение
 pnpm dev
-
-# Создать новый туннель
-pnpm tunnel
-
-# Проверить сборку для продакшена
-pnpm build
-
-# Деплой на Vercel
-pnpm deploy:vercel
 ```
 
-## 🎯 Следующие шаги
-
-1. **Получите webhook secret** из админ-панели проекта
-2. **Настройте webhook** в Tilda/WooCommerce/другом сервисе
-3. **Отправьте тестовый заказ**
-4. **Проверьте логи** в терминале Next.js
+✅ **Готово!** Откройте http://localhost:5006
 
 ---
-**💡 Совет**: Оставьте ngrok и Next.js работающими в фоне во время тестирования!
+
+### Вариант 2: Локальная установка без Docker
+**Время: 15-20 минут**
+
+```bash
+# 1. Установите PostgreSQL и Redis локально
+# Windows: скачайте установщики
+# macOS: brew install postgresql redis
+# Linux: apt install postgresql redis-server
+
+# 2. Клонируйте репозиторий
+git clone https://github.com/your-username/saas-bonus-system.git
+cd saas-bonus-system
+
+# 3. Установите зависимости
+pnpm install
+
+# 4. Создайте базу данных
+psql -U postgres
+CREATE DATABASE bonus_system;
+CREATE USER bonus_user WITH PASSWORD 'bonus_password';
+GRANT ALL PRIVILEGES ON DATABASE bonus_system TO bonus_user;
+\q
+
+# 5. Настройте окружение
+cp env.example.txt .env.local
+# Отредактируйте .env.local
+
+# 6. Примените миграции
+pnpm prisma:migrate
+
+# 7. Запустите приложение
+pnpm dev
+```
+
+---
+
+### Вариант 3: Автоматическая установка
+**Время: 3 минуты**
+
+```bash
+# Используйте наш скрипт установки
+chmod +x scripts/deploy.sh
+./scripts/deploy.sh local
+```
+
+---
+
+## 📝 Минимальная конфигурация .env.local
+
+```env
+# База данных (если используете Docker)
+DATABASE_URL="postgresql://bonus_user:bonus_password@localhost:5432/bonus_system"
+
+# Redis (если используете Docker)
+REDIS_URL="redis://localhost:6379"
+
+# Clerk Auth (можно оставить пустым для keyless mode)
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=""
+CLERK_SECRET_KEY=""
+
+# Остальное - по умолчанию
+NEXT_PUBLIC_APP_URL="http://localhost:5006"
+NODE_ENV="development"
+```
+
+---
+
+## 🎮 Полезные команды
+
+### Разработка
+```bash
+pnpm dev              # Запуск в режиме разработки
+pnpm build           # Сборка для production
+pnpm test            # Запуск тестов
+pnpm lint            # Проверка кода
+```
+
+### База данных
+```bash
+pnpm prisma:studio   # GUI для БД (http://localhost:5555)
+pnpm prisma:migrate  # Применить миграции
+pnpm prisma:seed     # Заполнить тестовыми данными
+```
+
+### Docker
+```bash
+docker-compose up -d           # Запустить сервисы
+docker-compose down            # Остановить сервисы
+docker-compose logs -f         # Просмотр логов
+docker-compose --profile dev up -d  # С GUI инструментами
+```
+
+---
+
+## 🔍 Доступ к инструментам
+
+После запуска доступны:
+
+| Сервис | URL | Описание |
+|--------|-----|----------|
+| **Приложение** | http://localhost:5006 | Основное приложение |
+| **Prisma Studio** | http://localhost:5555 | GUI для базы данных |
+| **pgAdmin** | http://localhost:5050 | PostgreSQL GUI (Docker) |
+| **Redis Commander** | http://localhost:8081 | Redis GUI (Docker) |
+
+---
+
+## 🐛 Частые проблемы и решения
+
+### Ошибка: "Cannot connect to database"
+```bash
+# Проверьте, запущен ли PostgreSQL
+docker-compose ps
+# или
+psql -U postgres -c "SELECT 1"
+```
+
+### Ошибка: "Port 5006 already in use"
+```bash
+# Измените порт в package.json
+"dev": "next dev -p 3000"
+```
+
+### Ошибка: "Clerk keys not configured"
+```bash
+# Приложение работает в keyless mode
+# Или получите ключи на https://clerk.com
+```
+
+### Ошибка: "Redis connection failed"
+```bash
+# Запустите Redis
+docker-compose up -d redis
+# или
+redis-server
+```
+
+---
+
+## 📚 Дополнительная документация
+
+- [Полное руководство по локальной установке](./LOCAL_SETUP_GUIDE.md)
+- [Руководство по развертыванию на VPS](./VPS_DEPLOYMENT_GUIDE.md)
+- [API документация](./docs/openapi.yaml)
+- [Архитектура проекта](./docs/project-analysis.md)
+
+---
+
+## 💬 Нужна помощь?
+
+1. Проверьте [Troubleshooting](./docs/troubleshooting.md)
+2. Создайте [Issue на GitHub](https://github.com/your-username/saas-bonus-system/issues)
+3. Посмотрите логи: `pnpm logs` или `docker-compose logs`
+
+---
+
+**Версия:** 1.2.0 | **Обновлено:** 28.01.2025

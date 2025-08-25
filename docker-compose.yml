@@ -1,66 +1,85 @@
 version: '3.8'
 
 services:
-  # PostgreSQL база данных
+  # PostgreSQL Database
   postgres:
-    image: postgres:15
-    container_name: bonus_system_db
+    image: postgres:15-alpine
+    container_name: bonus-system-postgres
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: bonus_admin
-      POSTGRES_PASSWORD: your_secure_password_here
+      POSTGRES_USER: bonus_user
+      POSTGRES_PASSWORD: bonus_password
       POSTGRES_DB: bonus_system
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-db:/docker-entrypoint-initdb.d
-    ports:
-      - "5433:5432"
-    restart: unless-stopped
     networks:
-      - bonus_network
+      - bonus-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bonus_user -d bonus_system"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # Next.js приложение
-  app:
-    build: .
-    container_name: bonus_system_app
-    environment:
-      # Database
-      DATABASE_URL: "postgresql://bonus_admin:your_secure_password_here@postgres:5432/bonus_system"
-      
-      # Clerk Auth
-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}"
-      CLERK_SECRET_KEY: "${CLERK_SECRET_KEY}"
-      NEXT_PUBLIC_CLERK_SIGN_IN_URL: "/auth/sign-in"
-      NEXT_PUBLIC_CLERK_SIGN_UP_URL: "/auth/sign-up"
-      NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL: "/dashboard"
-      NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL: "/dashboard"
-      
-      # App Config
-      NEXTAUTH_URL: "${NEXTAUTH_URL:-http://localhost:3000}"
-      NEXTAUTH_SECRET: "${NEXTAUTH_SECRET}"
-      
-      # Webhook & API
-      WEBHOOK_BASE_URL: "${WEBHOOK_BASE_URL:-http://localhost:3000}"
-      CRON_SECRET: "${CRON_SECRET}"
-      
-      # Telegram Bots (опционально)
-      # TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}"
-      
-      # Production settings
-      NODE_ENV: production
-    
+  # Redis Cache & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: bonus-system-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
     ports:
-      - "3000:3000"
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - bonus-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Commander (GUI for Redis) - Development only
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: bonus-system-redis-commander
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "8081:8081"
+    networks:
+      - bonus-network
+    depends_on:
+      - redis
+    profiles:
+      - dev
+
+  # pgAdmin (GUI for PostgreSQL) - Development only
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: bonus-system-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    networks:
+      - bonus-network
     depends_on:
       - postgres
-    restart: unless-stopped
-    networks:
-      - bonus_network
-    volumes:
-      - ./logs:/app/logs
+    profiles:
+      - dev
 
 volumes:
   postgres_data:
+    driver: local
+  redis_data:
+    driver: local
 
 networks:
-  bonus_network:
+  bonus-network:
     driver: bridge

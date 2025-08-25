@@ -1,158 +1,272 @@
 #!/bin/bash
-# Скрипт автоматического деплоя SaaS Bonus System
+
+# SaaS Bonus System - Deployment Script
+# Usage: ./deploy.sh [local|vps|docker]
 
 set -e
 
-# Конфигурация
-PROJECT_DIR="/home/deploy/next-shadcn-dashboard-starter"
-DOCKER_COMPOSE_FILE="docker-compose.production.yml"
-BACKUP_BEFORE_DEPLOY=true
-BRANCH="main"
-
-# Цвета для вывода
+# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-log_info() {
-    echo -e "${BLUE}ℹ️  $1${NC}"
+# Functions
+print_success() {
+    echo -e "${GREEN}✓ $1${NC}"
 }
 
-log_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+print_error() {
+    echo -e "${RED}✗ $1${NC}"
+    exit 1
 }
 
-log_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+print_warning() {
+    echo -e "${YELLOW}⚠ $1${NC}"
 }
 
-log_error() {
-    echo -e "${RED}❌ $1${NC}"
+print_info() {
+    echo -e "ℹ $1"
 }
 
-# Проверка окружения
+# Check prerequisites
 check_requirements() {
-    log_info "Проверка системных требований..."
+    print_info "Checking requirements..."
     
-    command -v docker >/dev/null 2>&1 || { log_error "Docker не установлен!"; exit 1; }
-    command -v docker-compose >/dev/null 2>&1 || { log_error "Docker Compose не установлен!"; exit 1; }
-    command -v git >/dev/null 2>&1 || { log_error "Git не установлен!"; exit 1; }
-    
-    log_success "Все требования выполнены"
-}
-
-# Бэкап перед деплоем
-backup_database() {
-    if [ "$BACKUP_BEFORE_DEPLOY" = true ]; then
-        log_info "Создание бэкапа базы данных..."
-        cd "$PROJECT_DIR"
-        docker-compose -f "$DOCKER_COMPOSE_FILE" run --rm backup /backup.sh
-        log_success "Бэкап создан"
-    fi
-}
-
-# Обновление кода
-update_code() {
-    log_info "Обновление кода из Git..."
-    cd "$PROJECT_DIR"
-    
-    # Сохранение локальных изменений
-    git stash push -m "Auto-stash before deploy $(date)"
-    
-    # Обновление кода
-    git fetch origin
-    git checkout "$BRANCH"
-    git pull origin "$BRANCH"
-    
-    log_success "Код обновлен"
-}
-
-# Сборка и деплой
-deploy_services() {
-    log_info "Сборка и деплой сервисов..."
-    cd "$PROJECT_DIR"
-    
-    # Остановка старых контейнеров
-    docker-compose -f "$DOCKER_COMPOSE_FILE" down
-    
-    # Сборка новых образов
-    docker-compose -f "$DOCKER_COMPOSE_FILE" build --no-cache app
-    
-    # Запуск сервисов
-    docker-compose -f "$DOCKER_COMPOSE_FILE" up -d
-    
-    log_success "Сервисы запущены"
-}
-
-# Применение миграций
-run_migrations() {
-    log_info "Применение миграций базы данных..."
-    cd "$PROJECT_DIR"
-    
-    # Ожидание готовности базы данных
-    docker-compose -f "$DOCKER_COMPOSE_FILE" exec -T postgres pg_isready -U bonus_admin -d bonus_system
-    
-    # Применение миграций
-    docker-compose -f "$DOCKER_COMPOSE_FILE" exec -T app pnpm prisma migrate deploy
-    
-    log_success "Миграции применены"
-}
-
-# Проверка здоровья
-health_check() {
-    log_info "Проверка здоровья сервисов..."
-    cd "$PROJECT_DIR"
-    
-    # Ожидание запуска сервисов
-    sleep 30
-    
-    # Проверка статуса контейнеров
-    if docker-compose -f "$DOCKER_COMPOSE_FILE" ps | grep -q "Exit"; then
-        log_error "Некоторые контейнеры не запустились!"
-        docker-compose -f "$DOCKER_COMPOSE_FILE" logs
-        exit 1
+    # Check Node.js
+    if ! command -v node &> /dev/null; then
+        print_error "Node.js is not installed. Please install Node.js >= 18.0.0"
     fi
     
-    # Проверка доступности приложения
-    if curl -f -s http://localhost:3000/api/health > /dev/null; then
-        log_success "Приложение работает корректно"
+    # Check pnpm
+    if ! command -v pnpm &> /dev/null; then
+        print_warning "pnpm is not installed. Installing..."
+        npm install -g pnpm
+    fi
+    
+    print_success "All requirements met"
+}
+
+# Setup environment
+setup_env() {
+    print_info "Setting up environment..."
+    
+    if [ ! -f .env.local ]; then
+        if [ -f env.example.txt ]; then
+            cp env.example.txt .env.local
+            print_warning "Created .env.local from env.example.txt"
+            print_warning "Please edit .env.local with your configuration"
+            read -p "Press enter to continue after editing .env.local..."
+        else
+            print_error "env.example.txt not found"
+        fi
     else
-        log_error "Приложение не отвечает на health check!"
-        exit 1
+        print_success ".env.local already exists"
     fi
 }
 
-# Очистка старых образов
-cleanup() {
-    log_info "Очистка неиспользуемых Docker образов..."
-    docker image prune -f
-    docker volume prune -f
-    log_success "Очистка завершена"
+# Install dependencies
+install_deps() {
+    print_info "Installing dependencies..."
+    pnpm install
+    print_success "Dependencies installed"
 }
 
-# Основная функция деплоя
-main() {
-    log_info "🚀 Начинаем деплой SaaS Bonus System..."
+# Setup database
+setup_database() {
+    print_info "Setting up database..."
+    
+    # Generate Prisma Client
+    pnpm prisma:generate
+    
+    # Run migrations
+    pnpm prisma:migrate
+    
+    # Optional: Seed database
+    read -p "Do you want to seed the database with test data? (y/n) " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        pnpm prisma:seed
+    fi
+    
+    print_success "Database setup complete"
+}
+
+# Local deployment
+deploy_local() {
+    print_info "Starting local deployment..."
     
     check_requirements
-    backup_database
-    update_code
-    deploy_services
-    run_migrations
-    health_check
-    cleanup
+    setup_env
+    install_deps
+    setup_database
     
-    log_success "🎉 Деплой завершен успешно!"
-    log_info "Приложение доступно по адресу: https://your-domain.ru"
+    print_info "Starting development server..."
+    print_success "Local deployment ready!"
+    print_info "Access the application at: http://localhost:5006"
+    
+    pnpm dev
 }
 
-# Запуск с обработкой ошибок
-if ! main "$@"; then
-    log_error "Деплой завершился с ошибкой!"
-    log_info "Логи для диагностики:"
-    cd "$PROJECT_DIR"
-    docker-compose -f "$DOCKER_COMPOSE_FILE" logs --tail=50
-    exit 1
-fi
+# Docker deployment
+deploy_docker() {
+    print_info "Starting Docker deployment..."
+    
+    # Check Docker
+    if ! command -v docker &> /dev/null; then
+        print_error "Docker is not installed"
+    fi
+    
+    if ! command -v docker-compose &> /dev/null; then
+        print_error "Docker Compose is not installed"
+    fi
+    
+    setup_env
+    
+    print_info "Building and starting containers..."
+    docker-compose up -d --build
+    
+    print_info "Waiting for services to be ready..."
+    sleep 10
+    
+    print_info "Running migrations..."
+    docker-compose exec app pnpm prisma:migrate
+    
+    print_success "Docker deployment complete!"
+    print_info "Access the application at: http://localhost:5006"
+    print_info "View logs: docker-compose logs -f"
+}
+
+# VPS deployment
+deploy_vps() {
+    print_info "Starting VPS deployment..."
+    
+    # Check if running as root
+    if [ "$EUID" -ne 0 ]; then 
+        print_error "Please run as root for VPS deployment"
+    fi
+    
+    print_info "Installing system dependencies..."
+    apt update && apt upgrade -y
+    apt install -y curl wget git build-essential nginx certbot python3-certbot-nginx
+    
+    # Install Node.js
+    if ! command -v node &> /dev/null; then
+        print_info "Installing Node.js..."
+        curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+        apt install -y nodejs
+    fi
+    
+    # Install pnpm
+    npm install -g pnpm pm2
+    
+    # Install PostgreSQL
+    print_info "Installing PostgreSQL..."
+    apt install -y postgresql postgresql-contrib
+    
+    # Install Redis
+    print_info "Installing Redis..."
+    apt install -y redis-server
+    systemctl enable redis-server
+    systemctl start redis-server
+    
+    # Setup application
+    print_info "Setting up application..."
+    
+    # Create user
+    if ! id -u nodeapp > /dev/null 2>&1; then
+        useradd -m -s /bin/bash nodeapp
+    fi
+    
+    # Clone or update repository
+    if [ ! -d /home/nodeapp/saas-bonus-system ]; then
+        su - nodeapp -c "git clone https://github.com/your-username/saas-bonus-system.git"
+    else
+        su - nodeapp -c "cd saas-bonus-system && git pull"
+    fi
+    
+    # Setup as nodeapp user
+    su - nodeapp << 'EOF'
+cd saas-bonus-system
+pnpm install
+pnpm build
+pm2 start ecosystem.config.js
+pm2 save
+EOF
+    
+    # Setup PM2 startup
+    pm2 startup systemd -u nodeapp --hp /home/nodeapp
+    
+    # Setup Nginx
+    print_info "Configuring Nginx..."
+    
+    read -p "Enter your domain name: " domain
+    
+    cat > /etc/nginx/sites-available/saas-bonus-system << EOF
+server {
+    listen 80;
+    server_name $domain;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
+    }
+}
+EOF
+    
+    ln -sf /etc/nginx/sites-available/saas-bonus-system /etc/nginx/sites-enabled/
+    nginx -t && systemctl restart nginx
+    
+    # Setup SSL
+    read -p "Do you want to setup SSL with Let's Encrypt? (y/n) " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        certbot --nginx -d $domain
+    fi
+    
+    # Setup firewall
+    print_info "Setting up firewall..."
+    ufw allow ssh
+    ufw allow 80/tcp
+    ufw allow 443/tcp
+    ufw --force enable
+    
+    print_success "VPS deployment complete!"
+    print_info "Access your application at: http://$domain"
+}
+
+# Main script
+main() {
+    echo "======================================"
+    echo "  SaaS Bonus System Deployment Tool  "
+    echo "======================================"
+    echo
+    
+    case "$1" in
+        local)
+            deploy_local
+            ;;
+        docker)
+            deploy_docker
+            ;;
+        vps)
+            deploy_vps
+            ;;
+        *)
+            echo "Usage: $0 {local|docker|vps}"
+            echo
+            echo "Options:"
+            echo "  local  - Deploy locally for development"
+            echo "  docker - Deploy using Docker Compose"
+            echo "  vps    - Deploy on VPS (Ubuntu/Debian)"
+            exit 1
+            ;;
+    esac
+}
+
+# Run main function
+main "$@"

@@ -1,304 +1,680 @@
-# 🚀 Полное руководство по деплою на VPS/REG.RU
+# 🚀 Руководство по развертыванию на VPS
 
-## 📋 Быстрый старт (для опытных)
+## 📋 Требования к VPS
+
+### Минимальные требования:
+- **CPU**: 2 vCPU
+- **RAM**: 4 GB
+- **Диск**: 20 GB SSD
+- **ОС**: Ubuntu 22.04 LTS / Debian 11
+- **Сеть**: Публичный IP адрес
+
+### Рекомендуемые требования:
+- **CPU**: 4 vCPU
+- **RAM**: 8 GB
+- **Диск**: 40 GB SSD
+- **ОС**: Ubuntu 22.04 LTS
+- **Сеть**: Публичный IP + домен
+
+### Провайдеры VPS:
+- DigitalOcean ($24/месяц)
+- Hetzner (€8/месяц)
+- Linode ($24/месяц)
+- Vultr ($24/месяц)
+- Contabo (€8/месяц)
+
+## 🎯 Быстрое развертывание (Docker)
+
+### Шаг 1: Подключение к VPS
 
 ```bash
-# На VPS
-git clone https://github.com/your-username/next-shadcn-dashboard-starter.git
-cd next-shadcn-dashboard-starter
-cp env.production.example .env.production
-# Отредактировать .env.production
-chmod +x scripts/*.sh
-./scripts/deploy.sh
+ssh root@your-vps-ip
 ```
 
-## 🎯 ДЕТАЛЬНАЯ ИНСТРУКЦИЯ
+### Шаг 2: Установка Docker
 
-### Шаг 1: Заказ VPS на REG.RU (15 минут)
-
-1. **Заходим на** https://www.reg.ru/vps/
-2. **Выбираем тариф:**
-   - VPS-2: 4 CPU, 8GB RAM, 80GB SSD (~3000₽/мес) ⭐ РЕКОМЕНДУЕТСЯ
-   - OS: Ubuntu 22.04 LTS
-   - Панель: Без панели (будем настраивать вручную)
-3. **Получаем данные:**
-   - IP адрес сервера
-   - Логин: root
-   - Пароль: в письме
-
-### Шаг 2: Настройка домена (10 минут)
-
-В панели REG.RU или Cloudflare добавляем DNS записи:
-```
-A     your-domain.ru     → IP_сервера
-CNAME www.your-domain.ru → your-domain.ru
-```
-
-### Шаг 3: Первичная настройка VPS (30 минут)
-
-#### 3.1 Подключение к серверу
 ```bash
-ssh root@YOUR_VPS_IP
-```
-
-#### 3.2 Обновление системы
-```bash
+# Обновление системы
 apt update && apt upgrade -y
-```
 
-#### 3.3 Создание пользователя для деплоя
-```bash
-adduser deploy
-usermod -aG sudo deploy
-usermod -aG docker deploy
-
-# Настройка SSH ключей
-mkdir -p /home/deploy/.ssh
-cp ~/.ssh/authorized_keys /home/deploy/.ssh/
-chown -R deploy:deploy /home/deploy/.ssh
-chmod 700 /home/deploy/.ssh
-chmod 600 /home/deploy/.ssh/authorized_keys
-```
-
-#### 3.4 Установка Docker
-```bash
+# Установка Docker
 curl -fsSL https://get.docker.com -o get-docker.sh
 sh get-docker.sh
-apt install docker-compose-plugin -y
-systemctl enable docker
-systemctl start docker
+
+# Установка Docker Compose
+curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
+
+# Проверка
+docker --version
+docker-compose --version
 ```
 
-#### 3.5 Установка Nginx и Certbot
+### Шаг 3: Клонирование проекта
+
 ```bash
-apt install nginx certbot python3-certbot-nginx -y
-systemctl enable nginx
-systemctl start nginx
+# Установка git
+apt install git -y
+
+# Клонирование
+cd /opt
+git clone https://github.com/your-username/saas-bonus-system.git
+cd saas-bonus-system
 ```
 
-#### 3.6 Установка дополнительного ПО
+### Шаг 4: Настройка окружения
+
 ```bash
-apt install git curl htop unzip fail2ban ufw -y
+# Создание .env.production
+cat > .env.production << 'EOF'
+# Database
+DATABASE_URL="postgresql://bonus_user:STRONG_PASSWORD_HERE@postgres:5432/bonus_system"
+
+# Redis
+REDIS_URL="redis://redis:6379"
+REDIS_HOST="redis"
+REDIS_PORT="6379"
+
+# Clerk (получите production ключи)
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_live_..."
+CLERK_SECRET_KEY="sk_live_..."
+NEXT_PUBLIC_CLERK_SIGN_IN_URL="/auth/sign-in"
+NEXT_PUBLIC_CLERK_SIGN_UP_URL="/auth/sign-up"
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL="/dashboard"
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL="/dashboard"
+
+# Application
+NEXT_PUBLIC_APP_URL="https://your-domain.com"
+NODE_ENV="production"
+
+# Security
+CRON_SECRET="$(openssl rand -base64 32)"
+JWT_SECRET="$(openssl rand -base64 32)"
+
+# Sentry (опционально)
+NEXT_PUBLIC_SENTRY_DSN="https://..."
+EOF
 ```
 
-#### 3.7 Настройка firewall
+### Шаг 5: Docker Compose Production
+
+Создайте `docker-compose.production.yml`:
+
+```yaml
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: bonus_user
+      POSTGRES_PASSWORD: STRONG_PASSWORD_HERE
+      POSTGRES_DB: bonus_system
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bonus_user -d bonus_system"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    restart: always
+    env_file:
+      - .env.production
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app_network
+    volumes:
+      - ./public:/app/public:ro
+      - ./prisma:/app/prisma:ro
+
+  nginx:
+    image: nginx:alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - certbot_data:/var/www/certbot
+    depends_on:
+      - app
+    networks:
+      - app_network
+
+volumes:
+  postgres_data:
+  redis_data:
+  certbot_data:
+
+networks:
+  app_network:
+    driver: bridge
+```
+
+### Шаг 6: Dockerfile для production
+
+Создайте `Dockerfile.production`:
+
+```dockerfile
+# Build stage
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Копируем package files
+COPY package*.json pnpm-lock.yaml ./
+
+# Установка pnpm
+RUN npm install -g pnpm
+
+# Установка зависимостей
+RUN pnpm install --frozen-lockfile
+
+# Копируем исходный код
+COPY . .
+
+# Генерация Prisma Client
+RUN pnpm prisma:generate
+
+# Build приложения
+RUN pnpm build
+
+# Production stage
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Установка pnpm
+RUN npm install -g pnpm
+
+# Копируем только необходимое
+COPY --from=builder /app/package*.json /app/pnpm-lock.yaml ./
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules ./node_modules
+
+# Создание пользователя
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nextjs -u 1001
+USER nextjs
+
+EXPOSE 3000
+
+CMD ["pnpm", "start"]
+```
+
+### Шаг 7: Nginx конфигурация
+
+Создайте `nginx.conf`:
+
+```nginx
+events {
+    worker_connections 1024;
+}
+
+http {
+    upstream nextjs {
+        server app:3000;
+    }
+
+    server {
+        listen 80;
+        server_name your-domain.com;
+
+        # Redirect to HTTPS
+        return 301 https://$server_name$request_uri;
+    }
+
+    server {
+        listen 443 ssl http2;
+        server_name your-domain.com;
+
+        ssl_certificate /etc/nginx/ssl/cert.pem;
+        ssl_certificate_key /etc/nginx/ssl/key.pem;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_ciphers HIGH:!aNULL:!MD5;
+
+        client_max_body_size 10M;
+
+        location / {
+            proxy_pass http://nextjs;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_cache_bypass $http_upgrade;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /_next/static {
+            proxy_pass http://nextjs;
+            add_header Cache-Control "public, max-age=31536000, immutable";
+        }
+
+        location /api {
+            proxy_pass http://nextjs;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+}
+```
+
+### Шаг 8: SSL сертификат (Let's Encrypt)
+
 ```bash
-ufw allow OpenSSH
+# Установка Certbot
+apt install certbot python3-certbot-nginx -y
+
+# Получение сертификата
+certbot --nginx -d your-domain.com -d www.your-domain.com
+
+# Автоматическое обновление
+crontab -e
+# Добавьте строку:
+0 0 * * * certbot renew --quiet
+```
+
+### Шаг 9: Запуск приложения
+
+```bash
+# Сборка и запуск
+docker-compose -f docker-compose.production.yml up -d --build
+
+# Применение миграций
+docker-compose -f docker-compose.production.yml exec app pnpm prisma:migrate
+
+# Проверка логов
+docker-compose -f docker-compose.production.yml logs -f
+
+# Проверка статуса
+docker-compose -f docker-compose.production.yml ps
+```
+
+## 📝 Ручное развертывание (без Docker)
+
+### Шаг 1: Подготовка системы
+
+```bash
+# Обновление системы
+apt update && apt upgrade -y
+
+# Установка необходимых пакетов
+apt install -y curl wget git build-essential nginx certbot python3-certbot-nginx
+```
+
+### Шаг 2: Установка Node.js
+
+```bash
+# Установка Node.js 20
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+apt install -y nodejs
+
+# Установка pnpm
+npm install -g pnpm pm2
+
+# Проверка
+node --version
+pnpm --version
+```
+
+### Шаг 3: Установка PostgreSQL
+
+```bash
+# Установка PostgreSQL
+apt install -y postgresql postgresql-contrib
+
+# Настройка
+sudo -u postgres psql << EOF
+CREATE DATABASE bonus_system;
+CREATE USER bonus_user WITH PASSWORD 'STRONG_PASSWORD_HERE';
+GRANT ALL PRIVILEGES ON DATABASE bonus_system TO bonus_user;
+EOF
+
+# Настройка доступа
+nano /etc/postgresql/14/main/postgresql.conf
+# listen_addresses = 'localhost'
+
+systemctl restart postgresql
+```
+
+### Шаг 4: Установка Redis
+
+```bash
+# Установка Redis
+apt install -y redis-server
+
+# Настройка
+nano /etc/redis/redis.conf
+# supervised systemd
+# maxmemory 256mb
+# maxmemory-policy allkeys-lru
+
+systemctl restart redis-server
+systemctl enable redis-server
+```
+
+### Шаг 5: Настройка приложения
+
+```bash
+# Создание пользователя
+useradd -m -s /bin/bash nodeapp
+su - nodeapp
+
+# Клонирование проекта
+cd /home/nodeapp
+git clone https://github.com/your-username/saas-bonus-system.git
+cd saas-bonus-system
+
+# Установка зависимостей
+pnpm install
+
+# Настройка окружения
+cp env.example.txt .env.production
+nano .env.production
+# Настройте все переменные
+
+# Сборка
+pnpm build
+
+# Миграции
+pnpm prisma:migrate
+```
+
+### Шаг 6: PM2 конфигурация
+
+Создайте `ecosystem.config.js`:
+
+```javascript
+module.exports = {
+  apps: [{
+    name: 'saas-bonus-system',
+    script: 'node_modules/.bin/next',
+    args: 'start',
+    instances: 'max',
+    exec_mode: 'cluster',
+    autorestart: true,
+    watch: false,
+    max_memory_restart: '1G',
+    env: {
+      NODE_ENV: 'production',
+      PORT: 3000
+    },
+    error_file: './logs/err.log',
+    out_file: './logs/out.log',
+    log_file: './logs/combined.log',
+    time: true
+  }]
+};
+```
+
+Запуск через PM2:
+
+```bash
+# Запуск
+pm2 start ecosystem.config.js
+
+# Сохранение конфигурации
+pm2 save
+pm2 startup systemd -u nodeapp --hp /home/nodeapp
+```
+
+### Шаг 7: Nginx настройка
+
+```bash
+# Создание конфигурации
+nano /etc/nginx/sites-available/saas-bonus-system
+
+# Содержимое:
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# Активация
+ln -s /etc/nginx/sites-available/saas-bonus-system /etc/nginx/sites-enabled/
+nginx -t
+systemctl restart nginx
+```
+
+## 🔒 Настройка безопасности
+
+### 1. Firewall (UFW)
+
+```bash
+# Установка и настройка
+apt install -y ufw
+
+ufw default deny incoming
+ufw default allow outgoing
+ufw allow ssh
 ufw allow 80/tcp
 ufw allow 443/tcp
 ufw --force enable
 ```
 
-### Шаг 4: Клонирование проекта (10 минут)
+### 2. Fail2ban
 
-#### 4.1 Переключение на пользователя deploy
 ```bash
-su - deploy
+# Установка
+apt install -y fail2ban
+
+# Конфигурация
+cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
+nano /etc/fail2ban/jail.local
+
+# Включите:
+[sshd]
+enabled = true
+maxretry = 3
+bantime = 3600
+
+systemctl restart fail2ban
 ```
 
-#### 4.2 Клонирование репозитория
+### 3. Автоматические обновления
+
 ```bash
-git clone https://github.com/your-username/next-shadcn-dashboard-starter.git
-cd next-shadcn-dashboard-starter
+# Установка
+apt install -y unattended-upgrades
+
+# Настройка
+dpkg-reconfigure --priority=low unattended-upgrades
 ```
 
-#### 4.3 Настройка environment variables
+## 📊 Мониторинг
+
+### 1. Системный мониторинг
+
 ```bash
-cp env.production.example .env.production
-nano .env.production
+# Установка htop
+apt install -y htop
+
+# Установка netdata
+bash <(curl -Ss https://my-netdata.io/kickstart.sh)
 ```
 
-**Обязательно заполните:**
-- `APP_URL` - ваш домен
-- `DB_PASSWORD` - надежный пароль для БД
-- `REDIS_PASSWORD` - пароль для Redis
-- `NEXTAUTH_SECRET` - случайная строка 32+ символа
-- `CRON_SECRET` - случайная строка для cron endpoints
+### 2. Логирование
 
-### Шаг 5: SSL сертификаты (15 минут)
-
-#### 5.1 Первичный SSL сертификат
 ```bash
-sudo certbot --nginx -d your-domain.ru -d www.your-domain.ru
+# PM2 логи
+pm2 logs
+
+# Nginx логи
+tail -f /var/log/nginx/access.log
+tail -f /var/log/nginx/error.log
+
+# PostgreSQL логи
+tail -f /var/log/postgresql/postgresql-*.log
 ```
 
-#### 5.2 Автообновление сертификатов
+### 3. Мониторинг приложения
+
 ```bash
-sudo crontab -e
-# Добавить строку:
-0 12 * * * /usr/bin/certbot renew --quiet
+# PM2 мониторинг
+pm2 monit
+
+# Статус сервисов
+systemctl status nginx
+systemctl status postgresql
+systemctl status redis-server
 ```
 
-### Шаг 6: Конфигурация Nginx (10 минут)
+## 🔄 Обновление приложения
 
-#### 6.1 Копирование конфигурации
+### С Docker:
+
 ```bash
-sudo cp nginx/sites-available/bonus-system.conf /etc/nginx/sites-available/
-sudo ln -s /etc/nginx/sites-available/bonus-system.conf /etc/nginx/sites-enabled/
+cd /opt/saas-bonus-system
+git pull origin main
+docker-compose -f docker-compose.production.yml down
+docker-compose -f docker-compose.production.yml up -d --build
+docker-compose -f docker-compose.production.yml exec app pnpm prisma:migrate
 ```
 
-#### 6.2 Замена домена в конфигурации
+### Без Docker:
+
 ```bash
-sudo sed -i 's/your-domain.ru/ВАШИ_ДОМЕН/g' /etc/nginx/sites-available/bonus-system.conf
+su - nodeapp
+cd ~/saas-bonus-system
+git pull origin main
+pnpm install
+pnpm build
+pnpm prisma:migrate
+pm2 reload all
 ```
 
-#### 6.3 Проверка и перезагрузка Nginx
+## 🔧 Backup и восстановление
+
+### Backup базы данных:
+
 ```bash
-sudo nginx -t
-sudo systemctl reload nginx
+# Создание backup
+pg_dump -U bonus_user bonus_system > backup_$(date +%Y%m%d).sql
+
+# Автоматический backup (crontab)
+0 2 * * * pg_dump -U bonus_user bonus_system > /backups/db_$(date +\%Y\%m\%d).sql
 ```
 
-### Шаг 7: Запуск приложения (20 минут)
+### Восстановление:
 
-#### 7.1 Создание директорий для данных
 ```bash
-sudo mkdir -p /var/lib/bonus-system/{postgres,redis}
-sudo chown -R deploy:deploy /var/lib/bonus-system
+psql -U bonus_user bonus_system < backup_20250128.sql
 ```
 
-#### 7.2 Запуск через deploy скрипт
+## 🐛 Решение проблем
+
+### Проблема: 502 Bad Gateway
+
 ```bash
-chmod +x scripts/*.sh
-./scripts/deploy.sh
+# Проверка приложения
+pm2 status
+pm2 logs
+
+# Перезапуск
+pm2 restart all
 ```
 
-#### 7.3 Проверка статуса
+### Проблема: Нехватка памяти
+
 ```bash
-docker-compose -f docker-compose.production.yml ps
-docker-compose -f docker-compose.production.yml logs app
+# Добавление swap
+fallocate -l 2G /swapfile
+chmod 600 /swapfile
+mkswap /swapfile
+swapon /swapfile
+echo '/swapfile none swap sw 0 0' >> /etc/fstab
 ```
 
-### Шаг 8: Настройка мониторинга (15 минут)
+### Проблема: Медленная работа
 
-#### 8.1 Создание cron задач для бэкапов
 ```bash
-crontab -e
-# Добавить строки:
-0 2 * * * cd /home/deploy/next-shadcn-dashboard-starter && docker-compose -f docker-compose.production.yml run --rm backup /backup.sh
-0 4 * * 0 cd /home/deploy/next-shadcn-dashboard-starter && docker system prune -f
+# Оптимизация PostgreSQL
+nano /etc/postgresql/14/main/postgresql.conf
+# shared_buffers = 256MB
+# effective_cache_size = 1GB
+# work_mem = 4MB
+
+systemctl restart postgresql
 ```
 
-#### 8.2 Логирование
-```bash
-# Ротация логов
-sudo nano /etc/logrotate.d/bonus-system
-```
+## 📋 Чек-лист production
 
-Содержимое файла:
-```
-/home/deploy/next-shadcn-dashboard-starter/logs/*.log {
-    daily
-    missingok
-    rotate 14
-    compress
-    notifempty
-    create 0644 deploy deploy
-}
-```
+- [ ] SSL сертификат настроен
+- [ ] Firewall включен
+- [ ] Fail2ban настроен
+- [ ] Backup настроен
+- [ ] Мониторинг работает
+- [ ] Логирование настроено
+- [ ] Переменные окружения production
+- [ ] Clerk production ключи
+- [ ] Sentry подключен
+- [ ] Redis пароль установлен
+- [ ] PostgreSQL пароль сильный
+- [ ] Автообновления включены
 
-### Шаг 9: Проверка и тестирование (10 минут)
+## 💰 Оптимизация расходов
 
-#### 9.1 Проверка доступности
-```bash
-curl -I https://your-domain.ru
-curl https://your-domain.ru/api/health
-```
+1. **Используйте CDN** для статики (Cloudflare)
+2. **Сжатие изображений** (WebP формат)
+3. **Кэширование** на уровне Nginx
+4. **Автомасштабирование** при необходимости
 
-#### 9.2 Тестирование webhook
-```bash
-curl -X POST https://your-domain.ru/api/webhook/test \
-  -H "Content-Type: application/json" \
-  -d '{"test": true}'
-```
+## 📞 Поддержка
 
-#### 9.3 Проверка SSL
-```bash
-openssl s_client -connect your-domain.ru:443 -servername your-domain.ru < /dev/null
-```
+При проблемах:
+1. Проверьте логи: `pm2 logs`, `docker logs`
+2. Проверьте статус: `systemctl status`, `docker ps`
+3. Создайте issue на GitHub
 
-## 🔧 ОБСЛУЖИВАНИЕ
+---
 
-### Ежедневные команды
-```bash
-# Проверка статуса
-docker-compose -f docker-compose.production.yml ps
-
-# Просмотр логов
-docker-compose -f docker-compose.production.yml logs --tail=50
-
-# Перезапуск приложения
-docker-compose -f docker-compose.production.yml restart app
-```
-
-### Обновление приложения
-```bash
-./scripts/deploy.sh
-```
-
-### Бэкап базы данных
-```bash
-docker-compose -f docker-compose.production.yml run --rm backup /backup.sh
-```
-
-### Восстановление из бэкапа
-```bash
-# Список бэкапов
-ls -la database/backups/
-
-# Восстановление
-gunzip -c database/backups/backup_bonus_system_20250809_120000.sql.gz | \
-docker-compose -f docker-compose.production.yml exec -T postgres \
-psql -U bonus_admin -d bonus_system
-```
-
-## 🚨 РЕШЕНИЕ ПРОБЛЕМ
-
-### Приложение не запускается
-```bash
-# Проверить логи
-docker-compose -f docker-compose.production.yml logs app
-
-# Проверить переменные окружения
-docker-compose -f docker-compose.production.yml config
-
-# Пересобрать образ
-docker-compose -f docker-compose.production.yml build --no-cache app
-```
-
-### База данных недоступна
-```bash
-# Проверить статус PostgreSQL
-docker-compose -f docker-compose.production.yml exec postgres pg_isready
-
-# Подключиться к БД
-docker-compose -f docker-compose.production.yml exec postgres psql -U bonus_admin -d bonus_system
-```
-
-### SSL проблемы
-```bash
-# Обновить сертификаты
-sudo certbot renew --dry-run
-
-# Проверить конфигурацию Nginx
-sudo nginx -t
-```
-
-## 📊 РЕЗУЛЬТАТ
-
-После выполнения всех шагов у вас будет:
-
-✅ **Production-ready SaaS система**  
-✅ **HTTPS с автообновлением SSL**  
-✅ **Автоматические бэкапы**  
-✅ **Мониторинг и логирование**  
-✅ **Защита от DDoS (Nginx rate limiting)**  
-✅ **Готовность к масштабированию**  
-
-**URL для Tilda webhook:**
-```
-https://your-domain.ru/api/webhook/your-webhook-secret
-```
-
-**Время деплоя:** 2-3 часа  
-**Стоимость:** ~3000₽/месяц  
-**Uptime:** 99.9%+
+*Последнее обновление: 28.01.2025*
+*Версия: 1.2.0*
