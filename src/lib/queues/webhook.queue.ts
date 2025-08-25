@@ -9,12 +9,13 @@
 
 import Bull from 'bull';
 import { logger } from '@/lib/logger';
+import { db } from '@/lib/db';
 import { UserService, BonusService } from '@/lib/services/user.service';
-import { sendBonusNotification, sendBonusSpentNotification } from '@/lib/telegram/notifications';
-import type { 
+import { sendBonusNotification } from '@/lib/telegram/notifications';
+import type {
   WebhookRegisterUserPayload,
   WebhookPurchasePayload,
-  WebhookSpendBonusesPayload 
+  WebhookSpendBonusesPayload
 } from '@/types/bonus';
 
 // Конфигурация Redis для очередей
@@ -22,8 +23,8 @@ const redisConfig = {
   redis: {
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6379'),
-    password: process.env.REDIS_PASSWORD,
-  },
+    password: process.env.REDIS_PASSWORD
+  }
 };
 
 // Типы задач в очереди
@@ -37,7 +38,10 @@ export interface WebhookJobData {
 }
 
 // Создаем очереди
-export const webhookQueue = new Bull<WebhookJobData>('webhook-processing', redisConfig);
+export const webhookQueue = new Bull<WebhookJobData>(
+  'webhook-processing',
+  redisConfig
+);
 export const notificationQueue = new Bull('notifications', redisConfig);
 export const analyticsQueue = new Bull('analytics-update', redisConfig);
 
@@ -48,20 +52,24 @@ webhookQueue.process('register_user', async (job) => {
 
   try {
     const result = await processUserRegistration(projectId, payload);
-    
+
     // Добавляем задачу на отправку приветственного уведомления
-    await notificationQueue.add('welcome', {
-      userId: result.user.id,
-      projectId,
-    }, {
-      delay: 1000, // Отправить через 1 секунду
-    });
+    await notificationQueue.add(
+      'welcome',
+      {
+        userId: result.user.id,
+        projectId
+      },
+      {
+        delay: 1000 // Отправить через 1 секунду
+      }
+    );
 
     return result;
   } catch (error) {
-    logger.error('Failed to process register_user', { 
-      jobId: job.id, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+    logger.error('Failed to process register_user', {
+      jobId: job.id,
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
     throw error;
   }
@@ -73,26 +81,26 @@ webhookQueue.process('purchase', async (job) => {
 
   try {
     const result = await processPurchase(projectId, payload);
-    
+
     // Добавляем задачи на обновление аналитики и отправку уведомления
     await Promise.all([
       analyticsQueue.add('update-user-stats', {
         userId: result.user.id,
         projectId,
-        amount: payload.amount,
+        amount: payload.amount
       }),
       notificationQueue.add('bonus-earned', {
         userId: result.user.id,
         bonusId: result.bonus.id,
-        projectId,
-      }),
+        projectId
+      })
     ]);
 
     return result;
   } catch (error) {
-    logger.error('Failed to process purchase', { 
-      jobId: job.id, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+    logger.error('Failed to process purchase', {
+      jobId: job.id,
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
     throw error;
   }
@@ -104,19 +112,19 @@ webhookQueue.process('spend_bonuses', async (job) => {
 
   try {
     const result = await processSpendBonuses(projectId, payload);
-    
+
     // Добавляем задачу на отправку уведомления
     await notificationQueue.add('bonus-spent', {
       userId: result.user.id,
       amount: payload.amount,
-      projectId,
+      projectId
     });
 
     return result;
   } catch (error) {
-    logger.error('Failed to process spend_bonuses', { 
-      jobId: job.id, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+    logger.error('Failed to process spend_bonuses', {
+      jobId: job.id,
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
     throw error;
   }
@@ -125,13 +133,13 @@ webhookQueue.process('spend_bonuses', async (job) => {
 // Обработчики для notification очереди
 notificationQueue.process('welcome', async (job) => {
   const { userId, projectId } = job.data;
-  
+
   try {
     // Здесь логика отправки приветственного сообщения
     logger.info('Sending welcome notification', { userId, projectId });
     // await sendWelcomeNotification(userId, projectId);
   } catch (error) {
-    logger.error('Failed to send welcome notification', { 
+    logger.error('Failed to send welcome notification', {
       jobId: job.id,
       error: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -141,16 +149,16 @@ notificationQueue.process('welcome', async (job) => {
 
 notificationQueue.process('bonus-earned', async (job) => {
   const { userId, bonusId, projectId } = job.data;
-  
+
   try {
-    const user = await UserService.getUserById(userId);
-    const bonus = await BonusService.getBonusById(bonusId);
-    
+    const user = await db.user.findUnique({ where: { id: userId } });
+    const bonus = await db.bonus.findUnique({ where: { id: bonusId } });
+
     if (user && bonus) {
-      await sendBonusNotification(user, bonus, projectId);
+      await sendBonusNotification(user as any, bonus as any, projectId);
     }
   } catch (error) {
-    logger.error('Failed to send bonus notification', { 
+    logger.error('Failed to send bonus notification', {
       jobId: job.id,
       error: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -161,19 +169,23 @@ notificationQueue.process('bonus-earned', async (job) => {
 // Обработчики для analytics очереди
 analyticsQueue.process('update-user-stats', async (job) => {
   const { userId, projectId, amount } = job.data;
-  
+
   try {
     // Обновляем статистику пользователя
-    await UserService.updateUserStats(userId, { 
-      totalPurchases: amount 
+    await db.user.update({
+      where: { id: userId },
+      data: {
+        totalPurchases: {
+          increment: amount
+        }
+      }
     });
-    
-    // Инвалидируем кэш
-    const { CacheService } = await import('@/lib/redis');
-    await CacheService.invalidateProject(projectId);
-    
+
+    // TODO: Инвалидировать кэш когда будет реализован Redis
+    // const { CacheService } = await import('@/lib/redis');
+    // await CacheService.invalidatePrefix(`analytics:${projectId}`);
   } catch (error) {
-    logger.error('Failed to update user stats', { 
+    logger.error('Failed to update user stats', {
       jobId: job.id,
       error: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -182,26 +194,26 @@ analyticsQueue.process('update-user-stats', async (job) => {
 
 // Обработчики событий очередей
 webhookQueue.on('completed', (job, result) => {
-  logger.info('Webhook job completed', { 
-    jobId: job.id, 
+  logger.info('Webhook job completed', {
+    jobId: job.id,
     type: job.data.type,
-    duration: Date.now() - job.data.timestamp 
+    duration: Date.now() - job.data.timestamp
   });
 });
 
 webhookQueue.on('failed', (job, err) => {
-  logger.error('Webhook job failed', { 
-    jobId: job.id, 
+  logger.error('Webhook job failed', {
+    jobId: job.id,
     type: job.data.type,
     error: err.message,
-    attempts: job.attemptsMade 
+    attempts: job.attemptsMade
   });
 });
 
 webhookQueue.on('stalled', (job) => {
-  logger.warn('Webhook job stalled', { 
-    jobId: job.id, 
-    type: job.data.type 
+  logger.warn('Webhook job stalled', {
+    jobId: job.id,
+    type: job.data.type
   });
 });
 
@@ -210,10 +222,10 @@ const defaultJobOptions: Bull.JobOptions = {
   attempts: 3,
   backoff: {
     type: 'exponential',
-    delay: 2000,
+    delay: 2000
   },
   removeOnComplete: 100, // Хранить последние 100 выполненных задач
-  removeOnFail: 50, // Хранить последние 50 неудачных задач
+  removeOnFail: 50 // Хранить последние 50 неудачных задач
 };
 
 // Функция для добавления задачи в очередь
@@ -228,19 +240,18 @@ export async function enqueueWebhookJob(
     projectId,
     payload,
     webhookSecret: '', // Заполняется при необходимости
-    timestamp: Date.now(),
+    timestamp: Date.now()
   };
 
-  const job = await webhookQueue.add(
-    type,
-    jobData,
-    { ...defaultJobOptions, ...options }
-  );
+  const job = await webhookQueue.add(type, jobData, {
+    ...defaultJobOptions,
+    ...options
+  });
 
-  logger.info('Webhook job enqueued', { 
-    jobId: job.id, 
-    type, 
-    projectId 
+  logger.info('Webhook job enqueued', {
+    jobId: job.id,
+    type,
+    projectId
   });
 
   return job;
@@ -280,7 +291,7 @@ async function processUserRegistration(
     return {
       success: true,
       message: 'Пользователь уже существует',
-      user: existingUser,
+      user: existingUser
     };
   }
 
@@ -303,7 +314,7 @@ async function processUserRegistration(
   return {
     success: true,
     message: 'Пользователь успешно зарегистрирован',
-    user,
+    user
   };
 }
 
@@ -311,7 +322,8 @@ async function processPurchase(
   projectId: string,
   payload: WebhookPurchasePayload
 ) {
-  const { userEmail, userPhone, purchaseAmount, orderId, description } = payload;
+  const { userEmail, userPhone, purchaseAmount, orderId, description } =
+    payload;
 
   if (!userEmail && !userPhone) {
     throw new Error('Должен быть указан email или телефон пользователя');
@@ -344,10 +356,9 @@ async function processPurchase(
     message: 'Бонусы успешно начислены',
     user,
     bonus: result.bonus,
-    transaction: result.transaction,
     balance,
     levelInfo: result.levelInfo,
-    referralInfo: result.referralInfo,
+    referralInfo: result.referralInfo
   };
 }
 
@@ -355,7 +366,13 @@ async function processSpendBonuses(
   projectId: string,
   payload: WebhookSpendBonusesPayload
 ) {
-  const { userEmail, userPhone, amount, orderId, description } = payload;
+  const {
+    userEmail,
+    userPhone,
+    bonusAmount: amount,
+    orderId,
+    description
+  } = payload;
 
   if (!userEmail && !userPhone) {
     throw new Error('Должен быть указан email или телефон пользователя');
@@ -376,8 +393,8 @@ async function processSpendBonuses(
   const result = await BonusService.spendBonuses(
     user.id,
     amount,
-    orderId,
-    description
+    description || `Списание бонусов для заказа ${orderId}`,
+    { orderId }
   );
 
   // Получаем обновленный баланс
@@ -385,33 +402,29 @@ async function processSpendBonuses(
 
   return {
     success: true,
-    message: result.insufficientFunds 
+    message: result.insufficientFunds
       ? 'Бонусы списаны частично (недостаточно средств)'
       : 'Бонусы успешно списаны',
     user,
     spent: result.spent,
     remaining: result.remaining,
     balance,
-    insufficientFunds: result.insufficientFunds,
+    insufficientFunds: result.insufficientFunds
   };
 }
 
 // Dashboard для мониторинга очередей
 export async function getQueueStats() {
-  const [
-    webhookStats,
-    notificationStats,
-    analyticsStats
-  ] = await Promise.all([
+  const [webhookStats, notificationStats, analyticsStats] = await Promise.all([
     webhookQueue.getJobCounts(),
     notificationQueue.getJobCounts(),
-    analyticsQueue.getJobCounts(),
+    analyticsQueue.getJobCounts()
   ]);
 
   return {
     webhook: webhookStats,
     notifications: notificationStats,
-    analytics: analyticsStats,
+    analytics: analyticsStats
   };
 }
 
@@ -420,6 +433,6 @@ export async function closeQueues() {
   await Promise.all([
     webhookQueue.close(),
     notificationQueue.close(),
-    analyticsQueue.close(),
+    analyticsQueue.close()
   ]);
 }

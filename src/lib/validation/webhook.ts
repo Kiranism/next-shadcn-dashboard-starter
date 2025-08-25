@@ -61,9 +61,9 @@ export const RegisterUserSchema = z.object({
 export const PurchaseSchema = z.object({
   action: z.literal('purchase'),
   payload: z.object({
-    email: z.string().email().optional(),
-    phone: z.string().optional(),
-    amount: z.number().positive(),
+    userEmail: z.string().email().optional(),
+    userPhone: z.string().optional(),
+    purchaseAmount: z.number().positive(),
     orderId: z.string(),
     description: z.string().optional()
   })
@@ -73,9 +73,9 @@ export const PurchaseSchema = z.object({
 export const SpendBonusesSchema = z.object({
   action: z.literal('spend_bonuses'),
   payload: z.object({
-    email: z.string().email().optional(),
-    phone: z.string().optional(),
-    amount: z.number().positive(),
+    userEmail: z.string().email().optional(),
+    userPhone: z.string().optional(),
+    bonusAmount: z.number().positive(),
     orderId: z.string(),
     description: z.string().optional()
   })
@@ -103,7 +103,9 @@ export function validateWebhookRequest(data: unknown): WebhookRequest {
     return WebhookRequestSchema.parse(data);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const errorMessages = error.errors.map(e => `${e.path.join('.')}: ${e.message}`);
+      const errorMessages = error.errors.map(
+        (e) => `${e.path.join('.')}: ${e.message}`
+      );
       throw new Error(`Validation failed: ${errorMessages.join(', ')}`);
     }
     throw error;
@@ -116,8 +118,12 @@ export function validateTildaOrder(data: unknown): TildaOrder {
     return TildaOrderSchema.parse(data);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const errorMessages = error.errors.map(e => `${e.path.join('.')}: ${e.message}`);
-      throw new Error(`Tilda order validation failed: ${errorMessages.join(', ')}`);
+      const errorMessages = error.errors.map(
+        (e) => `${e.path.join('.')}: ${e.message}`
+      );
+      throw new Error(
+        `Tilda order validation failed: ${errorMessages.join(', ')}`
+      );
     }
     throw error;
   }

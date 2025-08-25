@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { botManager } from '@/lib/telegram/bot-manager';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,11 +26,13 @@ export async function POST(request: NextRequest) {
     const botInstance = botManager.getBot(projectId);
     logger.debug('🤖 Найден бот:', { found: !!botInstance });
     logger.debug('🔄 Активен:', { isActive: botInstance?.isActive });
-    logger.debug('📋 Всего ботов в менеджере:', { bots: Array.from(botManager['bots'].keys()) });
-    
+    logger.debug('📋 Всего ботов в менеджере:', {
+      bots: Array.from(botManager['bots'].keys())
+    });
+
     if (!botInstance) {
       return NextResponse.json(
-        { 
+        {
           error: 'Бот не найден в BotManager',
           projectId,
           availableBots: Array.from(botManager['bots'].keys())
@@ -40,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     if (!botInstance.isActive) {
       return NextResponse.json(
-        { 
+        {
           error: 'Бот найден, но неактивен',
           projectId,
           botStatus: 'inactive'
@@ -51,9 +54,11 @@ export async function POST(request: NextRequest) {
 
     // Симулируем сообщение /start от пользователя
     const testMessage = message || '/start';
-    
-    logger.info(`📤 Отправляем тестовое сообщение боту:`, { message: testMessage });
-    
+
+    logger.info(`📤 Отправляем тестовое сообщение боту:`, {
+      message: testMessage
+    });
+
     const mockUpdate = {
       update_id: Date.now(),
       message: {
@@ -91,15 +96,19 @@ export async function POST(request: NextRequest) {
         processedAt: new Date().toISOString()
       });
     } catch (botError) {
-      logger.error('❌ Ошибка обработки обновления ботом:', { error: botError });
-      return NextResponse.json({
-        success: false,
-        error: `Ошибка обработки сообщения ботом: ${botError}`,
-        projectId,
-        testMessage
-      }, { status: 500 });
+      logger.error('❌ Ошибка обработки обновления ботом:', {
+        error: botError
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Ошибка обработки сообщения ботом: ${botError}`,
+          projectId,
+          testMessage
+        },
+        { status: 500 }
+      );
     }
-
   } catch (error) {
     logger.error('Ошибка тестирования бота:', { error });
     return NextResponse.json(
@@ -122,7 +131,7 @@ export async function GET(request: NextRequest) {
     }
 
     const botInstance = botManager.getBot(projectId);
-    
+
     if (!botInstance) {
       return NextResponse.json({
         projectId,
@@ -157,7 +166,6 @@ export async function GET(request: NextRequest) {
           allowed_updates: webhookInfo.allowed_updates
         }
       });
-
     } catch (error) {
       return NextResponse.json({
         projectId,
@@ -165,7 +173,6 @@ export async function GET(request: NextRequest) {
         error: `Ошибка получения информации о боте: ${error}`
       });
     }
-
   } catch (error) {
     logger.error('Ошибка проверки бота:', { error });
     return NextResponse.json(

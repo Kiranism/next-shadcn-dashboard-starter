@@ -13,8 +13,8 @@ import { ProjectService } from '@/lib/services/project.service';
 import { UserService, BonusService } from '@/lib/services/user.service';
 import { logger } from '@/lib/logger';
 import { withWebhookRateLimit } from '@/lib/with-rate-limit';
-import { 
-  validateTildaOrder, 
+import {
+  validateTildaOrder,
   validateWebhookRequest,
   type TildaOrder,
   type TildaProduct
@@ -88,12 +88,16 @@ async function handleTildaOrder(projectId: string, orderData: TildaOrder) {
     }
 
     // Начисляем бонусы за покупку
-    const totalAmount = parseInt(payment.amount) || 0;
+    const totalAmount =
+      typeof payment.amount === 'string'
+        ? parseInt(payment.amount) || 0
+        : payment.amount || 0;
     const orderId = payment.orderid || payment.systranid || 'tilda_order';
 
     // Создаем описание заказа с товарами
     const productNames =
-      payment.products?.map((p: TildaProduct) => p.name).join(', ') || 'Заказ Tilda';
+      payment.products?.map((p: TildaProduct) => p.name).join(', ') ||
+      'Заказ Tilda';
     const description = `Заказ #${orderId}: ${productNames}`;
 
     const result = await BonusService.awardPurchaseBonus(
@@ -195,28 +199,19 @@ async function handlePOST(
 
       switch (action) {
         case 'register_user':
-          response = await handleRegisterUser(
-            project.id,
-            payload
-          );
+          response = await handleRegisterUser(project.id, payload);
           status = 201;
           success = true;
           break;
 
         case 'purchase':
-          response = await handlePurchase(
-            project.id,
-            payload
-          );
+          response = await handlePurchase(project.id, payload);
           status = 200;
           success = true;
           break;
 
         case 'spend_bonuses':
-          response = await handleSpendBonuses(
-            project.id,
-            payload
-          );
+          response = await handleSpendBonuses(project.id, payload);
           status = 200;
           success = true;
           break;
