@@ -10,8 +10,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ProjectService } from '@/lib/services/project.service';
 import { logger } from '@/lib/logger';
+import {
+  CreateProjectSchema,
+  validateRequest
+} from '@/lib/validation/api-schemas';
+import { z } from 'zod';
 // import { db } from '@/lib/db'; // удалено как неиспользуемое
-import type { CreateProjectInput } from '@/types/bonus';
+// import type { CreateProjectInput } from '@/types/bonus';
 
 // GET /api/projects - Получение списка проектов
 export async function GET(request: NextRequest) {
@@ -39,27 +44,21 @@ export async function GET(request: NextRequest) {
 // POST /api/projects - Создание нового проекта
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-
-    // Валидация входных данных
-    const projectData: CreateProjectInput = {
-      name: body.name,
-      domain: body.domain || undefined,
-      bonusPercentage: body.bonusPercentage || 1.0,
-      bonusExpiryDays: body.bonusExpiryDays || 365
-    };
-
-    if (!projectData.name) {
-      return NextResponse.json(
-        { error: 'Название проекта обязательно' },
-        { status: 400 }
-      );
-    }
+    // Валидация входных данных с Zod
+    const projectData = await validateRequest(request, CreateProjectSchema);
 
     const project = await ProjectService.createProject(projectData);
 
     return NextResponse.json(project, { status: 201 });
   } catch (error) {
+    // Обработка ошибок валидации
+    if (
+      error instanceof Error &&
+      error.message.startsWith('Validation error:')
+    ) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
     logger.error('Ошибка создания проекта', {
       error: error instanceof Error ? error.message : 'Неизвестная ошибка',
       component: 'projects-api',
