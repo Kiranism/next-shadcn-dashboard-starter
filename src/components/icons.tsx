@@ -70,5 +70,6 @@ export const Icons = {
   twitter: IconBrandTwitter,
   check: IconCheck,
   clipboard: IconClipboard,
-  ticket: IconTicket
+  ticket: IconTicket,
+  fileText: IconFileText
 };

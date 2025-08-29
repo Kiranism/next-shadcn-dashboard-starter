@@ -1,5 +1,5 @@
 import { Ticket } from '@/types/ticket';
-import { fakeTickets } from '@/lib/adapters/database-adapter';
+import { ticketAdapter } from '@/lib/adapters/database-adapter';
 import { searchParamsCache } from '@/lib/searchparams';
 import { TicketTable } from './ticket-tables';
 import { columns } from './ticket-tables/columns';
@@ -33,7 +33,7 @@ export default async function TicketListingPage({}: TicketListingPageProps) {
     ...(tags && { tags })
   };
 
-  const data = await fakeTickets.getTickets(filters);
+  const data = await ticketAdapter.getTickets(filters);
   const totalTickets = data.total_tickets;
   const tickets: Ticket[] = data.tickets;
 

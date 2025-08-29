@@ -7,7 +7,7 @@
     "url": "https://github.com/Kiranism"
   },
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev --turbopack --port 4000",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

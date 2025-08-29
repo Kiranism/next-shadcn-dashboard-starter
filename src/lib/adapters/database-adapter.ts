@@ -1,12 +1,14 @@
 // Database adapter to replace mock API calls with real database calls
 import { getTasks as getTasksFromDB } from '@/lib/services/task-db-service';
 import { getTickets as getTicketsFromDB } from '@/lib/services/ticket-db-service';
+import { getSubmissions as getSubmissionsFromDB } from '@/lib/services/submission-db-service';
 import { Task } from '@/types/task';
 import { Ticket } from '@/types/ticket';
+import { TaskSubmission } from '@/types/submission';
 
-// Task database adapter that mimics the mock API interface
-export const fakeTasks = {
-  // Get tasks with pagination and filtering (mimics the mock API interface)
+// Task database adapter
+export const taskAdapter = {
+  // Get tasks with pagination and filtering
   async getTasks(params: {
     page?: number;
     limit?: number;
@@ -36,9 +38,9 @@ export const fakeTasks = {
   }
 };
 
-// Ticket database adapter that mimics the mock API interface
-export const fakeTickets = {
-  // Get tickets with pagination and filtering (mimics the mock API interface)
+// Ticket database adapter
+export const ticketAdapter = {
+  // Get tickets with pagination and filtering
   async getTickets(params: {
     page?: number;
     limit?: number;
@@ -67,6 +69,41 @@ export const fakeTickets = {
       return await getTicketById(id);
     } catch (error) {
       console.error('Database adapter error (ticket by id):', error);
+      return null;
+    }
+  }
+};
+
+// Submission database adapter
+export const submissionAdapter = {
+  // Get submissions with pagination and filtering
+  async getSubmissions(params: {
+    page?: number;
+    limit?: number;
+    reviewStatus?: string;
+    taskId?: string;
+    userId?: string;
+    reviewedBy?: string;
+    search?: string;
+  }): Promise<{ submissions: TaskSubmission[]; total_submissions: number }> {
+    try {
+      return await getSubmissionsFromDB(params);
+    } catch (error) {
+      console.error('Database adapter error (submissions):', error);
+      // Fallback to empty result
+      return { submissions: [], total_submissions: 0 };
+    }
+  },
+
+  // Get submission by ID
+  async getSubmissionById(id: string): Promise<TaskSubmission | null> {
+    try {
+      const { getSubmissionById } = await import(
+        '@/lib/services/submission-db-service'
+      );
+      return await getSubmissionById(id);
+    } catch (error) {
+      console.error('Database adapter error (submission by id):', error);
       return null;
     }
   }

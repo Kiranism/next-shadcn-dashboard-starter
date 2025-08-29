@@ -65,6 +65,14 @@ export const navItems: NavItem[] = [
     shortcut: ['s', 's'],
     isActive: false,
     items: [] // No child items
+  },
+  {
+    title: 'Submissions',
+    url: '/dashboard/submissions',
+    icon: 'fileText',
+    shortcut: ['u', 'u'],
+    isActive: false,
+    items: [] // No child items
   }
   // {
   //   title: 'Kanban',
