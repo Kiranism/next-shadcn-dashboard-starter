@@ -72,38 +72,40 @@ export function useProjectUsers({
         throw new Error(errorData.message || `HTTP Error ${response.status}`);
       }
 
-      const usersData = await response.json();
+      const payload = await response.json();
 
-      if (!Array.isArray(usersData)) {
-        throw new Error('Invalid response format: expected array');
+      const list: any[] = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.users)
+          ? payload.users
+          : [];
+
+      if (!Array.isArray(list)) {
+        throw new Error('Invalid response format: expected users array');
       }
 
       // Форматируем пользователей для корректного отображения
-      const formattedUsers: User[] = usersData.map(
-        (user: any, index: number) => ({
-          id: user.id || `user-${index}`,
-          name:
-            user.firstName && user.lastName
-              ? `${user.firstName} ${user.lastName}`.trim()
-              : user.email || `Пользователь ${index + 1}`,
-          email: user.email || '',
-          phone: user.phone || '',
-          avatar:
-            user.avatar ||
-            `https://api.slingacademy.com/public/sample-users/${(index % 10) + 1}.png`,
-          bonusBalance: Number(user.bonusBalance) || 0,
-          totalEarned: Number(user.totalEarned) || 0,
-          createdAt: new Date(
-            user.registeredAt || user.createdAt || Date.now()
-          ),
-          updatedAt: new Date(user.updatedAt || Date.now()),
-          firstName: user.firstName,
-          lastName: user.lastName,
-          birthDate: user.birthDate,
-          registeredAt: user.registeredAt,
-          currentLevel: user.currentLevel
-        })
-      );
+      const formattedUsers: User[] = list.map((user: any, index: number) => ({
+        id: user.id || `user-${index}`,
+        name:
+          user.firstName && user.lastName
+            ? `${user.firstName} ${user.lastName}`.trim()
+            : user.email || `Пользователь ${index + 1}`,
+        email: user.email || '',
+        phone: user.phone || '',
+        avatar:
+          user.avatar ||
+          `https://api.slingacademy.com/public/sample-users/${(index % 10) + 1}.png`,
+        bonusBalance: Number(user.bonusBalance) || 0,
+        totalEarned: Number(user.totalEarned) || 0,
+        createdAt: new Date(user.registeredAt || user.createdAt || Date.now()),
+        updatedAt: new Date(user.updatedAt || Date.now()),
+        firstName: user.firstName,
+        lastName: user.lastName,
+        birthDate: user.birthDate,
+        registeredAt: user.registeredAt,
+        currentLevel: user.currentLevel
+      }));
 
       setUsers(formattedUsers);
 

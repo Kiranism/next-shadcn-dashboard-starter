@@ -10,13 +10,21 @@ async function checkProjects() {
     });
 
     console.log('Активные проекты:');
-    projects.forEach((p) => {
-      console.log(`- ${p.name} (ID: ${p.id})`);
-      console.log(`  Bot Token: ${p.botToken ? '✅ Есть' : '❌ Нет'}`);
-      console.log(`  Bot Username: ${p.botUsername || 'не установлен'}`);
-      console.log(`  Bot Settings: ${p.botSettings ? '✅ Есть' : '❌ Нет'}`);
-      console.log('');
-    });
+    projects.forEach(
+      (p: {
+        id: string;
+        name: string;
+        botToken: string | null;
+        botUsername: string | null;
+        botSettings: any | null;
+      }) => {
+        console.log(`- ${p.name} (ID: ${p.id})`);
+        console.log(`  Bot Token: ${p.botToken ? '✅ Есть' : '❌ Нет'}`);
+        console.log(`  Bot Username: ${p.botUsername || 'не установлен'}`);
+        console.log(`  Bot Settings: ${p.botSettings ? '✅ Есть' : '❌ Нет'}`);
+        console.log('');
+      }
+    );
   } catch (error) {
     console.error('Ошибка:', error);
   } finally {

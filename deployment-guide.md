@@ -9,7 +9,7 @@
 npm install -g ngrok
 
 # 2. Запустите проект локально
-pnpm dev
+yarn dev
 
 # 3. В новом терминале создайте туннель
 ngrok http 3000
@@ -142,13 +142,13 @@ npx prisma migrate deploy
 ### 1. **Подготовка**
 ```bash
 # 1. Убедитесь что проект собирается
-pnpm build
+yarn build
 
 # 2. Проверьте TypeScript
 npx tsc --noEmit
 
 # 3. Проверьте линтер
-pnpm lint
+yarn lint
 ```
 
 ### 2. **База данных**

@@ -66,11 +66,12 @@ export async function PUT(
     }
 
     // Обновляем порядок уровней
-    const updatePromises = levelOrders.map((item: any) =>
-      db.bonusLevel.update({
-        where: { id: item.id },
-        data: { order: item.order }
-      })
+    const updatePromises = levelOrders.map(
+      (item: { id: string; order: number }) =>
+        db.bonusLevel.update({
+          where: { id: item.id },
+          data: { order: item.order }
+        })
     );
 
     await Promise.all(updatePromises);
@@ -87,7 +88,7 @@ export async function PUT(
     logger.info('Bonus levels reordered', {
       projectId,
       levelsCount: levelOrders.length,
-      newOrder: levelOrders.map((item: any) => ({
+      newOrder: levelOrders.map((item: { id: string; order: number }) => ({
         id: item.id,
         order: item.order
       }))
@@ -96,7 +97,7 @@ export async function PUT(
     return NextResponse.json({
       success: true,
       message: 'Порядок уровней обновлен',
-      data: updatedLevels.map((level) => ({
+      data: updatedLevels.map((level: any) => ({
         ...level,
         minAmount: Number(level.minAmount),
         maxAmount: level.maxAmount ? Number(level.maxAmount) : null,

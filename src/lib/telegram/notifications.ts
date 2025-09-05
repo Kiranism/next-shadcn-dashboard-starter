@@ -186,7 +186,7 @@ export async function sendRichBroadcastMessage(
         where: { projectId, telegramId: { not: null }, isActive: true },
         select: { id: true }
       });
-      targetUserIds = dbUsers.map((u) => u.id);
+      targetUserIds = dbUsers.map((u: { id: string }) => u.id);
     }
 
     if (targetUserIds.length === 0) {

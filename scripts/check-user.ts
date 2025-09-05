@@ -52,9 +52,11 @@ async function checkUser() {
     });
 
     console.log('📱 Все пользователи с telegramId в проекте:');
-    telegramUsers.forEach((u) => {
-      console.log(`   - ${u.id}: ${u.email} (${u.telegramId})`);
-    });
+    telegramUsers.forEach(
+      (u: { id: string; email: string | null; telegramId: bigint | null }) => {
+        console.log(`   - ${u.id}: ${u.email} (${u.telegramId})`);
+      }
+    );
   } catch (error) {
     console.error('❌ Ошибка:', error);
   } finally {

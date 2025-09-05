@@ -14,17 +14,17 @@ cd saas-bonus-system
 docker-compose up -d
 
 # 3. Установите зависимости
-pnpm install
+yarn install
 
 # 4. Настройте окружение
 cp env.example.txt .env.local
 # Отредактируйте .env.local (см. ниже)
 
 # 5. Примените миграции
-pnpm prisma:migrate
+yarn prisma:migrate
 
 # 6. Запустите приложение
-pnpm dev
+yarn dev
 ```
 
 ✅ **Готово!** Откройте http://localhost:5006
@@ -45,7 +45,7 @@ git clone https://github.com/your-username/saas-bonus-system.git
 cd saas-bonus-system
 
 # 3. Установите зависимости
-pnpm install
+yarn install
 
 # 4. Создайте базу данных
 psql -U postgres
@@ -59,10 +59,10 @@ cp env.example.txt .env.local
 # Отредактируйте .env.local
 
 # 6. Примените миграции
-pnpm prisma:migrate
+yarn prisma:migrate
 
 # 7. Запустите приложение
-pnpm dev
+yarn dev
 ```
 
 ---
@@ -102,17 +102,17 @@ NODE_ENV="development"
 
 ### Разработка
 ```bash
-pnpm dev              # Запуск в режиме разработки
-pnpm build           # Сборка для production
-pnpm test            # Запуск тестов
-pnpm lint            # Проверка кода
+yarn dev              # Запуск в режиме разработки
+yarn build           # Сборка для production
+yarn test            # Запуск тестов
+yarn lint            # Проверка кода
 ```
 
 ### База данных
 ```bash
-pnpm prisma:studio   # GUI для БД (http://localhost:5555)
-pnpm prisma:migrate  # Применить миграции
-pnpm prisma:seed     # Заполнить тестовыми данными
+yarn prisma:studio   # GUI для БД (http://localhost:5555)
+yarn prisma:migrate  # Применить миграции
+yarn prisma:seed     # Заполнить тестовыми данными
 ```
 
 ### Docker
@@ -183,7 +183,7 @@ redis-server
 
 1. Проверьте [Troubleshooting](./docs/troubleshooting.md)
 2. Создайте [Issue на GitHub](https://github.com/your-username/saas-bonus-system/issues)
-3. Посмотрите логи: `pnpm logs` или `docker-compose logs`
+3. Посмотрите логи: `yarn logs` или `docker-compose logs`
 
 ---
 

@@ -38,13 +38,21 @@ check_requirements() {
         print_error "Node.js is not installed. Please install Node.js >= 18.0.0"
     fi
     
-    # Check pnpm
-    if ! command -v pnpm &> /dev/null; then
-        print_warning "pnpm is not installed. Installing..."
-        npm install -g pnpm
+    # Check yarn
+    if ! command -v yarn &> /dev/null; then
+        print_warning "yarn is not installed. Enabling via corepack..."
+        corepack enable && corepack prepare yarn@stable --activate
     fi
-    
-    print_success "All requirements met"
+    yarn install
+    yarn dlx prisma generate
+    yarn prisma:migrate
+        yarn prisma:seed
+    yarn dev
+    docker-compose exec app yarn prisma:migrate
+    # Install yarn
+    corepack enable && corepack prepare yarn@stable --activate
+yarn install
+yarn build
 }
 
 # Setup environment
@@ -68,7 +76,7 @@ setup_env() {
 # Install dependencies
 install_deps() {
     print_info "Installing dependencies..."
-    pnpm install
+    yarn install
     print_success "Dependencies installed"
 }
 
@@ -77,16 +85,16 @@ setup_database() {
     print_info "Setting up database..."
     
     # Generate Prisma Client
-    pnpm prisma:generate
+    yarn prisma:generate
     
     # Run migrations
-    pnpm prisma:migrate
+    yarn prisma:migrate
     
     # Optional: Seed database
     read -p "Do you want to seed the database with test data? (y/n) " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        pnpm prisma:seed
+        yarn prisma:seed
     fi
     
     print_success "Database setup complete"
@@ -105,7 +113,7 @@ deploy_local() {
     print_success "Local deployment ready!"
     print_info "Access the application at: http://localhost:5006"
     
-    pnpm dev
+    yarn dev
 }
 
 # Docker deployment
@@ -130,7 +138,7 @@ deploy_docker() {
     sleep 10
     
     print_info "Running migrations..."
-    docker-compose exec app pnpm prisma:migrate
+    docker-compose exec app yarn prisma:migrate
     
     print_success "Docker deployment complete!"
     print_info "Access the application at: http://localhost:5006"
@@ -157,8 +165,8 @@ deploy_vps() {
         apt install -y nodejs
     fi
     
-    # Install pnpm
-    npm install -g pnpm pm2
+    # Install yarn
+    corepack enable && corepack prepare yarn@stable --activate && npm install -g pm2
     
     # Install PostgreSQL
     print_info "Installing PostgreSQL..."
@@ -188,8 +196,8 @@ deploy_vps() {
     # Setup as nodeapp user
     su - nodeapp << 'EOF'
 cd saas-bonus-system
-pnpm install
-pnpm build
+yarn install
+yarn build
 pm2 start ecosystem.config.js
 pm2 save
 EOF

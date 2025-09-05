@@ -12,7 +12,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { TelegramBotValidationService } from '@/lib/services/telegram-bot-validation.service';
-import { BotStatus } from '@prisma/client';
+// Импорт enum статуса через литералы для избежания жёсткой зависимости типов
+const BotStatus = {
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE',
+  ERROR: 'ERROR'
+} as const;
 
 export async function POST(
   request: NextRequest,

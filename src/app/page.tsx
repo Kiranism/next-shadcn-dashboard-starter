@@ -1,10 +1,9 @@
-import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
+import { getCurrentAdmin } from '@/lib/auth';
 
 export default async function Page() {
-  const { userId } = await auth();
-
-  if (!userId) {
+  const admin = await getCurrentAdmin();
+  if (!admin) {
     return redirect('/auth/sign-in');
   } else {
     redirect('/dashboard');

@@ -27,7 +27,7 @@ ssh -R 80:localhost:5006 serveo.net
 ### 3️⃣ Vercel деплой (Рекомендуемо для продакшена)
 ```bash
 # Быстрый деплой
-pnpm deploy:vercel
+yarn deploy:vercel
 ```
 
 **Результат**: Получите стабильный URL типа `https://your-app.vercel.app`
@@ -53,7 +53,7 @@ https://your-tunnel-url.com/api/webhook/[ваш-webhook-secret]
 
 ### Автоматический тест:
 ```bash
-pnpm test:webhook
+yarn test:webhook
 ```
 
 ### Ручной тест:
@@ -73,7 +73,7 @@ curl -X POST https://your-tunnel-url.com/api/webhook/test-secret \
 
 ```bash
 # 1. Запуск Next.js (в терминале 1)
-pnpm dev
+yarn dev
 
 # 2. Создание туннеля (в терминале 2)
 lt --port 5006
@@ -81,7 +81,7 @@ lt --port 5006
 ssh -R 80:localhost:5006 serveo.net
 
 # 3. Тестирование
-pnpm test:webhook
+yarn test:webhook
 ```
 
 ## 🔧 УСТРАНЕНИЕ ПРОБЛЕМ
@@ -98,7 +98,7 @@ lt --version
 netstat -an | findstr :5006
 
 # Перезапуск
-pnpm dev
+yarn dev
 ```
 
 ### Webhook не приходят:

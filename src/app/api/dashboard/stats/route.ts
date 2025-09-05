@@ -67,13 +67,21 @@ export async function GET() {
       totalUsers,
       activeBots,
       totalBonuses: Number(totalBonuses._sum.amount || 0),
-      recentProjects: recentProjects.map((project) => ({
-        id: project.id,
-        name: project.name,
-        userCount: project._count.users,
-        botStatus: project.botSettings?.isActive ? 'ACTIVE' : 'INACTIVE',
-        createdAt: project.createdAt.toISOString()
-      }))
+      recentProjects: recentProjects.map(
+        (project: {
+          id: string;
+          name: string;
+          createdAt: Date;
+          _count: { users: number };
+          botSettings: { isActive: boolean } | null;
+        }) => ({
+          id: project.id,
+          name: project.name,
+          userCount: project._count.users,
+          botStatus: project.botSettings?.isActive ? 'ACTIVE' : 'INACTIVE',
+          createdAt: project.createdAt.toISOString()
+        })
+      )
     };
 
     logger.info(

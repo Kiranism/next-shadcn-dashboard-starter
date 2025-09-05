@@ -35,7 +35,7 @@
 - Node.js >= 18.0.0
 - PostgreSQL >= 14
 - Redis >= 6.2
-- pnpm >= 10.0.0
+- yarn >= 4.0.0
 - Telegram Bot Token (для каждого проекта)
 
 ## 🛠️ Установка
@@ -50,7 +50,7 @@ cd saas-bonus-system
 ### 2. Установка зависимостей
 
 ```bash
-pnpm install
+yarn install
 ```
 
 ### 3. Настройка окружения
@@ -120,11 +120,11 @@ docker-compose up -d redis
 
 ```bash
 # Development режим
-pnpm dev
+yarn dev
 
 # Production сборка
-pnpm build
-pnpm start
+yarn build
+yarn start
 ```
 
 Приложение будет доступно по адресу: http://localhost:5006
@@ -268,19 +268,19 @@ POST /api/webhook/{webhookSecret}
 
 ```bash
 # Все тесты
-pnpm test
+yarn test
 
 # Тесты с покрытием
-pnpm test:coverage
+yarn test:coverage
 
 # Тесты в watch режиме
-pnpm test:watch
+yarn test:watch
 
 # Только unit тесты
-pnpm test:unit
+yarn test:unit
 
 # Только integration тесты
-pnpm test:integration
+yarn test:integration
 ```
 
 ### Структура тестов

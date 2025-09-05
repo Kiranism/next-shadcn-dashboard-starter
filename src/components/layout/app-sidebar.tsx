@@ -31,7 +31,6 @@ import {
 import { UserAvatarProfile } from '@/components/user-avatar-profile';
 import { navItems } from '@/constants/data';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import { useUser } from '@clerk/nextjs';
 import {
   IconBell,
   IconChevronRight,
@@ -41,7 +40,6 @@ import {
   IconPhotoUp,
   IconUserCircle
 } from '@tabler/icons-react';
-import { SignOutButton } from '@clerk/nextjs';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import * as React from 'react';
@@ -56,7 +54,6 @@ export const company = {
 export default function AppSidebar() {
   const pathname = usePathname();
   const { isOpen } = useMediaQuery();
-  const { user } = useUser();
   const router = useRouter();
 
   React.useEffect(() => {
@@ -151,14 +148,10 @@ export default function AppSidebar() {
                   size='lg'
                   className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
                 >
-                  {user && <UserAvatarProfile user={user} />}
+                  <UserAvatarProfile user={null} />
                   <div className='grid flex-1 text-left text-sm leading-tight'>
-                    <span className='truncate font-semibold'>
-                      {user?.fullName}
-                    </span>
-                    <span className='truncate text-xs'>
-                      {user?.emailAddresses?.[0]?.emailAddress}
-                    </span>
+                    <span className='truncate font-semibold'></span>
+                    <span className='truncate text-xs'></span>
                   </div>
                   <IconChevronsDown className='ml-auto size-4' />
                 </SidebarMenuButton>
@@ -171,14 +164,10 @@ export default function AppSidebar() {
               >
                 <DropdownMenuLabel className='p-0 font-normal'>
                   <div className='flex items-center gap-2 px-1 py-1.5 text-left text-sm'>
-                    {user && <UserAvatarProfile user={user} />}
+                    <UserAvatarProfile user={null} />
                     <div className='grid flex-1 text-left text-sm leading-tight'>
-                      <span className='truncate font-semibold'>
-                        {user?.fullName}
-                      </span>
-                      <span className='truncate text-xs'>
-                        {user?.emailAddresses?.[0]?.emailAddress}
-                      </span>
+                      <span className='truncate font-semibold'></span>
+                      <span className='truncate text-xs'></span>
                     </div>
                   </div>
                 </DropdownMenuLabel>
@@ -200,12 +189,15 @@ export default function AppSidebar() {
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <SignOutButton redirectUrl='/auth/sign-in'>
-                  <DropdownMenuItem>
-                    <IconLogout />
-                    Выйти из аккаунта
-                  </DropdownMenuItem>
-                </SignOutButton>
+                <DropdownMenuItem
+                  onClick={async () => {
+                    await fetch('/api/auth/logout', { method: 'POST' });
+                    router.push('/auth/sign-in');
+                  }}
+                >
+                  <IconLogout />
+                  Выйти из аккаунта
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>

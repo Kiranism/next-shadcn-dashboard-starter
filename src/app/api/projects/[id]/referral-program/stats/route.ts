@@ -131,7 +131,7 @@ export async function GET(
           totalBonusPaid: Number(totalReferralBonuses._sum?.amount || 0),
           periodBonusPaid: Number(periodReferralBonuses._sum?.amount || 0)
         },
-        topReferrers: topReferrers.map((user) => ({
+        topReferrers: topReferrers.map((user: any) => ({
           id: user.id,
           email: user.email,
           firstName: user.firstName,
@@ -140,11 +140,13 @@ export async function GET(
           referralCode: user.referralCode
         })),
         utmSources: utmSources
-          .map((source) => ({
+          .map((source: { utmSource: string | null; _count: number }) => ({
             source: source.utmSource,
             count: source._count
           }))
-          .sort((a, b) => b.count - a.count),
+          .sort(
+            (a: { count: number }, b: { count: number }) => b.count - a.count
+          ),
         period: periodDays
       };
     }

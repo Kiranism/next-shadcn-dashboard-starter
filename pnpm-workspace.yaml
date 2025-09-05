@@ -1,7 +1,0 @@
-ignoredBuiltDependencies:
-  - '@clerk/shared'
-  - '@prisma/client'
-  - '@prisma/engines'
-  - '@sentry/cli'
-  - prisma
-  - sharp

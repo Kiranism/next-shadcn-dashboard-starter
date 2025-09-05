@@ -245,6 +245,7 @@ paths:
           schema:
             type: integer
             default: 20
+          description: Количество записей на странице (1-200)
       responses:
         '200':
           description: Список пользователей
@@ -261,6 +262,77 @@ paths:
                       $ref: '#/components/schemas/UserWithBalance'
                   pagination:
                     $ref: '#/components/schemas/Pagination'
+
+  /api/projects/{id}/notifications:
+    post:
+      tags:
+        - Telegram
+      summary: Отправить расширенные Telegram-уведомления
+      security:
+        - ClerkAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  maxLength: 4000
+                imageUrl:
+                  type: string
+                  format: uri
+                buttons:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      text:
+                        type: string
+                      url:
+                        type: string
+                        format: uri
+                      callback_data:
+                        type: string
+                parseMode:
+                  type: string
+                  enum: [Markdown, HTML]
+                userIds:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Результат отправки уведомлений
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      sent:
+                        type: integer
+                      failed:
+                        type: integer
+        '400':
+          description: Неверные данные
+        '404':
+          description: Проект не найден
+        '429':
+          description: Превышен лимит запросов
 
   /api/projects/{id}/users/{userId}/bonuses:
     post:

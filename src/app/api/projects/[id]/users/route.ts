@@ -11,22 +11,42 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { UserService } from '@/lib/services/user.service';
-import { withApiRateLimit } from '@/lib/with-rate-limit';
+import { withApiRateLimit, withValidation } from '@/lib';
 import { createUserSchema, validateWithSchema } from '@/lib/validation/schemas';
+import { z } from 'zod';
+
+const getQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1).optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(20).optional(),
+  search: z.string().max(200).optional()
+});
 
 async function getHandler(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }>; validatedQuery?: any }
 ) {
   try {
     const { id } = await context.params;
+    const page = context.validatedQuery?.page ?? 1;
+    const limit = context.validatedQuery?.limit ?? 20;
+    const search = context.validatedQuery?.search as string | undefined;
 
-    // Оптимизированная загрузка: используем сервис без N+1
-    const total = await db.user.count({ where: { projectId: id } });
+    // Базовый фильтр с поиском
+    const where: any = { projectId: id };
+    if (search && search.trim().length > 0) {
+      where.OR = [
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+
+    const total = await db.user.count({ where });
     const { users: enrichedUsers } = await UserService.getProjectUsers(
       id,
-      1,
-      Math.max(total, 1)
+      page,
+      limit
     );
 
     // Форматируем под ожидаемый UI
@@ -58,7 +78,16 @@ async function getHandler(
       };
     });
 
-    return NextResponse.json(formattedUsers);
+    return NextResponse.json({
+      success: true,
+      users: formattedUsers,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.max(1, Math.ceil(total / limit))
+      }
+    });
   } catch (error) {
     const { id } = await context.params;
     logger.error('Ошибка получения пользователей', { projectId: id, error });
@@ -398,6 +427,8 @@ async function putHandler(
   }
 }
 
-export const GET = withApiRateLimit(getHandler);
+export const GET = withApiRateLimit(
+  withValidation(getHandler, { query: getQuerySchema })
+);
 export const POST = withApiRateLimit(postHandler);
 export const PUT = withApiRateLimit(putHandler);

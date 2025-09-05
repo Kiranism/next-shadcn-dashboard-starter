@@ -89,7 +89,7 @@
   - Наличие обязательных файлов
   - Переменные окружения
   - Rate limiting
-- **Использование**: `pnpm exec ts-node scripts/system-check.ts`
+- **Использование**: `yarn tsx scripts/system-check.ts`
 
 #### 2. ✅ Полная документация
 - **Файл**: `docs/tasks-to-complete.md` - подробный список всех задач
@@ -139,10 +139,10 @@
 ### 1. Запуск системы
 ```bash
 # Проверка системы
-pnpm exec ts-node scripts/system-check.ts
+yarn tsx scripts/system-check.ts
 
 # Запуск в development режиме
-pnpm dev
+yarn dev
 ```
 
 ### 2. Тестирование Tilda интеграции

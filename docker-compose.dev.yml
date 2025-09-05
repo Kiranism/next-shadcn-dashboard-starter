@@ -1,65 +1,46 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
-    container_name: bonus-system-postgres
+    container_name: bonus_system_postgres_dev
     restart: unless-stopped
     environment:
       POSTGRES_USER: bonus_user
       POSTGRES_PASSWORD: bonus_password
       POSTGRES_DB: bonus_system
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_dev:/var/lib/postgresql/data
     networks:
-      - bonus-network
+      - bonus_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U bonus_user -d bonus_system"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Redis Cache & Queue
   redis:
     image: redis:7-alpine
-    container_name: bonus-system-redis
+    container_name: bonus_system_redis_dev
     restart: unless-stopped
     command: redis-server --appendonly yes
     ports:
       - "6379:6379"
     volumes:
-      - redis_data:/data
+      - redis_data_dev:/data
     networks:
-      - bonus-network
+      - bonus_network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Redis Commander (GUI for Redis) - Development only
-  redis-commander:
-    image: rediscommander/redis-commander:latest
-    container_name: bonus-system-redis-commander
-    restart: unless-stopped
-    environment:
-      REDIS_HOSTS: local:redis:6379
-    ports:
-      - "8081:8081"
-    networks:
-      - bonus-network
-    depends_on:
-      - redis
-    profiles:
-      - dev
-
-  # pgAdmin (GUI for PostgreSQL) - Development only
   pgadmin:
     image: dpage/pgadmin4:latest
-    container_name: bonus-system-pgadmin
+    container_name: bonus_system_pgadmin_dev
     restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@example.com
@@ -67,19 +48,30 @@ services:
       PGADMIN_CONFIG_SERVER_MODE: 'False'
     ports:
       - "5050:80"
-    networks:
-      - bonus-network
     depends_on:
       - postgres
-    profiles:
-      - dev
+    networks:
+      - bonus_network
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: bonus_system_redis_commander_dev
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - bonus_network
 
 volumes:
-  postgres_data:
+  postgres_data_dev:
     driver: local
-  redis_data:
+  redis_data_dev:
     driver: local
 
 networks:
-  bonus-network:
+  bonus_network:
     driver: bridge

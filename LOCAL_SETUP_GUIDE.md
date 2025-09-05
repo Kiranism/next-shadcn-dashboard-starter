@@ -5,7 +5,7 @@
 Перед началом убедитесь, что у вас установлены:
 
 - **Node.js** >= 18.0.0 ([скачать](https://nodejs.org/))
-- **pnpm** >= 10.0.0 (`npm install -g pnpm`)
+- **yarn** >= 4.0.0 (`corepack enable && corepack prepare yarn@stable --activate`)
 - **PostgreSQL** >= 14 ([скачать](https://www.postgresql.org/download/))
 - **Redis** >= 6.2 ([скачать](https://redis.io/download/))
 - **Git** ([скачать](https://git-scm.com/))
@@ -27,13 +27,13 @@ cp env.example.txt .env.local
 docker-compose up -d
 
 # 4. Установите зависимости
-pnpm install
+yarn install
 
 # 5. Примените миграции
-pnpm prisma:migrate
+yarn prisma:migrate
 
 # 6. Запустите приложение
-pnpm dev
+yarn dev
 ```
 
 Приложение будет доступно по адресу: http://localhost:5006
@@ -163,35 +163,33 @@ CRON_SECRET="your-random-secret-here"
 ### Шаг 6: Установка зависимостей
 
 ```bash
-# Установка pnpm если не установлен
-npm install -g pnpm
-
-# Установка зависимостей проекта
-pnpm install
+# Установка yarn если не установлен
+npm install -g corepack && corepack enable
+yarn install
 ```
 
 ### Шаг 7: Настройка базы данных
 
 ```bash
 # Генерация Prisma Client
-pnpm prisma:generate
+yarn prisma:generate
 
 # Применение миграций
-pnpm prisma:migrate
+yarn prisma:migrate
 
 # (Опционально) Заполнение тестовыми данными
-pnpm prisma:seed
+yarn prisma:seed
 ```
 
 ### Шаг 8: Запуск приложения
 
 ```bash
 # Development режим с hot reload
-pnpm dev
+yarn dev
 
 # Или production сборка
-pnpm build
-pnpm start
+yarn build
+yarn start
 ```
 
 ## 🔍 Проверка работоспособности
@@ -268,21 +266,21 @@ kill -9 <PID>
 
 ```bash
 # Разработка
-pnpm dev              # Запуск в dev режиме
-pnpm build           # Production сборка
-pnpm start           # Запуск production сборки
-pnpm lint            # Проверка кода
-pnpm test            # Запуск тестов
+yarn dev              # Запуск в dev режиме
+yarn build           # Production сборка
+yarn start           # Запуск production сборки
+yarn lint            # Проверка кода
+yarn test            # Запуск тестов
 
 # База данных
-pnpm prisma:studio   # GUI для просмотра БД
-pnpm prisma:migrate  # Применить миграции
-pnpm prisma:generate # Генерация Prisma Client
-pnpm prisma:seed     # Заполнение тестовыми данными
+yarn prisma:studio   # GUI для просмотра БД
+yarn prisma:migrate  # Применить миграции
+yarn prisma:generate # Генерация Prisma Client
+yarn prisma:seed     # Заполнение тестовыми данными
 
 # Очистка
-pnpm clean           # Удаление .next и node_modules
-pnpm fresh           # Полная переустановка
+yarn clean           # Удаление .next и node_modules
+yarn fresh           # Полная переустановка
 ```
 
 ## 🎯 Следующие шаги
@@ -304,7 +302,7 @@ pnpm fresh           # Полная переустановка
 
 1. **Используйте Prisma Studio** для просмотра и редактирования данных:
    ```bash
-   pnpm prisma:studio
+   yarn prisma:studio
    ```
 
 2. **Мониторинг Redis** через Redis Commander:
@@ -322,7 +320,7 @@ pnpm fresh           # Полная переустановка
 Если возникли проблемы:
 1. Проверьте `/docs/troubleshooting.md`
 2. Создайте issue на GitHub
-3. Проверьте логи: `pnpm logs`
+3. Проверьте логи: `yarn logs`
 
 ---
 

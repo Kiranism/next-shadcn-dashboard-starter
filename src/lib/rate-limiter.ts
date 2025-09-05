@@ -96,14 +96,18 @@ export const webhookLimiter = new RateLimiter(60000, 30); // 30 req/min для w
 export const authLimiter = new RateLimiter(900000, 5); // 5 req/15min для авторизации
 export const apiLimiter = new RateLimiter(60000, 60); // 60 req/min для API
 
-export function getRateLimitHeaders(result: {
-  remaining: number;
-  resetTime: number;
-}) {
+export function getRateLimitHeaders(
+  result: {
+    remaining: number;
+    resetTime: number;
+  },
+  options?: { limit?: number }
+) {
+  const limit = options?.limit ?? 100;
   return {
     'X-RateLimit-Remaining': result.remaining.toString(),
     'X-RateLimit-Reset': Math.ceil(result.resetTime / 1000).toString(),
-    'X-RateLimit-Limit': '100'
+    'X-RateLimit-Limit': limit.toString()
   };
 }
 

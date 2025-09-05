@@ -34,8 +34,8 @@
 ### 1. Установите зависимости
 
 ```bash
-pnpm add bull ioredis
-pnpm add -D @types/bull
+yarn add bull ioredis
+yarn add -D @types/bull
 ```
 
 ### 2. Запустите Redis
@@ -66,7 +66,7 @@ BULL_REDIS_PORT=6379
 ### 4. Примените миграции для индексов
 
 ```bash
-npx prisma migrate dev --name add_performance_indexes
+yarn prisma migrate dev --name add_performance_indexes
 ```
 
 ## 📁 Новые файлы

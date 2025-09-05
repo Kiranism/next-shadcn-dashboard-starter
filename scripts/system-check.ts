@@ -275,7 +275,7 @@ class SystemChecker {
     if (overallStatus === 'HEALTHY') {
       console.log('\n🎉 Система готова к работе!');
       console.log('📋 Следующие шаги:');
-      console.log('   1. Запустите сервер: pnpm dev');
+      console.log('   1. Запустите сервер: yarn dev');
       console.log('   2. Создайте тестовый проект');
       console.log(
         '   3. Протестируйте Tilda интеграцию на /public/test-tilda.html'

@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { UserService, BonusService } from '@/lib/services/user.service';
 import { logger } from '@/lib/logger';
 import { db } from '@/lib/db';
-import { withApiRateLimit } from '@/lib/with-rate-limit';
+import { withApiRateLimit } from '@/lib';
 
 async function postHandler(
   request: NextRequest,

@@ -181,7 +181,7 @@ const debouncedSearch = debounce(searchFunction, 300);
 
 ### 1. Установка зависимостей
 ```bash
-pnpm install
+yarn install
 ```
 
 ### 2. Настройка переменных окружения
@@ -192,7 +192,7 @@ cp env.example.txt .env.local
 
 ### 3. Запуск в режиме разработки
 ```bash
-pnpm dev
+yarn dev
 ```
 
 ### 4. Переход к бонусной системе

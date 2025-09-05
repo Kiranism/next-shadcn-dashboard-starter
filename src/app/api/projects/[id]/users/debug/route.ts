@@ -59,9 +59,12 @@ export async function GET(
     // Статистика
     const stats = {
       totalUsers: allUsers.length,
-      activeUsers: allUsers.filter((u) => u.isActive).length,
+      activeUsers: allUsers.filter((u: { isActive: boolean }) => u.isActive)
+        .length,
       telegramUsers: telegramUsers.length,
-      usersWithTelegramId: allUsers.filter((u) => u.telegramId !== null).length
+      usersWithTelegramId: allUsers.filter(
+        (u: { telegramId: bigint | null }) => u.telegramId !== null
+      ).length
     };
 
     console.log('📈 Статистика:', stats);

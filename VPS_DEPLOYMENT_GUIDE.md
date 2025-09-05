@@ -67,8 +67,13 @@ cd saas-bonus-system
 ```bash
 # Создание .env.production
 cat > .env.production << 'EOF'
+# Runtime
+NODE_ENV="production"
+PORT="3000"
+NEXT_PUBLIC_APP_URL="https://your-domain.com"
+
 # Database
-DATABASE_URL="postgresql://bonus_user:STRONG_PASSWORD_HERE@postgres:5432/bonus_system"
+DATABASE_URL="postgresql://bonus_user:STRONG_PASSWORD_HERE@postgres:5432/bonus_system?schema=public"
 
 # Redis
 REDIS_URL="redis://redis:6379"
@@ -76,23 +81,19 @@ REDIS_HOST="redis"
 REDIS_PORT="6379"
 
 # Clerk (получите production ключи)
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_live_..."
-CLERK_SECRET_KEY="sk_live_..."
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=""
+CLERK_SECRET_KEY=""
 NEXT_PUBLIC_CLERK_SIGN_IN_URL="/auth/sign-in"
 NEXT_PUBLIC_CLERK_SIGN_UP_URL="/auth/sign-up"
 NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL="/dashboard"
 NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL="/dashboard"
 
-# Application
-NEXT_PUBLIC_APP_URL="https://your-domain.com"
-NODE_ENV="production"
-
 # Security
-CRON_SECRET="$(openssl rand -base64 32)"
 JWT_SECRET="$(openssl rand -base64 32)"
+CRON_SECRET="$(openssl rand -base64 32)"
 
-# Sentry (опционально)
-NEXT_PUBLIC_SENTRY_DSN="https://..."
+# Sentry
+NEXT_PUBLIC_SENTRY_DISABLED="true"
 EOF
 ```
 
@@ -191,46 +192,13 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Копируем package files
-COPY package*.json pnpm-lock.yaml ./
-
-# Установка pnpm
-RUN npm install -g pnpm
-
-# Установка зависимостей
-RUN pnpm install --frozen-lockfile
-
-# Копируем исходный код
-COPY . .
-
-# Генерация Prisma Client
-RUN pnpm prisma:generate
-
-# Build приложения
-RUN pnpm build
-
-# Production stage
-FROM node:20-alpine
-
-WORKDIR /app
-
-# Установка pnpm
-RUN npm install -g pnpm
-
-# Копируем только необходимое
-COPY --from=builder /app/package*.json /app/pnpm-lock.yaml ./
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules ./node_modules
-
-# Создание пользователя
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
-USER nextjs
-
-EXPOSE 3000
-
-CMD ["pnpm", "start"]
+COPY package*.json yarn.lock ./
+# Установка Yarn через corepack уже активирована в Dockerfile
+RUN yarn install --immutable
+RUN yarn dlx prisma generate
+RUN yarn build
+# перенос package*.json и yarn.lock
+CMD ["yarn", "start"]
 ```
 
 ### Шаг 7: Nginx конфигурация
@@ -317,7 +285,7 @@ crontab -e
 docker-compose -f docker-compose.production.yml up -d --build
 
 # Применение миграций
-docker-compose -f docker-compose.production.yml exec app pnpm prisma:migrate
+docker-compose -f docker-compose.production.yml exec app yarn prisma:migrate
 
 # Проверка логов
 docker-compose -f docker-compose.production.yml logs -f
@@ -345,12 +313,13 @@ apt install -y curl wget git build-essential nginx certbot python3-certbot-nginx
 curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
 apt install -y nodejs
 
-# Установка pnpm
-npm install -g pnpm pm2
+# Включение Yarn через Corepack и установка PM2
+npm install -g corepack pm2
+corepack enable && corepack prepare yarn@stable --activate
 
 # Проверка
 node --version
-pnpm --version
+yarn --version
 ```
 
 ### Шаг 3: Установка PostgreSQL
@@ -402,7 +371,7 @@ git clone https://github.com/your-username/saas-bonus-system.git
 cd saas-bonus-system
 
 # Установка зависимостей
-pnpm install
+yarn install
 
 # Настройка окружения
 cp env.example.txt .env.production
@@ -410,10 +379,10 @@ nano .env.production
 # Настройте все переменные
 
 # Сборка
-pnpm build
+yarn build
 
 # Миграции
-pnpm prisma:migrate
+yarn prisma:migrate
 ```
 
 ### Шаг 6: PM2 конфигурация
@@ -576,7 +545,7 @@ cd /opt/saas-bonus-system
 git pull origin main
 docker-compose -f docker-compose.production.yml down
 docker-compose -f docker-compose.production.yml up -d --build
-docker-compose -f docker-compose.production.yml exec app pnpm prisma:migrate
+docker-compose -f docker-compose.production.yml exec app yarn prisma:migrate
 ```
 
 ### Без Docker:
@@ -585,9 +554,9 @@ docker-compose -f docker-compose.production.yml exec app pnpm prisma:migrate
 su - nodeapp
 cd ~/saas-bonus-system
 git pull origin main
-pnpm install
-pnpm build
-pnpm prisma:migrate
+yarn install
+yarn build
+yarn prisma:migrate
 pm2 reload all
 ```
 

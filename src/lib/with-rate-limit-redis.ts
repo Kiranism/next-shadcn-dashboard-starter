@@ -79,12 +79,17 @@ export function withRateLimit(
       // Выполняем основной обработчик
       const response = await handler(req, ...args);
 
-      // Добавляем заголовки rate limit к успешному ответу
+      // Добавляем заголовки rate limit к успешному ответу, не теряя исходные
+      const mergedHeaders = new Headers(response.headers);
       Object.entries(rateLimitResult.headers).forEach(([key, value]) => {
-        response.headers.set(key, value);
+        mergedHeaders.set(key, value);
       });
 
-      return response;
+      return new NextResponse(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: mergedHeaders
+      });
     } catch (error) {
       logger.error('Rate limit middleware error:', {
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -133,11 +138,12 @@ export function withProjectRateLimit(
       const url = new URL(req.url);
       const pathParts = url.pathname.split('/');
       const projectIndex = pathParts.indexOf('projects');
-      const projectId = projectIndex >= 0 ? pathParts[projectIndex + 1] : 'unknown';
-      
+      const projectId =
+        projectIndex >= 0 ? pathParts[projectIndex + 1] : 'unknown';
+
       const forwarded = req.headers.get('x-forwarded-for');
       const ip = forwarded ? forwarded.split(',')[0] : 'unknown';
-      
+
       return `project:${projectId}:${ip}`;
     }
   });
@@ -157,8 +163,9 @@ export function withAnalyticsRateLimit(
       const url = new URL(req.url);
       const pathParts = url.pathname.split('/');
       const projectIndex = pathParts.indexOf('projects');
-      const projectId = projectIndex >= 0 ? pathParts[projectIndex + 1] : 'unknown';
-      
+      const projectId =
+        projectIndex >= 0 ? pathParts[projectIndex + 1] : 'unknown';
+
       return `analytics:${projectId}`;
     }
   });

@@ -7,12 +7,12 @@
  */
 
 // Learn more: https://github.com/testing-library/jest-dom
-import '@testing-library/jest-dom'
+import '@testing-library/jest-dom';
 
 // Mock environment variables
-process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test'
-process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000'
-process.env.NODE_ENV = 'test'
+process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test';
+process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000';
+process.env.NODE_ENV = 'test';
 
 // Mock Prisma client
 jest.mock('@/lib/db', () => ({
@@ -22,7 +22,7 @@ jest.mock('@/lib/db', () => ({
       findMany: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
-      delete: jest.fn(),
+      delete: jest.fn()
     },
     user: {
       findUnique: jest.fn(),
@@ -31,31 +31,31 @@ jest.mock('@/lib/db', () => ({
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
-      groupBy: jest.fn(),
+      groupBy: jest.fn()
     },
     bonus: {
       findMany: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
-      aggregate: jest.fn(),
+      aggregate: jest.fn()
     },
     transaction: {
       findMany: jest.fn(),
       create: jest.fn(),
-      groupBy: jest.fn(),
+      groupBy: jest.fn()
     },
     webhookLog: {
-      create: jest.fn(),
+      create: jest.fn()
     },
     bonusLevel: {
       findMany: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
-      delete: jest.fn(),
+      delete: jest.fn()
     },
-    $transaction: jest.fn((callback) => callback()),
-  },
-}))
+    $transaction: jest.fn((callback) => callback())
+  }
+}));
 
 // Mock Next.js router
 jest.mock('next/navigation', () => ({
@@ -65,49 +65,28 @@ jest.mock('next/navigation', () => ({
     refresh: jest.fn(),
     back: jest.fn(),
     forward: jest.fn(),
-    prefetch: jest.fn(),
+    prefetch: jest.fn()
   }),
   useSearchParams: () => ({
-    get: jest.fn(),
+    get: jest.fn()
   }),
-  usePathname: () => '/test',
-}))
-
-// Mock Clerk
-jest.mock('@clerk/nextjs', () => ({
-  auth: jest.fn(() => ({
-    userId: 'test-user-id',
-    sessionId: 'test-session-id',
-    protect: jest.fn(),
-  })),
-  currentUser: jest.fn(() => ({
-    id: 'test-user-id',
-    emailAddresses: [{ emailAddress: 'test@example.com' }],
-  })),
-  useAuth: jest.fn(() => ({
-    userId: 'test-user-id',
-    isSignedIn: true,
-  })),
-  ClerkProvider: ({ children }) => children,
-  SignIn: () => null,
-  SignUp: () => null,
-  UserButton: () => null,
-}))
+  usePathname: () => '/test'
+}));
 
 // Suppress console errors in tests
-const originalError = console.error
+const originalError = console.error;
 beforeAll(() => {
   console.error = (...args) => {
     if (
       typeof args[0] === 'string' &&
       args[0].includes('Warning: ReactDOM.render')
     ) {
-      return
+      return;
     }
-    originalError.call(console, ...args)
-  }
-})
+    originalError.call(console, ...args);
+  };
+});
 
 afterAll(() => {
-  console.error = originalError
-})
+  console.error = originalError;
+});

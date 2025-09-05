@@ -60,10 +60,10 @@ NEXT_PUBLIC_SENTRY_DSN
 vercel env pull .env.production
 
 # Применить миграции
-pnpm prisma migrate deploy
+yarn prisma migrate deploy
 
 # Создать первый проект
-pnpm tsx scripts/simple-test.ts
+yarn tsx scripts/simple-test.ts
 ```
 
 ## 🎯 ШАГ 5: Webhook для Tilda

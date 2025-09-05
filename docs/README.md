@@ -41,7 +41,7 @@ git clone <your-repo>
 cd saas-bonus-system
 
 # Установите зависимости
-pnpm install
+yarn install
 
 # Настройте базу данных
 # Создайте файл .env с DATABASE_URL
@@ -73,12 +73,12 @@ CLERK_SECRET_KEY=
 
 ```powershell
 # Development режим
-pnpm dev
+yarn dev
 
 # Приложение будет доступно на http://localhost:5006
 
 # Проверьте систему перед использованием
-pnpm exec ts-node scripts/system-check.ts
+yarn exec ts-node scripts/system-check.ts
 ```
 
 ## 🎯 Основные возможности
@@ -177,10 +177,10 @@ npx tsc --noEmit
 npx prisma validate
 
 # Сборка проекта
-pnpm build
+yarn build
 
 # Линтинг
-pnpm lint
+yarn lint
 ```
 
 ## 📞 Поддержка

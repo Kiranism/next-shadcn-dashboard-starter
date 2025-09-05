@@ -114,40 +114,52 @@ export async function GET(
       }),
 
       // Ежедневная статистика (последние 30 дней)
-      db.transaction.findMany({
-        where: {
-          user: { projectId: id },
-          createdAt: { gte: thirtyDaysAgo }
-        },
-        select: {
-          createdAt: true,
-          type: true,
-          amount: true
-        }
-      }).then(transactions => {
-        const dailyStats = new Map<string, any>();
-        transactions.forEach(t => {
-          const date = t.createdAt.toISOString().split('T')[0];
-          if (!dailyStats.has(date)) {
-            dailyStats.set(date, {
-              date,
-              earned_transactions: 0,
-              spent_transactions: 0,
-              earned_amount: 0,
-              spent_amount: 0
-            });
+      db.transaction
+        .findMany({
+          where: {
+            user: { projectId: id },
+            createdAt: { gte: thirtyDaysAgo }
+          },
+          select: {
+            createdAt: true,
+            type: true,
+            amount: true
           }
-          const stat = dailyStats.get(date);
-          if (t.type === 'EARN') {
-            stat.earned_transactions++;
-            stat.earned_amount = Number(stat.earned_amount) + Number(t.amount);
-          } else if (t.type === 'SPEND') {
-            stat.spent_transactions++;
-            stat.spent_amount = Number(stat.spent_amount) + Number(t.amount);
+        })
+        .then(
+          (
+            transactions: Array<{ createdAt: Date; type: string; amount: any }>
+          ) => {
+            const dailyStats = new Map<string, any>();
+            transactions.forEach(
+              (t: { createdAt: Date; type: string; amount: any }) => {
+                const date = t.createdAt.toISOString().split('T')[0];
+                if (!dailyStats.has(date)) {
+                  dailyStats.set(date, {
+                    date,
+                    earned_transactions: 0,
+                    spent_transactions: 0,
+                    earned_amount: 0,
+                    spent_amount: 0
+                  });
+                }
+                const stat: any = dailyStats.get(date);
+                if (t.type === 'EARN') {
+                  stat.earned_transactions++;
+                  stat.earned_amount =
+                    Number(stat.earned_amount) + Number(t.amount);
+                } else if (t.type === 'SPEND') {
+                  stat.spent_transactions++;
+                  stat.spent_amount =
+                    Number(stat.spent_amount) + Number(t.amount);
+                }
+              }
+            );
+            return Array.from(dailyStats.values()).sort((a: any, b: any) =>
+              a.date.localeCompare(b.date)
+            );
           }
-        });
-        return Array.from(dailyStats.values()).sort((a, b) => a.date.localeCompare(b.date));
-      }),
+        ),
 
       // Статистика по типам транзакций
       db.transaction.groupBy({
@@ -175,49 +187,77 @@ export async function GET(
       }),
 
       // Топ активных пользователей
-      db.user.findMany({
-        where: { projectId: id },
-        include: {
-          transactions: {
-            where: { createdAt: { gte: thirtyDaysAgo } },
-            select: { type: true, amount: true }
+      db.user
+        .findMany({
+          where: { projectId: id },
+          include: {
+            transactions: {
+              where: { createdAt: { gte: thirtyDaysAgo } },
+              select: { type: true, amount: true }
+            }
+          },
+          take: 10
+        })
+        .then(
+          (
+            users: Array<{
+              id: string;
+              firstName: string | null;
+              lastName: string | null;
+              email: string | null;
+              phone: string | null;
+              transactions: Array<{ type: string; amount: any }>;
+            }>
+          ) => {
+            return users
+              .map((u) => ({
+                id: u.id,
+                first_name: u.firstName,
+                last_name: u.lastName,
+                email: u.email,
+                phone: u.phone,
+                transaction_count: u.transactions.length,
+                total_earned: u.transactions
+                  .filter((t) => t.type === 'EARN')
+                  .reduce((sum, t) => sum + Number(t.amount), 0),
+                total_spent: u.transactions
+                  .filter((t) => t.type === 'SPEND')
+                  .reduce((sum, t) => sum + Number(t.amount), 0)
+              }))
+              .sort(
+                (a: any, b: any) => b.transaction_count - a.transaction_count
+              );
           }
-        },
-        take: 10
-      }).then(users => {
-        return users.map(u => ({
-          id: u.id,
-          first_name: u.firstName,
-          last_name: u.lastName,
-          email: u.email,
-          phone: u.phone,
-          transaction_count: u.transactions.length,
-          total_earned: u.transactions
-            .filter(t => t.type === 'EARN')
-            .reduce((sum, t) => sum + Number(t.amount), 0),
-          total_spent: u.transactions
-            .filter(t => t.type === 'SPEND')
-            .reduce((sum, t) => sum + Number(t.amount), 0)
-        })).sort((a, b) => b.transaction_count - a.transaction_count);
-      }),
+        ),
 
       // Статистика по уровням пользователей
-      db.user.groupBy({
-        by: ['currentLevel'],
-        where: { projectId: id },
-        _count: { id: true },
-        _avg: { totalPurchases: true }
-      }).then(levels => 
-        levels.map(l => ({
-          level: l.currentLevel,
-          user_count: l._count.id,
-          avg_purchases: l._avg.totalPurchases
-        })).sort((a, b) => b.user_count - a.user_count)
-      ),
+      db.user
+        .groupBy({
+          by: ['currentLevel'],
+          where: { projectId: id },
+          _count: { id: true },
+          _avg: { totalPurchases: true }
+        })
+        .then(
+          (
+            levels: Array<{
+              currentLevel: string | null;
+              _count: { id: number };
+              _avg: { totalPurchases: any };
+            }>
+          ) =>
+            levels
+              .map((l) => ({
+                level: l.currentLevel,
+                user_count: l._count.id,
+                avg_purchases: l._avg.totalPurchases
+              }))
+              .sort((a: any, b: any) => b.user_count - a.user_count)
+        ),
 
       // Активные уровни бонусов проекта
       db.bonusLevel.findMany({
-        where: { 
+        where: {
           projectId: id,
           isActive: true
         },
@@ -263,7 +303,7 @@ export async function GET(
       // Данные для графиков
       charts: {
         // Ежедневная активность
-        dailyActivity: dailyStats.map((day) => ({
+        dailyActivity: dailyStats.map((day: any) => ({
           date: day.date,
           earnedTransactions: Number(day.earned_transactions) || 0,
           spentTransactions: Number(day.spent_transactions) || 0,
@@ -272,7 +312,7 @@ export async function GET(
         })),
 
         // Статистика по типам транзакций
-        transactionTypes: transactionsByType.map((type) => ({
+        transactionTypes: transactionsByType.map((type: any) => ({
           type: type.type,
           count: type._count,
           amount: type._sum.amount || 0
@@ -280,7 +320,7 @@ export async function GET(
       },
 
       // Топ пользователей
-      topUsers: topUsers.map((user) => ({
+      topUsers: topUsers.map((user: any) => ({
         id: user.id,
         name:
           [user.first_name, user.last_name].filter(Boolean).join(' ') ||

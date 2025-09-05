@@ -20,10 +20,16 @@ POST /api/webhook/{webhookSecret}
 ```
 
 ### Admin API Authentication  
-Для админских endpoints используется JWT:
+Для админских endpoints используется JWT (cookie `sb_auth` в браузере или Bearer для прямых API вызовов):
 ```
 Authorization: Bearer <jwt_token>
 ```
+
+Эндпоинты аутентификации:
+- POST /api/auth/register — регистрация администратора (email, password)
+- POST /api/auth/login — вход, устанавливает httpOnly cookie
+- POST /api/auth/logout — выход, очищает cookie
+- GET /api/auth/me — текущий админ
 
 ---
 

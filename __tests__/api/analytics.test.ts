@@ -9,75 +9,74 @@
 import { NextRequest } from 'next/server';
 import { GET } from '@/app/api/projects/[id]/analytics/route';
 import { db } from '@/lib/db';
-import { auth } from '@clerk/nextjs';
+// auth not required in this test scope
 
 // Mock dependencies
 jest.mock('@/lib/db');
-jest.mock('@clerk/nextjs');
+// no clerk
 jest.mock('@/lib/logger');
 
 describe('Analytics API', () => {
   const mockDb = db as jest.Mocked<typeof db>;
-  const mockAuth = auth as jest.Mock;
+  // no auth
   const projectId = 'test-project-id';
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
-    // Mock authentication
-    mockAuth.mockResolvedValue({
-      userId: 'test-user-id',
-      protect: jest.fn(),
-    });
+
+    // Mock authentication not required
 
     // Setup default mocks for analytics data
     mockDb.project.findUnique = jest.fn().mockResolvedValue({
       id: projectId,
       name: 'Test Project',
-      isActive: true,
+      isActive: true
     });
 
-    mockDb.user.count = jest.fn()
+    mockDb.user.count = jest
+      .fn()
       .mockResolvedValueOnce(100) // totalUsers
-      .mockResolvedValueOnce(80)  // activeUsers
-      .mockResolvedValueOnce(20)  // newUsersLast30Days
-      .mockResolvedValueOnce(5);  // newUsersLast7Days
+      .mockResolvedValueOnce(80) // activeUsers
+      .mockResolvedValueOnce(20) // newUsersLast30Days
+      .mockResolvedValueOnce(5); // newUsersLast7Days
 
-    mockDb.bonus.aggregate = jest.fn()
+    mockDb.bonus.aggregate = jest
+      .fn()
       .mockResolvedValueOnce({
         _sum: { amount: 10000 },
-        _count: 200,
+        _count: 200
       }) // totalBonuses
       .mockResolvedValueOnce({
         _sum: { amount: 5000 },
-        _count: 100,
+        _count: 100
       }) // activeBonuses
       .mockResolvedValueOnce({
         _sum: { amount: 500 },
-        _count: 10,
+        _count: 10
       }); // expiringBonuses
 
-    mockDb.transaction.count = jest.fn()
+    mockDb.transaction.count = jest
+      .fn()
       .mockResolvedValueOnce(1000) // totalTransactions
-      .mockResolvedValueOnce(300)  // transactionsLast30Days
-      .mockResolvedValueOnce(50);  // transactionsLast7Days
+      .mockResolvedValueOnce(300) // transactionsLast30Days
+      .mockResolvedValueOnce(50); // transactionsLast7Days
 
     mockDb.transaction.findMany = jest.fn().mockResolvedValue([
       {
         createdAt: new Date('2025-01-28'),
         type: 'EARN',
-        amount: 100,
+        amount: 100
       },
       {
         createdAt: new Date('2025-01-28'),
         type: 'SPEND',
-        amount: 50,
-      },
+        amount: 50
+      }
     ]);
 
     mockDb.transaction.groupBy = jest.fn().mockResolvedValue([
       { type: 'EARN', _count: 150, _sum: { amount: 7500 } },
-      { type: 'SPEND', _count: 50, _sum: { amount: 2500 } },
+      { type: 'SPEND', _count: 50, _sum: { amount: 2500 } }
     ]);
 
     mockDb.user.findMany = jest.fn().mockResolvedValue([
@@ -89,22 +88,22 @@ describe('Analytics API', () => {
         phone: null,
         transactions: [
           { type: 'EARN', amount: 100 },
-          { type: 'SPEND', amount: 20 },
-        ],
-      },
+          { type: 'SPEND', amount: 20 }
+        ]
+      }
     ]);
 
     mockDb.user.groupBy = jest.fn().mockResolvedValue([
       {
         currentLevel: 'Базовый',
         _count: { id: 50 },
-        _avg: { totalPurchases: 1000 },
+        _avg: { totalPurchases: 1000 }
       },
       {
         currentLevel: 'Серебряный',
         _count: { id: 30 },
-        _avg: { totalPurchases: 5000 },
-      },
+        _avg: { totalPurchases: 5000 }
+      }
     ]);
 
     mockDb.bonusLevel.findMany = jest.fn().mockResolvedValue([
@@ -115,15 +114,17 @@ describe('Analytics API', () => {
         maxAmount: 10000,
         bonusPercent: 5,
         paymentPercent: 10,
-        order: 1,
-      },
+        order: 1
+      }
     ]);
   });
 
   describe('GET /api/projects/[id]/analytics', () => {
     it('should return analytics data successfully', async () => {
-      const request = new NextRequest(`http://localhost:3000/api/projects/${projectId}/analytics`);
-      
+      const request = new NextRequest(
+        `http://localhost:3000/api/projects/${projectId}/analytics`
+      );
+
       const response = await GET(request, { params: { id: projectId } });
       const data = await response.json();
 
@@ -143,7 +144,7 @@ describe('Analytics API', () => {
       const request = new NextRequest(
         `http://localhost:3000/api/projects/${projectId}/analytics?startDate=2025-01-01&endDate=2025-01-31`
       );
-      
+
       const response = await GET(request, { params: { id: projectId } });
       const data = await response.json();
 
@@ -153,9 +154,9 @@ describe('Analytics API', () => {
         expect.objectContaining({
           where: expect.objectContaining({
             createdAt: expect.objectContaining({
-              gte: expect.any(Date),
-            }),
-          }),
+              gte: expect.any(Date)
+            })
+          })
         })
       );
     });
@@ -163,8 +164,10 @@ describe('Analytics API', () => {
     it('should return 404 for non-existent project', async () => {
       mockDb.project.findUnique = jest.fn().mockResolvedValue(null);
 
-      const request = new NextRequest(`http://localhost:3000/api/projects/invalid-id/analytics`);
-      
+      const request = new NextRequest(
+        `http://localhost:3000/api/projects/invalid-id/analytics`
+      );
+
       const response = await GET(request, { params: { id: 'invalid-id' } });
       const data = await response.json();
 
@@ -174,10 +177,14 @@ describe('Analytics API', () => {
     });
 
     it('should handle database errors gracefully', async () => {
-      mockDb.user.count = jest.fn().mockRejectedValue(new Error('Database error'));
+      mockDb.user.count = jest
+        .fn()
+        .mockRejectedValue(new Error('Database error'));
 
-      const request = new NextRequest(`http://localhost:3000/api/projects/${projectId}/analytics`);
-      
+      const request = new NextRequest(
+        `http://localhost:3000/api/projects/${projectId}/analytics`
+      );
+
       const response = await GET(request, { params: { id: projectId } });
       const data = await response.json();
 
@@ -191,20 +198,24 @@ describe('Analytics API', () => {
         { createdAt: new Date('2025-01-28'), type: 'EARN', amount: 100 },
         { createdAt: new Date('2025-01-28'), type: 'EARN', amount: 50 },
         { createdAt: new Date('2025-01-28'), type: 'SPEND', amount: 30 },
-        { createdAt: new Date('2025-01-27'), type: 'EARN', amount: 200 },
+        { createdAt: new Date('2025-01-27'), type: 'EARN', amount: 200 }
       ];
 
       mockDb.transaction.findMany = jest.fn().mockResolvedValue(transactions);
 
-      const request = new NextRequest(`http://localhost:3000/api/projects/${projectId}/analytics`);
-      
+      const request = new NextRequest(
+        `http://localhost:3000/api/projects/${projectId}/analytics`
+      );
+
       const response = await GET(request, { params: { id: projectId } });
       const data = await response.json();
 
       expect(response.status).toBe(200);
       expect(data.analytics.charts.dailyActivity).toHaveLength(2);
-      
-      const day28 = data.analytics.charts.dailyActivity.find(d => d.date === '2025-01-28');
+
+      const day28 = data.analytics.charts.dailyActivity.find(
+        (d) => d.date === '2025-01-28'
+      );
       expect(day28.earnedTransactions).toBe(2);
       expect(day28.earnedAmount).toBe(150);
       expect(day28.spentTransactions).toBe(1);
@@ -221,8 +232,8 @@ describe('Analytics API', () => {
           phone: null,
           transactions: [
             { type: 'EARN', amount: 100 },
-            { type: 'EARN', amount: 50 },
-          ],
+            { type: 'EARN', amount: 50 }
+          ]
         },
         {
           id: 'user-2',
@@ -233,15 +244,17 @@ describe('Analytics API', () => {
           transactions: [
             { type: 'EARN', amount: 200 },
             { type: 'EARN', amount: 150 },
-            { type: 'SPEND', amount: 50 },
-          ],
-        },
+            { type: 'SPEND', amount: 50 }
+          ]
+        }
       ];
 
       mockDb.user.findMany = jest.fn().mockResolvedValue(users);
 
-      const request = new NextRequest(`http://localhost:3000/api/projects/${projectId}/analytics`);
-      
+      const request = new NextRequest(
+        `http://localhost:3000/api/projects/${projectId}/analytics`
+      );
+
       const response = await GET(request, { params: { id: projectId } });
       const data = await response.json();
 

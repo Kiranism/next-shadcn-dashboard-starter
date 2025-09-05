@@ -11,7 +11,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "lint:fix": "eslint src --fix && pnpm format",
+    "lint:fix": "eslint src --fix && yarn format",
     "lint:strict": "eslint --max-warnings=0 src",
     "format": "prettier --write .",
     "format:check": "prettier -c -w .",
@@ -30,7 +30,7 @@
     "db:migrate": "prisma migrate deploy",
     "db:generate": "prisma generate",
     "db:reset": "prisma migrate reset",
-    "production:check": "pnpm lint && pnpm test && pnpm build && npx tsc --noEmit"
+    "production:check": "yarn lint && yarn test && yarn build && npx tsc --noEmit"
   },
   "lint-staged": {
     "**/*.{js,jsx,tsx,ts,css,less,scss,sass}": [
@@ -38,8 +38,6 @@
     ]
   },
   "dependencies": {
-    "@clerk/nextjs": "^6.12.12",
-    "@clerk/themes": "^2.2.26",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/modifiers": "^7.0.0",
     "@dnd-kit/sortable": "^8.0.0",
@@ -89,7 +87,7 @@
     "grammy": "^1.37.0",
     "input-otp": "^1.4.2",
     "ioredis": "^5.7.0",
-    "jsonwebtoken": "^9.0.2",
+    "jose": "^5.9.6",
     "kbar": "^0.1.0-beta.45",
     "lucide-react": "^0.476.0",
     "match-sorter": "^8.0.0",
@@ -135,11 +133,12 @@
     "lint-staged": "^15.2.11",
     "prettier": "3.4.2",
     "prettier-plugin-tailwindcss": "^0.6.11",
+    "tsx": "^4.19.0",
     "tw-animate-css": "^1.2.4"
   },
   "overrides": {
     "@types/react": "19.0.1",
     "@types/react-dom": "19.0.2"
   },
-  "packageManager": "pnpm@10.13.1+sha512.37ebf1a5c7a30d5fabe0c5df44ee8da4c965ca0c5af3dbab28c3a1681b70a256218d05c81c9c0dcf767ef6b8551eb5b960042b9ed4300c59242336377e01cfad"
+  "packageManager": "yarn@4.5.1"
 }

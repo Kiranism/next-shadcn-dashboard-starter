@@ -12,7 +12,7 @@ import { db } from '@/lib/db';
 import { ProjectService } from '@/lib/services/project.service';
 import { UserService, BonusService } from '@/lib/services/user.service';
 import { logger } from '@/lib/logger';
-import { withWebhookRateLimit } from '@/lib/with-rate-limit';
+import { withWebhookRateLimit } from '@/lib';
 import {
   validateTildaOrder,
   validateWebhookRequest,

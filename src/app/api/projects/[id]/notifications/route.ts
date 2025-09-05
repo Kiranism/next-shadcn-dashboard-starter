@@ -15,10 +15,27 @@ import {
   type RichNotification
 } from '@/lib/telegram/notifications';
 import { botManager } from '@/lib/telegram/bot-manager';
-import { withApiRateLimit } from '@/lib/with-rate-limit';
+import { withApiRateLimit, withValidation } from '@/lib';
 import { withErrorHandler } from '@/lib/error-handler';
+import { z } from 'zod';
 
 // POST /api/projects/[id]/notifications - Отправка расширенных уведомлений
+const notificationBodySchema = z.object({
+  message: z.string().min(1).max(4000),
+  imageUrl: z.string().url().optional(),
+  buttons: z
+    .array(
+      z.object({
+        text: z.string().min(1).max(64),
+        url: z.string().url().optional(),
+        callback_data: z.string().max(64).optional()
+      })
+    )
+    .optional(),
+  parseMode: z.enum(['Markdown', 'HTML']).optional(),
+  userIds: z.array(z.string()).optional()
+});
+
 async function sendNotificationsHandler(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -241,7 +258,9 @@ async function getNotificationStatsHandler(
 }
 
 export const POST = withApiRateLimit(
-  withErrorHandler(sendNotificationsHandler)
+  withValidation(withErrorHandler(sendNotificationsHandler), {
+    body: notificationBodySchema
+  })
 );
 export const GET = withApiRateLimit(
   withErrorHandler(getNotificationStatsHandler)

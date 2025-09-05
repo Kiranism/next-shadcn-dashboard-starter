@@ -227,3 +227,23 @@ enum TransactionType {
   EXPIRE       // Истечение срока
   REFUND       // Возврат
 }
+
+// Роли администраторов (доступ в админ-панель)
+enum AdminRole {
+  SUPERADMIN
+  ADMIN
+  MANAGER
+}
+
+// Администраторы системы (аутентификация по email/паролю)
+model AdminAccount {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  role          AdminRole @default(ADMIN)
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@map("admin_accounts")
+}

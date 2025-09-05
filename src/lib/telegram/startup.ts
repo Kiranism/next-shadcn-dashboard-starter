@@ -21,13 +21,25 @@ export async function initializeAllBots() {
     });
 
     // Получаем все активные настройки ботов
-    const activeBotSettings = await db.botSettings.findMany({
-      where: {
-        isActive: true,
-        botToken: { not: '' }
-      },
-      include: { project: true }
-    });
+    let activeBotSettings;
+    try {
+      activeBotSettings = await db.botSettings.findMany({
+        where: {
+          isActive: true,
+          botToken: { not: '' }
+        },
+        include: { project: true }
+      });
+    } catch (error: unknown) {
+      logger.error(
+        '💥 Ошибка подключения к базе данных при инициализации ботов',
+        {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          component: 'bot-startup'
+        }
+      );
+      return; // Пропускаем инициализацию ботов если нет подключения к БД
+    }
 
     if (activeBotSettings.length === 0) {
       logger.info('📭 Активные боты не найдены', {
@@ -37,16 +49,27 @@ export async function initializeAllBots() {
     }
 
     logger.info(`🤖 Найдено ${activeBotSettings.length} активных ботов`, {
-      bots: activeBotSettings.map((s) => ({
-        projectId: s.projectId,
-        username: s.botUsername,
-        projectName: s.project.name
-      })),
+      bots: activeBotSettings.map(
+        (s: {
+          projectId: string;
+          botUsername: string | null;
+          project: { name: string };
+        }) => ({
+          projectId: s.projectId,
+          username: s.botUsername,
+          projectName: s.project.name
+        })
+      ),
       component: 'bot-startup'
     });
 
     // Инициализируем боты с задержками для избежания rate limiting
-    const results = [];
+    const results: Array<{
+      projectId: string;
+      success: boolean;
+      username?: string;
+      error?: string;
+    }> = [];
     for (const botSettings of activeBotSettings) {
       try {
         logger.info(
@@ -94,8 +117,12 @@ export async function initializeAllBots() {
       }
     }
 
-    const successCount = results.filter((r) => r.success).length;
-    const failureCount = results.filter((r) => !r.success).length;
+    const successCount = results.filter(
+      (r: { success: boolean }) => r.success
+    ).length;
+    const failureCount = results.filter(
+      (r: { success: boolean }) => !r.success
+    ).length;
 
     logger.info(`🎉 Инициализация ботов завершена`, {
       total: activeBotSettings.length,

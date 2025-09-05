@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { UserService, BonusService } from '@/lib/services/user.service';
 import { logger } from '@/lib/logger';
-import { withRateLimit } from '@/lib/with-rate-limit-redis';
+import { withRateLimit } from '@/lib';
 import {
   SpendBonusesSchema,
   validateRequest
@@ -138,7 +138,7 @@ const rateLimitedPOST = withRateLimit(
   {
     limit: 30, // 30 запросов
     window: 60, // в минуту
-    keyGenerator: (req) => {
+    keyGenerator: (req: NextRequest) => {
       // Используем IP + projectId для ключа
       const forwarded = req.headers.get('x-forwarded-for');
       const ip = forwarded ? forwarded.split(',')[0] : 'unknown';

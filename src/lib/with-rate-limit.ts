@@ -75,7 +75,9 @@ export function withRateLimit(
             'Retry-After': Math.ceil(
               (result.resetTime - Date.now()) / 1000
             ).toString(),
-            ...getRateLimitHeaders(result)
+            ...getRateLimitHeaders(result, {
+              limit: (limiter as any).maxRequests ?? 100
+            })
           }
         }
       );
@@ -88,7 +90,11 @@ export function withRateLimit(
       // Добавляем заголовки rate limit к успешным ответам
       if (!skipSuccessfulRequests && response.ok) {
         const headers = new Headers(response.headers);
-        Object.entries(getRateLimitHeaders(result)).forEach(([key, value]) => {
+        Object.entries(
+          getRateLimitHeaders(result, {
+            limit: (limiter as any).maxRequests ?? 100
+          })
+        ).forEach(([key, value]) => {
           headers.set(key, value);
         });
 

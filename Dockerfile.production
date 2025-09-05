@@ -1,15 +1,16 @@
 # Production оптимизированный Dockerfile для SaaS Bonus System
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 
 # Установка системных зависимостей
 RUN apk add --no-cache \
     libc6-compat \
     curl \
     bash \
+    tini \
     && rm -rf /var/cache/apk/*
 
-# Установка pnpm глобально
-RUN corepack enable pnpm
+# Включаем Yarn (Berry)
+RUN corepack enable && corepack prepare yarn@stable --activate
 
 # ====================================
 # Этап зависимостей
@@ -18,13 +19,10 @@ FROM base AS deps
 WORKDIR /app
 
 # Копирование файлов пакетов
-COPY package.json pnpm-lock.yaml ./
+COPY package.json yarn.lock ./
 
-# Установка production зависимостей
-RUN pnpm install --frozen-lockfile --prod
-
-# Установка dev зависимостей в отдельный слой
-RUN pnpm install --frozen-lockfile
+# Установка зависимостей (prod и dev в одном слое для кэша)
+RUN yarn install --immutable
 
 # ====================================
 # Этап сборки
@@ -39,25 +37,19 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Генерация Prisma клиента
-RUN pnpm dlx prisma generate
+RUN yarn dlx prisma generate
 
 # Сборка приложения
 ENV NEXT_TELEMETRY_DISABLED 1
 ENV NODE_ENV production
 
-RUN pnpm build
+RUN yarn build
 
 # ====================================
 # Production образ
 # ====================================
 FROM base AS runner
 WORKDIR /app
-
-# Установка runtime зависимостей
-RUN apk add --no-cache \
-    curl \
-    tini \
-    && rm -rf /var/cache/apk/*
 
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1

@@ -1,103 +1,141 @@
-import { buttonVariants } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { SignIn as ClerkSignInForm } from '@clerk/nextjs';
-import { GitHubLogoIcon } from '@radix-ui/react-icons';
-import { IconStar } from '@tabler/icons-react';
-import { Metadata } from 'next';
+'use client';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import Link from 'next/link';
 
-export const metadata: Metadata = {
-  title: 'Authentication',
-  description: 'Authentication forms built using the components.'
-};
+const formSchema = z.object({
+  email: z.string().email({ message: 'Введите корректный email' }),
+  password: z.string().min(1, { message: 'Пароль обязателен' })
+});
+
+type FormValues = z.infer<typeof formSchema>;
 
 export default function SignInViewPage({ stars }: { stars: number }) {
   return (
-    <div className='relative h-screen flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0'>
-      <Link
-        href='/examples/authentication'
-        className={cn(
-          buttonVariants({ variant: 'ghost' }),
-          'absolute top-4 right-4 hidden md:top-8 md:right-8'
-        )}
-      >
-        Вход
-      </Link>
-      <div className='bg-muted relative hidden h-full flex-col p-10 text-white lg:flex dark:border-r'>
-        <div className='absolute inset-0 bg-zinc-900' />
-        <div className='relative z-20 flex items-center text-lg font-medium'>
-          <svg
-            xmlns='http://www.w3.org/2000/svg'
-            viewBox='0 0 24 24'
-            fill='none'
-            stroke='currentColor'
-            strokeWidth='2'
-            strokeLinecap='round'
-            strokeLinejoin='round'
-            className='mr-2 h-6 w-6'
-          >
-            <path d='M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3' />
-          </svg>
-          Logo
-        </div>
-        <div className='relative z-20 mt-auto'>
-          <blockquote className='space-y-2'>
-            <p className='text-lg'>
-              &ldquo;This starter template has saved me countless hours of work
-              and helped me deliver projects to my clients faster than ever
-              before.&rdquo;
-            </p>
-            <footer className='text-sm'>Random Dude</footer>
-          </blockquote>
-        </div>
-      </div>
-      <div className='flex h-full items-center justify-center p-4 lg:p-8'>
-        <div className='flex w-full max-w-md flex-col items-center justify-center space-y-6'>
-          {/* github link  */}
-          <Link
-            className={cn('group inline-flex hover:text-yellow-200')}
-            target='_blank'
-            href={'https://github.com/kiranism/next-shadcn-dashboard-starter'}
-          >
-            <div className='flex items-center'>
-              <GitHubLogoIcon className='size-4' />
-              <span className='ml-1 inline'>
-                Поставить звезду на GitHub
-              </span>{' '}
-            </div>
-            <div className='ml-2 flex items-center gap-1 text-sm md:flex'>
-              <IconStar
-                className='size-4 text-gray-500 transition-all duration-300 group-hover:text-yellow-300'
-                fill='currentColor'
-              />
-              <span className='font-display font-medium'>{stars}</span>
-            </div>
-          </Link>
-          <ClerkSignInForm
-            initialValues={{
-              emailAddress: 'your_mail+clerk_test@example.com'
-            }}
-          />
-
-          <p className='text-muted-foreground px-8 text-center text-sm'>
-            Продолжая, вы соглашаетесь с нашими{' '}
-            <Link
-              href='/terms'
-              className='hover:text-primary underline underline-offset-4'
-            >
-              Условиями обслуживания
-            </Link>{' '}
-            и{' '}
-            <Link
-              href='/privacy'
-              className='hover:text-primary underline underline-offset-4'
-            >
-              Политикой конфиденциальности
-            </Link>
-            .
+    <div className='relative container grid h-screen flex-col items-center justify-center lg:max-w-none lg:grid-cols-1 lg:px-0'>
+      <div className='mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[400px]'>
+        <div className='flex flex-col space-y-2 text-center'>
+          <h1 className='text-2xl font-semibold tracking-tight'>
+            Добро пожаловать
+          </h1>
+          <p className='text-muted-foreground text-sm'>
+            Войдите в свой аккаунт
           </p>
         </div>
+        <AuthForm />
+        <p className='text-muted-foreground px-8 text-center text-sm'>
+          Нет аккаунта?{' '}
+          <Link
+            href='/auth/sign-up'
+            className='hover:text-primary underline underline-offset-4'
+          >
+            Зарегистрироваться
+          </Link>
+        </p>
       </div>
+    </div>
+  );
+}
+
+function AuthForm() {
+  const router = useRouter();
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: { email: '', password: '' }
+  });
+
+  async function onSubmit(values: FormValues) {
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values)
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || 'Ошибка входа');
+      }
+
+      toast.success('Вход выполнен успешно');
+      router.push('/dashboard');
+      router.refresh();
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Ошибка входа';
+      toast.error(message);
+    }
+  }
+
+  return (
+    <div className='grid gap-6'>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
+          <FormField
+            control={form.control}
+            name='email'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input
+                    type='email'
+                    placeholder='admin@example.com'
+                    autoComplete='email'
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name='password'
+            render={({ field }) => (
+              <FormItem>
+                <div className='flex items-center justify-between'>
+                  <FormLabel>Пароль</FormLabel>
+                  <Link
+                    href='/auth/forgot-password'
+                    className='text-muted-foreground hover:text-primary text-sm underline underline-offset-4'
+                  >
+                    Забыли пароль?
+                  </Link>
+                </div>
+                <FormControl>
+                  <Input
+                    type='password'
+                    placeholder='Введите пароль'
+                    autoComplete='current-password'
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Button
+            type='submit'
+            className='w-full'
+            disabled={form.formState.isSubmitting}
+          >
+            {form.formState.isSubmitting ? 'Вход...' : 'Войти'}
+          </Button>
+        </form>
+      </Form>
     </div>
   );
 }

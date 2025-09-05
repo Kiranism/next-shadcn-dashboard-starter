@@ -231,7 +231,7 @@ export class UserService {
       return { users: [], total };
     }
 
-    const userIds = users.map((u) => u.id);
+    const userIds = users.map((u: { id: string }) => u.id);
 
     // Выполняем агрегаты ОДНИМ запросом для всех пользователей страницы
     const [txByUserAndType, activeBonusesByUser, projectLevels] =
@@ -268,7 +268,7 @@ export class UserService {
     }
 
     // Считаем уровень на основе уже загруженных уровней (без доп. запросов)
-    const usersWithBonuses = users.map((user) => {
+    const usersWithBonuses = users.map((user: any) => {
       const activeBonuses = activeBonusMap.get(user.id) ?? 0;
       const totalEarned = earnedMap.get(user.id) ?? 0;
       const totalSpent = spentMap.get(user.id) ?? 0;
@@ -321,7 +321,7 @@ export class UserService {
     if (!user) return null;
 
     const activeBonuses = user.bonuses.reduce(
-      (sum, bonus) => sum + Number(bonus.amount),
+      (sum: number, bonus: { amount: any }) => sum + Number(bonus.amount),
       0
     );
 
