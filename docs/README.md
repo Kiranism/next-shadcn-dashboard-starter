@@ -43,9 +43,15 @@ cd saas-bonus-system
 # Установите зависимости
 yarn install
 
-# Настройте базу данных
-# Создайте файл .env с DATABASE_URL
-npx prisma migrate dev --name init
+# Локальные сервисы через Docker (Postgres + Redis)
+docker compose up -d
+
+# Установите переменные окружения для текущей сессии PowerShell
+$env:DATABASE_URL="postgresql://postgres:postgres@localhost:5434/saas_bonus_system?schema=public"
+$env:REDIS_URL="redis://localhost:6379"
+
+# Примените миграции и сгенерируйте Prisma Client
+npx prisma migrate dev
 npx prisma generate
 ```
 
@@ -55,16 +61,15 @@ npx prisma generate
 
 ```env
 # Database
-DATABASE_URL="postgresql://user:password@localhost:5432/bonus_saas"
+DATABASE_URL=postgresql://postgres:postgres@localhost:5434/saas_bonus_system?schema=public
 
-# JWT Secret
-JWT_SECRET="your-super-secret-key"
+# Redis (если используется)
+REDIS_URL=redis://localhost:6379
 
 # Application URLs
-NEXT_PUBLIC_APP_URL="http://localhost:3001"
-NEXT_PUBLIC_API_URL="http://localhost:3001/api"
+NEXT_PUBLIC_APP_URL=http://localhost:5006
 
-# Clerk Auth (optional)
+# Clerk Auth (опционально — keyless mode по умолчанию)
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
 CLERK_SECRET_KEY=
 ```
@@ -72,12 +77,12 @@ CLERK_SECRET_KEY=
 ### 3. Запуск приложения
 
 ```powershell
-# Development режим
+# Development режим (порт 5006)
 yarn dev
 
 # Приложение будет доступно на http://localhost:5006
 
-# Проверьте систему перед использованием
+# (Опционально) Проверка системы
 yarn exec ts-node scripts/system-check.ts
 ```
 
