@@ -1,8 +1,8 @@
 # 🎯 SaaS Bonus System
 
-[![Next.js](https://img.shields.io/badge/Next.js-15.0-black)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-15.x-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
-[![Prisma](https://img.shields.io/badge/Prisma-6.0-green)](https://www.prisma.io/)
+[![Prisma](https://img.shields.io/badge/Prisma-6.x-green)](https://www.prisma.io/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Мультитенантная SaaS платформа для управления бонусными программами с интеграцией Telegram ботов и webhook API для внешних систем.
@@ -55,17 +55,14 @@ yarn install
 
 ### 3. Настройка окружения
 
-Создайте файл `.env.local` на основе `env.example.txt`:
+Создайте файл `.env` (можно взять за основу `env.example.txt`):
 
 ```env
-# Database
-DATABASE_URL="postgresql://user:password@localhost:5432/bonus_system"
+# Database (локальные Postgres из Docker слушают на 5434)
+DATABASE_URL=postgresql://postgres:postgres@localhost:5434/saas_bonus_system?schema=public
 
 # Redis
 REDIS_URL=redis://localhost:6379
-REDIS_HOST=localhost
-REDIS_PORT=6379
-# REDIS_PASSWORD=your-password # Если используется пароль
 
 # Clerk Authentication
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
@@ -78,6 +75,9 @@ NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
 # Application
 NEXT_PUBLIC_APP_URL=http://localhost:5006
 NODE_ENV=development
+
+# Auth (обязательно для /api/auth/*)
+JWT_SECRET=dev_super_secret_change_me
 
 # Sentry (optional)
 NEXT_PUBLIC_SENTRY_DSN=https://...@sentry.io/...
@@ -106,18 +106,20 @@ npx prisma generate
 npx prisma db seed
 ```
 
-### 5. Запуск Redis
+### 5. Поднять сервисы (Postgres + Redis)
 
 ```bash
-# Через Docker Compose (рекомендуется)
 docker compose up -d
 ```
 
 ### 6. Запуск приложения
 
 ```bash
-# Development режим (порт 5006)
+# Development режим (по умолчанию порт 5006)
 yarn dev
+
+# Если 5006 занят, укажите свой порт
+# yarn dev -p 5007
 
 # Production сборка
 yarn build
@@ -299,10 +301,10 @@ __tests__/
 
 ```bash
 # Development
-docker-compose up -d
+docker compose up -d
 
 # Production
-docker-compose -f docker-compose.production.yml up -d
+docker compose -f docker-compose.production.yml up -d
 ```
 
 ### Vercel

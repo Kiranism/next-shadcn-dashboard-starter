@@ -49,6 +49,7 @@ docker compose up -d
 # Установите переменные окружения для текущей сессии PowerShell
 $env:DATABASE_URL="postgresql://postgres:postgres@localhost:5434/saas_bonus_system?schema=public"
 $env:REDIS_URL="redis://localhost:6379"
+$env:JWT_SECRET="dev_super_secret_change_me"
 
 # Примените миграции и сгенерируйте Prisma Client
 npx prisma migrate dev
@@ -68,6 +69,7 @@ REDIS_URL=redis://localhost:6379
 
 # Application URLs
 NEXT_PUBLIC_APP_URL=http://localhost:5006
+JWT_SECRET=dev_super_secret_change_me
 
 # Clerk Auth (опционально — keyless mode по умолчанию)
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
