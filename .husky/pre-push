@@ -1,1 +1,1 @@
-pnpm run build
+yarn production:check
