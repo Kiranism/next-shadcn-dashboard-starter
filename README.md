@@ -109,17 +109,14 @@ npx prisma db seed
 ### 5. Запуск Redis
 
 ```bash
-# Через Docker
-docker run -d --name redis -p 6379:6379 redis:7-alpine
-
-# Или через docker-compose
-docker-compose up -d redis
+# Через Docker Compose (рекомендуется)
+docker compose up -d
 ```
 
 ### 6. Запуск приложения
 
 ```bash
-# Development режим
+# Development режим (порт 5006)
 yarn dev
 
 # Production сборка
