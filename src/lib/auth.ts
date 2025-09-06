@@ -61,10 +61,13 @@ export async function setSessionCookie(
 ): Promise<void> {
   const cookieStore = await cookies();
   const maxAge = expiresHours * 60 * 60;
+  // Secure включаем только если URL явный https
+  const appUrl = process.env.APP_URL || process.env.NEXTAUTH_URL || '';
+  const isHttps = appUrl.startsWith('https://');
   cookieStore.set(ACCESS_TOKEN_COOKIE, token, {
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    secure: isHttps,
     path: '/',
     maxAge
   });
@@ -72,10 +75,12 @@ export async function setSessionCookie(
 
 export async function clearSessionCookie(): Promise<void> {
   const cookieStore = await cookies();
+  const appUrl = process.env.APP_URL || process.env.NEXTAUTH_URL || '';
+  const isHttps = appUrl.startsWith('https://');
   cookieStore.set(ACCESS_TOKEN_COOKIE, '', {
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    secure: isHttps,
     path: '/',
     maxAge: 0
   });

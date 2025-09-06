@@ -76,9 +76,22 @@ function AuthForm() {
         })
       });
 
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.error || 'Ошибка регистрации');
+        const apiError = (data?.error as string) || 'Ошибка регистрации';
+        if (data?.details?.fieldErrors) {
+          const fieldErrors = data.details.fieldErrors as Record<string, string[]>;
+          Object.entries(fieldErrors).forEach(([key, messages]) => {
+            // у нас нет confirmPassword с сервера, оставим только известные поля
+            if (key === 'email' || key === 'password') {
+              form.setError(key as keyof FormValues, {
+                type: 'server',
+                message: messages?.[0] ?? apiError
+              });
+            }
+          });
+        }
+        throw new Error(apiError);
       }
 
       toast.success('Регистрация выполнена успешно');

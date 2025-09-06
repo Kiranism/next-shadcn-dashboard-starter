@@ -68,15 +68,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const errorMessage =
-      err instanceof Error ? err.message : 'Неизвестная ошибка';
-    return NextResponse.json(
-      {
-        error: 'Внутренняя ошибка',
-        details:
-          process.env.NODE_ENV === 'development' ? errorMessage : undefined
-      },
-      { status: 500 }
-    );
+    const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка';
+    // Если известная проблема (например, JWT_SECRET), вернём 500 c явным сообщением
+    if (errorMessage.includes('JWT_SECRET')) {
+      return NextResponse.json(
+        { error: 'JWT секрет не задан на сервере', details: errorMessage },
+        { status: 500 }
+      );
+    }
+    return NextResponse.json({ error: 'Внутренняя ошибка', details: errorMessage }, { status: 500 });
   }
 }

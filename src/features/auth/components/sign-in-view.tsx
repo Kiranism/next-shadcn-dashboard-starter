@@ -65,9 +65,20 @@ function AuthForm() {
         body: JSON.stringify(values)
       });
 
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.error || 'Ошибка входа');
+        const apiError = (data?.error as string) || 'Ошибка входа';
+        // Пробросить ошибки в форму, если есть детали
+        if (data?.details?.fieldErrors) {
+          const fieldErrors = data.details.fieldErrors as Record<string, string[]>;
+          Object.entries(fieldErrors).forEach(([key, messages]) => {
+            form.setError(key as keyof FormValues, {
+              type: 'server',
+              message: messages?.[0] ?? apiError
+            });
+          });
+        }
+        throw new Error(apiError);
       }
 
       toast.success('Вход выполнен успешно');
