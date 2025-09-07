@@ -1,26 +1,28 @@
 #
 # @file: docker-compose.yml
-# @description: Local Dev stack for Postgres & Redis (Windows-friendly)
+# @description: Postgres + Redis stack (prod-by-IP ready)
 # @project: SaaS Bonus System
 # @dependencies: Docker, Docker Compose v2
 # @created: 2025-09-06
 # @author: AI Assistant + User
+
+version: "3.9"
 
 services:
   postgres:
     image: postgres:17
     container_name: saas-postgres
     restart: unless-stopped
-    ports:
-      - "5434:5432" # host:container (5432 занят локальным сервисом)
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: saas_bonus_system
+      POSTGRES_USER: bonus_admin
+      POSTGRES_PASSWORD: bonus_password_123
+      POSTGRES_DB: bonus_system
+    ports:
+      - "5440:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U bonus_admin -d bonus_system"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -28,20 +30,17 @@ services:
   redis:
     image: redis:7
     container_name: saas-redis
+    command: ["redis-server", "--requirepass", "redis_password_123"]
     restart: unless-stopped
     ports:
-      - "6379:6379"
-    command: ["redis-server", "--appendonly", "yes"]
-    volumes:
-      - redis_data:/data
+      - "6380:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "redis_password_123", "ping"]
       interval: 5s
       timeout: 3s
       retries: 10
 
 volumes:
   postgres_data:
-  redis_data:
 
 
