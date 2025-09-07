@@ -168,12 +168,12 @@ export async function sendRichBroadcastMessage(
         where: { projectId }
       });
       if (!settings || !settings.botToken || settings.isActive === false) {
-        return { sent: 0, failed: 0 };
+        return { sent: 0, failed: 1 };
       }
       try {
         instance = await botManager.createBot(projectId, settings as any);
       } catch {
-        return { sent: 0, failed: 0 };
+        return { sent: 0, failed: 1 };
       }
     }
 
@@ -206,7 +206,7 @@ export async function sendRichBroadcastMessage(
 
     return { sent: result.sentCount, failed: result.failedCount };
   } catch (error) {
-    return { sent: 0, failed: 0 };
+    return { sent: 0, failed: 1 };
   }
 }
 

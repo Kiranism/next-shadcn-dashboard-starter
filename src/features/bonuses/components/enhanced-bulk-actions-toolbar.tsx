@@ -52,8 +52,8 @@ export function EnhancedBulkActionsToolbar({
   }
 
   return (
-    <div className='fixed bottom-6 left-1/2 z-50 -translate-x-1/2 transform'>
-      <div className='rounded-lg border bg-white p-4 shadow-lg'>
+    <div className='bg-background/95 pointer-events-auto fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 transform backdrop-blur-sm'>
+      <div className='bg-background rounded-lg border p-4 shadow-lg'>
         <div className='flex items-center gap-4'>
           {/* Информация о выборе */}
           <div className='flex items-center gap-2 text-sm font-medium'>

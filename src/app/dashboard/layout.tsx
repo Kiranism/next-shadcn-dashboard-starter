@@ -25,7 +25,7 @@ export default async function DashboardLayout({
         <SidebarInset className='h-screen'>
           <Header />
           {/* page main content */}
-          <div className='flex-1 overflow-auto'>{children}</div>
+          <div className='flex-1 overflow-y-scroll'>{children}</div>
           {/* page main content ends */}
         </SidebarInset>
       </SidebarProvider>

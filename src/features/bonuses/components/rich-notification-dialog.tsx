@@ -168,13 +168,7 @@ export function RichNotificationDialog({
         form.reset();
         onOpenChange(false);
       } else {
-        toast.error(result.error || 'Ошибка отправки уведомлений', {
-          description: result.details
-            ? Array.isArray(result.details)
-              ? result.details.join(', ')
-              : result.details
-            : undefined
-        });
+        toast.error(result.error || 'Ошибка отправки уведомлений');
       }
     } catch (error) {
       toast.error('Ошибка отправки уведомлений');
@@ -208,13 +202,13 @@ export function RichNotificationDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className='flex gap-4'>
+        <div className='flex flex-col gap-8 md:flex-row'>
           {/* Форма */}
           <div className='flex-1'>
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
-                className='space-y-4'
+                className='space-y-6'
               >
                 {/* Текст сообщения */}
                 <FormField
@@ -290,7 +284,7 @@ export function RichNotificationDialog({
                 />
 
                 {/* Кнопки */}
-                <div className='space-y-3'>
+                <div className='space-y-6'>
                   <div className='flex items-center justify-between'>
                     <FormLabel>Кнопки (необязательно)</FormLabel>
                     <Button
@@ -306,8 +300,8 @@ export function RichNotificationDialog({
                   </div>
 
                   {buttons.map((_, index) => (
-                    <Card key={index} className='p-3'>
-                      <div className='space-y-3'>
+                    <Card key={index} className='p-4'>
+                      <div className='space-y-4'>
                         <div className='flex items-center justify-between'>
                           <span className='text-sm font-medium'>
                             Кнопка {index + 1}
@@ -322,7 +316,7 @@ export function RichNotificationDialog({
                           </Button>
                         </div>
 
-                        <div className='grid grid-cols-2 gap-3'>
+                        <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
                           <FormField
                             control={form.control}
                             name={`buttons.${index}.text`}
@@ -366,7 +360,7 @@ export function RichNotificationDialog({
           </div>
 
           {/* Превью */}
-          <div className='w-80'>
+          <div className='w-full md:w-80'>
             <div className='sticky top-0'>
               <div className='mb-3 flex items-center gap-2'>
                 <Eye className='h-4 w-4' />

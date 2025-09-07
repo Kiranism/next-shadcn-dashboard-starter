@@ -339,31 +339,31 @@ export function ProjectSettingsView({ projectId }: ProjectSettingsViewProps) {
                 </Button>
               </Link>
               <Link href={`/dashboard/projects/${projectId}/users`}>
-                <Button variant='outline' className='w-full justify-start'>
+                <Button variant='outline' className='mt-2 w-full justify-start'>
                   <Users className='mr-2 h-4 w-4' />
                   Управление пользователями
                 </Button>
               </Link>
               <Link href={`/dashboard/projects/${projectId}/bonus-levels`}>
-                <Button variant='outline' className='w-full justify-start'>
+                <Button variant='outline' className='mt-2 w-full justify-start'>
                   <Coins className='mr-2 h-4 w-4' />
                   Уровни бонусов
                 </Button>
               </Link>
               <Link href={`/dashboard/projects/${projectId}/referral`}>
-                <Button variant='outline' className='w-full justify-start'>
+                <Button variant='outline' className='mt-2 w-full justify-start'>
                   <Share2 className='mr-2 h-4 w-4' />
                   Реферальная программа
                 </Button>
               </Link>
               <Link href={`/dashboard/projects/${projectId}/analytics`}>
-                <Button variant='outline' className='w-full justify-start'>
+                <Button variant='outline' className='mt-2 w-full justify-start'>
                   <BarChart3 className='mr-2 h-4 w-4' />
                   Статистика и аналитика
                 </Button>
               </Link>
               <Link href={`/dashboard/projects/${projectId}/integration`}>
-                <Button variant='outline' className='w-full justify-start'>
+                <Button variant='outline' className='mt-2 w-full justify-start'>
                   <Code className='mr-2 h-4 w-4' />
                   Интеграция с Tilda
                 </Button>

@@ -12,6 +12,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
 import {
   Dialog,
@@ -205,12 +206,10 @@ export function UserCreateDialog({
               <Calendar className='h-4 w-4' />
               Дата рождения (необязательно)
             </Label>
-            <Input
-              id='birthDate'
-              type='date'
-              value={formData.birthDate}
-              onChange={(e) =>
-                setFormData({ ...formData, birthDate: e.target.value })
+            <DatePicker
+              value={formData.birthDate || ''}
+              onChange={(val) =>
+                setFormData({ ...formData, birthDate: val || '' })
               }
             />
           </div>

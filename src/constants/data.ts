@@ -30,6 +30,24 @@ export const navItems: NavItem[] = [
     items: [] // Empty array as there are no child items for Projects
   },
   {
+    title: 'Бонусы',
+    url: '/dashboard/bonuses',
+    icon: 'bonus',
+    isActive: false,
+    shortcut: ['b', 'n'],
+    items: []
+  },
+  {
+    title: 'Боты',
+    url: '/dashboard/projects',
+    icon: 'settings',
+    isActive: false,
+    shortcut: ['t', 'g'],
+    items: [
+      { title: 'Настройки бота', url: '/dashboard/projects', icon: 'settings' }
+    ]
+  },
+  {
     title: 'Аккаунт',
     url: '#', // Placeholder as there is no direct link for the parent
     icon: 'billing',

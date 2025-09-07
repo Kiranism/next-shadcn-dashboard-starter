@@ -19,7 +19,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
+  DialogTitle
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -27,23 +27,33 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
+  FormMessage
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { User, Mail, Phone, Calendar } from 'lucide-react';
 
-const userCreateSchema = z.object({
-  firstName: z.string().min(1, 'Имя обязательно').max(50, 'Имя слишком длинное'),
-  lastName: z.string().max(50, 'Фамилия слишком длинная').optional(),
-  email: z.string().email('Некорректный email').optional().or(z.literal('')),
-  phone: z.string().min(10, 'Некорректный номер телефона').optional().or(z.literal('')),
-  birthDate: z.string().optional().or(z.literal(''))
-}).refine((data) => data.email || data.phone, {
-  message: 'Необходимо указать email или телефон',
-  path: ['email']
-});
+const userCreateSchema = z
+  .object({
+    firstName: z
+      .string()
+      .min(1, 'Имя обязательно')
+      .max(50, 'Имя слишком длинное'),
+    lastName: z.string().max(50, 'Фамилия слишком длинная').optional(),
+    email: z.string().email('Некорректный email').optional().or(z.literal('')),
+    phone: z
+      .string()
+      .min(10, 'Некорректный номер телефона')
+      .optional()
+      .or(z.literal('')),
+    birthDate: z.string().optional().or(z.literal(''))
+  })
+  .refine((data) => data.email || data.phone, {
+    message: 'Необходимо указать email или телефон',
+    path: ['email']
+  });
 
 type UserCreateFormData = z.infer<typeof userCreateSchema>;
 
@@ -90,9 +100,9 @@ export function UserCreateDialog({
       const response = await fetch(`/api/projects/${projectId}/users`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
@@ -104,19 +114,18 @@ export function UserCreateDialog({
 
       toast({
         title: 'Успех',
-        description: 'Пользователь успешно создан',
+        description: 'Пользователь успешно создан'
       });
 
       onSuccess(user);
       onOpenChange(false);
       form.reset();
-
     } catch (error: any) {
       console.error('Ошибка создания пользователя:', error);
       toast({
         title: 'Ошибка',
         description: error.message || 'Не удалось создать пользователя',
-        variant: 'destructive',
+        variant: 'destructive'
       });
     } finally {
       setLoading(false);
@@ -132,30 +141,31 @@ export function UserCreateDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className='sm:max-w-[425px]'>
         <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <User className="h-5 w-5" />
+          <DialogTitle className='flex items-center space-x-2'>
+            <User className='h-5 w-5' />
             <span>Добавить пользователя</span>
           </DialogTitle>
           <DialogDescription>
-            Создайте нового пользователя для проекта. Укажите имя и хотя бы один способ связи.
+            Создайте нового пользователя для проекта. Укажите имя и хотя бы один
+            способ связи.
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-1 gap-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
+            <div className='grid grid-cols-1 gap-4'>
               {/* Имя (обязательное) */}
               <FormField
                 control={form.control}
-                name="firstName"
+                name='firstName'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Имя *</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Введите имя"
+                        placeholder='Введите имя'
                         {...field}
                         disabled={loading}
                       />
@@ -168,13 +178,13 @@ export function UserCreateDialog({
               {/* Фамилия */}
               <FormField
                 control={form.control}
-                name="lastName"
+                name='lastName'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Фамилия</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Введите фамилию"
+                        placeholder='Введите фамилию'
                         {...field}
                         disabled={loading}
                       />
@@ -187,17 +197,17 @@ export function UserCreateDialog({
               {/* Email */}
               <FormField
                 control={form.control}
-                name="email"
+                name='email'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="flex items-center space-x-2">
-                      <Mail className="h-4 w-4" />
+                    <FormLabel className='flex items-center space-x-2'>
+                      <Mail className='h-4 w-4' />
                       <span>Email</span>
                     </FormLabel>
                     <FormControl>
                       <Input
-                        type="email"
-                        placeholder="user@example.com"
+                        type='email'
+                        placeholder='user@example.com'
                         {...field}
                         disabled={loading}
                       />
@@ -210,17 +220,17 @@ export function UserCreateDialog({
               {/* Телефон */}
               <FormField
                 control={form.control}
-                name="phone"
+                name='phone'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="flex items-center space-x-2">
-                      <Phone className="h-4 w-4" />
+                    <FormLabel className='flex items-center space-x-2'>
+                      <Phone className='h-4 w-4' />
                       <span>Телефон</span>
                     </FormLabel>
                     <FormControl>
                       <Input
-                        type="tel"
-                        placeholder="+7 999 123-45-67"
+                        type='tel'
+                        placeholder='+7 999 123-45-67'
                         {...field}
                         disabled={loading}
                       />
@@ -233,17 +243,17 @@ export function UserCreateDialog({
               {/* Дата рождения */}
               <FormField
                 control={form.control}
-                name="birthDate"
+                name='birthDate'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="flex items-center space-x-2">
-                      <Calendar className="h-4 w-4" />
+                    <FormLabel className='flex items-center space-x-2'>
+                      <Calendar className='h-4 w-4' />
                       <span>Дата рождения</span>
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        type="date"
-                        {...field}
+                      <DatePicker
+                        value={field.value || ''}
+                        onChange={(val) => field.onChange(val || '')}
                         disabled={loading}
                       />
                     </FormControl>
@@ -253,21 +263,22 @@ export function UserCreateDialog({
               />
             </div>
 
-            <div className="text-sm text-muted-foreground border-l-4 border-blue-200 pl-4 py-2 bg-blue-50 rounded">
-              <strong>Примечание:</strong> Необходимо указать хотя бы один способ связи (email или телефон) 
-              для возможности привязки аккаунта в Telegram боте.
+            <div className='text-muted-foreground rounded border-l-4 border-blue-200 bg-blue-50 py-2 pl-4 text-sm'>
+              <strong>Примечание:</strong> Необходимо указать хотя бы один
+              способ связи (email или телефон) для возможности привязки аккаунта
+              в Telegram боте.
             </div>
 
             <DialogFooter>
               <Button
-                type="button"
-                variant="outline"
+                type='button'
+                variant='outline'
                 onClick={handleClose}
                 disabled={loading}
               >
                 Отмена
               </Button>
-              <Button type="submit" disabled={loading}>
+              <Button type='submit' disabled={loading}>
                 {loading ? 'Создание...' : 'Создать пользователя'}
               </Button>
             </DialogFooter>
@@ -276,4 +287,4 @@ export function UserCreateDialog({
       </DialogContent>
     </Dialog>
   );
-} 
+}

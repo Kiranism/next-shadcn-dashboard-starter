@@ -164,13 +164,19 @@ export function BonusManagementPageRefactored({
   const handleCreateUser = useCallback(
     async (userData: any) => {
       try {
-        logger.info(
-          'Creating new user',
-          { projectId: currentProjectId },
-          'bonus-management'
-        );
+        // Если пришёл уже созданный пользователь (из диалога), не создаём повторно
+        const alreadyCreated = userData && typeof userData.id === 'string';
 
-        await createUser(userData);
+        if (!alreadyCreated) {
+          logger.info(
+            'Creating new user',
+            { projectId: currentProjectId },
+            'bonus-management'
+          );
+          await createUser(userData);
+        }
+
+        await refreshUsers();
         setShowCreateUserDialog(false);
 
         toast({
@@ -206,7 +212,7 @@ export function BonusManagementPageRefactored({
         );
       }
     },
-    [createUser, currentProjectId, toast]
+    [createUser, refreshUsers, currentProjectId, toast]
   );
 
   const handleExport = useCallback(async () => {
@@ -297,7 +303,9 @@ export function BonusManagementPageRefactored({
   }
 
   return (
-    <div className={`space-y-6 ${className}`}>
+    <div
+      className={`container mx-auto max-w-[1200px] space-y-6 px-4 py-6 ${className ?? ''}`}
+    >
       {/* Header */}
       <div className='flex items-center justify-between'>
         <div>

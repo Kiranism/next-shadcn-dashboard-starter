@@ -260,7 +260,7 @@ export default function DashboardPage() {
 
               <Button
                 variant='outline'
-                className='justify-start'
+                className='mt-2 justify-start'
                 onClick={() => router.push('/dashboard/bonuses')}
               >
                 <Gift className='mr-2 h-4 w-4' />
@@ -269,7 +269,7 @@ export default function DashboardPage() {
 
               <Button
                 variant='outline'
-                className='justify-start'
+                className='mt-2 justify-start'
                 onClick={() => router.push('/dashboard/kanban')}
               >
                 <Activity className='mr-2 h-4 w-4' />

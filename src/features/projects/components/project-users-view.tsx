@@ -47,6 +47,7 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Heading } from '@/components/ui/heading';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
@@ -136,47 +137,50 @@ export function ProjectUsersView({ projectId }: ProjectUsersViewProps) {
         const usersData = await usersResponse.json();
         console.log('Загружены пользователи проекта:', usersData); // Для отладки
 
+        // Унифицируем формат ответа API: поддерживаем и массив, и объект { users: [...] }
+        const usersArray = Array.isArray(usersData)
+          ? usersData
+          : Array.isArray(usersData?.users)
+            ? usersData.users
+            : [];
+
         // Форматируем данные для соответствия интерфейсу UserWithBonuses
-        const formattedUsers = Array.isArray(usersData)
-          ? usersData.map((user: any) => ({
-              id: user.id,
-              projectId: user.projectId || projectId,
-              firstName: user.firstName || user.first_name,
-              lastName: user.lastName || user.last_name,
-              email: user.email,
-              phone: user.phone,
-              birthDate: user.birthDate ? new Date(user.birthDate) : null,
-              telegramId: user.telegramId || user.telegram_id,
-              telegramUsername: user.telegramUsername || user.telegram_username,
-              isActive: user.isActive !== false, // По умолчанию true
-              registeredAt: new Date(
-                user.registeredAt ||
-                  user.registered_at ||
-                  user.createdAt ||
-                  Date.now()
-              ),
-              updatedAt: new Date(
-                user.updatedAt || user.updated_at || Date.now()
-              ),
-              totalPurchases: user.totalPurchases || user.total_purchases || 0,
-              currentLevel: user.currentLevel || user.current_level || null,
-              referredBy: user.referredBy || user.referred_by || null,
-              referralCode: user.referralCode || user.referral_code || null,
-              utmSource: user.utmSource || user.utm_source || null,
-              utmMedium: user.utmMedium || user.utm_medium || null,
-              utmCampaign: user.utmCampaign || user.utm_campaign || null,
-              utmContent: user.utmContent || user.utm_content || null,
-              utmTerm: user.utmTerm || user.utm_term || null,
-              // Дополнительные поля для UserWithBonuses
-              totalBonuses: user.totalBonuses || user.totalEarned || 0,
-              activeBonuses: user.activeBonuses || user.bonusBalance || 0,
-              lastActivity: user.lastActivity
-                ? new Date(user.lastActivity)
-                : new Date(user.updatedAt || Date.now()),
-              level: user.level || null,
-              progressToNext: user.progressToNext || null
-            }))
-          : [];
+        const formattedUsers = usersArray.map((user: any) => ({
+          id: user.id,
+          projectId: user.projectId || projectId,
+          firstName: user.firstName || user.first_name,
+          lastName: user.lastName || user.last_name,
+          email: user.email,
+          phone: user.phone,
+          birthDate: user.birthDate ? new Date(user.birthDate) : null,
+          telegramId: user.telegramId || user.telegram_id,
+          telegramUsername: user.telegramUsername || user.telegram_username,
+          isActive: user.isActive !== false, // По умолчанию true
+          registeredAt: new Date(
+            user.registeredAt ||
+              user.registered_at ||
+              user.createdAt ||
+              Date.now()
+          ),
+          updatedAt: new Date(user.updatedAt || user.updated_at || Date.now()),
+          totalPurchases: user.totalPurchases || user.total_purchases || 0,
+          currentLevel: user.currentLevel || user.current_level || null,
+          referredBy: user.referredBy || user.referred_by || null,
+          referralCode: user.referralCode || user.referral_code || null,
+          utmSource: user.utmSource || user.utm_source || null,
+          utmMedium: user.utmMedium || user.utm_medium || null,
+          utmCampaign: user.utmCampaign || user.utm_campaign || null,
+          utmContent: user.utmContent || user.utm_content || null,
+          utmTerm: user.utmTerm || user.utm_term || null,
+          // Дополнительные поля для UserWithBonuses
+          totalBonuses: user.totalBonuses || user.totalEarned || 0,
+          activeBonuses: user.activeBonuses || user.bonusBalance || 0,
+          lastActivity: user.lastActivity
+            ? new Date(user.lastActivity)
+            : new Date(user.updatedAt || Date.now()),
+          level: user.level || null,
+          progressToNext: user.progressToNext || null
+        }));
 
         console.log('Форматированные пользователи проекта:', formattedUsers); // Для отладки
         setUsers(formattedUsers);
@@ -391,7 +395,7 @@ export function ProjectUsersView({ projectId }: ProjectUsersViewProps) {
       <Separator />
 
       {/* Stats Cards */}
-      <div className='grid grid-cols-1 gap-6 md:grid-cols-5'>
+      <div className='grid grid-cols-1 gap-6 overflow-x-hidden pr-2 md:grid-cols-5'>
         <Card>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
             <CardTitle className='text-sm font-medium'>
@@ -515,7 +519,7 @@ export function ProjectUsersView({ projectId }: ProjectUsersViewProps) {
           )}
 
           {loading ? (
-            <div className='space-y-4'>
+            <div className='space-y-4 pr-2'>
               {Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className='bg-muted h-20 animate-pulse rounded' />
               ))}
@@ -531,18 +535,18 @@ export function ProjectUsersView({ projectId }: ProjectUsersViewProps) {
               </p>
             </div>
           ) : (
-            <div className='space-y-4'>
+            <div className='space-y-4 pr-2'>
               {filteredUsers.map((user) => (
                 <div
                   key={user.id}
                   className='hover:bg-muted/50 flex items-center justify-between rounded-lg border p-4 transition-colors'
                 >
                   <div className='flex items-center space-x-4'>
-                    <input
-                      type='checkbox'
+                    {/* shadcn/ui Checkbox to avoid layout shift and ensure consistent styles */}
+                    <Checkbox
                       checked={selectedUsers.includes(user.id)}
-                      onChange={() => toggleUserSelection(user.id)}
-                      className='h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500'
+                      onCheckedChange={() => toggleUserSelection(user.id)}
+                      className='size-4'
                     />
                     <div className='flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 font-medium text-white'>
                       {user.firstName

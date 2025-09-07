@@ -53,6 +53,12 @@ async function getHandler(
     const formattedUsers = enrichedUsers.map((user, index) => {
       const currentBalance =
         Number(user.totalEarned || 0) - Number(user.totalSpent || 0);
+      const botIsActive =
+        (user as any).project?.botStatus === 'ACTIVE' ||
+        (user as any).project?.botStatus === 'active';
+      const isLinkedToBot = Boolean(user.telegramId);
+      const computedActive =
+        Boolean(user.isActive) && botIsActive && isLinkedToBot;
       return {
         id: user.id,
         name:
@@ -66,6 +72,7 @@ async function getHandler(
         createdAt: user.registeredAt,
         updatedAt: user.updatedAt,
         avatar: `https://api.slingacademy.com/public/sample-users/${(index % 10) + 1}.png`,
+        isActive: computedActive,
         // Дополнительные поля для project-users-view
         firstName: user.firstName,
         lastName: user.lastName,

@@ -147,6 +147,14 @@ async function sendNotificationsHandler(
       }
     }
 
+    // Быстрый health-check состояния бота перед рассылкой
+    if (!botInstance || !botInstance.isActive) {
+      return NextResponse.json(
+        { error: 'Бот не активен для проекта. Включите бота в настройках.' },
+        { status: 400 }
+      );
+    }
+
     // Создаем объект уведомления
     const notification: RichNotification = {
       message: message.trim(),
@@ -179,11 +187,9 @@ async function sendNotificationsHandler(
     return NextResponse.json({
       success: true,
       message: `Уведомления отправлены: ${result.sent} успешно, ${result.failed} с ошибкой`,
-      data: {
-        sent: result.sent,
-        failed: result.failed,
-        total: result.sent + result.failed
-      }
+      sentCount: result.sent,
+      failedCount: result.failed,
+      total: result.sent + result.failed
     });
   } catch (error) {
     logger.error(
