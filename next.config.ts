@@ -36,7 +36,7 @@ const baseConfig: NextConfig = {
           {
             key: 'Content-Security-Policy',
             value:
-              "default-src 'self'; frame-ancestors 'none'; img-src 'self' https: data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https:;"
+              "default-src 'self'; frame-ancestors 'none'; img-src 'self' https: data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https: http:;"
           },
           {
             key: 'Referrer-Policy',
@@ -66,7 +66,7 @@ const baseConfig: NextConfig = {
           {
             key: 'Content-Security-Policy',
             value:
-              "default-src 'self'; frame-ancestors 'none'; img-src 'self' https: data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https:; font-src 'self' https: data:;"
+              "default-src 'self'; frame-ancestors 'none'; img-src 'self' https: data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https: http:; font-src 'self' https: data:;"
           },
           {
             key: 'Referrer-Policy',

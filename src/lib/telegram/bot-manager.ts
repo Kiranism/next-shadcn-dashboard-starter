@@ -51,8 +51,13 @@ class BotManager {
   private readonly operationLocks: Map<string, Promise<any>> = new Map();
 
   constructor() {
+    // Берем публичный базовый URL приложения. Предпочитаем NEXT_PUBLIC_APP_URL,
+    // затем APP_URL, и только затем dev-значение. Это позволяет в продакшене
+    // работать по IP/HTTP без хаков и автоматически выбирать режим.
     this.WEBHOOK_BASE_URL =
-      process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:5006';
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.APP_URL ||
+      'http://localhost:5006';
 
     // Активируем глобальный обработчик ошибок для 409 конфликтов
     setupGlobalErrorHandler();
@@ -333,16 +338,15 @@ class BotManager {
         component: 'bot-manager'
       });
 
-      // Определяем dev режим по localhost URL ПЕРЕД созданием webhook callback
-      const isDev =
-        this.WEBHOOK_BASE_URL.includes('localhost') ||
-        this.WEBHOOK_BASE_URL.includes('127.0.0.1');
+      // Определяем возможность работы через webhook: нужен HTTPS.
+      // Если HTTPS нет (IP/HTTP), принудительно используем polling.
+      const isWebhookCapable = this.WEBHOOK_BASE_URL.startsWith('https://');
 
       logger.info(
-        `Режим работы: ${isDev ? 'Development (polling)' : 'Production (webhook)'}`,
+        `Режим работы: ${isWebhookCapable ? 'Production (webhook)' : 'Polling (no-https)'}`,
         {
           projectId,
-          isDev,
+          isDev: !isWebhookCapable,
           baseUrl: this.WEBHOOK_BASE_URL,
           nodeEnv: process.env.NODE_ENV,
           component: 'bot-manager'
@@ -353,8 +357,8 @@ class BotManager {
       let isPolling = false;
 
       // ИСПРАВЛЕННОЕ РЕШЕНИЕ: Используем правильный режим для каждой среды
-      if (isDev) {
-        // Development: используем polling (webhook требует HTTPS)
+      if (!isWebhookCapable) {
+        // Без HTTPS: используем polling (webhook потребует TLS)
         logger.info(`Development режим: настраиваем polling для бота`, {
           projectId,
           component: 'bot-manager'
@@ -489,21 +493,7 @@ class BotManager {
         webhook = webhookCallback(bot, 'std/http');
         // Production режим - настраиваем webhook только если есть HTTPS
         const webhookUrl = `${this.WEBHOOK_BASE_URL}/api/telegram/webhook/${projectId}`;
-
-        if (!webhookUrl.startsWith('https://')) {
-          logger.warn(`HTTPS отсутствует для webhook в production`, {
-            projectId,
-            webhookUrl,
-            component: 'bot-manager'
-          });
-          logger.warn(
-            `Бот будет работать без webhook (только для тестирования)`,
-            {
-              projectId,
-              component: 'bot-manager'
-            }
-          );
-        } else {
+        if (webhookUrl.startsWith('https://')) {
           try {
             logger.info(`Production режим: устанавливаем webhook для бота`, {
               projectId,
@@ -534,6 +524,8 @@ class BotManager {
               component: 'bot-manager'
             });
           }
+        } else {
+          // Невалидный кейс сюда не попадёт, так как isWebhookCapable=true только при https
         }
       }
 
