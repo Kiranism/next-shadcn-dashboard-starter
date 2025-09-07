@@ -178,6 +178,7 @@ async function handlePOST(
   let response: any = { error: 'Неизвестная ошибка' };
   let status = 500;
   let success = false;
+  const start = Date.now();
 
   try {
     // Парсим тело запроса (поддержка JSON, form-urlencoded и multipart из Tilda)
