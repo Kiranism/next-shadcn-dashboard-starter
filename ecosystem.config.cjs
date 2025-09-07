@@ -11,8 +11,9 @@ module.exports = {
   apps: [
     {
       name: 'bonus-app',
-      script: 'yarn',
-      args: 'start',
+      // Запуск напрямую локального бинаря Next — без yarn в окружении PM2
+      script: 'node_modules/next/dist/bin/next',
+      args: 'start -H 0.0.0.0 -p 3000',
       cwd: '/opt/next-shadcn-dashboard-starter',
       env: {
         NODE_ENV: 'production',
