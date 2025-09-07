@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "next dev --turbopack -p 5006",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -H 0.0.0.0",
     "lint": "next lint",
     "lint:fix": "eslint src --fix && yarn format",
     "lint:strict": "eslint --max-warnings=0 src",
@@ -30,7 +30,11 @@
     "db:migrate": "prisma migrate deploy",
     "db:generate": "prisma generate",
     "db:reset": "prisma migrate reset",
-    "production:check": "yarn lint && yarn test && yarn build && npx tsc --noEmit"
+    "production:check": "yarn lint && yarn test && yarn build && npx tsc --noEmit",
+    "pm2:start": "pm2 start ecosystem.config.cjs --update-env --only bonus-app && pm2 save",
+    "pm2:restart": "pm2 restart bonus-app --update-env",
+    "pm2:stop": "pm2 delete bonus-app || true",
+    "prod:up": "yarn build && yarn pm2:start"
   },
   "lint-staged": {
     "**/*.{js,jsx,tsx,ts,css,less,scss,sass}": [
