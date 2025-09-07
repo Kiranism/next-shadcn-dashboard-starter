@@ -236,7 +236,7 @@ export function BotTestDialog({
         )}
       </DialogTrigger>
 
-      <DialogContent className='max-h-[90vh] max-w-4xl overflow-y-auto'>
+      <DialogContent size='full' className='max-h-[90vh] overflow-y-auto'>
         <DialogHeader>
           <DialogTitle className='flex items-center'>
             <MessageSquare className='mr-2 h-5 w-5' />

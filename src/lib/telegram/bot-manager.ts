@@ -132,23 +132,20 @@ class BotManager {
         replyMarkup = keyboard;
       }
 
-      // Отправляем сообщения пользователям
-      for (const userId of userIds) {
-        try {
-          // Получаем пользователя из БД
-          const user = await db.user.findUnique({
-            where: { id: userId }
-          });
+      // Отправляем сообщения пользователям с ограничением параллелизма
+      const CONCURRENCY = 20; // безопасно для Telegram (30 msg/sec)
 
+      const sendToUser = async (userId: string) => {
+        try {
+          const user = await db.user.findUnique({ where: { id: userId } });
           if (!user || !user.telegramId) {
             failedCount++;
             errors.push(
               `Пользователь ${userId}: не найден или не привязан к Telegram`
             );
-            continue;
+            return;
           }
 
-          // Отправляем фото с подписью если есть изображение
           if (imageUrl) {
             await botInstance.bot.api.sendPhoto(
               user.telegramId.toString(),
@@ -160,7 +157,6 @@ class BotManager {
               }
             );
           } else {
-            // Отправляем обычное сообщение
             await botInstance.bot.api.sendMessage(
               user.telegramId.toString(),
               message,
@@ -190,14 +186,15 @@ class BotManager {
           errors.push(`Пользователь ${userId}: ${errorMsg}`);
           logger.error(
             `Ошибка отправки расширенного уведомления пользователю ${userId}`,
-            {
-              projectId,
-              userId,
-              error: errorMsg
-            },
+            { projectId, userId, error: errorMsg },
             'bot-manager'
           );
         }
+      };
+
+      for (let i = 0; i < userIds.length; i += CONCURRENCY) {
+        const batch = userIds.slice(i, i + CONCURRENCY);
+        await Promise.allSettled(batch.map((id) => sendToUser(id)));
       }
 
       logger.info(

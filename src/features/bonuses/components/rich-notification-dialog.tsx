@@ -57,6 +57,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Progress } from '@/components/ui/progress';
 
 const buttonSchema = z
   .object({
@@ -98,6 +99,8 @@ export function RichNotificationDialog({
 }: RichNotificationDialogProps) {
   const [loading, setLoading] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
+  const [progress, setProgress] = useState<number>(0);
+  const [inFlight, setInFlight] = useState<boolean>(false);
 
   const form = useForm<NotificationFormValues>({
     resolver: zodResolver(notificationSchema),
@@ -129,6 +132,8 @@ export function RichNotificationDialog({
 
   const onSubmit = async (values: NotificationFormValues) => {
     setLoading(true);
+    setInFlight(true);
+    setProgress(10);
 
     try {
       // Фильтруем пустые кнопки - оставляем только с текстом
@@ -152,6 +157,12 @@ export function RichNotificationDialog({
       const result = await response.json();
 
       if (response.ok && result.success) {
+        // Обновим прогресс по факту результата
+        const total = Number(result.total || selectedUserIds.length || 1);
+        const sent = Number(result.sentCount || 0);
+        const failed = Number(result.failedCount || 0);
+        const pct = Math.min(100, Math.round(((sent + failed) / total) * 100));
+        setProgress(pct);
         toast.success(
           `✅ Уведомления отправлены!\n\n` +
             `📤 Отправлено: ${result.sentCount}\n` +
@@ -181,6 +192,10 @@ export function RichNotificationDialog({
       console.error('Error sending notifications:', error);
     } finally {
       setLoading(false);
+      setTimeout(() => {
+        setInFlight(false);
+        setProgress(0);
+      }, 400);
     }
   };
 
@@ -378,6 +393,14 @@ export function RichNotificationDialog({
 
               <Card className='bg-muted/50 p-4'>
                 <div className='space-y-3'>
+                  {inFlight && (
+                    <div className='bg-background rounded border p-3'>
+                      <div className='text-muted-foreground mb-2 text-xs'>
+                        Отправка рассылки...
+                      </div>
+                      <Progress value={progress} />
+                    </div>
+                  )}
                   {imageUrl && (
                     <div className='overflow-hidden rounded border bg-white'>
                       <Image
