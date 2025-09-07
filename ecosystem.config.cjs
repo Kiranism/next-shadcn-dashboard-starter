@@ -12,7 +12,7 @@ module.exports = {
     {
       name: 'bonus-app',
       script: 'yarn',
-      args: 'start -p 3000',
+      args: 'start',
       cwd: '/opt/next-shadcn-dashboard-starter',
       env: {
         NODE_ENV: 'production',
