@@ -19,6 +19,7 @@ import {
   type TildaOrder,
   type TildaProduct
 } from '@/lib/validation/webhook';
+import { ZodError } from 'zod';
 import type {
   WebhookRegisterUserPayload,
   WebhookPurchasePayload,
@@ -241,8 +242,54 @@ async function handlePOST(
       status = 200;
       success = true;
     } else {
-      // Это наш стандартный webhook - валидируем данные
-      const validatedRequest = validateWebhookRequest(body);
+      // Это наш стандартный webhook. Нормализуем action и форму payload перед валидацией
+      const normalizeAction = (a: unknown): string | undefined => {
+        if (typeof a !== 'string') return undefined;
+        const raw = a
+          .trim()
+          .toLowerCase()
+          .replace(/[-\s]+/g, '_');
+        const map: Record<string, string> = {
+          register: 'register_user',
+          signup: 'register_user',
+          sign_up: 'register_user',
+          registeruser: 'register_user',
+          register_user: 'register_user',
+
+          purchase: 'purchase',
+          order: 'purchase',
+          paid: 'purchase',
+          payment: 'purchase',
+          buy: 'purchase',
+
+          spend: 'spend_bonuses',
+          spend_bonus: 'spend_bonuses',
+          spend_bonuses: 'spend_bonuses',
+          writeoff: 'spend_bonuses'
+        };
+        return map[raw] || raw;
+      };
+
+      const maybePayload =
+        (body as any)?.payload ??
+        (body as any)?.data ??
+        (body as any)?.orderPayload;
+      let normalizedPayload = maybePayload;
+      if (typeof maybePayload === 'string') {
+        try {
+          normalizedPayload = JSON.parse(maybePayload);
+        } catch {
+          // оставляем как есть
+        }
+      }
+      const normalizedBody = {
+        ...((typeof body === 'object' && body) || {}),
+        action: normalizeAction((body as any)?.action),
+        payload: normalizedPayload
+      };
+
+      // Валидируем данные
+      const validatedRequest = validateWebhookRequest(normalizedBody);
       const { action, payload } = validatedRequest;
 
       switch (action) {
@@ -278,6 +325,14 @@ async function handlePOST(
       error: error instanceof Error ? error.message : 'Неизвестная ошибка',
       component: 'webhook-handler'
     });
+    if (error instanceof ZodError) {
+      response = {
+        error: 'Ошибка валидации',
+        details: error.issues
+      };
+      status = 400;
+      return NextResponse.json(response, { status });
+    }
     response = {
       error: 'Внутренняя ошибка сервера',
       details: error instanceof Error ? error.message : 'Неизвестная ошибка'
