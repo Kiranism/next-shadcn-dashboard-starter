@@ -122,35 +122,41 @@ export async function POST(
       }
     });
 
-    // Создаем/обновляем бота в BotManager
-    try {
-      if (botSettings.isActive) {
-        // Преобразуем настройки для BotManager
-        const botSettingsForManager = {
-          ...botSettings,
-          welcomeMessage:
-            typeof botSettings.welcomeMessage === 'string'
-              ? botSettings.welcomeMessage
-              : 'Добро пожаловать! 🎉\n\nЭто бот бонусной программы.'
-        };
-        await botManager.createBot(id, botSettingsForManager as BotSettings);
-        logger.info(
-          '✅ Бот создан и активирован',
-          { projectId: id },
-          'bot-api'
-        );
-      } else {
-        await botManager.stopBot(id);
-        logger.info('🔄 Бот деактивирован', { projectId: id }, 'bot-api');
-      }
-    } catch (error) {
-      logger.error(
-        'Ошибка управления ботом через BotManager',
-        { error: error instanceof Error ? error.message : 'Unknown error' },
-        'bot-api'
-      );
-      // Не возвращаем ошибку, так как настройки сохранены в БД
-    }
+    // Создаем/обновляем бота в BotManager НЕ блокируя ответ API
+    // Выполняем операцию в фоне, чтобы UI не зависал при сетевых задержках Telegram
+    setTimeout(() => {
+      (async () => {
+        try {
+          if (botSettings.isActive) {
+            const botSettingsForManager = {
+              ...botSettings,
+              welcomeMessage:
+                typeof botSettings.welcomeMessage === 'string'
+                  ? botSettings.welcomeMessage
+                  : 'Добро пожаловать! 🎉\n\nЭто бот бонусной программы.'
+            };
+            await botManager.createBot(
+              id,
+              botSettingsForManager as BotSettings
+            );
+            logger.info(
+              '✅ Бот создан и активирован',
+              { projectId: id },
+              'bot-api'
+            );
+          } else {
+            await botManager.stopBot(id);
+            logger.info('🔄 Бот деактивирован', { projectId: id }, 'bot-api');
+          }
+        } catch (error) {
+          logger.error(
+            'Ошибка управления ботом через BotManager (background)',
+            { error: error instanceof Error ? error.message : 'Unknown error' },
+            'bot-api'
+          );
+        }
+      })();
+    }, 0);
 
     return NextResponse.json(botSettings, { status: 201 });
   } catch (error) {

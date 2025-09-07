@@ -131,11 +131,9 @@ export function RichNotificationDialog({
     setLoading(true);
 
     try {
-      // Фильтруем пустые кнопки
+      // Фильтруем пустые кнопки - оставляем только с текстом
       const validButtons =
-        values.buttons?.filter(
-          (button) => button.text.trim() && (button.url || button.callback_data)
-        ) || [];
+        values.buttons?.filter((button) => button.text.trim()) || [];
 
       const payload = {
         message: values.message,
@@ -168,7 +166,15 @@ export function RichNotificationDialog({
         form.reset();
         onOpenChange(false);
       } else {
-        toast.error(result.error || 'Ошибка отправки уведомлений');
+        // Обработка ошибок валидации
+        if (result.details && Array.isArray(result.details)) {
+          const errorMessages = result.details
+            .map((detail: any) => `${detail.field}: ${detail.message}`)
+            .join('\n');
+          toast.error(`Ошибка валидации:\n${errorMessages}`);
+        } else {
+          toast.error(result.error || 'Ошибка отправки уведомлений');
+        }
       }
     } catch (error) {
       toast.error('Ошибка отправки уведомлений');
@@ -190,7 +196,10 @@ export function RichNotificationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='max-h-[90vh] max-w-4xl overflow-y-auto'>
+      <DialogContent
+        size='full'
+        className='max-h-[95vh] w-full overflow-y-auto'
+      >
         <DialogHeader>
           <DialogTitle className='flex items-center gap-2'>
             <MessageSquare className='h-5 w-5' />
@@ -202,9 +211,9 @@ export function RichNotificationDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className='flex flex-col gap-8 md:flex-row'>
+        <div className='grid grid-cols-1 gap-6 lg:grid-cols-5'>
           {/* Форма */}
-          <div className='flex-1'>
+          <div className='lg:col-span-3'>
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
@@ -316,7 +325,7 @@ export function RichNotificationDialog({
                           </Button>
                         </div>
 
-                        <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+                        <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
                           <FormField
                             control={form.control}
                             name={`buttons.${index}.text`}
@@ -360,14 +369,14 @@ export function RichNotificationDialog({
           </div>
 
           {/* Превью */}
-          <div className='w-full md:w-80'>
+          <div className='lg:col-span-2'>
             <div className='sticky top-0'>
               <div className='mb-3 flex items-center gap-2'>
                 <Eye className='h-4 w-4' />
                 <span className='font-medium'>Превью</span>
               </div>
 
-              <Card className='bg-gray-50 p-4'>
+              <Card className='bg-muted/50 p-4'>
                 <div className='space-y-3'>
                   {imageUrl && (
                     <div className='overflow-hidden rounded border bg-white'>
@@ -384,7 +393,7 @@ export function RichNotificationDialog({
                     </div>
                   )}
 
-                  <div className='rounded border bg-white p-3'>
+                  <div className='bg-background rounded border p-3'>
                     <div className='text-sm whitespace-pre-wrap'>
                       {message
                         ? formatPreviewMessage(message, parseMode)
@@ -416,7 +425,7 @@ export function RichNotificationDialog({
                 </div>
               </Card>
 
-              <div className='mt-3 text-xs text-gray-500'>
+              <div className='text-muted-foreground mt-3 text-xs'>
                 Получатели: {selectedUserIds.length} пользователей
               </div>
             </div>

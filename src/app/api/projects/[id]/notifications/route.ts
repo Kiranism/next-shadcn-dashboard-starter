@@ -31,6 +31,7 @@ const notificationBodySchema = z.object({
         callback_data: z.string().max(64).optional()
       })
     )
+    .max(6)
     .optional(),
   parseMode: z.enum(['Markdown', 'HTML']).optional(),
   userIds: z.array(z.string()).optional()
@@ -38,68 +39,32 @@ const notificationBodySchema = z.object({
 
 async function sendNotificationsHandler(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id: projectId } = params;
-  const body = await request.json();
-
-  // Проверяем существование проекта
-  const project = await db.project.findUnique({
-    where: { id: projectId }
-  });
-
-  if (!project) {
-    return NextResponse.json({ error: 'Проект не найден' }, { status: 404 });
-  }
-
-  // Валидация данных
-  const { message, imageUrl, buttons, userIds, parseMode = 'Markdown' } = body;
-
-  if (!message || message.trim().length === 0) {
-    return NextResponse.json(
-      { error: 'Сообщение не может быть пустым' },
-      { status: 400 }
-    );
-  }
-
-  if (message.length > 4000) {
-    return NextResponse.json(
-      { error: 'Сообщение не может превышать 4000 символов' },
-      { status: 400 }
-    );
-  }
-
-  // Валидация кнопок
-  if (buttons && Array.isArray(buttons)) {
-    for (const button of buttons) {
-      if (!button.text || button.text.trim().length === 0) {
-        return NextResponse.json(
-          { error: 'Текст кнопки не может быть пустым' },
-          { status: 400 }
-        );
-      }
-      if (!button.url && !button.callback_data) {
-        return NextResponse.json(
-          { error: 'Кнопка должна содержать URL или callback_data' },
-          { status: 400 }
-        );
-      }
-    }
-  }
-
-  // Валидация изображения
-  if (imageUrl && typeof imageUrl === 'string') {
-    try {
-      new URL(imageUrl);
-    } catch (error) {
-      return NextResponse.json(
-        { error: 'Неверный формат URL изображения' },
-        { status: 400 }
-      );
-    }
-  }
+  const { id: projectId } = await params;
 
   try {
+    const body = await request.json();
+
+    // Валидация с помощью Zod
+    const validatedData = notificationBodySchema.parse(body);
+    const {
+      message,
+      imageUrl,
+      buttons,
+      userIds,
+      parseMode = 'Markdown'
+    } = validatedData;
+
+    // Проверяем существование проекта
+    const project = await db.project.findUnique({
+      where: { id: projectId }
+    });
+
+    if (!project) {
+      return NextResponse.json({ error: 'Проект не найден' }, { status: 404 });
+    }
+
     // Проверяем и создаем бота если нужно
     let botInstance = botManager.getBot(projectId);
 
@@ -192,6 +157,20 @@ async function sendNotificationsHandler(
       total: result.sent + result.failed
     });
   } catch (error) {
+    // Обработка ошибок валидации Zod
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        {
+          error: 'Ошибка валидации данных',
+          details: error.errors.map((err) => ({
+            field: err.path.join('.'),
+            message: err.message
+          }))
+        },
+        { status: 400 }
+      );
+    }
+
     logger.error(
       'Error sending notifications',
       {
@@ -263,11 +242,7 @@ async function getNotificationStatsHandler(
   }
 }
 
-export const POST = withApiRateLimit(
-  withValidation(withErrorHandler(sendNotificationsHandler), {
-    body: notificationBodySchema
-  })
-);
+export const POST = withErrorHandler(sendNotificationsHandler);
 export const GET = withApiRateLimit(
   withErrorHandler(getNotificationStatsHandler)
 );
