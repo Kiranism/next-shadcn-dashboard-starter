@@ -406,28 +406,7 @@ export function ProjectSettingsView({ projectId }: ProjectSettingsViewProps) {
             </Card>
           )}
 
-          {/* Integration info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className='text-lg'>Интеграция</CardTitle>
-            </CardHeader>
-            <CardContent className='space-y-3 text-sm'>
-              <div>
-                <Label className='font-medium'>Webhook URL:</Label>
-                <code className='mt-1 block rounded bg-gray-100 p-2 text-xs break-all'>
-                  POST /api/webhook/{project?.webhookSecret}
-                </code>
-              </div>
-              <div>
-                <Label className='font-medium'>Поддерживаемые действия:</Label>
-                <ul className='text-muted-foreground mt-1 list-inside list-disc'>
-                  <li>register_user - регистрация пользователя</li>
-                  <li>purchase - покупка с начислением бонусов</li>
-                  <li>spend_bonuses - списание бонусов</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Integration info — удалено по требованию */}
         </div>
       </div>
 

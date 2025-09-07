@@ -60,7 +60,27 @@ export async function POST(
 ) {
   try {
     const { id: projectId } = await params;
-    const body = await request.json();
+    const raw = await request.json();
+    // Коэрция типов и нормализация null/undefined
+    const body = {
+      name: raw?.name,
+      minAmount:
+        raw?.minAmount !== undefined ? Number(raw.minAmount) : undefined,
+      maxAmount:
+        raw?.maxAmount === null
+          ? null
+          : raw?.maxAmount !== undefined
+            ? Number(raw.maxAmount)
+            : undefined,
+      bonusPercent:
+        raw?.bonusPercent !== undefined ? Number(raw.bonusPercent) : undefined,
+      paymentPercent:
+        raw?.paymentPercent !== undefined
+          ? Number(raw.paymentPercent)
+          : undefined,
+      order: raw?.order !== undefined ? Number(raw.order) : undefined,
+      isActive: raw?.isActive
+    } as any;
 
     // Проверяем существование проекта
     const project = await db.project.findUnique({
@@ -90,28 +110,41 @@ export async function POST(
     }
 
     // Валидация значений
-    if (minAmount < 0) {
+    if (minAmount < 0 || !Number.isFinite(minAmount)) {
       return NextResponse.json(
         { error: 'Минимальная сумма не может быть отрицательной' },
         { status: 400 }
       );
     }
 
-    if (bonusPercent < 0 || bonusPercent > 100) {
+    if (
+      !Number.isFinite(bonusPercent) ||
+      bonusPercent < 0 ||
+      bonusPercent > 100
+    ) {
       return NextResponse.json(
         { error: 'Процент бонусов должен быть от 0 до 100' },
         { status: 400 }
       );
     }
 
-    if (paymentPercent < 0 || paymentPercent > 100) {
+    if (
+      !Number.isFinite(paymentPercent) ||
+      paymentPercent < 0 ||
+      paymentPercent > 100
+    ) {
       return NextResponse.json(
         { error: 'Процент оплаты должен быть от 0 до 100' },
         { status: 400 }
       );
     }
 
-    if (body.maxAmount !== undefined && body.maxAmount <= minAmount) {
+    // maxAmount=null означает "без ограничений"
+    if (
+      body.maxAmount !== undefined &&
+      body.maxAmount !== null &&
+      Number(body.maxAmount) <= minAmount
+    ) {
       return NextResponse.json(
         { error: 'Максимальная сумма должна быть больше минимальной' },
         { status: 400 }
@@ -123,7 +156,7 @@ export async function POST(
       projectId,
       name,
       minAmount,
-      maxAmount: body.maxAmount,
+      maxAmount: body.maxAmount === null ? undefined : body.maxAmount,
       bonusPercent,
       paymentPercent,
       order: body.order,

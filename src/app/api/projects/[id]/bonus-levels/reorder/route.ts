@@ -18,7 +18,8 @@ export async function PUT(
   try {
     const { id: projectId } = await params;
     const body = await request.json();
-    const { levelOrders } = body;
+    // Поддержка обоих форматов: { levels: [...] } и { levelOrders: [...] }
+    const levelOrders = body?.levels || body?.levelOrders;
 
     if (!Array.isArray(levelOrders)) {
       return NextResponse.json(

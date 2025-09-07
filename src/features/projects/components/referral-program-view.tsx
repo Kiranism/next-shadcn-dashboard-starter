@@ -74,7 +74,8 @@ export function ReferralProgramView({ projectId }: ReferralProgramViewProps) {
       );
       if (referralResponse.ok) {
         const referralData = await referralResponse.json();
-        setReferralProgram(referralData);
+        // API может вернуть { success, data } или сам объект
+        setReferralProgram(referralData?.data || referralData);
       }
     } catch (error) {
       console.error('Ошибка загрузки данных:', error);

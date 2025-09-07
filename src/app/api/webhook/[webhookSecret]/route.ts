@@ -37,14 +37,27 @@ async function logWebhookRequest(
   success: boolean
 ) {
   try {
+    // Безопасное усечение больших тел
+    const safeJson = (obj: any, limit = 10000) => {
+      try {
+        const str = JSON.stringify(obj);
+        if (str.length > limit) {
+          return { _truncated: true, preview: str.slice(0, limit) } as any;
+        }
+        return obj;
+      } catch {
+        return { _error: 'serialization_failed' } as any;
+      }
+    };
+
     await db.webhookLog.create({
       data: {
         projectId,
         endpoint,
         method,
-        headers,
-        body,
-        response,
+        headers: safeJson(headers),
+        body: safeJson(body),
+        response: safeJson(response),
         status,
         success
       }
@@ -167,8 +180,37 @@ async function handlePOST(
   let success = false;
 
   try {
-    // Парсим тело запроса
-    body = await request.json();
+    // Парсим тело запроса (поддержка JSON, form-urlencoded и multipart из Tilda)
+    const contentType = request.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      body = await request.json();
+    } else if (
+      contentType.includes('application/x-www-form-urlencoded') ||
+      contentType.includes('multipart/form-data')
+    ) {
+      const form = await request.formData();
+      // Tilda часто передает JSON строкой в поле 'data' или 'json'
+      const jsonStr = (form.get('data') ||
+        form.get('json') ||
+        form.get('order')) as string | null;
+      if (jsonStr && typeof jsonStr === 'string') {
+        try {
+          body = JSON.parse(jsonStr);
+        } catch {
+          body = Object.fromEntries(form.entries());
+        }
+      } else {
+        body = Object.fromEntries(form.entries());
+      }
+    } else {
+      // Пытаемся распарсить как текст/JSON
+      const text = await request.text();
+      try {
+        body = JSON.parse(text);
+      } catch {
+        body = text;
+      }
+    }
 
     // Получаем проект по webhook secret
     project = await ProjectService.getProjectByWebhookSecret(webhookSecret);
@@ -186,9 +228,14 @@ async function handlePOST(
     }
 
     // Проверяем, это webhook от Tilda или наш стандартный webhook
-    if (Array.isArray(body) && body.length > 0 && body[0].payment) {
+    // Нормализуем: если пришел единичный объект заказа, обернем в массив
+    if (
+      (Array.isArray(body) && body.length > 0 && (body[0] as any).payment) ||
+      (body && (body as any).payment)
+    ) {
+      const tildaPayload = Array.isArray(body) ? body : [body];
       // Это webhook от Tilda - валидируем данные
-      const validatedOrder = validateTildaOrder(body[0]);
+      const validatedOrder = validateTildaOrder(tildaPayload[0]);
       response = await handleTildaOrder(project.id, validatedOrder);
       status = 200;
       success = true;
@@ -239,11 +286,17 @@ async function handlePOST(
   } finally {
     // Логируем запрос
     if (project) {
+      const duration = Date.now() - start;
       await logWebhookRequest(
         project.id,
         endpoint,
         method,
-        requestHeaders,
+        {
+          ...requestHeaders,
+          'x-forwarded-for': request.headers.get('x-forwarded-for') || '',
+          'content-length': request.headers.get('content-length') || '',
+          'x-response-time-ms': String(duration)
+        },
         body,
         response,
         status,

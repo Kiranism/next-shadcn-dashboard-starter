@@ -348,9 +348,9 @@ export function TildaIntegrationView({ project }: TildaIntegrationViewProps) {
       {/* API endpoints */}
       <Card>
         <CardHeader>
-          <CardTitle>API Endpoints</CardTitle>
+          <CardTitle>API Эндпоинты</CardTitle>
           <CardDescription>
-            Эндпоинты для интеграции с внешними системами
+            Точки интеграции с внешними системами
           </CardDescription>
         </CardHeader>
         <CardContent className='space-y-4'>

@@ -150,6 +150,7 @@ export function BonusLevelsView({ projectId }: BonusLevelsViewProps) {
             headers: {
               'Content-Type': 'application/json'
             },
+            // сервер поддерживает { levels } и { levelOrders }
             body: JSON.stringify({ levels: reorderData })
           }
         );
