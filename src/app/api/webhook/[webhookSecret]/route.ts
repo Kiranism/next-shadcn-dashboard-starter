@@ -168,6 +168,10 @@ function normalizeTildaOrder(raw: any): any {
   };
 
   const out: any = { ...raw };
+  // Приведение контактных полей к нижнему регистру
+  if (out.Email && !out.email) out.email = String(out.Email).trim();
+  if (out.Phone && !out.phone) out.phone = String(out.Phone).trim();
+  if (out.Name && !out.name) out.name = String(out.Name).trim();
   if (out.payment) {
     out.payment = { ...out.payment };
     if (typeof out.payment.amount !== 'undefined') {
@@ -197,7 +201,21 @@ async function handlePOST(
 ) {
   const { webhookSecret } = await params;
   const method = request.method;
-  const endpoint = request.url;
+  // В логах фиксируем внешний URL за прокси (домен), а не 0.0.0.0
+  const computeExternalUrl = () => {
+    try {
+      const url = new URL(request.url);
+      const proto = request.headers.get('x-forwarded-proto');
+      const host =
+        request.headers.get('x-forwarded-host') || request.headers.get('host');
+      if (proto && host)
+        return `${proto}://${host}${url.pathname}${url.search}`;
+      return request.url;
+    } catch {
+      return request.url;
+    }
+  };
+  const endpoint = computeExternalUrl();
 
   // Получаем заголовки (упрощенная версия)
   const requestHeaders: Record<string, string> = {
