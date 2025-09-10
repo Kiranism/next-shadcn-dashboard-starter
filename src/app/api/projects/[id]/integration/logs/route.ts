@@ -26,6 +26,7 @@ export async function GET(
       id: true,
       endpoint: true,
       method: true,
+      headers: true,
       status: true,
       success: true,
       createdAt: true,

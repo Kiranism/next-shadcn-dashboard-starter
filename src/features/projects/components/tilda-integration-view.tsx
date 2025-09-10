@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Copy, Download, ExternalLink } from 'lucide-react';
+import { Copy, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Project {
@@ -65,7 +65,17 @@ export function TildaIntegrationView({ project }: TildaIntegrationViewProps) {
     lastSuccessAt?: string | null;
   } | null>(null);
   const [logs, setLogs] = useState<
-    Array<{ id: string; status: number; success: boolean; createdAt: string }>
+    Array<{
+      id: string;
+      method: string;
+      endpoint: string;
+      headers?: any;
+      status: number;
+      success: boolean;
+      createdAt: string;
+      body?: any;
+      response?: any;
+    }>
   >([]);
 
   useEffect(() => {
@@ -479,93 +489,92 @@ export function TildaIntegrationView({ project }: TildaIntegrationViewProps) {
         <CardContent>
           {logs.length === 0 ? (
             <p className='text-muted-foreground text-sm'>
-              Событий пока нет. Tilda при подключении отправляет тестовый JSON —
-              выполните тест, чтобы увидеть статус.
+              Событий пока нет. Tilda при подключении отправляет тестовый POST
+              <code className='mx-1 rounded bg-gray-100 px-1 py-0.5'>
+                test=test
+              </code>
+              — выполните тест, чтобы увидеть статус.
             </p>
           ) : (
             <div className='space-y-2'>
-              {logs.map((l) => (
-                <div
-                  key={l.id}
-                  className='flex items-center justify-between rounded border p-2 text-sm'
-                >
-                  <span>{new Date(l.createdAt).toLocaleString()}</span>
-                  <span
-                    className={l.success ? 'text-green-600' : 'text-red-600'}
-                  >
-                    {l.success ? '200 OK' : l.status}
-                  </span>
-                </div>
-              ))}
+              {logs.map((l) => {
+                const pretty = (v: unknown, limit = 2000) => {
+                  try {
+                    const s =
+                      typeof v === 'string' ? v : JSON.stringify(v, null, 2);
+                    return s.length > limit
+                      ? s.slice(0, limit) + '\n… (truncated)'
+                      : s;
+                  } catch {
+                    return String(v);
+                  }
+                };
+                return (
+                  <details key={l.id} className='rounded border p-2 text-sm'>
+                    <summary className='flex cursor-pointer items-center justify-between'>
+                      <span className='truncate'>
+                        {new Date(l.createdAt).toLocaleString()} — {l.method}{' '}
+                        {l.endpoint}
+                      </span>
+                      <span
+                        className={
+                          l.success ? 'text-green-600' : 'text-red-600'
+                        }
+                      >
+                        {l.success ? '200 OK' : l.status}
+                      </span>
+                    </summary>
+                    <div className='mt-2 grid gap-2 md:grid-cols-2'>
+                      <div className='rounded bg-gray-50 p-2'>
+                        <div className='mb-1 text-xs font-semibold'>
+                          Request
+                        </div>
+                        <pre className='text-xs break-all whitespace-pre-wrap'>
+                          {pretty({
+                            method: l.method,
+                            url: l.endpoint,
+                            headers: l.headers,
+                            body: l.body
+                          })}
+                        </pre>
+                      </div>
+                      <div className='rounded bg-gray-50 p-2'>
+                        <div className='mb-1 text-xs font-semibold'>
+                          Response
+                        </div>
+                        <pre className='text-xs break-all whitespace-pre-wrap'>
+                          {pretty({
+                            status: l.status,
+                            success: l.success,
+                            body: l.response
+                          })}
+                        </pre>
+                      </div>
+                    </div>
+                  </details>
+                );
+              })}
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Генерация кода */}
-      <Card>
-        <CardHeader>
-          <CardTitle>JavaScript код для Tilda</CardTitle>
-          <CardDescription>
-            Скопируйте этот код и вставьте в настройки сайта Tilda (T123 →
-            Настройки → Вставка кода)
-          </CardDescription>
-        </CardHeader>
-        <CardContent className='space-y-4'>
-          <Alert>
-            <AlertDescription>
-              1. Скопируйте код ниже
-              <br />
-              2. Вставьте его в настройки Tilda: T123 → Настройки → Вставка кода
-              → Код для вставки внутри HEAD или BODY
-              <br />
-              3. Укажите правильные ID формы и страницы Tilda
-              <br />
-              4. Сохраните и опубликуйте сайт
-            </AlertDescription>
-          </Alert>
-
-          <div className='relative'>
-            <Textarea
-              value={generateJavaScriptCode()}
-              readOnly
-              className='min-h-[200px] font-mono text-sm'
-            />
-            <div className='absolute top-2 right-2 flex gap-2'>
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={() =>
-                  copyToClipboard(generateJavaScriptCode(), 'JavaScript код')
-                }
-              >
-                <Copy className='mr-1 h-4 w-4' />
-                Копировать
-              </Button>
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={() =>
-                  downloadFile(
-                    generateJavaScriptCode(),
-                    'tilda-bonus-widget.js'
-                  )
-                }
-              >
-                <Download className='mr-1 h-4 w-4' />
-                Скачать
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Упрощённый сниппет подключения */}
+      {/* Быстрое подключение виджета (по Tilda) */}
       <Card>
         <CardHeader>
           <CardTitle>Быстрое подключение виджета</CardTitle>
         </CardHeader>
         <CardContent>
+          <Alert className='mb-3'>
+            <AlertDescription>
+              В Tilda подключите приемщик «Webhook» (Настройки сайта → Формы →
+              Webhook). Сразу после подключения Tilda отправит POST с данными
+              <code className='mx-1 rounded bg-gray-100 px-1 py-0.5'>
+                test=test
+              </code>
+              и ожидает ответ <b>200 OK</b> за &lt;5 секунд.
+            </AlertDescription>
+          </Alert>
           <p className='text-muted-foreground mb-2 text-sm'>
             Добавьте одну строку перед закрывающим тегом{' '}
             <code>&lt;/body&gt;</code> на вашем сайте:

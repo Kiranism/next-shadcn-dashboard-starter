@@ -244,10 +244,12 @@ async function handlePOST(
           body.event === 'test'));
 
     if (isTestRequest) {
-      response = { success: true, message: 'Webhook test accepted' };
-      status = 200;
+      // Возвращаем простой текст "ok" — совместимо с Tilda тестом
       success = true;
-      return NextResponse.json(response, { status });
+      return new NextResponse('ok', {
+        status: 200,
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+      });
     }
 
     // Проверяем, это webhook от Tilda или наш стандартный webhook
