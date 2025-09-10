@@ -325,7 +325,9 @@ export function ProjectUsersView({ projectId }: ProjectUsersViewProps) {
   }
 
   return (
-    <div className='flex flex-1 flex-col space-y-6'>
+    <div
+      className={`flex flex-1 flex-col space-y-6 ${selectedUsers.length > 0 ? 'pb-24' : ''}`}
+    >
       {/* Header */}
       <div className='flex items-center justify-between'>
         <div className='flex items-center space-x-4'>
@@ -345,46 +347,6 @@ export function ProjectUsersView({ projectId }: ProjectUsersViewProps) {
           </div>
         </div>
         <div className='flex items-center space-x-2'>
-          {selectedUsers.length > 0 && (
-            <div className='mr-4 flex items-center space-x-2'>
-              <span className='text-muted-foreground text-sm'>
-                Выбрано: {selectedUsers.length}
-              </span>
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={() => {
-                  setBulkOperation('bonus_award');
-                  setShowBulkDialog(true);
-                }}
-              >
-                💰 Начислить бонусы
-              </Button>
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={() => {
-                  setBulkOperation('bonus_deduct');
-                  setShowBulkDialog(true);
-                }}
-              >
-                💸 Списать бонусы
-              </Button>
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={() => {
-                  setBulkOperation('notification');
-                  setShowBulkDialog(true);
-                }}
-              >
-                📱 Отправить уведомление
-              </Button>
-              <Button variant='ghost' size='sm' onClick={clearSelection}>
-                Отменить выбор
-              </Button>
-            </div>
-          )}
           <Button onClick={() => setShowCreateUserDialog(true)}>
             <Plus className='mr-2 h-4 w-4' />
             Добавить пользователя

@@ -458,33 +458,20 @@ export function TildaIntegrationView({ project }: TildaIntegrationViewProps) {
         </CardContent>
       </Card>
 
-      {/* Документация */}
+      {/* Упрощённый сниппет подключения */}
       <Card>
         <CardHeader>
-          <CardTitle>Дополнительная документация</CardTitle>
+          <CardTitle>Быстрое подключение виджета</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className='flex gap-2'>
-            <Button variant='outline' asChild>
-              <a
-                href='/docs/tilda-integration.md'
-                target='_blank'
-                rel='noopener noreferrer'
-              >
-                <ExternalLink className='mr-2 h-4 w-4' />
-                Полная документация
-              </a>
-            </Button>
-            <Button variant='outline' asChild>
-              <a
-                href='/test-tilda.html'
-                target='_blank'
-                rel='noopener noreferrer'
-              >
-                <ExternalLink className='mr-2 h-4 w-4' />
-                Тестовая страница
-              </a>
-            </Button>
+          <p className='text-muted-foreground mb-2 text-sm'>
+            Добавьте одну строку перед закрывающим тегом{' '}
+            <code>&lt;/body&gt;</code> на вашем сайте:
+          </p>
+          <div className='rounded-lg bg-gray-50 p-3'>
+            <code className='text-xs break-all'>
+              {`<script src="${baseUrl}/tilda-bonus-widget.js?projectId=${project.id}&apiUrl=${baseUrl}"></script>`}
+            </code>
           </div>
         </CardContent>
       </Card>

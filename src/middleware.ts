@@ -9,6 +9,14 @@ export default async function middleware(req: NextRequest) {
   const requiresAuth = PROTECTED_MATCHERS.some((p) => pathname.startsWith(p));
   if (!requiresAuth) return NextResponse.next();
 
+  // Dev bypass for API with header x-dev-auth: 1
+  if (process.env.NODE_ENV !== 'production' && pathname.startsWith('/api/')) {
+    const devBypass = req.headers.get('x-dev-auth');
+    if (devBypass === '1') {
+      return NextResponse.next();
+    }
+  }
+
   const token = req.cookies.get('sb_auth')?.value;
   const payload = token ? await verifyJwt(token) : null;
 

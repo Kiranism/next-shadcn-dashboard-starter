@@ -476,18 +476,6 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
         return;
       }
 
-      // Убеждаемся что у пользователя есть реферальный код
-      const referralCode = await ReferralService.ensureUserReferralCode(
-        user.id
-      );
-
-      if (!referralCode) {
-        await ctx.reply(
-          '❌ Не удалось создать реферальную ссылку. Попробуйте позже.'
-        );
-        return;
-      }
-
       // Получаем проект для создания ссылки
       const project = await ProjectService.getProjectById(user.projectId);
       if (!project) {
@@ -497,7 +485,7 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
 
       const referralLink = await ReferralService.generateReferralLink(
         user.id,
-        'https://example.com' // TODO: добавить websiteUrl в схему Project
+        project.domain || 'https://maoka.ru/'
       );
 
       await ctx.reply(
@@ -723,20 +711,17 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
         return;
       }
 
-      const referralCode = await ReferralService.ensureUserReferralCode(
-        user.id
-      );
-
-      if (!referralCode) {
+      const project = await ProjectService.getProjectById(user.projectId);
+      if (!project) {
         await ctx.editMessageText(
-          '❌ Не удалось создать реферальную ссылку. Попробуйте позже.'
+          '❌ Проект не найден. Обратитесь в поддержку.'
         );
         return;
       }
 
       const referralLink = await ReferralService.generateReferralLink(
         user.id,
-        'https://example.com' // TODO: добавить websiteUrl в схему Project
+        project.domain || 'https://maoka.ru/'
       );
 
       const keyboard = new InlineKeyboard()

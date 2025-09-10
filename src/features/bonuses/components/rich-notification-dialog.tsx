@@ -108,7 +108,7 @@ export function RichNotificationDialog({
       message: '',
       imageUrl: '',
       buttons: [],
-      parseMode: 'Markdown'
+      parseMode: 'HTML'
     }
   });
 

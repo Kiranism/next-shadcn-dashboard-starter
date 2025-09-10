@@ -278,8 +278,8 @@ export function ReferralSettingsForm({
             <p className='font-medium'>Как работает реферальная программа:</p>
             <ul className='ml-4 space-y-1 text-sm'>
               <li>
-                • Пользователь переходит по ссылке с UTM метками (utm_source,
-                utm_medium, utm_campaign)
+                • Пользователь переходит по ссылке вида{' '}
+                <code>maoka.ru/?utm_ref=&lt;userId&gt;</code>
               </li>
               <li>
                 • При регистрации новый пользователь автоматически привязывается

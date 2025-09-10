@@ -17,6 +17,7 @@ import {
   GrammyError,
   HttpError
 } from 'grammy';
+import { run } from '@grammyjs/runner';
 import { createBot } from './bot';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
@@ -139,6 +140,17 @@ class BotManager {
 
       // Отправляем сообщения пользователям с ограничением параллелизма
       const CONCURRENCY = 20; // безопасно для Telegram (30 msg/sec)
+      logger.info(
+        'Начинаем рассылку',
+        {
+          projectId,
+          recipients: userIds.length,
+          hasImage: !!imageUrl,
+          buttons: buttons?.length || 0,
+          parseMode
+        },
+        'bot-manager'
+      );
 
       const sendToUser = async (userId: string) => {
         try {
@@ -151,25 +163,59 @@ class BotManager {
             return;
           }
 
-          if (imageUrl) {
-            await botInstance.bot.api.sendPhoto(
-              user.telegramId.toString(),
-              imageUrl,
-              {
-                caption: message,
-                parse_mode: parseMode,
-                reply_markup: replyMarkup
+          try {
+            if (imageUrl) {
+              await botInstance.bot.api.sendPhoto(
+                user.telegramId.toString(),
+                imageUrl,
+                {
+                  caption: message,
+                  parse_mode: parseMode,
+                  reply_markup: replyMarkup
+                }
+              );
+            } else {
+              await botInstance.bot.api.sendMessage(
+                user.telegramId.toString(),
+                message,
+                {
+                  parse_mode: parseMode,
+                  reply_markup: replyMarkup
+                }
+              );
+            }
+          } catch (primaryError) {
+            // fallback без parse_mode на случай ошибок парсинга разметки
+            const msg =
+              primaryError instanceof Error
+                ? primaryError.message
+                : String(primaryError);
+            if (
+              /parse/i.test(msg) ||
+              /can't parse/i.test(msg) ||
+              /entities/i.test(msg)
+            ) {
+              if (imageUrl) {
+                await botInstance.bot.api.sendPhoto(
+                  user.telegramId.toString(),
+                  imageUrl,
+                  {
+                    caption: message,
+                    reply_markup: replyMarkup
+                  }
+                );
+              } else {
+                await botInstance.bot.api.sendMessage(
+                  user.telegramId.toString(),
+                  message,
+                  {
+                    reply_markup: replyMarkup
+                  }
+                );
               }
-            );
-          } else {
-            await botInstance.bot.api.sendMessage(
-              user.telegramId.toString(),
-              message,
-              {
-                parse_mode: parseMode,
-                reply_markup: replyMarkup
-              }
-            );
+            } else {
+              throw primaryError;
+            }
           }
 
           sentCount++;
@@ -436,27 +482,17 @@ class BotManager {
           // Создаем бот без polling для отправки сообщений
           isPolling = false;
         } else {
-          // Запускаем polling
+          // Запускаем grammY runner (long polling, параллельная обработка)
           try {
-            logger.info(`Запускаем polling для бота`, {
+            logger.info(`Запускаем grammY runner для бота`, {
               projectId,
               component: 'bot-manager'
             });
 
-            await bot.start({
-              onStart: (botInfo) => {
-                logger.info(`Polling запущен для бота @${botInfo.username}`, {
-                  projectId,
-                  botId: botInfo.id,
-                  username: botInfo.username,
-                  component: 'bot-manager'
-                });
-              },
-              drop_pending_updates: true
-            });
+            void run(bot); // runner сам управляет polling и параллельностью
 
             isPolling = true;
-            logger.info(`Polling успешно активирован`, {
+            logger.info(`Runner инициирован (polling)`, {
               projectId,
               component: 'bot-manager'
             });

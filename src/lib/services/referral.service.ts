@@ -247,60 +247,33 @@ export class ReferralService {
   }
 
   /**
-   * Найти рефера по UTM меткам или реферальному коду
+   * Найти рефера ТОЛЬКО по utm_ref (ID пользователя)
    */
   static async findReferrer(
     projectId: string,
-    utmSource?: string,
-    referralCode?: string
+    utmRef?: string
   ): Promise<User | null> {
     try {
-      let referrer: User | null = null;
+      if (!utmRef) return null;
 
-      // Сначала пробуем найти по реферальному коду
-      if (referralCode) {
-        const user = await db.user.findFirst({
-          where: {
-            projectId,
-            referralCode,
-            isActive: true
-          }
-        });
-
-        if (user) {
-          referrer = {
-            ...user,
-            totalPurchases: Number(user.totalPurchases)
-          };
+      const user = await db.user.findFirst({
+        where: {
+          projectId,
+          id: utmRef,
+          isActive: true
         }
-      }
+      });
 
-      // Если не нашли по коду, пробуем по UTM source (для совместимости)
-      if (!referrer && utmSource) {
-        // UTM source может содержать ID пользователя или другую логику
-        // Это зависит от настроек проекта
-        const user = await db.user.findFirst({
-          where: {
-            projectId,
-            id: utmSource, // Простой случай - UTM source содержит ID
-            isActive: true
-          }
-        });
+      if (!user) return null;
 
-        if (user) {
-          referrer = {
-            ...user,
-            totalPurchases: Number(user.totalPurchases)
-          };
-        }
-      }
-
-      return referrer;
+      return {
+        ...user,
+        totalPurchases: Number(user.totalPurchases)
+      };
     } catch (error) {
       logger.error('Ошибка поиска рефера', {
         projectId,
-        utmSource,
-        referralCode,
+        utmRef,
         error: error instanceof Error ? error.message : 'Неизвестная ошибка',
         component: 'referral-service'
       });
@@ -313,9 +286,7 @@ export class ReferralService {
    */
   static async processReferralBonus(
     userId: string,
-    purchaseAmount: number,
-    utmSource?: string,
-    referralCode?: string
+    purchaseAmount: number
   ): Promise<{
     bonusAwarded: boolean;
     referrerBonus?: number;
@@ -354,13 +325,8 @@ export class ReferralService {
           };
         }
       } else {
-        // Ищем рефера по UTM меткам или коду
-        referrer = await this.findReferrer(
-          user.projectId,
-          utmSource,
-          referralCode
-        );
-
+        // При покупках больше НЕ ищем по utm_* – связь должна быть установлена при регистрации
+        referrer = null;
         // Если нашли рефера, сохраняем связь
         if (referrer && referrer.id !== userId) {
           await db.user.update({
@@ -416,8 +382,6 @@ export class ReferralService {
       logger.error('Ошибка обработки реферального бонуса', {
         userId,
         purchaseAmount,
-        utmSource,
-        referralCode,
         error: error instanceof Error ? error.message : 'Неизвестная ошибка',
         component: 'referral-service'
       });
@@ -538,13 +502,10 @@ export class ReferralService {
     additionalParams?: Record<string, string>
   ): Promise<string> {
     try {
-      const referralCode = await this.ensureUserReferralCode(userId);
-
-      const url = new URL(baseUrl);
-      url.searchParams.set('ref', referralCode);
-      url.searchParams.set('utm_source', 'referral');
-      url.searchParams.set('utm_medium', 'user_share');
-      url.searchParams.set('utm_campaign', 'referral_program');
+      const base = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+      const url = new URL(base);
+      // Новая схема: только utm_ref с userId
+      url.searchParams.set('utm_ref', userId);
 
       // Добавляем дополнительные параметры
       if (additionalParams) {

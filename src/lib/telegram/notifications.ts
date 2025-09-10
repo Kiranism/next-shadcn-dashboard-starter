@@ -22,11 +22,25 @@ export async function sendBonusNotification(
     return; // Пользователь не связан с Telegram
   }
 
+  let botInstance = botManager.getBot(projectId);
   try {
-    const botInstance = botManager.getBot(projectId);
     if (!botInstance || !botInstance.isActive) {
-      // console.log(`Бот для проекта ${projectId} неактивен или не найден`);
-      return;
+      // пробуем автоинициализировать по настройкам проекта
+      try {
+        const { db } = await import('@/lib/db');
+        const settings = await db.botSettings.findUnique({
+          where: { projectId }
+        });
+        if (settings?.botToken && settings.isActive !== false) {
+          botInstance = await botManager.createBot(projectId, settings as any);
+        }
+      } catch (e) {
+        // ignore, отрепортим ниже
+      }
+      if (!botInstance || !botInstance.isActive) {
+        console.log(`❌ Бот для проекта ${projectId} неактивен или не найден`);
+        return;
+      }
     }
 
     const emoji = getBonusEmoji(bonus.type);
@@ -44,9 +58,17 @@ export async function sendBonusNotification(
       parse_mode: 'Markdown'
     });
 
-    // console.log(`✅ Уведомление отправлено пользователю ${user.id} в Telegram`);
+    console.log(
+      `✅ Уведомление отправлено пользователю ${user.id} в Telegram (telegramId: ${user.telegramId})`
+    );
   } catch (error) {
-    // console.error(`❌ Ошибка отправки уведомления пользователю ${user.id}:`, error);
+    console.error(
+      `❌ Ошибка отправки уведомления пользователю ${user.id}:`,
+      error
+    );
+    console.error(
+      `Детали: projectId=${projectId}, telegramId=${user.telegramId}, botActive=${botInstance?.isActive}`
+    );
   }
 }
 
@@ -190,6 +212,12 @@ export async function sendRichBroadcastMessage(
     }
 
     if (targetUserIds.length === 0) {
+      const { logger } = await import('@/lib/logger');
+      logger.warn(
+        'Список получателей пуст, рассылка пропущена',
+        { projectId },
+        'notifications'
+      );
       return { sent: 0, failed: 0 };
     }
 

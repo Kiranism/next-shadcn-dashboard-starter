@@ -563,6 +563,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@grammyjs/runner@npm:^2.0.3":
+  version: 2.0.3
+  resolution: "@grammyjs/runner@npm:2.0.3"
+  dependencies:
+    abort-controller: "npm:^3.0.0"
+  peerDependencies:
+    grammy: ^1.13.1
+  checksum: 10c0/35d2168ea240a4d1d318d92b8340009c508845dad37da508270a31026d19a726ff200152394b9eb1dd9d6e13e9481a5bbfd597934859727efe264cdb18bef612
+  languageName: node
+  linkType: hard
+
 "@grammyjs/types@npm:3.22.1":
   version: 3.22.1
   resolution: "@grammyjs/types@npm:3.22.1"
@@ -9123,6 +9134,7 @@ __metadata:
     "@dnd-kit/sortable": "npm:^8.0.0"
     "@dnd-kit/utilities": "npm:^3.2.2"
     "@faker-js/faker": "npm:^9.3.0"
+    "@grammyjs/runner": "npm:^2.0.3"
     "@hookform/resolvers": "npm:^3.9.1"
     "@prisma/client": "npm:^6.12.0"
     "@radix-ui/react-accordion": "npm:^1.2.3"

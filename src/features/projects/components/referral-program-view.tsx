@@ -270,20 +270,21 @@ export function ReferralProgramView({ projectId }: ReferralProgramViewProps) {
             </CardContent>
           </Card>
 
-          {/* Example UTM link */}
+          {/* Обновленная справка по ссылке */}
           <Card>
             <CardHeader>
-              <CardTitle className='text-lg'>Пример UTM ссылки</CardTitle>
+              <CardTitle className='text-lg'>
+                Как выглядит реферальная ссылка
+              </CardTitle>
             </CardHeader>
             <CardContent className='space-y-3 text-sm'>
-              <div className='rounded-lg bg-gray-50 p-3'>
-                <code className='text-xs break-all'>
-                  https://yourstore.com/?utm_source=referral&utm_medium=friend&utm_campaign=winter2024
+              <p className='text-muted-foreground text-sm'>
+                Ссылка формируется в формате:{' '}
+                <code className='text-xs'>
+                  maoka.ru/?utm_ref=&lt;userId&gt;
                 </code>
-              </div>
-              <p className='text-muted-foreground text-xs'>
-                При переходе по такой ссылке и регистрации, пользователь будет
-                отмечен как реферал
+                . Параметры utm_source/utm_medium/utm_campaign больше не
+                используются.
               </p>
             </CardContent>
           </Card>

@@ -14,10 +14,10 @@ import { withApiRateLimit } from '@/lib';
 
 async function postHandler(
   request: NextRequest,
-  { params }: { params: { id: string; userId: string } }
+  { params }: { params: Promise<{ id: string; userId: string }> }
 ) {
   try {
-    const { id: projectId, userId } = params;
+    const { id: projectId, userId } = await params;
     const body = await request.json();
 
     const { amount, type, description } = body;
@@ -134,10 +134,10 @@ async function postHandler(
 
 async function getHandler(
   request: NextRequest,
-  { params }: { params: { id: string; userId: string } }
+  { params }: { params: Promise<{ id: string; userId: string }> }
 ) {
   try {
-    const { id: projectId, userId } = params;
+    const { id: projectId, userId } = await params;
 
     // Проверяем существование пользователя в проекте
     const user = await db.user.findFirst({

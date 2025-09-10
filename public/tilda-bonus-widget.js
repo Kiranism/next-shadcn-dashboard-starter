@@ -515,5 +515,28 @@
     defaultConfig: DEFAULT_CONFIG
   };
 
+  // Автоинициализация, если параметры переданы через src
+  try {
+    const currentScript =
+      document.currentScript ||
+      (function () {
+        const scripts = document.getElementsByTagName('script');
+        return scripts[scripts.length - 1];
+      })();
+
+    if (currentScript && currentScript.src) {
+      const url = new URL(currentScript.src);
+      const projectId = url.searchParams.get('projectId');
+      const apiUrl = url.searchParams.get('apiUrl');
+
+      if (projectId && apiUrl) {
+        // Стартуем виджет без дополнительных строк кода
+        new TildaBonusWidget({ projectId, apiUrl });
+      }
+    }
+  } catch (e) {
+    // no-op
+  }
+
   console.log('🎁 Tilda Bonus Widget загружен');
 })();

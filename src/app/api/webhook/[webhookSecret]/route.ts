@@ -162,9 +162,9 @@ async function handleTildaOrder(projectId: string, orderData: TildaOrder) {
 // Обработчик POST запросов (без rate limiting)
 async function handlePOST(
   request: NextRequest,
-  { params }: { params: { webhookSecret: string } }
+  { params }: { params: Promise<{ webhookSecret: string }> }
 ) {
-  const { webhookSecret } = params;
+  const { webhookSecret } = await params;
   const method = request.method;
   const endpoint = request.url;
 

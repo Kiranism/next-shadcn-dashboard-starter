@@ -52,7 +52,7 @@ export function EnhancedBulkActionsToolbar({
   }
 
   return (
-    <div className='bg-background/95 pointer-events-auto fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 transform backdrop-blur-sm'>
+    <div className='bg-background/95 pointer-events-auto fixed bottom-8 left-1/2 z-[70] -translate-x-1/2 transform backdrop-blur-sm'>
       <div className='bg-background rounded-lg border p-4 shadow-lg'>
         <div className='flex items-center gap-4'>
           {/* Информация о выборе */}
@@ -73,7 +73,12 @@ export function EnhancedBulkActionsToolbar({
                   <ChevronDown className='ml-1 h-4 w-4' />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align='end'>
+              <DropdownMenuContent
+                align='end'
+                side='top'
+                sideOffset={8}
+                className='z-[80]'
+              >
                 <DropdownMenuItem onClick={() => onBulkBonusAction('ADD')}>
                   <Plus className='mr-2 h-4 w-4 text-green-500' />
                   Начислить бонусы
@@ -99,7 +104,12 @@ export function EnhancedBulkActionsToolbar({
                 <ChevronDown className='ml-1 h-4 w-4' />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align='end'>
+            <DropdownMenuContent
+              align='end'
+              side='top'
+              sideOffset={8}
+              className='z-[80]'
+            >
               <DropdownMenuItem onClick={onShowRichNotifications}>
                 <MessageSquare className='mr-2 h-4 w-4 text-blue-500' />
                 📢 Расширенные уведомления

@@ -26,13 +26,12 @@ export class UserService {
   // Создание нового пользователя с поддержкой UTM меток и реферальной системы
   static async createUser(data: CreateUserInput): Promise<User> {
     try {
-      // Ищем рефера если есть реферальный код
+      // Ищем рефера только по utm_ref (теперь используем utmSource как utm_ref)
       let referredBy: string | undefined;
-      if (data.referralCode) {
+      if (data.utmSource) {
         const referrer = await ReferralService.findReferrer(
           data.projectId,
-          data.utmSource,
-          data.referralCode
+          data.utmSource
         );
         if (referrer) {
           referredBy = referrer.id;
@@ -55,8 +54,7 @@ export class UserService {
         }
       });
 
-      // Создаём реферальный код для пользователя
-      await ReferralService.ensureUserReferralCode(user.id);
+      // Реферальные коды больше не используются для ссылок — пропускаем генерацию
 
       logger.info('Создан новый пользователь', {
         userId: user.id,

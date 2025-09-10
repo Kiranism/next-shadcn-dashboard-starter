@@ -15,8 +15,14 @@ export type AdminJwtPayload = JWTPayload & {
 };
 
 function getSecretKey(): Uint8Array {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) throw new Error('JWT_SECRET is not set');
+  let secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV !== 'production') {
+      secret = 'dev-secret';
+    } else {
+      throw new Error('JWT_SECRET is not set');
+    }
+  }
   return new TextEncoder().encode(secret);
 }
 

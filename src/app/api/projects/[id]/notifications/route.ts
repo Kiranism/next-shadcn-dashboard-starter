@@ -190,9 +190,9 @@ async function sendNotificationsHandler(
 // GET /api/projects/[id]/notifications/stats - Статистика уведомлений
 async function getNotificationStatsHandler(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id: projectId } = params;
+  const { id: projectId } = await params;
 
   // Проверяем существование проекта
   const project = await db.project.findUnique({

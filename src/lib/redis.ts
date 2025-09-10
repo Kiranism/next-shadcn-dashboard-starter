@@ -10,35 +10,90 @@
 import Redis from 'ioredis';
 import { logger } from '@/lib/logger';
 
-// Создаем Redis клиент с retry стратегией
+// Создаем Redis клиент с retry стратегией. В dev (без REDIS_URL) используем in-memory fallback
 const createRedisClient = () => {
-  const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+  const useRealRedis =
+    !!process.env.REDIS_URL && process.env.NODE_ENV === 'production';
 
-  const client = new Redis(redisUrl, {
-    maxRetriesPerRequest: 3,
-    retryStrategy: (times) => {
-      const delay = Math.min(times * 50, 2000);
-      return delay;
-    },
-    reconnectOnError: (err) => {
-      const targetError = 'READONLY';
-      if (err.message.includes(targetError)) {
-        // Переподключаемся при readonly ошибках
-        return true;
+  if (useRealRedis) {
+    const redisUrl = process.env.REDIS_URL as string;
+    const client = new Redis(redisUrl, {
+      maxRetriesPerRequest: 3,
+      retryStrategy: (times) => {
+        const delay = Math.min(times * 50, 2000);
+        return delay;
+      },
+      reconnectOnError: (err) => {
+        const targetError = 'READONLY';
+        if (err.message.includes(targetError)) {
+          // Переподключаемся при readonly ошибках
+          return true;
+        }
+        return false;
       }
-      return false;
+    });
+
+    client.on('error', (error) => {
+      logger.error('Redis connection error:', { error: error.message });
+    });
+
+    client.on('connect', () => {
+      logger.info('Redis connected successfully');
+    });
+
+    return client as unknown as Redis;
+  }
+
+  logger.warn('Redis disabled: using in-memory fallback (development)');
+  const store = new Map<string, { value: string; expireAt?: number }>();
+  const nowMs = () => Date.now();
+
+  const stub: any = {
+    on: () => undefined,
+    async get(key: string) {
+      const entry = store.get(key);
+      if (!entry) return null;
+      if (entry.expireAt && entry.expireAt < nowMs()) {
+        store.delete(key);
+        return null;
+      }
+      return entry.value;
+    },
+    async setex(key: string, ttlSeconds: number, val: string) {
+      store.set(key, { value: val, expireAt: nowMs() + ttlSeconds * 1000 });
+    },
+    async del(...keys: string[]) {
+      let cnt = 0;
+      for (const k of keys) {
+        if (store.delete(k)) cnt++;
+      }
+      return cnt;
+    },
+    async keys(pattern: string) {
+      if (!pattern.includes('*'))
+        return Array.from(store.keys()).filter((k) => k === pattern);
+      const prefix = pattern.slice(0, pattern.indexOf('*'));
+      return Array.from(store.keys()).filter((k) => k.startsWith(prefix));
+    },
+    async incr(key: string) {
+      const current = await stub.get(key);
+      const num = current ? parseInt(current, 10) : 0;
+      const next = (num + 1).toString();
+      store.set(key, { value: next });
+      return parseInt(next, 10);
+    },
+    async expire(key: string, ttlSeconds: number) {
+      const entry = store.get(key);
+      if (entry) {
+        entry.expireAt = nowMs() + ttlSeconds * 1000;
+        store.set(key, entry);
+        return 1;
+      }
+      return 0;
     }
-  });
+  };
 
-  client.on('error', (error) => {
-    logger.error('Redis connection error:', { error: error.message });
-  });
-
-  client.on('connect', () => {
-    logger.info('Redis connected successfully');
-  });
-
-  return client;
+  return stub as Redis;
 };
 
 // Singleton экземпляр Redis клиента
@@ -154,11 +209,11 @@ export class RateLimiter {
 
     try {
       // Инкрементируем счетчик
-      const count = await redis.incr(redisKey);
+      const count = await (redis as any).incr(redisKey);
 
       // Устанавливаем TTL при первом запросе
       if (count === 1) {
-        await redis.expire(redisKey, windowSeconds);
+        await (redis as any).expire(redisKey, windowSeconds);
       }
 
       const allowed = count <= limit;
@@ -218,7 +273,7 @@ export class DistributedLock {
     const lockValue = Date.now().toString();
 
     try {
-      const result = await redis.set(
+      const result = await (redis as any).set(
         lockKey,
         lockValue,
         'EX',
@@ -238,7 +293,7 @@ export class DistributedLock {
   static async release(key: string): Promise<void> {
     const lockKey = `lock:${key}`;
     try {
-      await redis.del(lockKey);
+      await (redis as any).del(lockKey);
     } catch (error) {
       logger.error('Lock release error:', { key, error });
     }
