@@ -39,6 +39,11 @@ const referralProgramSchema = z.object({
     .number()
     .min(0, 'Бонус новому пользователю не может быть отрицательным')
     .max(50, 'Бонус новому пользователю не может быть больше 50%'),
+  welcomeBonus: z
+    .number()
+    .min(0, 'Приветственный бонус не может быть отрицательным')
+    .max(100000, 'Слишком большой бонус')
+    .default(0),
   minPurchaseAmount: z
     .number()
     .min(0, 'Минимальная сумма покупки не может быть отрицательной'),
@@ -76,6 +81,16 @@ export function ReferralSettingsForm({
       isActive: referralProgram?.isActive ?? false,
       referrerBonus: referralProgram?.referrerBonus ?? 10,
       refereeBonus: referralProgram?.refereeBonus ?? 5,
+      welcomeBonus: (() => {
+        try {
+          const meta = referralProgram?.description
+            ? JSON.parse(referralProgram.description)
+            : {};
+          return typeof meta?.welcomeBonus === 'number' ? meta.welcomeBonus : 0;
+        } catch {
+          return 0;
+        }
+      })(),
       minPurchaseAmount: referralProgram?.minPurchaseAmount ?? 0,
       cookieLifetime: referralProgram?.cookieLifetime ?? 30
     }
@@ -209,6 +224,35 @@ export function ReferralSettingsForm({
                   <p className='text-xs text-gray-600'>
                     Процент от первой покупки, который получает новый
                     пользователь
+                  </p>
+                </div>
+              </div>
+
+              {/* Welcome Bonus */}
+              <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+                <div className='space-y-2'>
+                  <Label
+                    htmlFor='welcomeBonus'
+                    className='flex items-center space-x-2'
+                  >
+                    <Gift className='h-4 w-4 text-emerald-600' />
+                    <span>Приветственный бонус (₽)</span>
+                  </Label>
+                  <Input
+                    id='welcomeBonus'
+                    type='number'
+                    step='1'
+                    min='0'
+                    placeholder='0'
+                    {...register('welcomeBonus', { valueAsNumber: true })}
+                  />
+                  {errors.welcomeBonus && (
+                    <p className='text-sm text-red-600'>
+                      {errors.welcomeBonus.message}
+                    </p>
+                  )}
+                  <p className='text-xs text-gray-600'>
+                    Фиксированное начисление при регистрации нового пользователя
                   </p>
                 </div>
               </div>

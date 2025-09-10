@@ -14,6 +14,7 @@ import { UserService } from '@/lib/services/user.service';
 import { withApiRateLimit, withValidation } from '@/lib';
 import { createUserSchema, validateWithSchema } from '@/lib/validation/schemas';
 import { z } from 'zod';
+import { normalizePhone, isValidNormalizedPhone } from '@/lib/phone';
 
 const getQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1).optional(),
@@ -122,12 +123,21 @@ async function postHandler(
       return NextResponse.json({ error: 'Проект не найден' }, { status: 404 });
     }
 
-    // Валидация входных данных
+    // Валидация входных данных (с нормализацией телефона)
+    const normalizedPhone = normalizePhone(body.phone);
     const validated = validateWithSchema(createUserSchema, {
       ...body,
+      phone: normalizedPhone || undefined,
       projectId: id,
       birthDate: body.birthDate ? new Date(body.birthDate) : undefined
     });
+
+    if (validated.phone && !isValidNormalizedPhone(validated.phone)) {
+      return NextResponse.json(
+        { error: 'Неверный формат телефона' },
+        { status: 400 }
+      );
+    }
 
     // Проверяем уникальность email в рамках проекта
     if (validated.email) {

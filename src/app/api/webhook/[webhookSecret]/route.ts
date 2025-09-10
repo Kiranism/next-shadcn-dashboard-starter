@@ -341,13 +341,14 @@ async function handlePOST(
         return undefined;
       };
       const email = pick(body, ['email', 'Email', 'emailAddress', 'E-mail']);
-      const phone = pick(body, [
-        'phone',
-        'Phone',
-        'tel',
-        'telephone',
-        'Телефон'
-      ]);
+      let phone = pick(body, ['phone', 'Phone', 'tel', 'telephone', 'Телефон']);
+      // Нормализуем телефон (как в API создания пользователя)
+      try {
+        const { normalizePhone } = await import('@/lib/phone');
+        phone = normalizePhone(phone) || phone;
+      } catch {
+        // no-op
+      }
       if (email || phone) {
         const name = pick(body, ['name', 'Name', 'fio', 'FIO', 'fullname']);
         const [firstName, ...rest] = (name || '').split(' ').filter(Boolean);
