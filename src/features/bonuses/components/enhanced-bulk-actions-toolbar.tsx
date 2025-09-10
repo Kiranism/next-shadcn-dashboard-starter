@@ -37,6 +37,7 @@ interface EnhancedBulkActionsToolbarProps {
   onShowRichNotifications: () => void;
   onShowBasicNotifications?: () => void;
   onBulkBonusAction?: (action: 'ADD' | 'DEDUCT' | 'SET') => void;
+  onDeleteSelected?: () => void;
 }
 
 export function EnhancedBulkActionsToolbar({
@@ -45,7 +46,8 @@ export function EnhancedBulkActionsToolbar({
   onClearSelection,
   onShowRichNotifications,
   onShowBasicNotifications,
-  onBulkBonusAction
+  onBulkBonusAction,
+  onDeleteSelected
 }: EnhancedBulkActionsToolbarProps) {
   if (selectedCount === 0) {
     return null;
@@ -128,6 +130,13 @@ export function EnhancedBulkActionsToolbar({
               )}
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Удаление */}
+          {onDeleteSelected && (
+            <Button variant='destructive' size='sm' onClick={onDeleteSelected}>
+              Удалить
+            </Button>
+          )}
 
           {/* Очистить выбор */}
           <Button

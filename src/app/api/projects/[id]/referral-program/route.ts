@@ -100,6 +100,26 @@ export async function PUT(
       description: body.description || null
     });
 
+    // Приветственный бонус (фикс): если передан и > 0, сохраняем в Project.description как JSON доп.параметр (временное хранилище)
+    if (
+      typeof (body as any).welcomeBonus === 'number' &&
+      (body as any).welcomeBonus > 0
+    ) {
+      try {
+        // Без миграции: временно кладём в ReferralProgram.description (JSON-строкой)
+        const currentDesc = updatedProgram.description || '';
+        const meta: any = {};
+        try {
+          Object.assign(meta, currentDesc ? JSON.parse(currentDesc) : {});
+        } catch {}
+        meta.welcomeBonus = Number((body as any).welcomeBonus);
+        await db.referralProgram.update({
+          where: { projectId },
+          data: { description: JSON.stringify(meta) }
+        });
+      } catch {}
+    }
+
     logger.info('Referral program settings updated', {
       projectId,
       isActive: updatedProgram.isActive,

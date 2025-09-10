@@ -110,6 +110,32 @@ export function ProjectUsersView({ projectId }: ProjectUsersViewProps) {
     );
   };
 
+  const handleDeleteSelected = async () => {
+    if (selectedUsers.length === 0) return;
+    if (!confirm(`Удалить выбранных пользователей (${selectedUsers.length})?`))
+      return;
+    try {
+      const responses = await Promise.all(
+        selectedUsers.map((uid) =>
+          fetch(`/api/projects/${projectId}/users/${uid}`, { method: 'DELETE' })
+        )
+      );
+      const ok = responses.every((r) => r.ok);
+      if (ok) {
+        setUsers((prev) => prev.filter((u) => !selectedUsers.includes(u.id)));
+        setSelectedUsers([]);
+        toast({ title: 'Пользователи удалены' });
+      } else {
+        toast({
+          title: 'Часть пользователей не удалена',
+          variant: 'destructive'
+        });
+      }
+    } catch (e) {
+      toast({ title: 'Ошибка удаления', variant: 'destructive' });
+    }
+  };
+
   // Select all users
   const selectAllUsers = () => {
     setSelectedUsers(users.map((user) => user.id));
@@ -797,6 +823,7 @@ export function ProjectUsersView({ projectId }: ProjectUsersViewProps) {
         selectedCount={selectedUsers.length}
         onClearSelection={() => setSelectedUsers([])}
         onShowRichNotifications={() => setShowRichNotificationDialog(true)}
+        onDeleteSelected={handleDeleteSelected}
       />
 
       {/* Rich Notification Dialog */}
