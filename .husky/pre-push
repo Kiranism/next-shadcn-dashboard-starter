@@ -1,1 +1,1 @@
-yarn production:check
+yarn lint && yarn build && npx tsc --noEmit
