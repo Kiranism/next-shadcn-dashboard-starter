@@ -159,11 +159,18 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
     const telegramId = BigInt(ctx.from.id);
 
     try {
+      // Нормализуем номер, чтобы совпасть с БД
+      let phoneNumber = contact.phone_number;
+      try {
+        const { normalizePhone } = await import('@/lib/phone');
+        phoneNumber = normalizePhone(phoneNumber) || phoneNumber;
+      } catch {}
+
       const user = await UserService.linkTelegramAccount(
         ctx.session.projectId,
         telegramId,
         ctx.from.username,
-        { phone: contact.phone_number }
+        { phone: phoneNumber }
       );
 
       if (user) {

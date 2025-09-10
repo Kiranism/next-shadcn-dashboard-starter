@@ -83,10 +83,51 @@ export class UserService {
   ): Promise<User | null> {
     if (!email && !phone) return null;
 
+    // Нормализуем и подбираем варианты телефона для максимального совпадения
+    const phoneCandidates: string[] = [];
+    if (phone) {
+      try {
+        const { normalizePhone } = await import('@/lib/phone');
+        const trimmed = String(phone).trim();
+        const normalized = normalizePhone(trimmed);
+        const digits = trimmed.replace(/\D/g, '');
+
+        if (normalized) phoneCandidates.push(normalized);
+        // Вариант с ведущей 8 для старых данных
+        if (
+          normalized &&
+          normalized.startsWith('+7') &&
+          normalized.length === 12
+        ) {
+          phoneCandidates.push('8' + normalized.slice(2));
+        }
+        // Сырые цифры (вдруг в БД хранились без знака +)
+        if (digits) phoneCandidates.push(digits);
+        // Преобразуем локальные формы к +7XXXXXXXXXX
+        if (digits.length === 11 && digits.startsWith('8')) {
+          phoneCandidates.push('+7' + digits.slice(1));
+        }
+        if (digits.length === 10) {
+          phoneCandidates.push('+7' + digits);
+        }
+        // Исходное
+        phoneCandidates.push(trimmed);
+      } catch {
+        // В случае сбоя нормализации, используем исходное значение
+        phoneCandidates.push(String(phone));
+      }
+    }
+
+    const orConditions: any[] = [];
+    if (email) orConditions.push({ email });
+    for (const p of phoneCandidates) {
+      orConditions.push({ phone: p });
+    }
+
     const user = await db.user.findFirst({
       where: {
         projectId,
-        OR: [email ? { email } : {}, phone ? { phone } : {}].filter(Boolean)
+        OR: orConditions
       },
       include: {
         project: true,
