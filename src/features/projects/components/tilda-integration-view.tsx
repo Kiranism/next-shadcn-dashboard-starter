@@ -249,12 +249,35 @@ export function TildaIntegrationView({ project }: TildaIntegrationViewProps) {
 </script>`;
   };
 
-  const copyToClipboard = async (text: string, type: string) => {
+  const copyToClipboard = async (text: string, label: string) => {
+    const fallbackCopy = (value: string) => {
+      const el = document.createElement('textarea');
+      el.value = value;
+      el.setAttribute('readonly', '');
+      el.style.position = 'absolute';
+      el.style.left = '-9999px';
+      document.body.appendChild(el);
+      el.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(el);
+      return ok;
+    };
+
     try {
-      await navigator.clipboard.writeText(text);
-      toast.success(`${type} скопирован в буфер обмена`);
-    } catch (error) {
-      toast.error('Ошибка копирования');
+      if (
+        navigator.clipboard &&
+        typeof navigator.clipboard.writeText === 'function'
+      ) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ok = fallbackCopy(text);
+        if (!ok) throw new Error('copy failed');
+      }
+      toast.success(`${label} скопирован`);
+    } catch (_e) {
+      const ok = fallbackCopy(text);
+      if (ok) toast.success(`${label} скопирован`);
+      else toast.error('Не удалось скопировать');
     }
   };
 
@@ -401,7 +424,11 @@ export function TildaIntegrationView({ project }: TildaIntegrationViewProps) {
           <div>
             <Label>Webhook URL (для автоматического начисления бонусов)</Label>
             <div className='mt-1 flex gap-2'>
-              <Input value={webhookUrl} readOnly />
+              <Input
+                value={webhookUrl}
+                readOnly
+                onFocus={(e) => e.currentTarget.select()}
+              />
               <Button
                 variant='outline'
                 size='icon'
