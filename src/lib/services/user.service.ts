@@ -605,9 +605,7 @@ export class BonusService {
     // Обрабатываем реферальную систему
     const referralInfo = await ReferralService.processReferralBonus(
       userId,
-      purchaseAmount,
-      user.utmSource || undefined,
-      undefined // referencalCode из пользователя уже обработан при регистрации
+      purchaseAmount
     );
 
     logger.info('Начислен бонус за покупку', {
