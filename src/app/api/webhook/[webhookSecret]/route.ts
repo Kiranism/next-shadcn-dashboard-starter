@@ -229,6 +229,27 @@ async function handlePOST(
       return NextResponse.json(response, { status });
     }
 
+    // Обработка тестовых запросов (например, Tilda отправляет test ping)
+    const urlObj = new URL(endpoint);
+    const testParam =
+      urlObj.searchParams.get('test') || urlObj.searchParams.get('ping');
+    const isTestRequest =
+      testParam === '1' ||
+      testParam === 'true' ||
+      (typeof body === 'object' &&
+        body !== null &&
+        (body.test === '1' ||
+          body.test === 1 ||
+          body.action === 'test' ||
+          body.event === 'test'));
+
+    if (isTestRequest) {
+      response = { success: true, message: 'Webhook test accepted' };
+      status = 200;
+      success = true;
+      return NextResponse.json(response, { status });
+    }
+
     // Проверяем, это webhook от Tilda или наш стандартный webhook
     // Нормализуем: если пришел единичный объект заказа, обернем в массив
     if (
