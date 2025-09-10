@@ -326,20 +326,8 @@ export class ReferralService {
         }
       } else {
         // При покупках больше НЕ ищем по utm_* – связь должна быть установлена при регистрации
+        // Оставляем referrer как null, никаких дополнительных действий здесь не требуется
         referrer = null;
-        // Если нашли рефера, сохраняем связь
-        if (referrer && referrer.id !== userId) {
-          await db.user.update({
-            where: { id: userId },
-            data: { referredBy: referrer.id }
-          });
-
-          logger.info('Установлена реферальная связь', {
-            userId,
-            referrerId: referrer.id,
-            component: 'referral-service'
-          });
-        }
       }
 
       if (!referrer || referrer.id === userId) {
