@@ -9,7 +9,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Card,
   CardContent,
@@ -57,6 +57,32 @@ export function TildaIntegrationView({ project }: TildaIntegrationViewProps) {
   const webhookUrl = `${baseUrl}/api/webhook/${project.webhookSecret}`;
   const balanceApiUrl = `${baseUrl}/api/projects/${project.id}/users/balance`;
   const spendApiUrl = `${baseUrl}/api/projects/${project.id}/users/spend`;
+  const statusApiUrl = `${baseUrl}/api/projects/${project.id}/integration/status`;
+  const logsApiUrl = `${baseUrl}/api/projects/${project.id}/integration/logs?limit=10`;
+
+  const [status, setStatus] = useState<{
+    connected: boolean;
+    lastSuccessAt?: string | null;
+  } | null>(null);
+  const [logs, setLogs] = useState<
+    Array<{ id: string; status: number; success: boolean; createdAt: string }>
+  >([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [s, l] = await Promise.all([
+          fetch(statusApiUrl).then((r) => r.json()),
+          fetch(logsApiUrl).then((r) => r.json())
+        ]);
+        setStatus(s);
+        setLogs(l.logs || []);
+      } catch (_e) {
+        // ignore
+      }
+    };
+    load();
+  }, [statusApiUrl, logsApiUrl]);
 
   const generateJavaScriptCode = () => {
     return `<!-- Виджет бонусной системы для Tilda -->
@@ -272,6 +298,24 @@ export function TildaIntegrationView({ project }: TildaIntegrationViewProps) {
             <span className='font-medium'>Пользователей:</span>
             <Badge variant='outline'>{project._count?.users || 0}</Badge>
           </div>
+          <div className='flex items-center justify-between'>
+            <span className='font-medium'>Статус подключения сайта:</span>
+            {status?.connected ? (
+              <Badge className='bg-green-600 text-white hover:bg-green-700'>
+                Подключен
+              </Badge>
+            ) : (
+              <Badge className='bg-red-600 text-white hover:bg-red-700'>
+                Нет событий
+              </Badge>
+            )}
+          </div>
+          {status?.lastSuccessAt && (
+            <div className='text-muted-foreground text-xs'>
+              Последний успешный webhook:{' '}
+              {new Date(status.lastSuccessAt).toLocaleString()}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -397,6 +441,37 @@ export function TildaIntegrationView({ project }: TildaIntegrationViewProps) {
               </Button>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Последние вебхук события */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Последние события вебхука</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {logs.length === 0 ? (
+            <p className='text-muted-foreground text-sm'>
+              Событий пока нет. Tilda при подключении отправляет тестовый JSON —
+              выполните тест, чтобы увидеть статус.
+            </p>
+          ) : (
+            <div className='space-y-2'>
+              {logs.map((l) => (
+                <div
+                  key={l.id}
+                  className='flex items-center justify-between rounded border p-2 text-sm'
+                >
+                  <span>{new Date(l.createdAt).toLocaleString()}</span>
+                  <span
+                    className={l.success ? 'text-green-600' : 'text-red-600'}
+                  >
+                    {l.success ? '200 OK' : l.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
