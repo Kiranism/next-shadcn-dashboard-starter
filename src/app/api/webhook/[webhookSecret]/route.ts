@@ -158,6 +158,37 @@ async function handleTildaOrder(projectId: string, orderData: TildaOrder) {
     throw error;
   }
 }
+// Нормализация заказа Tilda: приводит строковые числа к number
+function normalizeTildaOrder(raw: any): any {
+  const toNum = (v: unknown): number => {
+    if (typeof v === 'number') return v;
+    const s = String(v ?? '').replace(/[^0-9.\-]/g, '');
+    const n = Number(s);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const out: any = { ...raw };
+  if (out.payment) {
+    out.payment = { ...out.payment };
+    if (typeof out.payment.amount !== 'undefined') {
+      out.payment.amount = toNum(out.payment.amount);
+    }
+    if (Array.isArray(out.payment.products)) {
+      out.payment.products = out.payment.products.map((p: any) => ({
+        ...p,
+        price: toNum(p?.price),
+        amount:
+          typeof p?.amount !== 'undefined' ? toNum(p.amount) : toNum(p?.price),
+        quantity: typeof p?.quantity !== 'undefined' ? toNum(p.quantity) : 1
+      }));
+    }
+    if (!out.payment.orderid && out.payment.systranid) {
+      out.payment.orderid = String(out.payment.systranid);
+    }
+    if (out.payment.orderid) out.payment.orderid = String(out.payment.orderid);
+  }
+  return out;
+}
 
 // Обработчик POST запросов (без rate limiting)
 async function handlePOST(
@@ -259,8 +290,9 @@ async function handlePOST(
       (body && (body as any).payment)
     ) {
       const tildaPayload = Array.isArray(body) ? body : [body];
-      // Это webhook от Tilda - валидируем данные
-      const validatedOrder = validateTildaOrder(tildaPayload[0]);
+      // Нормализуем числа из строк, затем валидируем
+      const normalized = normalizeTildaOrder(tildaPayload[0]);
+      const validatedOrder = validateTildaOrder(normalized);
       response = await handleTildaOrder(project.id, validatedOrder);
       status = 200;
       success = true;

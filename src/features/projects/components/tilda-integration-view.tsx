@@ -498,7 +498,7 @@ export function TildaIntegrationView({ project }: TildaIntegrationViewProps) {
           ) : (
             <div className='space-y-2'>
               {logs.map((l) => {
-                const pretty = (v: unknown, limit = 2000) => {
+                const pretty = (v: unknown, limit = 20000) => {
                   try {
                     const s =
                       typeof v === 'string' ? v : JSON.stringify(v, null, 2);
