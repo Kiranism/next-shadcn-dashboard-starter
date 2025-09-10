@@ -264,6 +264,53 @@ async function handlePOST(
       success = true;
     } else {
       // Это наш стандартный webhook. Нормализуем action и форму payload перед валидацией
+      // Доп. обработка: тестовые пинги/формы Tilda без payment
+      const isLikelyTest =
+        typeof body === 'object' &&
+        body !== null &&
+        ((typeof (body as any).test !== 'undefined' &&
+          String((body as any).test).toLowerCase() !== 'false') ||
+          /test/i.test(String((body as any).action || '')) ||
+          /test/i.test(String((body as any).event || '')));
+      if (isLikelyTest) {
+        response = { success: true, message: 'Webhook test accepted' };
+        status = 200;
+        success = true;
+        return NextResponse.json(response, { status });
+      }
+
+      // Эвристика: если это форма (есть email/phone), трактуем как register_user
+      const pick = (obj: any, keys: string[]): string | undefined => {
+        for (const k of keys) {
+          const v =
+            obj?.[k] ?? obj?.[k.toLowerCase()] ?? obj?.[k.toUpperCase()];
+          if (typeof v === 'string' && v.trim()) return v.trim();
+        }
+        return undefined;
+      };
+      const email = pick(body, ['email', 'Email', 'emailAddress', 'E-mail']);
+      const phone = pick(body, [
+        'phone',
+        'Phone',
+        'tel',
+        'telephone',
+        'Телефон'
+      ]);
+      if (email || phone) {
+        const name = pick(body, ['name', 'Name', 'fio', 'FIO', 'fullname']);
+        const [firstName, ...rest] = (name || '').split(' ').filter(Boolean);
+        const lastName = rest.join(' ') || undefined;
+        const normalized: WebhookRegisterUserPayload = {
+          email,
+          phone,
+          firstName,
+          lastName
+        } as any;
+        response = await handleRegisterUser(project.id, normalized);
+        status = 201;
+        success = true;
+        return NextResponse.json(response, { status });
+      }
       const normalizeAction = (a: unknown): string | undefined => {
         if (typeof a !== 'string') return undefined;
         const raw = a
