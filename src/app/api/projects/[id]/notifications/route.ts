@@ -90,7 +90,28 @@ export async function POST(
       );
     }
 
-    // Отправляем уведомление
+    // Если userId не указан, отправляем рассылку всем пользователям проекта
+    if (!userId && channel === NotificationChannel.TELEGRAM) {
+      const { sendRichBroadcastMessage } = await import(
+        '@/lib/telegram/notifications'
+      );
+
+      const result = await sendRichBroadcastMessage(projectId, {
+        message: `${title}\n\n${message}`,
+        imageUrl: metadata.imageUrl,
+        parseMode: metadata.parseMode || 'Markdown'
+      });
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          result,
+          message: 'Рассылка отправлена'
+        }
+      });
+    }
+
+    // Отправляем уведомление конкретному пользователю
     const logs = await NotificationService.sendNotification({
       projectId,
       userId,

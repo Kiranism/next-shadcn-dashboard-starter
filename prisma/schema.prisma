@@ -34,7 +34,6 @@ model Project {
   users            User[]
   botSettings      BotSettings? // Deprecated, оставлено для совместимости
   webhookLogs      WebhookLog[]
-  notificationLogs NotificationLog[]
   bonusLevels      BonusLevel[]
   referralProgram  ReferralProgram?
 
