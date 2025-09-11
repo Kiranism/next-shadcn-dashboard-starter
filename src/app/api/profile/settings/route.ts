@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    logger.error('Error fetching profile settings:', error);
+    logger.error('Error fetching profile settings:', { error: String(error) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
