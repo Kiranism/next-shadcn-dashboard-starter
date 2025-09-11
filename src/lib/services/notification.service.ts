@@ -148,16 +148,34 @@ export class NotificationService {
       throw new Error('User ID required for Telegram notifications');
     }
 
+    // Получаем пользователя из БД
+    const { db } = await import('@/lib/db');
+    const user = await db.user.findUnique({
+      where: { id: payload.userId }
+    });
+
+    if (!user || !user.telegramId) {
+      throw new Error('User not found or not linked to Telegram');
+    }
+
+    // Создаем временный объект бонуса для совместимости с существующей функцией
+    const mockBonus = {
+      id: 'notification',
+      amount: 0,
+      type: 'manual' as any,
+      description: payload.message,
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+    };
+
     const { sendBonusNotification } = await import(
       '@/lib/telegram/notifications'
     );
 
     await sendBonusNotification(
-      payload.projectId,
-      payload.userId,
-      payload.title,
-      payload.message,
-      payload.priority || NotificationPriority.NORMAL
+      user as any,
+      mockBonus as any,
+      payload.projectId
     );
   }
 
