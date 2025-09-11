@@ -42,8 +42,9 @@ export async function GET(request: NextRequest) {
     // Получаем статистику проектов
     const projectsCount = await db.project.count();
     const usersCount = await db.user.count();
-    const botsCount = await db.botSettings.count({
-      where: { status: 'ACTIVE' }
+    const botsCount = await db.botSettings.count();
+    const activeBotsCount = await db.botSettings.count({
+      where: { isActive: true }
     });
 
     // Определяем текущий план на основе роли

@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     const usersCount = await db.user.count();
     const botsCount = await db.botSettings.count();
     const activeBotsCount = await db.botSettings.count({
-      where: { status: 'ACTIVE' }
+      where: { isActive: true }
     });
 
     // Генерируем системные уведомления на основе текущего состояния
