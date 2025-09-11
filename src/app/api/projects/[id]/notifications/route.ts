@@ -37,7 +37,9 @@ export async function GET(
       }
     });
   } catch (error) {
-    logger.error('Failed to get notifications:', error);
+    logger.error('Failed to get notifications:', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
     return NextResponse.json(
       { error: 'Внутренняя ошибка сервера' },
       { status: 500 }
@@ -109,7 +111,9 @@ export async function POST(
       }
     });
   } catch (error) {
-    logger.error('Failed to send notification:', error);
+    logger.error('Failed to send notification:', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
     return NextResponse.json(
       { error: 'Внутренняя ошибка сервера' },
       { status: 500 }
