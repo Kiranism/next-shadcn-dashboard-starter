@@ -10,12 +10,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
-import { verifyJwt } from '@/lib/auth';
+import { verifyJwt } from '@/lib/jwt';
 
 export async function GET(request: NextRequest) {
   try {
-    // Проверяем аутентификацию
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    // Проверяем аутентификацию через HttpOnly cookie
+    const token = request.cookies.get('sb_auth')?.value;
     // eslint-disable-next-line no-console
     console.log('Profile stats API - token:', token ? 'present' : 'missing');
 

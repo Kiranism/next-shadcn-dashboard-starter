@@ -51,18 +51,11 @@ export default function ProfileViewPage() {
 
   const loadStats = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token');
       // eslint-disable-next-line no-console
-      console.log('Profile page - token:', token ? 'present' : 'missing');
-
-      if (!token) {
-        router.push('/auth/sign-in');
-        return;
-      }
+      console.log('Profile page - loading stats...');
 
       const response = await fetch('/api/profile/stats', {
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -79,6 +72,10 @@ export default function ProfileViewPage() {
         const errorData = await response.json();
         // eslint-disable-next-line no-console
         console.error('Profile page - error:', errorData);
+        if (response.status === 401) {
+          router.push('/auth/sign-in');
+          return;
+        }
         toast.error('Ошибка загрузки статистики');
       }
     } catch (error) {
