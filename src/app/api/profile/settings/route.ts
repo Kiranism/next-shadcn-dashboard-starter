@@ -114,7 +114,7 @@ export async function PUT(request: NextRequest) {
       settings
     });
   } catch (error) {
-    logger.error('Error updating profile settings:', error);
+    logger.error('Error updating profile settings:', { error: String(error) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
