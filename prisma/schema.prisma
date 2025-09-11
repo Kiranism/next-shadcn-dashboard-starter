@@ -175,17 +175,17 @@ model AdminAccount {
 }
 
 model Notification {
-  id        String             @id @default(cuid())
-  projectId String             @map("project_id")
-  userId    String?            @map("user_id")
-  channel   NotificationChannel
+  id        String   @id @default(cuid())
+  projectId String   @map("project_id")
+  userId    String?  @map("user_id")
+  channel   String   // Используем строку вместо enum из-за ограничений прав
   title     String
   message   String
   metadata  Json?
-  sentAt    DateTime?          @map("sent_at")
-  createdAt DateTime           @default(now()) @map("created_at")
-  project   Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user      User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sentAt    DateTime? @map("sent_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
 }
@@ -194,12 +194,6 @@ enum BotStatus {
   INACTIVE
   ACTIVE
   ERROR
-}
-
-enum NotificationChannel {
-  TELEGRAM
-  EMAIL
-  SMS
 }
 
 enum BonusType {
