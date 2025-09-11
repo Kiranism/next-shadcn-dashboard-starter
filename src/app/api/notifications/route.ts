@@ -30,68 +30,40 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const projectId = searchParams.get('projectId');
 
-    // Строим условие для фильтрации
-    const whereCondition: any = {};
-    if (projectId) {
-      whereCondition.projectId = projectId;
-    }
-
-    // Получаем уведомления с пагинацией
-    const [notifications, total] = await Promise.all([
-      db.notificationLog.findMany({
-        where: whereCondition,
-        include: {
-          project: {
-            select: {
-              id: true,
-              name: true,
-              domain: true
-            }
-          }
-        },
-        orderBy: {
-          createdAt: 'desc'
-        },
-        skip: (page - 1) * limit,
-        take: limit
-      }),
-      db.notificationLog.count({
-        where: whereCondition
-      })
-    ]);
-
-    // Получаем статистику
-    const stats = await db.notificationLog.groupBy({
-      by: ['status'],
-      where: whereCondition,
-      _count: {
-        status: true
+    // Временно возвращаем моковые данные до создания таблицы notification_logs
+    const mockNotifications = [
+      {
+        id: '1',
+        projectId: 'cmfcb42zr0001v8hsk17ou4x9',
+        channel: 'telegram',
+        type: 'broadcast',
+        message: 'Тестовое уведомление',
+        status: 'sent',
+        createdAt: new Date().toISOString(),
+        metadata: { sentCount: 5, failedCount: 0 },
+        project: {
+          id: 'cmfcb42zr0001v8hsk17ou4x9',
+          name: 'Тестовый проект',
+          domain: 'example.com'
+        }
       }
-    });
+    ];
 
-    const statusStats = {
-      sent: 0,
-      failed: 0,
+    const mockStats = {
+      sent: 10,
+      failed: 2,
       pending: 0
     };
 
-    stats.forEach((stat) => {
-      if (stat.status === 'sent') statusStats.sent = stat._count.status;
-      else if (stat.status === 'failed')
-        statusStats.failed = stat._count.status;
-      else if (stat.status === 'pending')
-        statusStats.pending = stat._count.status;
-    });
-
     return NextResponse.json({
-      notifications,
+      notifications: mockNotifications,
       pagination: {
         page,
         limit,
-        total,
-        totalPages: Math.ceil(total / limit)
+        total: mockNotifications.length,
+        totalPages: Math.ceil(mockNotifications.length / limit)
       },
-      stats: statusStats
+      stats: mockStats
     });
   } catch (error) {
     console.error('Error fetching notifications:', error);
@@ -155,22 +127,11 @@ export async function POST(request: NextRequest) {
       parseMode
     });
 
-    // Логируем результат
-    await db.notificationLog.create({
-      data: {
-        projectId,
-        channel: 'telegram',
-        type: 'broadcast',
-        message,
-        metadata: {
-          imageUrl,
-          buttons,
-          parseMode,
-          sentCount: result.sent,
-          failedCount: result.failed
-        },
-        status: result.failed > 0 ? 'partial' : 'sent'
-      }
+    // Временно не логируем в БД до создания таблицы
+    console.log('Notification sent:', {
+      projectId,
+      message,
+      result
     });
 
     return NextResponse.json({
