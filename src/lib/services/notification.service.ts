@@ -51,7 +51,9 @@ export class NotificationService {
           const log = await this.sendToChannel(payload, channel);
           logs.push(log);
         } catch (error) {
-          logger.error(`Failed to send notification to ${channel}:`, error);
+          logger.error(`Failed to send notification to ${channel}:`, {
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
           logs.push({
             id: `failed_${Date.now()}_${channel}`,
             projectId: payload.projectId,
@@ -70,7 +72,9 @@ export class NotificationService {
 
       return logs;
     } catch (error) {
-      logger.error('Failed to send notification:', error);
+      logger.error('Failed to send notification:', {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
       throw error;
     }
   }
@@ -126,7 +130,9 @@ export class NotificationService {
     } catch (error) {
       log.status = 'failed';
       log.error = error instanceof Error ? error.message : 'Unknown error';
-      logger.error(`Failed to send notification via ${channel}:`, error);
+      logger.error(`Failed to send notification via ${channel}:`, {
+        error: log.error
+      });
     }
 
     return log;
