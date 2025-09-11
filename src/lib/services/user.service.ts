@@ -26,6 +26,16 @@ export class UserService {
   // Создание нового пользователя с поддержкой UTM меток и реферальной системы
   static async createUser(data: CreateUserInput): Promise<User> {
     try {
+      // Нормализуем телефон и email перед сохранением
+      let normalizedPhone = data.phone || '';
+      try {
+        const { normalizePhone } = await import('@/lib/phone');
+        normalizedPhone = normalizePhone(data.phone || '') || data.phone || '';
+      } catch {
+        // no-op
+      }
+      const normalizedEmail = (data.email || '').trim();
+
       // Ищем рефера только по utm_ref (теперь используем utmSource как utm_ref)
       let referredBy: string | undefined;
       if (data.utmSource) {
@@ -42,6 +52,9 @@ export class UserService {
       const user = await db.user.create({
         data: {
           ...data,
+          // Перезаписываем нормализованными значениями
+          email: normalizedEmail,
+          phone: normalizedPhone,
           referredBy,
           // UTM метки сохраняются как есть из data
           totalPurchases: 0,
@@ -124,7 +137,7 @@ export class UserService {
       orConditions.push({ phone: p });
     }
 
-    const user = await db.user.findFirst({
+    let user = await db.user.findFirst({
       where: {
         projectId,
         OR: orConditions
@@ -135,6 +148,45 @@ export class UserService {
         transactions: true
       }
     });
+
+    // Фолбэк: если по точным строкам не нашли, ищем по совпадению последних цифр
+    if (!user && phone) {
+      try {
+        const { normalizePhone } = await import('@/lib/phone');
+        const trimmed = String(phone).trim();
+        const normalized = normalizePhone(trimmed) || trimmed;
+        const onlyDigits = (s: string) => s.replace(/\D/g, '');
+        const candDigits = onlyDigits(normalized);
+        const last10 = candDigits.slice(-10);
+
+        if (last10) {
+          const possible = await db.user.findMany({
+            where: {
+              projectId,
+              // Ограничим набор по нескольким эвристикам, чтобы не грузить всех
+              OR: [
+                { phone: { contains: last10.slice(-4) } },
+                { phone: { contains: last10 } }
+              ]
+            },
+            include: {
+              project: true,
+              bonuses: true,
+              transactions: true
+            },
+            take: 50
+          });
+
+          user = possible.find((u: any) => {
+            const nd = onlyDigits(String(u.phone || ''));
+            // Сравниваем по последним 10 цифрам
+            return nd.slice(-10) === last10;
+          }) as any;
+        }
+      } catch {
+        // ignore fallback errors
+      }
+    }
 
     if (!user) return null;
 
