@@ -48,12 +48,26 @@ export async function GET(request: NextRequest) {
     });
 
     // Определяем текущий план на основе роли
-    let currentPlan = {
+    let currentPlan: {
+      id: string;
+      name: string;
+      price: number;
+      currency: string;
+      interval: 'month';
+      features: string[];
+      limits: {
+        projects: number;
+        users: number;
+        bots: number;
+        notifications: number;
+      };
+      popular?: boolean;
+    } = {
       id: 'starter',
       name: 'Стартовый',
       price: 0,
       currency: 'RUB',
-      interval: 'month' as const,
+      interval: 'month',
       features: [
         'До 1 проекта',
         'До 100 пользователей',
