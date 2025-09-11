@@ -32,6 +32,12 @@ export enum NotificationPriority {
   URGENT = 'urgent'
 }
 
+export enum NotificationStatus {
+  UNREAD = 'unread',
+  READ = 'read',
+  DISMISSED = 'dismissed'
+}
+
 export interface NotificationTemplate {
   id: string;
   type: NotificationType;
