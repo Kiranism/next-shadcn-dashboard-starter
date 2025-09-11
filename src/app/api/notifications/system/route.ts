@@ -38,8 +38,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Admin not found' }, { status: 404 });
     }
 
-    // Получаем существующие уведомления из БД (временно пустой массив)
-    const existingNotifications: any[] = [];
+    // Получаем существующие уведомления из БД
+    const existingNotifications = await db.notification.findMany({
+      where: {
+        projectId: { not: undefined } // Системные уведомления для всех проектов
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 20
+    });
 
     // Получаем статистику системы для генерации новых уведомлений
     const projectsCount = await db.project.count();
@@ -131,31 +137,35 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Временно не создаем уведомления в БД из-за ограничений прав
-    // if (newNotifications.length > 0) {
-    //   await db.notification.createMany({
-    //     data: newNotifications
-    //   });
-    // }
+    // Создаем новые уведомления в БД
+    if (newNotifications.length > 0) {
+      await db.notification.createMany({
+        data: newNotifications
+      });
+    }
 
-    // Получаем все уведомления (временно только новые)
-    const allNotifications = newNotifications;
+    // Получаем все уведомления (существующие + новые)
+    const allNotifications = await db.notification.findMany({
+      where: {
+        projectId: { not: undefined }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50
+    });
 
     // Преобразуем в формат для фронтенда
-    const formattedNotifications = allNotifications.map(
-      (notification, index) => ({
-        id: `temp-${index}`, // Временный ID для новых уведомлений
-        type: (notification.metadata as any)?.type || 'info',
-        title: notification.title,
-        message: notification.message,
-        status: (notification.metadata as any)?.status || 'unread',
-        priority: (notification.metadata as any)?.priority || 'medium',
-        actionUrl: (notification.metadata as any)?.actionUrl,
-        actionText: (notification.metadata as any)?.actionText,
-        createdAt: new Date().toISOString(),
-        metadata: notification.metadata
-      })
-    );
+    const formattedNotifications = allNotifications.map((notification) => ({
+      id: notification.id,
+      type: (notification.metadata as any)?.type || 'info',
+      title: notification.title,
+      message: notification.message,
+      status: (notification.metadata as any)?.status || 'unread',
+      priority: (notification.metadata as any)?.priority || 'medium',
+      actionUrl: (notification.metadata as any)?.actionUrl,
+      actionText: (notification.metadata as any)?.actionText,
+      createdAt: notification.createdAt.toISOString(),
+      metadata: notification.metadata
+    }));
 
     logger.info('System notifications retrieved', {
       adminId: admin.id,
