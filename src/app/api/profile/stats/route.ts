@@ -16,11 +16,17 @@ export async function GET(request: NextRequest) {
   try {
     // Проверяем аутентификацию
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    // eslint-disable-next-line no-console
+    console.log('Profile stats API - token:', token ? 'present' : 'missing');
+
     if (!token) {
       return NextResponse.json({ error: 'Не авторизован' }, { status: 401 });
     }
 
     const payload = await verifyJwt(token);
+    // eslint-disable-next-line no-console
+    console.log('Profile stats API - payload:', payload ? 'valid' : 'invalid');
+
     if (!payload) {
       return NextResponse.json({ error: 'Неверный токен' }, { status: 401 });
     }
@@ -84,14 +90,13 @@ export async function GET(request: NextRequest) {
       })
     ]);
 
-    // Получаем информацию о пользователе
-    const user = await db.user.findUnique({
+    // Получаем информацию об администраторе
+    const admin = await db.adminAccount.findUnique({
       where: { id: payload.sub },
       select: {
-        firstName: true,
-        lastName: true,
         email: true,
-        registeredAt: true,
+        role: true,
+        createdAt: true,
         updatedAt: true
       }
     });
@@ -106,13 +111,10 @@ export async function GET(request: NextRequest) {
 
     const stats = {
       user: {
-        name: user
-          ? `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
-            'Пользователь'
-          : 'Пользователь',
-        email: user?.email || '',
-        createdAt: user?.registeredAt || new Date(),
-        lastLogin: user?.updatedAt || new Date()
+        name: admin ? `Администратор (${admin.role})` : 'Администратор',
+        email: admin?.email || '',
+        createdAt: admin?.createdAt || new Date(),
+        lastLogin: admin?.updatedAt || new Date()
       },
       system: {
         projects: projectsCount,

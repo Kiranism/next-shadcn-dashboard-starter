@@ -52,6 +52,9 @@ export default function ProfileViewPage() {
   const loadStats = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
+      // eslint-disable-next-line no-console
+      console.log('Profile page - token:', token ? 'present' : 'missing');
+
       if (!token) {
         router.push('/auth/sign-in');
         return;
@@ -64,13 +67,22 @@ export default function ProfileViewPage() {
         }
       });
 
+      // eslint-disable-next-line no-console
+      console.log('Profile page - response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
+        // eslint-disable-next-line no-console
+        console.log('Profile page - data received:', data);
         setStats(data.data);
       } else {
+        const errorData = await response.json();
+        // eslint-disable-next-line no-console
+        console.error('Profile page - error:', errorData);
         toast.error('Ошибка загрузки статистики');
       }
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Failed to load stats:', error);
       toast.error('Ошибка загрузки данных');
     } finally {
@@ -83,16 +95,22 @@ export default function ProfileViewPage() {
   }, [loadStats]);
 
   const handleNotifications = () => {
+    // eslint-disable-next-line no-console
+    console.log('Notifications clicked');
     // Переходим к первому проекту для отправки уведомлений
     router.push('/dashboard/projects');
   };
 
   const handleSettings = () => {
+    // eslint-disable-next-line no-console
+    console.log('Settings clicked');
     // Переходим к настройкам первого проекта
     router.push('/dashboard/projects');
   };
 
   const handleBilling = () => {
+    // eslint-disable-next-line no-console
+    console.log('Billing clicked');
     toast.info('Функция биллинга будет доступна в следующих версиях');
   };
 
@@ -226,6 +244,7 @@ export default function ProfileViewPage() {
         <CardContent>
           <div className='grid gap-4 md:grid-cols-3'>
             <Button
+              type='button'
               variant='outline'
               className='flex h-auto flex-col items-center gap-2 p-4'
               onClick={handleNotifications}
@@ -234,6 +253,7 @@ export default function ProfileViewPage() {
               <span>Уведомления</span>
             </Button>
             <Button
+              type='button'
               variant='outline'
               className='flex h-auto flex-col items-center gap-2 p-4'
               onClick={handleSettings}
@@ -242,6 +262,7 @@ export default function ProfileViewPage() {
               <span>Настройки</span>
             </Button>
             <Button
+              type='button'
               variant='outline'
               className='flex h-auto flex-col items-center gap-2 p-4'
               onClick={handleBilling}
