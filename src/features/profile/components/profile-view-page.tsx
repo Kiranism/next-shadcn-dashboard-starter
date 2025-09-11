@@ -94,21 +94,19 @@ export default function ProfileViewPage() {
   const handleNotifications = () => {
     // eslint-disable-next-line no-console
     console.log('Notifications clicked');
-    // Переходим к первому проекту для отправки уведомлений
-    router.push('/dashboard/projects');
+    router.push('/dashboard/notifications');
   };
 
   const handleSettings = () => {
     // eslint-disable-next-line no-console
     console.log('Settings clicked');
-    // Переходим к настройкам первого проекта
-    router.push('/dashboard/projects');
+    router.push('/dashboard/settings');
   };
 
   const handleBilling = () => {
     // eslint-disable-next-line no-console
     console.log('Billing clicked');
-    toast.info('Функция биллинга будет доступна в следующих версиях');
+    router.push('/dashboard/billing');
   };
 
   return (

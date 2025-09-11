@@ -1,6 +1,7 @@
 import {
   IconAlertTriangle,
   IconArrowRight,
+  IconBell,
   IconCheck,
   IconChevronLeft,
   IconChevronRight,
@@ -55,6 +56,8 @@ export const Icons = {
   media: IconPhoto,
   settings: IconSettings,
   billing: IconCreditCard,
+  creditCard: IconCreditCard,
+  bell: IconBell,
   ellipsis: IconDotsVertical,
   add: IconPlus,
   warning: IconAlertTriangle,

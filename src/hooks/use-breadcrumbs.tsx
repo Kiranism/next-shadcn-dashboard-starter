@@ -20,7 +20,10 @@ const segmentTranslations: Record<string, string> = {
   referral: 'Реферальная программа',
   'bonus-levels': 'Уровни бонусов',
   bonuses: 'Бонусы',
-  overview: 'Обзор'
+  overview: 'Обзор',
+  notifications: 'Уведомления',
+  billing: 'Биллинг',
+  profile: 'Профиль'
 };
 
 // Пользовательские маршруты с полными переводами
@@ -33,6 +36,22 @@ const routeMapping: Record<string, BreadcrumbItem[]> = {
   '/dashboard/bonuses': [
     { title: 'Панель управления', link: '/dashboard' },
     { title: 'Бонусы', link: '/dashboard/bonuses' }
+  ],
+  '/dashboard/notifications': [
+    { title: 'Панель управления', link: '/dashboard' },
+    { title: 'Уведомления', link: '/dashboard/notifications' }
+  ],
+  '/dashboard/settings': [
+    { title: 'Панель управления', link: '/dashboard' },
+    { title: 'Настройки', link: '/dashboard/settings' }
+  ],
+  '/dashboard/billing': [
+    { title: 'Панель управления', link: '/dashboard' },
+    { title: 'Биллинг', link: '/dashboard/billing' }
+  ],
+  '/dashboard/profile': [
+    { title: 'Панель управления', link: '/dashboard' },
+    { title: 'Профиль', link: '/dashboard/profile' }
   ]
   // Add more custom mappings as needed
 };

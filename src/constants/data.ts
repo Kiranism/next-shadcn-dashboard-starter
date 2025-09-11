@@ -38,6 +38,30 @@ export const navItems: NavItem[] = [
     items: []
   },
   {
+    title: 'Уведомления',
+    url: '/dashboard/notifications',
+    icon: 'bell',
+    isActive: false,
+    shortcut: ['n', 'o'],
+    items: []
+  },
+  {
+    title: 'Настройки',
+    url: '/dashboard/settings',
+    icon: 'settings',
+    isActive: false,
+    shortcut: ['s', 'e'],
+    items: []
+  },
+  {
+    title: 'Биллинг',
+    url: '/dashboard/billing',
+    icon: 'creditCard',
+    isActive: false,
+    shortcut: ['b', 'i'],
+    items: []
+  },
+  {
     title: 'Профиль',
     url: '/dashboard/profile',
     icon: 'userPen',
