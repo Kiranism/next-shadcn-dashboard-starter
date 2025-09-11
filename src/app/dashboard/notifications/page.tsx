@@ -1,6 +1,6 @@
 /**
  * @file: src/app/dashboard/notifications/page.tsx
- * @description: Страница глобального управления уведомлениями
+ * @description: Страница системных уведомлений
  * @project: SaaS Bonus System
  * @dependencies: Next.js, React, UI components
  * @created: 2025-01-28
@@ -11,6 +11,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import PageContainer from '@/components/layout/page-container';
 import {
   Card,
   CardContent,
@@ -20,470 +21,407 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import {
   Bell,
-  Send,
-  History,
-  BarChart3,
-  Users,
-  Image,
-  Link,
-  Calendar,
-  Clock,
+  AlertTriangle,
   CheckCircle,
-  XCircle,
-  AlertCircle
+  Clock,
+  CreditCard,
+  Bot,
+  Database,
+  Shield,
+  RefreshCw,
+  Settings,
+  Calendar,
+  TrendingUp
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface NotificationLog {
+interface SystemNotification {
   id: string;
-  projectId: string;
-  channel: string;
-  type: string;
+  type: 'subscription' | 'bot' | 'security' | 'system' | 'billing';
+  title: string;
   message: string;
-  status: string;
+  status: 'unread' | 'read' | 'dismissed';
+  priority: 'low' | 'medium' | 'high' | 'critical';
   createdAt: string;
-  metadata?: any;
-  project: {
-    id: string;
-    name: string;
-    domain: string;
-  };
+  actionUrl?: string;
+  actionText?: string;
 }
 
-interface NotificationStats {
-  sent: number;
-  failed: number;
-  pending: number;
-}
-
-interface Project {
-  id: string;
-  name: string;
-  domain: string;
-}
+const NOTIFICATION_TYPES = {
+  subscription: {
+    icon: CreditCard,
+    color: 'text-blue-500',
+    bgColor: 'bg-blue-50',
+    label: 'Подписка'
+  },
+  bot: {
+    icon: Bot,
+    color: 'text-green-500',
+    bgColor: 'bg-green-50',
+    label: 'Telegram бот'
+  },
+  security: {
+    icon: Shield,
+    color: 'text-red-500',
+    bgColor: 'bg-red-50',
+    label: 'Безопасность'
+  },
+  system: {
+    icon: Settings,
+    color: 'text-gray-500',
+    bgColor: 'bg-gray-50',
+    label: 'Система'
+  },
+  billing: {
+    icon: TrendingUp,
+    color: 'text-purple-500',
+    bgColor: 'bg-purple-50',
+    label: 'Биллинг'
+  }
+};
 
 export default function NotificationsPage() {
   const router = useRouter();
-  const [notifications, setNotifications] = useState<NotificationLog[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [stats, setStats] = useState<NotificationStats>({
-    sent: 0,
-    failed: 0,
-    pending: 0
-  });
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
+  const [notifications, setNotifications] = useState<SystemNotification[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('all');
 
-  // Форма отправки уведомления
-  const [selectedProject, setSelectedProject] = useState<string>('');
-  const [message, setMessage] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
-  const [parseMode, setParseMode] = useState<'Markdown' | 'HTML'>('Markdown');
-
-  const loadData = useCallback(async () => {
+  const loadNotifications = useCallback(async () => {
     try {
       setLoading(true);
 
-      // Загружаем проекты
-      const projectsResponse = await fetch('/api/projects');
-      if (projectsResponse.ok) {
-        const projectsData = await projectsResponse.json();
-        setProjects(projectsData.projects || []);
+      const response = await fetch('/api/notifications/system');
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(data.notifications);
+      } else {
+        toast.error('Ошибка загрузки уведомлений');
       }
-
-      // Загружаем уведомления для первого проекта (если есть)
-      if (projects.length > 0) {
-        const notificationsResponse = await fetch(
-          `/api/projects/${projects[0].id}/notifications`
-        );
-        if (notificationsResponse.ok) {
-          const notificationsData = await notificationsResponse.json();
-          setNotifications(notificationsData.data?.logs || []);
-        }
-      }
-
-      // Устанавливаем моковые статистики
-      setStats({
-        sent: 10,
-        failed: 2,
-        pending: 0
-      });
     } catch (error) {
-      console.error('Error loading data:', error);
-      toast.error('Ошибка загрузки данных');
+      console.error('Error loading notifications:', error);
+      toast.error('Ошибка загрузки уведомлений');
     } finally {
       setLoading(false);
     }
-  }, [projects.length]);
+  }, []);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    loadNotifications();
+  }, [loadNotifications]);
 
-  const handleSendNotification = async () => {
-    if (!selectedProject || !message.trim()) {
-      toast.error('Выберите проект и введите сообщение');
-      return;
-    }
-
+  const markAsRead = async (notificationId: string) => {
     try {
-      setSending(true);
-
       const response = await fetch(
-        `/api/projects/${selectedProject}/notifications`,
+        `/api/notifications/system/${notificationId}`,
         {
-          method: 'POST',
+          method: 'PATCH',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            type: 'SYSTEM_ANNOUNCEMENT',
-            title: 'Рассылка',
-            message: message.trim(),
-            channel: 'TELEGRAM',
-            priority: 'NORMAL',
-            metadata: {
-              imageUrl: imageUrl.trim() || undefined,
-              parseMode
-            }
-          })
+          body: JSON.stringify({ status: 'read' })
         }
       );
 
       if (response.ok) {
-        const result = await response.json();
-        toast.success('Уведомление отправлено!');
-
-        // Очищаем форму
-        setMessage('');
-        setImageUrl('');
-
-        // Обновляем данные
-        await loadData();
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Ошибка отправки уведомления');
+        setNotifications((prev) =>
+          prev.map((n) =>
+            n.id === notificationId ? { ...n, status: 'read' } : n
+          )
+        );
       }
     } catch (error) {
-      console.error('Error sending notification:', error);
-      toast.error('Ошибка отправки уведомления');
-    } finally {
-      setSending(false);
+      console.error('Error marking notification as read:', error);
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'sent':
-        return <CheckCircle className='h-4 w-4 text-green-500' />;
-      case 'failed':
-        return <XCircle className='h-4 w-4 text-red-500' />;
-      case 'pending':
-        return <Clock className='h-4 w-4 text-yellow-500' />;
-      case 'partial':
-        return <AlertCircle className='h-4 w-4 text-orange-500' />;
+  const dismissNotification = async (notificationId: string) => {
+    try {
+      const response = await fetch(
+        `/api/notifications/system/${notificationId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ status: 'dismissed' })
+        }
+      );
+
+      if (response.ok) {
+        setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+        toast.success('Уведомление скрыто');
+      }
+    } catch (error) {
+      console.error('Error dismissing notification:', error);
+      toast.error('Ошибка скрытия уведомления');
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'critical':
+        return 'bg-red-500';
+      case 'high':
+        return 'bg-orange-500';
+      case 'medium':
+        return 'bg-yellow-500';
+      case 'low':
+        return 'bg-green-500';
       default:
-        return <AlertCircle className='h-4 w-4 text-gray-500' />;
+        return 'bg-gray-500';
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<
-      string,
-      'default' | 'secondary' | 'destructive' | 'outline'
-    > = {
-      sent: 'default',
-      failed: 'destructive',
-      pending: 'secondary',
-      partial: 'outline'
-    };
-
-    const labels: Record<string, string> = {
-      sent: 'Отправлено',
-      failed: 'Ошибка',
-      pending: 'В ожидании',
-      partial: 'Частично'
-    };
-
-    return (
-      <Badge variant={variants[status] || 'outline'}>
-        {labels[status] || status}
-      </Badge>
-    );
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'unread':
+        return 'bg-blue-500';
+      case 'read':
+        return 'bg-gray-400';
+      case 'dismissed':
+        return 'bg-gray-300';
+      default:
+        return 'bg-gray-400';
+    }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('ru-RU', {
+    return new Date(dateString).toLocaleDateString('ru-RU', {
       year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
+      month: 'short',
+      day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
     });
   };
 
+  const filteredNotifications = notifications.filter((notification) => {
+    if (activeTab === 'all') return true;
+    if (activeTab === 'unread') return notification.status === 'unread';
+    return notification.type === activeTab;
+  });
+
+  const unreadCount = notifications.filter((n) => n.status === 'unread').length;
+
   if (loading) {
     return (
-      <div className='flex h-64 items-center justify-center'>
-        <div className='text-center'>
-          <div className='border-primary mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2'></div>
-          <p className='text-muted-foreground'>Загрузка уведомлений...</p>
+      <PageContainer>
+        <div className='flex h-64 items-center justify-center'>
+          <div className='text-center'>
+            <div className='border-primary mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2'></div>
+            <p className='text-muted-foreground'>Загрузка уведомлений...</p>
+          </div>
         </div>
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className='space-y-6'>
-      {/* Заголовок */}
-      <div className='flex items-center justify-between'>
-        <div>
-          <h1 className='text-3xl font-bold tracking-tight'>Уведомления</h1>
-          <p className='text-muted-foreground'>
-            Управление глобальными уведомлениями и рассылками
-          </p>
-        </div>
-        <Button onClick={() => router.push('/dashboard')}>
-          <Users className='mr-2 h-4 w-4' />
-          Вернуться в дашборд
-        </Button>
-      </div>
-
-      {/* Статистика */}
-      <div className='grid gap-4 md:grid-cols-3'>
-        <Card>
-          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>Отправлено</CardTitle>
-            <CheckCircle className='h-4 w-4 text-green-500' />
-          </CardHeader>
-          <CardContent>
-            <div className='text-2xl font-bold'>{stats.sent}</div>
-            <p className='text-muted-foreground text-xs'>Успешно доставлено</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>Ошибки</CardTitle>
-            <XCircle className='h-4 w-4 text-red-500' />
-          </CardHeader>
-          <CardContent>
-            <div className='text-2xl font-bold'>{stats.failed}</div>
-            <p className='text-muted-foreground text-xs'>
-              Не удалось отправить
+    <PageContainer>
+      <div className='space-y-6'>
+        {/* Заголовок */}
+        <div className='flex items-center justify-between'>
+          <div>
+            <h1 className='text-3xl font-bold tracking-tight'>Уведомления</h1>
+            <p className='text-muted-foreground'>
+              Системные уведомления и важные события
             </p>
-          </CardContent>
-        </Card>
+          </div>
+          <div className='flex gap-2'>
+            <Button variant='outline' onClick={loadNotifications}>
+              <RefreshCw className='mr-2 h-4 w-4' />
+              Обновить
+            </Button>
+            <Button variant='outline' onClick={() => router.push('/dashboard')}>
+              Вернуться в дашборд
+            </Button>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>В ожидании</CardTitle>
-            <Clock className='h-4 w-4 text-yellow-500' />
-          </CardHeader>
-          <CardContent>
-            <div className='text-2xl font-bold'>{stats.pending}</div>
-            <p className='text-muted-foreground text-xs'>Ожидают отправки</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Основной контент */}
-      <Tabs defaultValue='send' className='space-y-4'>
-        <TabsList>
-          <TabsTrigger value='send'>
-            <Send className='mr-2 h-4 w-4' />
-            Отправить
-          </TabsTrigger>
-          <TabsTrigger value='history'>
-            <History className='mr-2 h-4 w-4' />
-            История
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Отправка уведомления */}
-        <TabsContent value='send'>
+        {/* Статистика */}
+        <div className='grid gap-4 md:grid-cols-4'>
           <Card>
-            <CardHeader>
-              <CardTitle>Отправить уведомление</CardTitle>
-              <CardDescription>
-                Создайте и отправьте уведомление выбранным пользователям
-              </CardDescription>
-            </CardHeader>
-            <CardContent className='space-y-4'>
-              <div className='grid gap-4 md:grid-cols-2'>
-                <div className='space-y-2'>
-                  <Label htmlFor='project'>Проект</Label>
-                  <Select
-                    value={selectedProject}
-                    onValueChange={setSelectedProject}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder='Выберите проект' />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {projects.map((project) => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className='space-y-2'>
-                  <Label htmlFor='parseMode'>Режим разметки</Label>
-                  <Select
-                    value={parseMode}
-                    onValueChange={(value: 'Markdown' | 'HTML') =>
-                      setParseMode(value)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value='Markdown'>Markdown</SelectItem>
-                      <SelectItem value='HTML'>HTML</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+            <CardContent className='p-4'>
+              <div className='flex items-center gap-2'>
+                <Bell className='h-4 w-4 text-blue-500' />
+                <span className='text-sm font-medium'>Всего</span>
               </div>
-
-              <div className='space-y-2'>
-                <Label htmlFor='message'>Сообщение</Label>
-                <Textarea
-                  id='message'
-                  placeholder='Введите текст уведомления...'
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  rows={4}
-                />
+              <div className='text-2xl font-bold'>{notifications.length}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className='p-4'>
+              <div className='flex items-center gap-2'>
+                <Clock className='h-4 w-4 text-orange-500' />
+                <span className='text-sm font-medium'>Непрочитанных</span>
               </div>
-
-              <div className='space-y-2'>
-                <Label htmlFor='imageUrl'>URL изображения (опционально)</Label>
-                <div className='flex gap-2'>
-                  <Image className='text-muted-foreground mt-3 h-4 w-4' />
-                  <Input
-                    id='imageUrl'
-                    placeholder='https://example.com/image.jpg'
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                  />
-                </div>
+              <div className='text-2xl font-bold'>{unreadCount}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className='p-4'>
+              <div className='flex items-center gap-2'>
+                <AlertTriangle className='h-4 w-4 text-red-500' />
+                <span className='text-sm font-medium'>Критические</span>
               </div>
+              <div className='text-2xl font-bold'>
+                {notifications.filter((n) => n.priority === 'critical').length}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className='p-4'>
+              <div className='flex items-center gap-2'>
+                <CheckCircle className='h-4 w-4 text-green-500' />
+                <span className='text-sm font-medium'>Прочитанных</span>
+              </div>
+              <div className='text-2xl font-bold'>
+                {notifications.filter((n) => n.status === 'read').length}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-              <Button
-                onClick={handleSendNotification}
-                disabled={sending || !selectedProject || !message.trim()}
-                className='w-full'
-              >
-                {sending ? (
-                  <>
-                    <div className='mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white'></div>
-                    Отправка...
-                  </>
+        {/* Основной контент */}
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className='space-y-4'
+        >
+          <TabsList>
+            <TabsTrigger value='all'>Все ({notifications.length})</TabsTrigger>
+            <TabsTrigger value='unread'>
+              Непрочитанные ({unreadCount})
+            </TabsTrigger>
+            <TabsTrigger value='subscription'>Подписка</TabsTrigger>
+            <TabsTrigger value='bot'>Боты</TabsTrigger>
+            <TabsTrigger value='security'>Безопасность</TabsTrigger>
+            <TabsTrigger value='system'>Система</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value={activeTab}>
+            <Card>
+              <CardHeader>
+                <CardTitle>Список уведомлений</CardTitle>
+                <CardDescription>
+                  {activeTab === 'all' && 'Все системные уведомления'}
+                  {activeTab === 'unread' && 'Непрочитанные уведомления'}
+                  {activeTab === 'subscription' && 'Уведомления о подписке'}
+                  {activeTab === 'bot' && 'Уведомления о Telegram ботах'}
+                  {activeTab === 'security' && 'Уведомления безопасности'}
+                  {activeTab === 'system' && 'Системные уведомления'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {filteredNotifications.length === 0 ? (
+                  <div className='py-8 text-center'>
+                    <Bell className='text-muted-foreground mx-auto mb-4 h-12 w-12' />
+                    <p className='text-muted-foreground'>
+                      Уведомления не найдены
+                    </p>
+                  </div>
                 ) : (
-                  <>
-                    <Send className='mr-2 h-4 w-4' />
-                    Отправить уведомление
-                  </>
+                  <div className='space-y-4'>
+                    {filteredNotifications.map((notification) => {
+                      const typeConfig = NOTIFICATION_TYPES[notification.type];
+                      const IconComponent = typeConfig.icon;
+
+                      return (
+                        <div
+                          key={notification.id}
+                          className={`rounded-lg border p-4 transition-colors ${
+                            notification.status === 'unread'
+                              ? 'border-blue-200 bg-blue-50'
+                              : 'bg-white'
+                          }`}
+                        >
+                          <div className='flex items-start gap-3'>
+                            <div
+                              className={`rounded-full p-2 ${typeConfig.bgColor}`}
+                            >
+                              <IconComponent
+                                className={`h-4 w-4 ${typeConfig.color}`}
+                              />
+                            </div>
+
+                            <div className='flex-1 space-y-2'>
+                              <div className='flex items-center gap-2'>
+                                <h3 className='font-medium'>
+                                  {notification.title}
+                                </h3>
+                                <Badge variant='outline' className='text-xs'>
+                                  {typeConfig.label}
+                                </Badge>
+                                <div
+                                  className={`h-2 w-2 rounded-full ${getPriorityColor(notification.priority)}`}
+                                />
+                                <div
+                                  className={`h-2 w-2 rounded-full ${getStatusColor(notification.status)}`}
+                                />
+                              </div>
+
+                              <p className='text-muted-foreground text-sm'>
+                                {notification.message}
+                              </p>
+
+                              <div className='flex items-center justify-between'>
+                                <div className='text-muted-foreground flex items-center gap-2 text-xs'>
+                                  <Calendar className='h-3 w-3' />
+                                  {formatDate(notification.createdAt)}
+                                </div>
+
+                                <div className='flex gap-2'>
+                                  {notification.actionUrl && (
+                                    <Button
+                                      variant='outline'
+                                      size='sm'
+                                      onClick={() =>
+                                        router.push(notification.actionUrl!)
+                                      }
+                                    >
+                                      {notification.actionText || 'Подробнее'}
+                                    </Button>
+                                  )}
+
+                                  {notification.status === 'unread' && (
+                                    <Button
+                                      variant='outline'
+                                      size='sm'
+                                      onClick={() =>
+                                        markAsRead(notification.id)
+                                      }
+                                    >
+                                      Отметить как прочитанное
+                                    </Button>
+                                  )}
+
+                                  <Button
+                                    variant='ghost'
+                                    size='sm'
+                                    onClick={() =>
+                                      dismissNotification(notification.id)
+                                    }
+                                  >
+                                    Скрыть
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* История уведомлений */}
-        <TabsContent value='history'>
-          <Card>
-            <CardHeader>
-              <CardTitle>История уведомлений</CardTitle>
-              <CardDescription>
-                Все отправленные уведомления и их статус
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className='h-[600px]'>
-                <div className='space-y-4'>
-                  {notifications.length === 0 ? (
-                    <div className='py-8 text-center'>
-                      <Bell className='text-muted-foreground mx-auto mb-4 h-12 w-12' />
-                      <p className='text-muted-foreground'>
-                        Уведомления не найдены
-                      </p>
-                    </div>
-                  ) : (
-                    notifications.map((notification) => (
-                      <div
-                        key={notification.id}
-                        className='space-y-3 rounded-lg border p-4'
-                      >
-                        <div className='flex items-start justify-between'>
-                          <div className='space-y-1'>
-                            <div className='flex items-center gap-2'>
-                              {getStatusIcon(notification.status)}
-                              <span className='font-medium'>
-                                {notification.project.name}
-                              </span>
-                              {getStatusBadge(notification.status)}
-                            </div>
-                            <p className='text-muted-foreground text-sm'>
-                              {notification.channel} • {notification.type}
-                            </p>
-                          </div>
-                          <div className='text-muted-foreground text-right text-sm'>
-                            <div className='flex items-center gap-1'>
-                              <Calendar className='h-3 w-3' />
-                              {formatDate(notification.createdAt)}
-                            </div>
-                          </div>
-                        </div>
-
-                        <Separator />
-
-                        <div className='space-y-2'>
-                          <p className='text-sm'>{notification.message}</p>
-
-                          {notification.metadata && (
-                            <div className='text-muted-foreground text-xs'>
-                              {notification.metadata.sentCount && (
-                                <span className='mr-4'>
-                                  Отправлено: {notification.metadata.sentCount}
-                                </span>
-                              )}
-                              {notification.metadata.failedCount && (
-                                <span>
-                                  Ошибок: {notification.metadata.failedCount}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </PageContainer>
   );
 }

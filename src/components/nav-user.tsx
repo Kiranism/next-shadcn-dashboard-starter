@@ -6,7 +6,9 @@ import {
   IconChevronsDown,
   IconCreditCard,
   IconLogout,
-  IconSparkles
+  IconSparkles,
+  IconSettings,
+  IconUser
 } from '@tabler/icons-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -77,30 +79,44 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
+              <DropdownMenuItem
+                onClick={() => (window.location.href = '/dashboard/profile')}
+              >
+                <IconUser className='mr-2 h-4 w-4' />
+                Профиль
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => (window.location.href = '/dashboard/settings')}
+              >
+                <IconSettings className='mr-2 h-4 w-4' />
+                Настройки
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => (window.location.href = '/dashboard/billing')}
+              >
+                <IconCreditCard className='mr-2 h-4 w-4' />
+                Биллинг
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() =>
+                  (window.location.href = '/dashboard/notifications')
+                }
+              >
+                <IconBell className='mr-2 h-4 w-4' />
+                Уведомления
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
               <DropdownMenuItem>
                 <IconSparkles className='mr-2 h-4 w-4' />
                 Upgrade to Pro
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <IconCircleCheck className='mr-2 h-4 w-4' />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconCreditCard className='mr-2 h-4 w-4' />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconBell className='mr-2 h-4 w-4' />
-                Notifications
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
             <DropdownMenuItem>
               <IconLogout className='mr-2 h-4 w-4' />
-              Log out
+              Выйти из аккаунта
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

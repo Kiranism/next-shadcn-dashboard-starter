@@ -1,6 +1,6 @@
 /**
  * @file: src/app/dashboard/settings/page.tsx
- * @description: Страница системных настроек
+ * @description: Страница настроек профиля администратора
  * @project: SaaS Bonus System
  * @dependencies: Next.js, React, UI components
  * @created: 2025-01-28
@@ -11,6 +11,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import PageContainer from '@/components/layout/page-container';
 import {
   Card,
   CardContent,
@@ -21,120 +22,125 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
-  Settings,
+  User,
   Shield,
-  Bot,
-  Mail,
-  Database,
   Bell,
+  Key,
   Save,
   RefreshCw,
-  Download,
-  Upload,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  Mail,
+  Phone,
+  Calendar,
+  Crown
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface SystemSettings {
-  general: {
-    siteName: string;
-    siteDescription: string;
-    timezone: string;
-    language: string;
+interface ProfileSettings {
+  personal: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    avatar: string;
   };
   security: {
     enableTwoFactor: boolean;
     sessionTimeout: number;
-    maxLoginAttempts: number;
-    enableAuditLog: boolean;
+    changePassword: boolean;
   };
   notifications: {
     enableEmailNotifications: boolean;
-    enableSmsNotifications: boolean;
-    enableTelegramNotifications: boolean;
+    enableSystemNotifications: boolean;
+    enableSecurityAlerts: boolean;
     notificationEmail: string;
   };
-  integrations: {
-    telegramBotToken: string;
-    emailSmtpHost: string;
-    emailSmtpPort: number;
-    emailSmtpUser: string;
-    emailSmtpPassword: string;
+  preferences: {
+    language: string;
+    timezone: string;
+    theme: string;
+    dateFormat: string;
   };
 }
 
 export default function SettingsPage() {
   const router = useRouter();
-  const [settings, setSettings] = useState<SystemSettings>({
-    general: {
-      siteName: 'Gupil.ru',
-      siteDescription: 'SaaS система бонусных программ',
-      timezone: 'Europe/Moscow',
-      language: 'ru'
+  const [settings, setSettings] = useState<ProfileSettings>({
+    personal: {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      avatar: ''
     },
     security: {
       enableTwoFactor: false,
       sessionTimeout: 24,
-      maxLoginAttempts: 5,
-      enableAuditLog: true
+      changePassword: false
     },
     notifications: {
       enableEmailNotifications: true,
-      enableSmsNotifications: false,
-      enableTelegramNotifications: true,
-      notificationEmail: 'admin@gupil.ru'
+      enableSystemNotifications: true,
+      enableSecurityAlerts: true,
+      notificationEmail: ''
     },
-    integrations: {
-      telegramBotToken: '',
-      emailSmtpHost: 'smtp.gmail.com',
-      emailSmtpPort: 587,
-      emailSmtpUser: '',
-      emailSmtpPassword: ''
+    preferences: {
+      language: 'ru',
+      timezone: 'Europe/Moscow',
+      theme: 'system',
+      dateFormat: 'DD.MM.YYYY'
     }
   });
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const loadSettings = useCallback(async () => {
+  const loadProfileData = useCallback(async () => {
     try {
       setLoading(true);
-      // В реальном приложении здесь был бы запрос к API
-      // const response = await fetch('/api/settings');
-      // const data = await response.json();
-      // setSettings(data);
+
+      const response = await fetch('/api/profile/settings');
+      if (response.ok) {
+        const data = await response.json();
+        setSettings(data.settings);
+      } else {
+        toast.error('Ошибка загрузки настроек профиля');
+      }
     } catch (error) {
-      console.error('Error loading settings:', error);
-      toast.error('Ошибка загрузки настроек');
+      console.error('Error loading profile settings:', error);
+      toast.error('Ошибка загрузки настроек профиля');
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadSettings();
-  }, [loadSettings]);
+    loadProfileData();
+  }, [loadProfileData]);
 
   const handleSaveSettings = async () => {
     try {
       setSaving(true);
-      // В реальном приложении здесь был бы запрос к API
-      // const response = await fetch('/api/settings', {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(settings)
-      // });
 
-      // Имитация сохранения
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const response = await fetch('/api/profile/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ settings })
+      });
 
-      toast.success('Настройки сохранены');
+      if (response.ok) {
+        toast.success('Настройки профиля сохранены');
+      } else {
+        toast.error('Ошибка сохранения настроек');
+      }
     } catch (error) {
       console.error('Error saving settings:', error);
       toast.error('Ошибка сохранения настроек');
@@ -143,536 +149,452 @@ export default function SettingsPage() {
     }
   };
 
-  const handleBackup = async () => {
-    try {
-      toast.info('Создание резервной копии...');
-      // В реальном приложении здесь был бы запрос к API
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      toast.success('Резервная копия создана');
-    } catch (error) {
-      console.error('Error creating backup:', error);
-      toast.error('Ошибка создания резервной копии');
-    }
-  };
-
-  const handleRestore = async () => {
-    try {
-      toast.info('Восстановление из резервной копии...');
-      // В реальном приложении здесь был бы запрос к API
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      toast.success('Данные восстановлены');
-    } catch (error) {
-      console.error('Error restoring backup:', error);
-      toast.error('Ошибка восстановления данных');
-    }
+  const handleInputChange = (
+    section: keyof ProfileSettings,
+    field: string,
+    value: any
+  ) => {
+    setSettings((prev) => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [field]: value
+      }
+    }));
   };
 
   if (loading) {
     return (
-      <div className='flex h-64 items-center justify-center'>
-        <div className='text-center'>
-          <div className='border-primary mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2'></div>
-          <p className='text-muted-foreground'>Загрузка настроек...</p>
+      <PageContainer>
+        <div className='flex h-64 items-center justify-center'>
+          <div className='text-center'>
+            <div className='border-primary mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2'></div>
+            <p className='text-muted-foreground'>
+              Загрузка настроек профиля...
+            </p>
+          </div>
         </div>
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className='space-y-6'>
-      {/* Заголовок */}
-      <div className='flex items-center justify-between'>
-        <div>
-          <h1 className='text-3xl font-bold tracking-tight'>
-            Настройки системы
-          </h1>
-          <p className='text-muted-foreground'>
-            Управление системными параметрами и конфигурацией
-          </p>
+    <PageContainer>
+      <div className='space-y-6'>
+        {/* Заголовок */}
+        <div className='flex items-center justify-between'>
+          <div>
+            <h1 className='text-3xl font-bold tracking-tight'>
+              Настройки профиля
+            </h1>
+            <p className='text-muted-foreground'>
+              Управление настройками вашего профиля
+            </p>
+          </div>
+          <div className='flex gap-2'>
+            <Button variant='outline' onClick={() => router.push('/dashboard')}>
+              Вернуться в дашборд
+            </Button>
+            <Button onClick={handleSaveSettings} disabled={saving}>
+              {saving ? (
+                <>
+                  <RefreshCw className='mr-2 h-4 w-4 animate-spin' />
+                  Сохранение...
+                </>
+              ) : (
+                <>
+                  <Save className='mr-2 h-4 w-4' />
+                  Сохранить
+                </>
+              )}
+            </Button>
+          </div>
         </div>
-        <div className='flex gap-2'>
-          <Button variant='outline' onClick={() => router.push('/dashboard')}>
-            Вернуться в дашборд
-          </Button>
-          <Button onClick={handleSaveSettings} disabled={saving}>
-            {saving ? (
-              <>
-                <div className='mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white'></div>
-                Сохранение...
-              </>
-            ) : (
-              <>
-                <Save className='mr-2 h-4 w-4' />
-                Сохранить
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
 
-      {/* Основной контент */}
-      <Tabs defaultValue='general' className='space-y-4'>
-        <TabsList className='grid w-full grid-cols-5'>
-          <TabsTrigger value='general'>
-            <Settings className='mr-2 h-4 w-4' />
-            Общие
-          </TabsTrigger>
-          <TabsTrigger value='security'>
-            <Shield className='mr-2 h-4 w-4' />
-            Безопасность
-          </TabsTrigger>
-          <TabsTrigger value='notifications'>
-            <Bell className='mr-2 h-4 w-4' />
-            Уведомления
-          </TabsTrigger>
-          <TabsTrigger value='integrations'>
-            <Bot className='mr-2 h-4 w-4' />
-            Интеграции
-          </TabsTrigger>
-          <TabsTrigger value='backup'>
-            <Database className='mr-2 h-4 w-4' />
-            Резервные копии
-          </TabsTrigger>
-        </TabsList>
+        {/* Основной контент */}
+        <Tabs defaultValue='personal' className='space-y-4'>
+          <TabsList>
+            <TabsTrigger value='personal'>
+              <User className='mr-2 h-4 w-4' />
+              Личная информация
+            </TabsTrigger>
+            <TabsTrigger value='security'>
+              <Shield className='mr-2 h-4 w-4' />
+              Безопасность
+            </TabsTrigger>
+            <TabsTrigger value='notifications'>
+              <Bell className='mr-2 h-4 w-4' />
+              Уведомления
+            </TabsTrigger>
+            <TabsTrigger value='preferences'>
+              <Key className='mr-2 h-4 w-4' />
+              Предпочтения
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Общие настройки */}
-        <TabsContent value='general'>
-          <Card>
-            <CardHeader>
-              <CardTitle>Общие настройки</CardTitle>
-              <CardDescription>
-                Основные параметры системы и интерфейса
-              </CardDescription>
-            </CardHeader>
-            <CardContent className='space-y-4'>
-              <div className='grid gap-4 md:grid-cols-2'>
-                <div className='space-y-2'>
-                  <Label htmlFor='siteName'>Название сайта</Label>
-                  <Input
-                    id='siteName'
-                    value={settings.general.siteName}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        general: {
-                          ...settings.general,
-                          siteName: e.target.value
-                        }
-                      })
-                    }
-                  />
+          {/* Личная информация */}
+          <TabsContent value='personal'>
+            <Card>
+              <CardHeader>
+                <CardTitle className='flex items-center gap-2'>
+                  <User className='h-5 w-5' />
+                  Личная информация
+                </CardTitle>
+                <CardDescription>
+                  Основная информация о вашем профиле
+                </CardDescription>
+              </CardHeader>
+              <CardContent className='space-y-6'>
+                {/* Аватар */}
+                <div className='flex items-center gap-4'>
+                  <Avatar className='h-20 w-20'>
+                    <AvatarImage src={settings.personal.avatar} />
+                    <AvatarFallback className='text-lg'>
+                      {settings.personal.firstName?.[0] || 'A'}
+                      {settings.personal.lastName?.[0] || 'A'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <Button variant='outline' size='sm'>
+                      Изменить фото
+                    </Button>
+                    <p className='text-muted-foreground mt-1 text-sm'>
+                      JPG, PNG до 2MB
+                    </p>
+                  </div>
                 </div>
 
-                <div className='space-y-2'>
-                  <Label htmlFor='timezone'>Часовой пояс</Label>
-                  <Input
-                    id='timezone'
-                    value={settings.general.timezone}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        general: {
-                          ...settings.general,
-                          timezone: e.target.value
-                        }
-                      })
-                    }
-                  />
-                </div>
-              </div>
+                <Separator />
 
-              <div className='space-y-2'>
-                <Label htmlFor='siteDescription'>Описание сайта</Label>
-                <Textarea
-                  id='siteDescription'
-                  value={settings.general.siteDescription}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      general: {
-                        ...settings.general,
-                        siteDescription: e.target.value
-                      }
-                    })
-                  }
-                  rows={3}
-                />
-              </div>
-
-              <div className='space-y-2'>
-                <Label htmlFor='language'>Язык интерфейса</Label>
-                <Input
-                  id='language'
-                  value={settings.general.language}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      general: { ...settings.general, language: e.target.value }
-                    })
-                  }
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Настройки безопасности */}
-        <TabsContent value='security'>
-          <Card>
-            <CardHeader>
-              <CardTitle>Безопасность</CardTitle>
-              <CardDescription>
-                Настройки безопасности и контроля доступа
-              </CardDescription>
-            </CardHeader>
-            <CardContent className='space-y-6'>
-              <div className='flex items-center justify-between'>
-                <div className='space-y-0.5'>
-                  <Label>Двухфакторная аутентификация</Label>
-                  <p className='text-muted-foreground text-sm'>
-                    Требовать дополнительную проверку при входе
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.security.enableTwoFactor}
-                  onCheckedChange={(checked) =>
-                    setSettings({
-                      ...settings,
-                      security: {
-                        ...settings.security,
-                        enableTwoFactor: checked
-                      }
-                    })
-                  }
-                />
-              </div>
-
-              <Separator />
-
-              <div className='grid gap-4 md:grid-cols-2'>
-                <div className='space-y-2'>
-                  <Label htmlFor='sessionTimeout'>Таймаут сессии (часы)</Label>
-                  <Input
-                    id='sessionTimeout'
-                    type='number'
-                    value={settings.security.sessionTimeout}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        security: {
-                          ...settings.security,
-                          sessionTimeout: parseInt(e.target.value)
-                        }
-                      })
-                    }
-                  />
-                </div>
-
-                <div className='space-y-2'>
-                  <Label htmlFor='maxLoginAttempts'>
-                    Максимум попыток входа
-                  </Label>
-                  <Input
-                    id='maxLoginAttempts'
-                    type='number'
-                    value={settings.security.maxLoginAttempts}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        security: {
-                          ...settings.security,
-                          maxLoginAttempts: parseInt(e.target.value)
-                        }
-                      })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className='flex items-center justify-between'>
-                <div className='space-y-0.5'>
-                  <Label>Журнал аудита</Label>
-                  <p className='text-muted-foreground text-sm'>
-                    Записывать все действия пользователей
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.security.enableAuditLog}
-                  onCheckedChange={(checked) =>
-                    setSettings({
-                      ...settings,
-                      security: {
-                        ...settings.security,
-                        enableAuditLog: checked
-                      }
-                    })
-                  }
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Настройки уведомлений */}
-        <TabsContent value='notifications'>
-          <Card>
-            <CardHeader>
-              <CardTitle>Уведомления</CardTitle>
-              <CardDescription>Настройки каналов уведомлений</CardDescription>
-            </CardHeader>
-            <CardContent className='space-y-6'>
-              <div className='flex items-center justify-between'>
-                <div className='space-y-0.5'>
-                  <Label>Email уведомления</Label>
-                  <p className='text-muted-foreground text-sm'>
-                    Отправлять уведомления по электронной почте
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.notifications.enableEmailNotifications}
-                  onCheckedChange={(checked) =>
-                    setSettings({
-                      ...settings,
-                      notifications: {
-                        ...settings.notifications,
-                        enableEmailNotifications: checked
-                      }
-                    })
-                  }
-                />
-              </div>
-
-              <div className='flex items-center justify-between'>
-                <div className='space-y-0.5'>
-                  <Label>SMS уведомления</Label>
-                  <p className='text-muted-foreground text-sm'>
-                    Отправлять SMS сообщения
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.notifications.enableSmsNotifications}
-                  onCheckedChange={(checked) =>
-                    setSettings({
-                      ...settings,
-                      notifications: {
-                        ...settings.notifications,
-                        enableSmsNotifications: checked
-                      }
-                    })
-                  }
-                />
-              </div>
-
-              <div className='flex items-center justify-between'>
-                <div className='space-y-0.5'>
-                  <Label>Telegram уведомления</Label>
-                  <p className='text-muted-foreground text-sm'>
-                    Отправлять уведомления через Telegram ботов
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.notifications.enableTelegramNotifications}
-                  onCheckedChange={(checked) =>
-                    setSettings({
-                      ...settings,
-                      notifications: {
-                        ...settings.notifications,
-                        enableTelegramNotifications: checked
-                      }
-                    })
-                  }
-                />
-              </div>
-
-              <Separator />
-
-              <div className='space-y-2'>
-                <Label htmlFor='notificationEmail'>Email для уведомлений</Label>
-                <Input
-                  id='notificationEmail'
-                  type='email'
-                  value={settings.notifications.notificationEmail}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      notifications: {
-                        ...settings.notifications,
-                        notificationEmail: e.target.value
-                      }
-                    })
-                  }
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Интеграции */}
-        <TabsContent value='integrations'>
-          <Card>
-            <CardHeader>
-              <CardTitle>Интеграции</CardTitle>
-              <CardDescription>
-                Настройки внешних сервисов и API
-              </CardDescription>
-            </CardHeader>
-            <CardContent className='space-y-6'>
-              <div className='space-y-2'>
-                <Label htmlFor='telegramBotToken'>Telegram Bot Token</Label>
-                <Input
-                  id='telegramBotToken'
-                  type='password'
-                  value={settings.integrations.telegramBotToken}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      integrations: {
-                        ...settings.integrations,
-                        telegramBotToken: e.target.value
-                      }
-                    })
-                  }
-                  placeholder='123456789:ABCdefGHIjklMNOpqrsTUVwxyz'
-                />
-              </div>
-
-              <Separator />
-
-              <div className='space-y-4'>
-                <h4 className='text-sm font-medium'>SMTP настройки</h4>
-
+                {/* Основные поля */}
                 <div className='grid gap-4 md:grid-cols-2'>
                   <div className='space-y-2'>
-                    <Label htmlFor='smtpHost'>SMTP хост</Label>
+                    <Label htmlFor='firstName'>Имя</Label>
                     <Input
-                      id='smtpHost'
-                      value={settings.integrations.emailSmtpHost}
+                      id='firstName'
+                      value={settings.personal.firstName}
                       onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          integrations: {
-                            ...settings.integrations,
-                            emailSmtpHost: e.target.value
-                          }
-                        })
+                        handleInputChange(
+                          'personal',
+                          'firstName',
+                          e.target.value
+                        )
+                      }
+                      placeholder='Введите ваше имя'
+                    />
+                  </div>
+                  <div className='space-y-2'>
+                    <Label htmlFor='lastName'>Фамилия</Label>
+                    <Input
+                      id='lastName'
+                      value={settings.personal.lastName}
+                      onChange={(e) =>
+                        handleInputChange(
+                          'personal',
+                          'lastName',
+                          e.target.value
+                        )
+                      }
+                      placeholder='Введите вашу фамилию'
+                    />
+                  </div>
+                  <div className='space-y-2'>
+                    <Label htmlFor='email'>Email</Label>
+                    <Input
+                      id='email'
+                      type='email'
+                      value={settings.personal.email}
+                      onChange={(e) =>
+                        handleInputChange('personal', 'email', e.target.value)
+                      }
+                      placeholder='example@domain.com'
+                    />
+                  </div>
+                  <div className='space-y-2'>
+                    <Label htmlFor='phone'>Телефон</Label>
+                    <Input
+                      id='phone'
+                      type='tel'
+                      value={settings.personal.phone}
+                      onChange={(e) =>
+                        handleInputChange('personal', 'phone', e.target.value)
+                      }
+                      placeholder='+7 (999) 123-45-67'
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Безопасность */}
+          <TabsContent value='security'>
+            <Card>
+              <CardHeader>
+                <CardTitle className='flex items-center gap-2'>
+                  <Shield className='h-5 w-5' />
+                  Безопасность
+                </CardTitle>
+                <CardDescription>
+                  Настройки безопасности вашего аккаунта
+                </CardDescription>
+              </CardHeader>
+              <CardContent className='space-y-6'>
+                <div className='space-y-4'>
+                  <div className='flex items-center justify-between'>
+                    <div className='space-y-1'>
+                      <Label>Двухфакторная аутентификация</Label>
+                      <p className='text-muted-foreground text-sm'>
+                        Дополнительная защита вашего аккаунта
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.security.enableTwoFactor}
+                      onCheckedChange={(checked) =>
+                        handleInputChange(
+                          'security',
+                          'enableTwoFactor',
+                          checked
+                        )
                       }
                     />
                   </div>
+
+                  <Separator />
 
                   <div className='space-y-2'>
-                    <Label htmlFor='smtpPort'>SMTP порт</Label>
+                    <Label htmlFor='sessionTimeout'>
+                      Таймаут сессии (часы)
+                    </Label>
                     <Input
-                      id='smtpPort'
+                      id='sessionTimeout'
                       type='number'
-                      value={settings.integrations.emailSmtpPort}
+                      value={settings.security.sessionTimeout}
                       onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          integrations: {
-                            ...settings.integrations,
-                            emailSmtpPort: parseInt(e.target.value)
-                          }
-                        })
+                        handleInputChange(
+                          'security',
+                          'sessionTimeout',
+                          parseInt(e.target.value)
+                        )
+                      }
+                      min={1}
+                      max={168}
+                    />
+                    <p className='text-muted-foreground text-sm'>
+                      Автоматический выход из системы через указанное время
+                    </p>
+                  </div>
+
+                  <Separator />
+
+                  <div className='space-y-2'>
+                    <Label>Смена пароля</Label>
+                    <Button variant='outline' className='w-full'>
+                      Изменить пароль
+                    </Button>
+                    <p className='text-muted-foreground text-sm'>
+                      Рекомендуется менять пароль каждые 3 месяца
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Уведомления */}
+          <TabsContent value='notifications'>
+            <Card>
+              <CardHeader>
+                <CardTitle className='flex items-center gap-2'>
+                  <Bell className='h-5 w-5' />
+                  Уведомления
+                </CardTitle>
+                <CardDescription>
+                  Настройки уведомлений для вашего профиля
+                </CardDescription>
+              </CardHeader>
+              <CardContent className='space-y-6'>
+                <div className='space-y-4'>
+                  <div className='flex items-center justify-between'>
+                    <div className='space-y-1'>
+                      <Label>Email уведомления</Label>
+                      <p className='text-muted-foreground text-sm'>
+                        Получать уведомления на email
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.notifications.enableEmailNotifications}
+                      onCheckedChange={(checked) =>
+                        handleInputChange(
+                          'notifications',
+                          'enableEmailNotifications',
+                          checked
+                        )
                       }
                     />
                   </div>
-                </div>
 
-                <div className='space-y-2'>
-                  <Label htmlFor='smtpUser'>SMTP пользователь</Label>
-                  <Input
-                    id='smtpUser'
-                    value={settings.integrations.emailSmtpUser}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        integrations: {
-                          ...settings.integrations,
-                          emailSmtpUser: e.target.value
-                        }
-                      })
-                    }
-                  />
-                </div>
+                  <div className='flex items-center justify-between'>
+                    <div className='space-y-1'>
+                      <Label>Системные уведомления</Label>
+                      <p className='text-muted-foreground text-sm'>
+                        Уведомления о важных событиях в системе
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.notifications.enableSystemNotifications}
+                      onCheckedChange={(checked) =>
+                        handleInputChange(
+                          'notifications',
+                          'enableSystemNotifications',
+                          checked
+                        )
+                      }
+                    />
+                  </div>
 
-                <div className='space-y-2'>
-                  <Label htmlFor='smtpPassword'>SMTP пароль</Label>
-                  <Input
-                    id='smtpPassword'
-                    type='password'
-                    value={settings.integrations.emailSmtpPassword}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        integrations: {
-                          ...settings.integrations,
-                          emailSmtpPassword: e.target.value
-                        }
-                      })
-                    }
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                  <div className='flex items-center justify-between'>
+                    <div className='space-y-1'>
+                      <Label>Уведомления безопасности</Label>
+                      <p className='text-muted-foreground text-sm'>
+                        Критические уведомления о безопасности
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.notifications.enableSecurityAlerts}
+                      onCheckedChange={(checked) =>
+                        handleInputChange(
+                          'notifications',
+                          'enableSecurityAlerts',
+                          checked
+                        )
+                      }
+                    />
+                  </div>
 
-        {/* Резервные копии */}
-        <TabsContent value='backup'>
-          <div className='grid gap-4 md:grid-cols-2'>
-            <Card>
-              <CardHeader>
-                <CardTitle>Создать резервную копию</CardTitle>
-                <CardDescription>
-                  Создать полную резервную копию всех данных системы
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button onClick={handleBackup} className='w-full'>
-                  <Download className='mr-2 h-4 w-4' />
-                  Создать резервную копию
-                </Button>
+                  <Separator />
+
+                  <div className='space-y-2'>
+                    <Label htmlFor='notificationEmail'>
+                      Email для уведомлений
+                    </Label>
+                    <Input
+                      id='notificationEmail'
+                      type='email'
+                      value={settings.notifications.notificationEmail}
+                      onChange={(e) =>
+                        handleInputChange(
+                          'notifications',
+                          'notificationEmail',
+                          e.target.value
+                        )
+                      }
+                      placeholder='notifications@domain.com'
+                    />
+                    <p className='text-muted-foreground text-sm'>
+                      Адрес для получения системных уведомлений
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
+          </TabsContent>
 
+          {/* Предпочтения */}
+          <TabsContent value='preferences'>
             <Card>
               <CardHeader>
-                <CardTitle>Восстановить данные</CardTitle>
+                <CardTitle className='flex items-center gap-2'>
+                  <Key className='h-5 w-5' />
+                  Предпочтения
+                </CardTitle>
                 <CardDescription>
-                  Восстановить данные из резервной копии
+                  Персональные настройки интерфейса
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <Button
-                  variant='outline'
-                  onClick={handleRestore}
-                  className='w-full'
-                >
-                  <Upload className='mr-2 h-4 w-4' />
-                  Восстановить данные
-                </Button>
+              <CardContent className='space-y-6'>
+                <div className='grid gap-4 md:grid-cols-2'>
+                  <div className='space-y-2'>
+                    <Label htmlFor='language'>Язык</Label>
+                    <select
+                      id='language'
+                      className='border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50'
+                      value={settings.preferences.language}
+                      onChange={(e) =>
+                        handleInputChange(
+                          'preferences',
+                          'language',
+                          e.target.value
+                        )
+                      }
+                    >
+                      <option value='ru'>Русский</option>
+                      <option value='en'>English</option>
+                    </select>
+                  </div>
+                  <div className='space-y-2'>
+                    <Label htmlFor='timezone'>Часовой пояс</Label>
+                    <select
+                      id='timezone'
+                      className='border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50'
+                      value={settings.preferences.timezone}
+                      onChange={(e) =>
+                        handleInputChange(
+                          'preferences',
+                          'timezone',
+                          e.target.value
+                        )
+                      }
+                    >
+                      <option value='Europe/Moscow'>Москва (UTC+3)</option>
+                      <option value='Europe/London'>Лондон (UTC+0)</option>
+                      <option value='America/New_York'>Нью-Йорк (UTC-5)</option>
+                    </select>
+                  </div>
+                  <div className='space-y-2'>
+                    <Label htmlFor='theme'>Тема</Label>
+                    <select
+                      id='theme'
+                      className='border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50'
+                      value={settings.preferences.theme}
+                      onChange={(e) =>
+                        handleInputChange(
+                          'preferences',
+                          'theme',
+                          e.target.value
+                        )
+                      }
+                    >
+                      <option value='system'>Системная</option>
+                      <option value='light'>Светлая</option>
+                      <option value='dark'>Темная</option>
+                    </select>
+                  </div>
+                  <div className='space-y-2'>
+                    <Label htmlFor='dateFormat'>Формат даты</Label>
+                    <select
+                      id='dateFormat'
+                      className='border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50'
+                      value={settings.preferences.dateFormat}
+                      onChange={(e) =>
+                        handleInputChange(
+                          'preferences',
+                          'dateFormat',
+                          e.target.value
+                        )
+                      }
+                    >
+                      <option value='DD.MM.YYYY'>DD.MM.YYYY</option>
+                      <option value='MM/DD/YYYY'>MM/DD/YYYY</option>
+                      <option value='YYYY-MM-DD'>YYYY-MM-DD</option>
+                    </select>
+                  </div>
+                </div>
               </CardContent>
             </Card>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Последние резервные копии</CardTitle>
-              <CardDescription>
-                Список созданных резервных копий
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className='py-8 text-center'>
-                <Database className='text-muted-foreground mx-auto mb-4 h-12 w-12' />
-                <p className='text-muted-foreground'>
-                  Резервные копии не найдены
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </PageContainer>
   );
 }
