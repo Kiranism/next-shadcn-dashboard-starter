@@ -153,7 +153,9 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    logger.error('Error fetching system notifications:', error);
+    logger.error('Error fetching system notifications:', {
+      error: String(error)
+    });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
