@@ -8,7 +8,14 @@ import {
   CardAction,
   CardFooter
 } from '@/components/ui/card';
-import { IconTrendingDown, IconTrendingUp } from '@tabler/icons-react';
+import {
+  IconTrendingDown,
+  IconTrendingUp,
+  IconStethoscope,
+  IconUserPlus,
+  IconCalendarTime,
+  IconHeartRateMonitor
+} from '@tabler/icons-react';
 import React from 'react';
 
 export default function OverViewLayout({
@@ -27,97 +34,102 @@ export default function OverViewLayout({
       <div className='flex flex-1 flex-col space-y-2'>
         <div className='flex items-center justify-between space-y-2'>
           <h2 className='text-2xl font-bold tracking-tight'>
-            Hi, Welcome back 👋
+            Painel Médico 🏥
           </h2>
         </div>
 
         <div className='*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs md:grid-cols-2 lg:grid-cols-4'>
           <Card className='@container/card'>
             <CardHeader>
-              <CardDescription>Total Revenue</CardDescription>
+              <CardDescription>Pacientes Ativos</CardDescription>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
-                $1,250.00
+                348
               </CardTitle>
               <CardAction>
                 <Badge variant='outline'>
+                  <IconStethoscope className='size-3' />
                   <IconTrendingUp />
-                  +12.5%
+                  +8.2%
                 </Badge>
               </CardAction>
             </CardHeader>
             <CardFooter className='flex-col items-start gap-1.5 text-sm'>
               <div className='line-clamp-1 flex gap-2 font-medium'>
-                Trending up this month <IconTrendingUp className='size-4' />
+                Crescimento no último mês <IconTrendingUp className='size-4' />
               </div>
               <div className='text-muted-foreground'>
-                Visitors for the last 6 months
+                Pacientes em acompanhamento ativo
               </div>
             </CardFooter>
           </Card>
           <Card className='@container/card'>
             <CardHeader>
-              <CardDescription>New Customers</CardDescription>
+              <CardDescription>Novos Pacientes</CardDescription>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
-                1,234
+                42
               </CardTitle>
               <CardAction>
                 <Badge variant='outline'>
-                  <IconTrendingDown />
-                  -20%
+                  <IconUserPlus className='size-3' />
+                  <IconTrendingUp />
+                  +15.3%
                 </Badge>
               </CardAction>
             </CardHeader>
             <CardFooter className='flex-col items-start gap-1.5 text-sm'>
               <div className='line-clamp-1 flex gap-2 font-medium'>
-                Down 20% this period <IconTrendingDown className='size-4' />
+                Aumento neste período <IconTrendingUp className='size-4' />
               </div>
               <div className='text-muted-foreground'>
-                Acquisition needs attention
+                Novos cadastros na clínica
               </div>
             </CardFooter>
           </Card>
           <Card className='@container/card'>
             <CardHeader>
-              <CardDescription>Active Accounts</CardDescription>
+              <CardDescription>Consultas Agendadas</CardDescription>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
-                45,678
+                156
               </CardTitle>
               <CardAction>
                 <Badge variant='outline'>
+                  <IconCalendarTime className='size-3' />
                   <IconTrendingUp />
-                  +12.5%
+                  +22.1%
                 </Badge>
               </CardAction>
             </CardHeader>
             <CardFooter className='flex-col items-start gap-1.5 text-sm'>
               <div className='line-clamp-1 flex gap-2 font-medium'>
-                Strong user retention <IconTrendingUp className='size-4' />
-              </div>
-              <div className='text-muted-foreground'>
-                Engagement exceed targets
-              </div>
-            </CardFooter>
-          </Card>
-          <Card className='@container/card'>
-            <CardHeader>
-              <CardDescription>Growth Rate</CardDescription>
-              <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
-                4.5%
-              </CardTitle>
-              <CardAction>
-                <Badge variant='outline'>
-                  <IconTrendingUp />
-                  +4.5%
-                </Badge>
-              </CardAction>
-            </CardHeader>
-            <CardFooter className='flex-col items-start gap-1.5 text-sm'>
-              <div className='line-clamp-1 flex gap-2 font-medium'>
-                Steady performance increase{' '}
+                Alto volume de agendamentos{' '}
                 <IconTrendingUp className='size-4' />
               </div>
               <div className='text-muted-foreground'>
-                Meets growth projections
+                Consultas nos próximos 30 dias
+              </div>
+            </CardFooter>
+          </Card>
+          <Card className='@container/card'>
+            <CardHeader>
+              <CardDescription>Taxa de Adesão</CardDescription>
+              <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
+                89.3%
+              </CardTitle>
+              <CardAction>
+                <Badge variant='outline'>
+                  <IconHeartRateMonitor className='size-3' />
+                  <IconTrendingUp />
+                  +5.7%
+                </Badge>
+              </CardAction>
+            </CardHeader>
+            <CardFooter className='flex-col items-start gap-1.5 text-sm'>
+              <div className='line-clamp-1 flex gap-2 font-medium'>
+                Excelente adesão ao tratamento{' '}
+                <IconTrendingUp className='size-4' />
+              </div>
+              <div className='text-muted-foreground'>
+                Pacientes seguindo prescrições
               </div>
             </CardFooter>
           </Card>

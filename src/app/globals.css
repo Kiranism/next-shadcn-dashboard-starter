@@ -5,6 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @import './theme.css';
+@import './medical-system.css';
 
 :root {
   --radius: 0.625rem;

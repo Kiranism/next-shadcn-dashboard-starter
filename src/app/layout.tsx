@@ -16,8 +16,8 @@ const META_THEME_COLORS = {
 };
 
 export const metadata: Metadata = {
-  title: 'Next Shadcn',
-  description: 'Basic dashboard with Next.js and Shadcn'
+  title: 'Sistema de Anamnese',
+  description: 'Dashboard médico baseado em Next.js + shadcn'
 };
 
 export const viewport: Viewport = {

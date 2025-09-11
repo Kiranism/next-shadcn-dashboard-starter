@@ -1,5 +1,5 @@
 {
-  "name": "next-shadcn-dashboard-starter",
+  "name": "next-dashboard-medico",
   "version": "1.0.0",
   "private": true,
   "author": {
@@ -7,7 +7,7 @@
     "url": "https://github.com/Kiranism"
   },
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev -p 4000 --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -68,6 +68,7 @@
     "date-fns": "^4.1.0",
     "eslint": "8.48.0",
     "eslint-config-next": "15.1.0",
+    "framer-motion": "^12.23.12",
     "input-otp": "^1.4.2",
     "kbar": "^0.1.0-beta.45",
     "lucide-react": "^0.476.0",
@@ -87,7 +88,7 @@
     "react-responsive": "^10.0.0",
     "recharts": "^2.15.1",
     "sharp": "^0.33.5",
-    "sonner": "^1.7.1",
+    "sonner": "^1.7.4",
     "sort-by": "^1.2.0",
     "tailwind-merge": "^3.0.2",
     "tailwindcss": "^4.0.0",

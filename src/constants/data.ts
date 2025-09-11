@@ -19,44 +19,39 @@ export const navItems: NavItem[] = [
     icon: 'dashboard',
     isActive: false,
     shortcut: ['d', 'd'],
-    items: [] // Empty array as there are no child items for Dashboard
+    items: []
   },
   {
-    title: 'Product',
-    url: '/dashboard/product',
-    icon: 'product',
+    title: 'Pacientes',
+    url: '/dashboard/pacientes',
+    icon: 'user',
     shortcut: ['p', 'p'],
     isActive: false,
-    items: [] // No child items
+    items: []
   },
   {
-    title: 'Account',
-    url: '#', // Placeholder as there is no direct link for the parent
-    icon: 'billing',
-    isActive: true,
-
-    items: [
-      {
-        title: 'Profile',
-        url: '/dashboard/profile',
-        icon: 'userPen',
-        shortcut: ['m', 'm']
-      },
-      {
-        title: 'Login',
-        shortcut: ['l', 'l'],
-        url: '/',
-        icon: 'login'
-      }
-    ]
-  },
-  {
-    title: 'Kanban',
-    url: '/dashboard/kanban',
-    icon: 'kanban',
-    shortcut: ['k', 'k'],
+    title: 'Anamneses',
+    url: '/dashboard/anamneses',
+    icon: 'post',
+    shortcut: ['a', 'a'],
     isActive: false,
-    items: [] // No child items
+    items: []
+  },
+  {
+    title: 'Nova Anamnese',
+    url: '/dashboard/anamnese',
+    icon: 'stethoscope',
+    shortcut: ['n', 'a'],
+    isActive: false,
+    items: []
+  },
+  {
+    title: 'Configurações',
+    url: '/dashboard/configuracoes',
+    icon: 'settings',
+    shortcut: ['c', 'c'],
+    isActive: false,
+    items: []
   }
 ];
 

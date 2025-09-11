@@ -30,14 +30,21 @@ import {
   IconUserX,
   IconX,
   IconLayoutKanban,
-  IconBrandGithub
+  IconBrandGithub,
+  IconStethoscope,
+  IconClipboardList,
+  IconHeartRateMonitor,
+  IconCalendarTime,
+  IconNurse,
+  IconFirstAidKit,
+  IconPills
 } from '@tabler/icons-react';
 
 export type Icon = React.ComponentType<IconProps>;
 
 export const Icons = {
-  dashboard: IconLayoutDashboard,
-  logo: IconCommand,
+  dashboard: IconHeartRateMonitor,
+  logo: IconStethoscope,
   login: IconLogin,
   close: IconX,
   product: IconShoppingBag,
@@ -47,7 +54,7 @@ export const Icons = {
   chevronRight: IconChevronRight,
   trash: IconTrash,
   employee: IconUserX,
-  post: IconFileText,
+  post: IconClipboardList,
   page: IconFile,
   userPen: IconUserEdit,
   user2: IconUserCircle,
@@ -57,7 +64,7 @@ export const Icons = {
   ellipsis: IconDotsVertical,
   add: IconPlus,
   warning: IconAlertTriangle,
-  user: IconUser,
+  user: IconNurse,
   arrowRight: IconArrowRight,
   help: IconHelpCircle,
   pizza: IconPizza,
@@ -66,5 +73,13 @@ export const Icons = {
   laptop: IconDeviceLaptop,
   github: IconBrandGithub,
   twitter: IconBrandTwitter,
-  check: IconCheck
+  check: IconCheck,
+  // Medical specific icons
+  stethoscope: IconStethoscope,
+  clipboard: IconClipboardList,
+  heartRate: IconHeartRateMonitor,
+  calendar: IconCalendarTime,
+  nurse: IconNurse,
+  firstAid: IconFirstAidKit,
+  pills: IconPills
 };

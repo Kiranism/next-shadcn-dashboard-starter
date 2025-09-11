@@ -3,8 +3,8 @@
   <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/9113740/201498152-b171abb8-9225-487a-821c-6ff49ee48579.png">
 </picture>
 
-<div align="center"><strong>Next.js Admin Dashboard Starter Template With Shadcn-ui</strong></div>
-<div align="center">Built with the Next.js 15 App Router</div>
+<div align="center"><strong>Dashboard Médico (Next.js + shadcn/ui)</strong></div>
+<div align="center">Adaptado para o Sistema de Anamnese Médica</div>
 <br />
 <div align="center">
 <a href="https://dub.sh/shadcn-dashboard">View Demo</a>
@@ -86,7 +86,7 @@ src/
 └── index.ts
 ```
 
-## Getting Started
+## Como rodar
 
 > [!NOTE]  
 > We are using **Next 15** with **React 19**, follow these steps:
@@ -97,17 +97,14 @@ Clone the repo:
 git clone https://github.com/Kiranism/next-shadcn-dashboard-starter.git
 ```
 
-- `pnpm install` ( we have legacy-peer-deps=true added in the .npmrc)
-- Create a `.env.local` file by copying the example environment file:
-  `cp env.example.txt .env.local`
-- Add the required environment variables to the `.env.local` file.
-- `pnpm run dev`
+- `npm install`
+- `npm run dev` (inicia em http://localhost:4000)
 
 ##### Environment Configuration Setup
 
 To configure the environment for this project, refer to the `env.example.txt` file. This file contains the necessary environment variables required for authentication and error tracking.
 
-You should now be able to access the application at http://localhost:3000.
+Você deve conseguir acessar o app em http://localhost:4000.
 
 > [!WARNING]
 > After cloning or forking the repository, be cautious when pulling or syncing with the latest changes, as this may result in breaking conflicts.
