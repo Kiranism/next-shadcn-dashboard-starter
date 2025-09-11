@@ -44,7 +44,9 @@ export async function PATCH(
       status
     });
   } catch (error) {
-    logger.error('Error updating notification status:', error);
+    logger.error('Error updating notification status:', {
+      error: String(error)
+    });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
