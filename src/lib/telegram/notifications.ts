@@ -9,6 +9,7 @@
 
 import { botManager } from './bot-manager';
 import type { User, Bonus, BonusType } from '@/types/bonus';
+import { logger } from '@/lib/logger';
 
 /**
  * Отправка уведомления о начислении бонусов
@@ -38,7 +39,7 @@ export async function sendBonusNotification(
         // ignore, отрепортим ниже
       }
       if (!botInstance || !botInstance.isActive) {
-        console.log(`❌ Бот для проекта ${projectId} неактивен или не найден`);
+        logger.warn(`Бот для проекта ${projectId} неактивен или не найден`);
         return;
       }
     }
@@ -58,17 +59,17 @@ export async function sendBonusNotification(
       parse_mode: 'Markdown'
     });
 
-    console.log(
-      `✅ Уведомление отправлено пользователю ${user.id} в Telegram (telegramId: ${user.telegramId})`
-    );
+    logger.info(`Уведомление отправлено пользователю ${user.id} в Telegram`, {
+      telegramId: user.telegramId,
+      projectId
+    });
   } catch (error) {
-    console.error(
-      `❌ Ошибка отправки уведомления пользователю ${user.id}:`,
-      error
-    );
-    console.error(
-      `Детали: projectId=${projectId}, telegramId=${user.telegramId}, botActive=${botInstance?.isActive}`
-    );
+    logger.error(`Ошибка отправки уведомления пользователю ${user.id}`, {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      projectId,
+      telegramId: user.telegramId,
+      botActive: botInstance?.isActive
+    });
   }
 }
 

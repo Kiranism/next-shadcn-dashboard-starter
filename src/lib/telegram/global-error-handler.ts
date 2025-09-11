@@ -16,7 +16,7 @@ import { logger } from '@/lib/logger';
 export function setupGlobalErrorHandler(): void {
   if (typeof process !== 'undefined') {
     // Перехватываем unhandled rejections
-    process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+    process.on('unhandledRejection', (reason: any) => {
       const errorMessage =
         reason instanceof Error ? reason.message : String(reason);
 

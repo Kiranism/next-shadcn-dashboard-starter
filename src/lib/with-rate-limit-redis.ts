@@ -34,15 +34,15 @@ export function withRateLimit(
       const forwarded = req.headers.get('x-forwarded-for');
       const ip = forwarded ? forwarded.split(',')[0] : 'unknown';
       return ip;
-    },
-    skipSuccessfulRequests = false,
-    skipFailedRequests = false
+    }
+    // skipSuccessfulRequests = false,
+    // skipFailedRequests = false
   } = options;
 
   return async (req: NextRequest, ...args: any[]): Promise<NextResponse> => {
     try {
       const identifier = keyGenerator(req);
-      const rateLimitKey = `api:${identifier}`;
+      // const rateLimitKey = `api:${identifier}`;
 
       // Проверяем rate limit
       const rateLimitResult = await RateLimiter.middleware(identifier, {

@@ -931,7 +931,7 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
   });
 
   // Обработка ошибок
-  bot.catch((err) => {
+  bot.catch(() => {
     // TODO: логгер
   });
 

@@ -48,9 +48,11 @@ export interface NotificationSettings {
   projectId: string;
   userId?: string; // Если null, то глобальные настройки проекта
   channels: {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     [key in NotificationChannel]: boolean;
   };
   types: {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     [key in NotificationType]: boolean;
   };
   quietHours: {

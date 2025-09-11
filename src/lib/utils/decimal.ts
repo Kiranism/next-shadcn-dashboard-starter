@@ -6,7 +6,7 @@
  * @author: AI Assistant + User
  */
 
-import { Decimal } from '@prisma/client/runtime/library';
+// import { Decimal } from '@prisma/client/runtime/library';
 
 /**
  * Преобразует Decimal поля объекта в number
