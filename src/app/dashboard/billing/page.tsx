@@ -11,7 +11,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import PageContainer from '@/components/layout/page-container';
 import {
   Card,
   CardContent,
@@ -268,305 +267,322 @@ export default function BillingPage() {
 
   if (loading) {
     return (
-      <div className='flex h-64 items-center justify-center'>
-        <div className='text-center'>
-          <div className='border-primary mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2'></div>
-          <p className='text-muted-foreground'>Загрузка данных биллинга...</p>
+      <div className='bg-background min-h-screen'>
+        <div className='container mx-auto px-6 py-8'>
+          <div className='flex h-64 items-center justify-center'>
+            <div className='text-center'>
+              <div className='border-primary mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2'></div>
+              <p className='text-muted-foreground'>
+                Загрузка данных биллинга...
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <PageContainer>
-      <div className='space-y-6'>
-        {/* Заголовок */}
-        <div className='flex items-center justify-between'>
+    <div className='bg-background min-h-screen'>
+      <div className='container mx-auto px-6 py-8'>
+        <div className='space-y-8'>
+          {/* Заголовок */}
           <div>
             <h1 className='text-3xl font-bold tracking-tight'>Биллинг</h1>
             <p className='text-muted-foreground'>
               Управление подпиской и тарифными планами
             </p>
           </div>
-          <Button onClick={() => router.push('/dashboard')}>
-            Вернуться в дашборд
-          </Button>
-        </div>
 
-        {/* Текущий план */}
-        <Card>
-          <CardHeader>
-            <CardTitle className='flex items-center gap-2'>
-              <Crown className='h-5 w-5' />
-              Текущий тарифный план
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className='flex items-center justify-between'>
-              <div>
-                <h3 className='text-2xl font-bold'>{currentPlan.name}</h3>
-                <p className='text-muted-foreground'>
-                  {currentPlan.price === 0
-                    ? 'Бесплатно'
-                    : `${formatCurrency(currentPlan.price, currentPlan.currency)}/${currentPlan.interval === 'month' ? 'месяц' : 'год'}`}
-                </p>
-              </div>
-              <Badge variant={currentPlan.popular ? 'default' : 'secondary'}>
-                {currentPlan.popular ? 'Популярный' : 'Активный'}
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
+          {/* Кнопки действий */}
+          <div className='flex gap-2'>
+            <Button variant='outline' onClick={() => router.push('/dashboard')}>
+              Вернуться в дашборд
+            </Button>
+          </div>
 
-        {/* Использование ресурсов */}
-        <Card>
-          <CardHeader>
-            <CardTitle className='flex items-center gap-2'>
-              <TrendingUp className='h-5 w-5' />
-              Использование ресурсов
-            </CardTitle>
-            <CardDescription>
-              Текущее использование ресурсов в рамках вашего тарифного плана
-            </CardDescription>
-          </CardHeader>
-          <CardContent className='space-y-6'>
-            <div className='grid gap-4 md:grid-cols-2'>
-              <div className='space-y-2'>
-                <div className='flex items-center justify-between'>
-                  <div className='flex items-center gap-2'>
-                    <Users className='h-4 w-4' />
-                    <span className='text-sm font-medium'>Проекты</span>
-                  </div>
-                  <span className='text-muted-foreground text-sm'>
-                    {usageStats.projects.used} /{' '}
-                    {usageStats.projects.limit === -1
-                      ? '∞'
-                      : usageStats.projects.limit}
-                  </span>
+          {/* Текущий план */}
+          <Card>
+            <CardHeader>
+              <CardTitle className='flex items-center gap-2'>
+                <Crown className='h-5 w-5' />
+                Текущий тарифный план
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className='flex items-center justify-between'>
+                <div>
+                  <h3 className='text-2xl font-bold'>{currentPlan.name}</h3>
+                  <p className='text-muted-foreground'>
+                    {currentPlan.price === 0
+                      ? 'Бесплатно'
+                      : `${formatCurrency(currentPlan.price, currentPlan.currency)}/${currentPlan.interval === 'month' ? 'месяц' : 'год'}`}
+                  </p>
                 </div>
-                <Progress
-                  value={getUsagePercentage(
-                    usageStats.projects.used,
-                    usageStats.projects.limit
-                  )}
-                  className='h-2'
-                />
+                <Badge variant={currentPlan.popular ? 'default' : 'secondary'}>
+                  {currentPlan.popular ? 'Популярный' : 'Активный'}
+                </Badge>
               </div>
+            </CardContent>
+          </Card>
 
-              <div className='space-y-2'>
-                <div className='flex items-center justify-between'>
-                  <div className='flex items-center gap-2'>
-                    <Users className='h-4 w-4' />
-                    <span className='text-sm font-medium'>Пользователи</span>
-                  </div>
-                  <span className='text-muted-foreground text-sm'>
-                    {usageStats.users.used} /{' '}
-                    {usageStats.users.limit === -1
-                      ? '∞'
-                      : usageStats.users.limit}
-                  </span>
-                </div>
-                <Progress
-                  value={getUsagePercentage(
-                    usageStats.users.used,
-                    usageStats.users.limit
-                  )}
-                  className='h-2'
-                />
-              </div>
-
-              <div className='space-y-2'>
-                <div className='flex items-center justify-between'>
-                  <div className='flex items-center gap-2'>
-                    <Bot className='h-4 w-4' />
-                    <span className='text-sm font-medium'>Telegram боты</span>
-                  </div>
-                  <span className='text-muted-foreground text-sm'>
-                    {usageStats.bots.used} /{' '}
-                    {usageStats.bots.limit === -1 ? '∞' : usageStats.bots.limit}
-                  </span>
-                </div>
-                <Progress
-                  value={getUsagePercentage(
-                    usageStats.bots.used,
-                    usageStats.bots.limit
-                  )}
-                  className='h-2'
-                />
-              </div>
-
-              <div className='space-y-2'>
-                <div className='flex items-center justify-between'>
-                  <div className='flex items-center gap-2'>
-                    <Zap className='h-4 w-4' />
-                    <span className='text-sm font-medium'>Уведомления</span>
-                  </div>
-                  <span className='text-muted-foreground text-sm'>
-                    {usageStats.notifications.used} /{' '}
-                    {usageStats.notifications.limit === -1
-                      ? '∞'
-                      : usageStats.notifications.limit}
-                  </span>
-                </div>
-                <Progress
-                  value={getUsagePercentage(
-                    usageStats.notifications.used,
-                    usageStats.notifications.limit
-                  )}
-                  className='h-2'
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Основной контент */}
-        <Tabs defaultValue='plans' className='space-y-4'>
-          <TabsList>
-            <TabsTrigger value='plans'>
-              <Star className='mr-2 h-4 w-4' />
-              Тарифные планы
-            </TabsTrigger>
-            <TabsTrigger value='history'>
-              <Calendar className='mr-2 h-4 w-4' />
-              История платежей
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Тарифные планы */}
-          <TabsContent value='plans'>
-            <div className='grid gap-4 md:grid-cols-3'>
-              {PLANS.map((plan) => (
-                <Card
-                  key={plan.id}
-                  className={plan.popular ? 'ring-primary ring-2' : ''}
-                >
-                  <CardHeader>
-                    <div className='flex items-center justify-between'>
-                      <CardTitle className='text-lg'>{plan.name}</CardTitle>
-                      {plan.popular && (
-                        <Badge className='bg-primary'>Популярный</Badge>
-                      )}
+          {/* Использование ресурсов */}
+          <Card>
+            <CardHeader>
+              <CardTitle className='flex items-center gap-2'>
+                <TrendingUp className='h-5 w-5' />
+                Использование ресурсов
+              </CardTitle>
+              <CardDescription>
+                Текущее использование ресурсов в рамках вашего тарифного плана
+              </CardDescription>
+            </CardHeader>
+            <CardContent className='space-y-6'>
+              <div className='grid gap-4 md:grid-cols-2'>
+                <div className='space-y-2'>
+                  <div className='flex items-center justify-between'>
+                    <div className='flex items-center gap-2'>
+                      <Users className='h-4 w-4' />
+                      <span className='text-sm font-medium'>Проекты</span>
                     </div>
-                    <CardDescription>
-                      <div className='text-2xl font-bold'>
-                        {plan.price === 0
-                          ? 'Бесплатно'
-                          : formatCurrency(plan.price, plan.currency)}
+                    <span className='text-muted-foreground text-sm'>
+                      {usageStats.projects.used} /{' '}
+                      {usageStats.projects.limit === -1
+                        ? '∞'
+                        : usageStats.projects.limit}
+                    </span>
+                  </div>
+                  <Progress
+                    value={getUsagePercentage(
+                      usageStats.projects.used,
+                      usageStats.projects.limit
+                    )}
+                    className='h-2'
+                  />
+                </div>
+
+                <div className='space-y-2'>
+                  <div className='flex items-center justify-between'>
+                    <div className='flex items-center gap-2'>
+                      <Users className='h-4 w-4' />
+                      <span className='text-sm font-medium'>Пользователи</span>
+                    </div>
+                    <span className='text-muted-foreground text-sm'>
+                      {usageStats.users.used} /{' '}
+                      {usageStats.users.limit === -1
+                        ? '∞'
+                        : usageStats.users.limit}
+                    </span>
+                  </div>
+                  <Progress
+                    value={getUsagePercentage(
+                      usageStats.users.used,
+                      usageStats.users.limit
+                    )}
+                    className='h-2'
+                  />
+                </div>
+
+                <div className='space-y-2'>
+                  <div className='flex items-center justify-between'>
+                    <div className='flex items-center gap-2'>
+                      <Bot className='h-4 w-4' />
+                      <span className='text-sm font-medium'>Telegram боты</span>
+                    </div>
+                    <span className='text-muted-foreground text-sm'>
+                      {usageStats.bots.used} /{' '}
+                      {usageStats.bots.limit === -1
+                        ? '∞'
+                        : usageStats.bots.limit}
+                    </span>
+                  </div>
+                  <Progress
+                    value={getUsagePercentage(
+                      usageStats.bots.used,
+                      usageStats.bots.limit
+                    )}
+                    className='h-2'
+                  />
+                </div>
+
+                <div className='space-y-2'>
+                  <div className='flex items-center justify-between'>
+                    <div className='flex items-center gap-2'>
+                      <Zap className='h-4 w-4' />
+                      <span className='text-sm font-medium'>Уведомления</span>
+                    </div>
+                    <span className='text-muted-foreground text-sm'>
+                      {usageStats.notifications.used} /{' '}
+                      {usageStats.notifications.limit === -1
+                        ? '∞'
+                        : usageStats.notifications.limit}
+                    </span>
+                  </div>
+                  <Progress
+                    value={getUsagePercentage(
+                      usageStats.notifications.used,
+                      usageStats.notifications.limit
+                    )}
+                    className='h-2'
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Основной контент */}
+          <Tabs defaultValue='plans' className='space-y-4'>
+            <TabsList>
+              <TabsTrigger value='plans'>
+                <Star className='mr-2 h-4 w-4' />
+                Тарифные планы
+              </TabsTrigger>
+              <TabsTrigger value='history'>
+                <Calendar className='mr-2 h-4 w-4' />
+                История платежей
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Тарифные планы */}
+            <TabsContent value='plans'>
+              <div className='grid gap-4 md:grid-cols-3'>
+                {PLANS.map((plan) => (
+                  <Card
+                    key={plan.id}
+                    className={plan.popular ? 'ring-primary ring-2' : ''}
+                  >
+                    <CardHeader>
+                      <div className='flex items-center justify-between'>
+                        <CardTitle className='text-lg'>{plan.name}</CardTitle>
+                        {plan.popular && (
+                          <Badge className='bg-primary'>Популярный</Badge>
+                        )}
                       </div>
-                      {plan.price > 0 && (
-                        <div className='text-muted-foreground text-sm'>
-                          за {plan.interval === 'month' ? 'месяц' : 'год'}
+                      <CardDescription>
+                        <div className='text-2xl font-bold'>
+                          {plan.price === 0
+                            ? 'Бесплатно'
+                            : formatCurrency(plan.price, plan.currency)}
                         </div>
-                      )}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className='space-y-4'>
-                    <ul className='space-y-2'>
-                      {plan.features.map((feature, index) => (
-                        <li
-                          key={index}
-                          className='flex items-center gap-2 text-sm'
-                        >
-                          <CheckCircle className='h-4 w-4 text-green-500' />
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
+                        {plan.price > 0 && (
+                          <div className='text-muted-foreground text-sm'>
+                            за {plan.interval === 'month' ? 'месяц' : 'год'}
+                          </div>
+                        )}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className='space-y-4'>
+                      <ul className='space-y-2'>
+                        {plan.features.map((feature, index) => (
+                          <li
+                            key={index}
+                            className='flex items-center gap-2 text-sm'
+                          >
+                            <CheckCircle className='h-4 w-4 text-green-500' />
+                            {feature}
+                          </li>
+                        ))}
+                      </ul>
 
-                    <Button
-                      className='w-full'
-                      variant={
-                        plan.id === currentPlan.id ? 'outline' : 'default'
-                      }
-                      disabled={plan.id === currentPlan.id}
-                      onClick={() => handleUpgradePlan(plan.id)}
-                    >
-                      {plan.id === currentPlan.id
-                        ? 'Текущий план'
-                        : 'Выбрать план'}
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* История платежей */}
-          <TabsContent value='history'>
-            <Card>
-              <CardHeader>
-                <CardTitle>История платежей</CardTitle>
-                <CardDescription>Все ваши платежи и счета</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className='space-y-4'>
-                  {paymentHistory.length === 0 ? (
-                    <div className='py-8 text-center'>
-                      <CreditCard className='text-muted-foreground mx-auto mb-4 h-12 w-12' />
-                      <p className='text-muted-foreground'>
-                        Платежи не найдены
-                      </p>
-                    </div>
-                  ) : (
-                    paymentHistory.map((payment) => (
-                      <div
-                        key={payment.id}
-                        className='flex items-center justify-between rounded-lg border p-4'
+                      <Button
+                        className='w-full'
+                        variant={
+                          plan.id === currentPlan.id ? 'outline' : 'default'
+                        }
+                        disabled={plan.id === currentPlan.id}
+                        onClick={() => handleUpgradePlan(plan.id)}
                       >
-                        <div className='space-y-1'>
-                          <div className='flex items-center gap-2'>
-                            <span className='font-medium'>
-                              {payment.description}
-                            </span>
-                            <Badge
-                              variant={
-                                payment.status === 'paid'
-                                  ? 'default'
-                                  : payment.status === 'pending'
-                                    ? 'secondary'
-                                    : 'destructive'
-                              }
-                            >
-                              {payment.status === 'paid'
-                                ? 'Оплачено'
-                                : payment.status === 'pending'
-                                  ? 'В ожидании'
-                                  : 'Ошибка'}
-                            </Badge>
-                          </div>
-                          <div className='text-muted-foreground flex items-center gap-2 text-sm'>
-                            <Calendar className='h-3 w-3' />
-                            {formatDate(payment.date)}
-                          </div>
-                        </div>
+                        {plan.id === currentPlan.id
+                          ? 'Текущий план'
+                          : 'Выбрать план'}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
 
-                        <div className='flex items-center gap-4'>
-                          <div className='text-right'>
-                            <div className='font-medium'>
-                              {formatCurrency(payment.amount, payment.currency)}
+            {/* История платежей */}
+            <TabsContent value='history'>
+              <Card>
+                <CardHeader>
+                  <CardTitle>История платежей</CardTitle>
+                  <CardDescription>Все ваши платежи и счета</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className='space-y-4'>
+                    {paymentHistory.length === 0 ? (
+                      <div className='py-8 text-center'>
+                        <CreditCard className='text-muted-foreground mx-auto mb-4 h-12 w-12' />
+                        <p className='text-muted-foreground'>
+                          Платежи не найдены
+                        </p>
+                      </div>
+                    ) : (
+                      paymentHistory.map((payment) => (
+                        <div
+                          key={payment.id}
+                          className='flex items-center justify-between rounded-lg border p-4'
+                        >
+                          <div className='space-y-1'>
+                            <div className='flex items-center gap-2'>
+                              <span className='font-medium'>
+                                {payment.description}
+                              </span>
+                              <Badge
+                                variant={
+                                  payment.status === 'paid'
+                                    ? 'default'
+                                    : payment.status === 'pending'
+                                      ? 'secondary'
+                                      : 'destructive'
+                                }
+                              >
+                                {payment.status === 'paid'
+                                  ? 'Оплачено'
+                                  : payment.status === 'pending'
+                                    ? 'В ожидании'
+                                    : 'Ошибка'}
+                              </Badge>
+                            </div>
+                            <div className='text-muted-foreground flex items-center gap-2 text-sm'>
+                              <Calendar className='h-3 w-3' />
+                              {formatDate(payment.date)}
                             </div>
                           </div>
 
-                          {payment.invoiceUrl && (
-                            <Button
-                              variant='outline'
-                              size='sm'
-                              onClick={() => handleDownloadInvoice(payment.id)}
-                            >
-                              <Download className='h-4 w-4' />
-                            </Button>
-                          )}
+                          <div className='flex items-center gap-4'>
+                            <div className='text-right'>
+                              <div className='font-medium'>
+                                {formatCurrency(
+                                  payment.amount,
+                                  payment.currency
+                                )}
+                              </div>
+                            </div>
+
+                            {payment.invoiceUrl && (
+                              <Button
+                                variant='outline'
+                                size='sm'
+                                onClick={() =>
+                                  handleDownloadInvoice(payment.id)
+                                }
+                              >
+                                <Download className='h-4 w-4' />
+                              </Button>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
-    </PageContainer>
+    </div>
   );
 }

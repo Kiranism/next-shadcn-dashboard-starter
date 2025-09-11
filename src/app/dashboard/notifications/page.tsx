@@ -224,22 +224,22 @@ export default function NotificationsPage() {
     <PageContainer>
       <div className='space-y-6'>
         {/* Заголовок */}
-        <div className='flex items-center justify-between'>
-          <div>
-            <h1 className='text-3xl font-bold tracking-tight'>Уведомления</h1>
-            <p className='text-muted-foreground'>
-              Системные уведомления и важные события
-            </p>
-          </div>
-          <div className='flex gap-2'>
-            <Button variant='outline' onClick={loadNotifications}>
-              <RefreshCw className='mr-2 h-4 w-4' />
-              Обновить
-            </Button>
-            <Button variant='outline' onClick={() => router.push('/dashboard')}>
-              Вернуться в дашборд
-            </Button>
-          </div>
+        <div>
+          <h1 className='text-3xl font-bold tracking-tight'>Уведомления</h1>
+          <p className='text-muted-foreground'>
+            Системные уведомления и важные события
+          </p>
+        </div>
+
+        {/* Кнопки действий */}
+        <div className='flex gap-2'>
+          <Button variant='outline' onClick={loadNotifications}>
+            <RefreshCw className='mr-2 h-4 w-4' />
+            Обновить
+          </Button>
+          <Button variant='outline' onClick={() => router.push('/dashboard')}>
+            Вернуться в дашборд
+          </Button>
         </div>
 
         {/* Статистика */}
@@ -348,7 +348,7 @@ export default function NotificationsPage() {
                               />
                             </div>
 
-                            <div className='flex-1 space-y-2'>
+                            <div className='flex-1 space-y-3'>
                               <div className='flex items-center gap-2'>
                                 <h3 className='font-medium'>
                                   {notification.title}
@@ -373,42 +373,41 @@ export default function NotificationsPage() {
                                   <Calendar className='h-3 w-3' />
                                   {formatDate(notification.createdAt)}
                                 </div>
+                              </div>
 
-                                <div className='flex gap-2'>
-                                  {notification.actionUrl && (
-                                    <Button
-                                      variant='outline'
-                                      size='sm'
-                                      onClick={() =>
-                                        router.push(notification.actionUrl!)
-                                      }
-                                    >
-                                      {notification.actionText || 'Подробнее'}
-                                    </Button>
-                                  )}
-
-                                  {notification.status === 'unread' && (
-                                    <Button
-                                      variant='outline'
-                                      size='sm'
-                                      onClick={() =>
-                                        markAsRead(notification.id)
-                                      }
-                                    >
-                                      Отметить как прочитанное
-                                    </Button>
-                                  )}
-
+                              {/* Кнопки действий в отдельной строке */}
+                              <div className='flex gap-2 pt-2'>
+                                {notification.actionUrl && (
                                   <Button
-                                    variant='ghost'
+                                    variant='outline'
                                     size='sm'
                                     onClick={() =>
-                                      dismissNotification(notification.id)
+                                      router.push(notification.actionUrl!)
                                     }
                                   >
-                                    Скрыть
+                                    {notification.actionText || 'Подробнее'}
                                   </Button>
-                                </div>
+                                )}
+
+                                {notification.status === 'unread' && (
+                                  <Button
+                                    variant='outline'
+                                    size='sm'
+                                    onClick={() => markAsRead(notification.id)}
+                                  >
+                                    Отметить как прочитанное
+                                  </Button>
+                                )}
+
+                                <Button
+                                  variant='ghost'
+                                  size='sm'
+                                  onClick={() =>
+                                    dismissNotification(notification.id)
+                                  }
+                                >
+                                  Скрыть
+                                </Button>
                               </div>
                             </div>
                           </div>

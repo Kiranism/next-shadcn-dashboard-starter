@@ -182,33 +182,33 @@ export default function SettingsPage() {
     <PageContainer>
       <div className='space-y-6'>
         {/* Заголовок */}
-        <div className='flex items-center justify-between'>
-          <div>
-            <h1 className='text-3xl font-bold tracking-tight'>
-              Настройки профиля
-            </h1>
-            <p className='text-muted-foreground'>
-              Управление настройками вашего профиля
-            </p>
-          </div>
-          <div className='flex gap-2'>
-            <Button variant='outline' onClick={() => router.push('/dashboard')}>
-              Вернуться в дашборд
-            </Button>
-            <Button onClick={handleSaveSettings} disabled={saving}>
-              {saving ? (
-                <>
-                  <RefreshCw className='mr-2 h-4 w-4 animate-spin' />
-                  Сохранение...
-                </>
-              ) : (
-                <>
-                  <Save className='mr-2 h-4 w-4' />
-                  Сохранить
-                </>
-              )}
-            </Button>
-          </div>
+        <div>
+          <h1 className='text-3xl font-bold tracking-tight'>
+            Настройки профиля
+          </h1>
+          <p className='text-muted-foreground'>
+            Управление настройками вашего профиля
+          </p>
+        </div>
+
+        {/* Кнопки действий */}
+        <div className='flex gap-2'>
+          <Button variant='outline' onClick={() => router.push('/dashboard')}>
+            Вернуться в дашборд
+          </Button>
+          <Button onClick={handleSaveSettings} disabled={saving}>
+            {saving ? (
+              <>
+                <RefreshCw className='mr-2 h-4 w-4 animate-spin' />
+                Сохранение...
+              </>
+            ) : (
+              <>
+                <Save className='mr-2 h-4 w-4' />
+                Сохранить
+              </>
+            )}
+          </Button>
         </div>
 
         {/* Основной контент */}

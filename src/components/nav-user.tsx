@@ -10,6 +10,7 @@ import {
   IconSettings,
   IconUser
 } from '@tabler/icons-react';
+import { useRouter } from 'next/navigation';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -38,6 +39,7 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
+  const router = useRouter();
 
   return (
     <SidebarMenu>
@@ -80,27 +82,25 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem
-                onClick={() => (window.location.href = '/dashboard/profile')}
+                onClick={() => router.push('/dashboard/profile')}
               >
                 <IconUser className='mr-2 h-4 w-4' />
                 Профиль
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => (window.location.href = '/dashboard/settings')}
+                onClick={() => router.push('/dashboard/settings')}
               >
                 <IconSettings className='mr-2 h-4 w-4' />
                 Настройки
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => (window.location.href = '/dashboard/billing')}
+                onClick={() => router.push('/dashboard/billing')}
               >
                 <IconCreditCard className='mr-2 h-4 w-4' />
                 Биллинг
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() =>
-                  (window.location.href = '/dashboard/notifications')
-                }
+                onClick={() => router.push('/dashboard/notifications')}
               >
                 <IconBell className='mr-2 h-4 w-4' />
                 Уведомления
