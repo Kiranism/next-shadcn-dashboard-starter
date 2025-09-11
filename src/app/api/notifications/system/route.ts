@@ -30,9 +30,7 @@ export async function GET(request: NextRequest) {
         id: true,
         email: true,
         role: true,
-        twoFactorEnabled: true,
-        firstName: true,
-        lastName: true
+        isActive: true
       }
     });
 
@@ -41,8 +39,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Получаем существующие уведомления из БД
-    const existingNotifications = await db.systemNotification.findMany({
-      where: { adminId: admin.id },
+    const existingNotifications = await db.notification.findMany({
+      where: {
+        projectId: { not: undefined } // Системные уведомления для всех проектов
+      },
       orderBy: { createdAt: 'desc' },
       take: 20
     });
@@ -61,20 +61,25 @@ export async function GET(request: NextRequest) {
     // Уведомления о подписке
     if (admin.role === 'ADMIN' || admin.role === 'SUPERADMIN') {
       const hasSubscriptionNotification = existingNotifications.some(
-        (n) => n.type === 'subscription' && n.status !== 'dismissed'
+        (n) =>
+          n.title.includes('Подписка') &&
+          (n.metadata as any)?.status !== 'dismissed'
       );
 
       if (!hasSubscriptionNotification) {
         newNotifications.push({
-          adminId: admin.id,
-          type: 'subscription',
+          projectId: 'system',
+          channel: 'EMAIL' as any,
           title: 'Подписка активна',
           message: 'Ваша подписка на Профессиональный план активна',
-          status: 'read',
-          priority: 'medium',
-          actionUrl: '/dashboard/billing',
-          actionText: 'Управление подпиской',
-          metadata: { planType: 'professional' }
+          metadata: {
+            type: 'subscription',
+            status: 'read',
+            priority: 'medium',
+            actionUrl: '/dashboard/billing',
+            actionText: 'Управление подпиской',
+            planType: 'professional'
+          }
         });
       }
     }
@@ -82,20 +87,23 @@ export async function GET(request: NextRequest) {
     // Уведомления о неактивных ботах
     if (activeBotsCount < botsCount) {
       const hasBotNotification = existingNotifications.some(
-        (n) => n.type === 'bot' && n.status !== 'dismissed'
+        (n) =>
+          (n.metadata as any)?.type === 'bot' &&
+          (n.metadata as any)?.status !== 'dismissed'
       );
 
       if (!hasBotNotification) {
         newNotifications.push({
-          adminId: admin.id,
-          type: 'bot',
+          projectId: 'system',
+          channel: 'TELEGRAM' as any,
           title: 'Неактивные Telegram боты',
           message: `${botsCount - activeBotsCount} из ${botsCount} Telegram ботов неактивны. Проверьте настройки.`,
-          status: 'unread',
-          priority: 'high',
-          actionUrl: '/dashboard/projects',
-          actionText: 'Проверить боты',
           metadata: {
+            type: 'bot',
+            status: 'unread',
+            priority: 'high',
+            actionUrl: '/dashboard/projects',
+            actionText: 'Проверить боты',
             totalBots: botsCount,
             inactiveBots: botsCount - activeBotsCount
           }
@@ -103,44 +111,25 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Уведомления о безопасности (2FA)
-    if (!admin.twoFactorEnabled) {
-      const hasSecurityNotification = existingNotifications.some(
-        (n) => n.type === 'security' && n.status !== 'dismissed'
-      );
-
-      if (!hasSecurityNotification) {
-        newNotifications.push({
-          adminId: admin.id,
-          type: 'security',
-          title: 'Рекомендация по безопасности',
-          message:
-            'Рекомендуется включить двухфакторную аутентификацию для повышения безопасности',
-          status: 'unread',
-          priority: 'medium',
-          actionUrl: '/dashboard/settings',
-          actionText: 'Настройки безопасности',
-          metadata: { securityType: '2fa' }
-        });
-      }
-    }
-
     // Уведомления о биллинге
     const hasBillingNotification = existingNotifications.some(
-      (n) => n.type === 'billing' && n.status !== 'dismissed'
+      (n) =>
+        (n.metadata as any)?.type === 'billing' &&
+        (n.metadata as any)?.status !== 'dismissed'
     );
 
     if (!hasBillingNotification) {
       newNotifications.push({
-        adminId: admin.id,
-        type: 'billing',
+        projectId: 'system',
+        channel: 'EMAIL' as any,
         title: 'Использование ресурсов',
         message: `Используется ${projectsCount} проектов, ${usersCount} пользователей. Лимит: ${admin.role === 'ADMIN' ? '5 проектов, 1000 пользователей' : '1 проект, 100 пользователей'}.`,
-        status: 'read',
-        priority: 'low',
-        actionUrl: '/dashboard/billing',
-        actionText: 'Посмотреть использование',
         metadata: {
+          type: 'billing',
+          status: 'read',
+          priority: 'low',
+          actionUrl: '/dashboard/billing',
+          actionText: 'Посмотреть использование',
           projectsUsed: projectsCount,
           usersUsed: usersCount,
           adminRole: admin.role
@@ -150,32 +139,56 @@ export async function GET(request: NextRequest) {
 
     // Создаем новые уведомления в БД
     if (newNotifications.length > 0) {
-      await db.systemNotification.createMany({
+      await db.notification.createMany({
         data: newNotifications
       });
     }
 
     // Получаем все уведомления (существующие + новые)
-    const allNotifications = await db.systemNotification.findMany({
-      where: { adminId: admin.id },
+    const allNotifications = await db.notification.findMany({
+      where: {
+        projectId: { not: undefined }
+      },
       orderBy: { createdAt: 'desc' },
-      take: 20
+      take: 50
     });
 
-    // Форматируем уведомления для фронтенда
+    // Преобразуем в формат для фронтенда
     const formattedNotifications = allNotifications.map((notification) => ({
       id: notification.id,
-      type: notification.type,
+      type: (notification.metadata as any)?.type || 'info',
       title: notification.title,
       message: notification.message,
-      status: notification.status,
-      priority: notification.priority,
-      createdAt: notification.createdAt.toISOString(),
-      actionUrl: notification.actionUrl,
-      actionText: notification.actionText
+      status: (notification.metadata as any)?.status || 'unread',
+      priority: (notification.metadata as any)?.priority || 'medium',
+      actionUrl: (notification.metadata as any)?.actionUrl,
+      actionText: (notification.metadata as any)?.actionText,
+      createdAt: notification.createdAt,
+      metadata: notification.metadata
     }));
 
-    return NextResponse.json({ notifications: formattedNotifications });
+    logger.info('System notifications retrieved', {
+      adminId: admin.id,
+      notificationsCount: formattedNotifications.length,
+      newNotificationsCreated: newNotifications.length
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        notifications: formattedNotifications,
+        stats: {
+          totalNotifications: formattedNotifications.length,
+          unreadCount: formattedNotifications.filter(
+            (n) => n.status === 'unread'
+          ).length,
+          projectsCount,
+          usersCount,
+          botsCount,
+          activeBotsCount
+        }
+      }
+    });
   } catch (error) {
     logger.error('Error fetching system notifications:', {
       error: String(error)

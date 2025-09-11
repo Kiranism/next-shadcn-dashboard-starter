@@ -31,17 +31,7 @@ export async function GET(request: NextRequest) {
         id: true,
         email: true,
         role: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        avatar: true,
-        timezone: true,
-        language: true,
-        twoFactorEnabled: true,
-        sessionTimeout: true,
-        emailNotifications: true,
-        smsNotifications: true,
-        telegramNotifications: true,
+        isActive: true,
         createdAt: true,
         updatedAt: true
       }
@@ -51,29 +41,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Admin not found' }, { status: 404 });
     }
 
-    // Формируем настройки профиля
+    // Формируем настройки профиля (только с существующими полями)
     const settings = {
       personal: {
-        firstName: admin.firstName || '',
-        lastName: admin.lastName || '',
-        email: admin.email,
-        phone: admin.phone || '',
-        avatar: admin.avatar || ''
+        email: admin.email
       },
       security: {
-        enableTwoFactor: admin.twoFactorEnabled,
-        sessionTimeout: admin.sessionTimeout || 30,
         changePassword: false
       },
       notifications: {
-        enableEmailNotifications: admin.emailNotifications,
-        enableSystemNotifications: admin.telegramNotifications,
-        enableSecurityAlerts: admin.smsNotifications,
         notificationEmail: admin.email
       },
       preferences: {
-        language: admin.language || 'ru',
-        timezone: admin.timezone || 'Europe/Moscow',
         theme: 'system',
         dateFormat: 'DD.MM.YYYY'
       }
@@ -85,6 +64,7 @@ export async function GET(request: NextRequest) {
         id: admin.id,
         email: admin.email,
         role: admin.role,
+        isActive: admin.isActive,
         createdAt: admin.createdAt,
         updatedAt: admin.updatedAt
       }
@@ -113,92 +93,32 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const { settings } = body;
 
-    // Обновляем профиль администратора в БД
+    // Обновляем только существующие поля профиля администратора
     const updatedAdmin = await db.adminAccount.update({
       where: { id: payload.sub },
       data: {
-        firstName: settings.personal?.firstName,
-        lastName: settings.personal?.lastName,
-        phone: settings.personal?.phone,
-        avatar: settings.personal?.avatar,
-        timezone: settings.preferences?.timezone,
-        language: settings.preferences?.language,
-        twoFactorEnabled: settings.security?.enableTwoFactor,
-        sessionTimeout: settings.security?.sessionTimeout,
-        emailNotifications: settings.notifications?.enableEmailNotifications,
-        smsNotifications: settings.notifications?.enableSecurityAlerts,
-        telegramNotifications: settings.notifications?.enableSystemNotifications
+        email: settings.personal?.email
+        // Добавляем только существующие поля
       },
       select: {
         id: true,
         email: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        avatar: true,
-        timezone: true,
-        language: true,
-        twoFactorEnabled: true,
-        sessionTimeout: true,
-        emailNotifications: true,
-        smsNotifications: true,
-        telegramNotifications: true
+        role: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true
       }
     });
 
     logger.info('Profile settings updated:', {
       adminId: payload.sub,
-      settings: {
-        personal: {
-          firstName: updatedAdmin.firstName,
-          lastName: updatedAdmin.lastName,
-          phone: updatedAdmin.phone,
-          avatar: updatedAdmin.avatar
-        },
-        preferences: {
-          timezone: updatedAdmin.timezone,
-          language: updatedAdmin.language
-        },
-        security: {
-          twoFactorEnabled: updatedAdmin.twoFactorEnabled,
-          sessionTimeout: updatedAdmin.sessionTimeout
-        },
-        notifications: {
-          email: updatedAdmin.emailNotifications,
-          sms: updatedAdmin.smsNotifications,
-          telegram: updatedAdmin.telegramNotifications
-        }
-      }
+      updatedFields: Object.keys(settings.personal || {})
     });
 
     return NextResponse.json({
+      success: true,
       message: 'Настройки профиля обновлены',
-      settings: {
-        personal: {
-          firstName: updatedAdmin.firstName || '',
-          lastName: updatedAdmin.lastName || '',
-          email: updatedAdmin.email,
-          phone: updatedAdmin.phone || '',
-          avatar: updatedAdmin.avatar || ''
-        },
-        security: {
-          enableTwoFactor: updatedAdmin.twoFactorEnabled,
-          sessionTimeout: updatedAdmin.sessionTimeout || 30,
-          changePassword: false
-        },
-        notifications: {
-          enableEmailNotifications: updatedAdmin.emailNotifications,
-          enableSystemNotifications: updatedAdmin.telegramNotifications,
-          enableSecurityAlerts: updatedAdmin.smsNotifications,
-          notificationEmail: updatedAdmin.email
-        },
-        preferences: {
-          language: updatedAdmin.language || 'ru',
-          timezone: updatedAdmin.timezone || 'Europe/Moscow',
-          theme: 'system',
-          dateFormat: 'DD.MM.YYYY'
-        }
-      }
+      admin: updatedAdmin
     });
   } catch (error) {
     logger.error('Error updating profile settings:', { error: String(error) });

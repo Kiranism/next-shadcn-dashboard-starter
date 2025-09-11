@@ -141,11 +141,16 @@ export function RichNotificationDialog({
         values.buttons?.filter((button) => button.text.trim()) || [];
 
       const payload = {
+        type: 'system_announcement',
+        title: 'Системное уведомление',
         message: values.message,
-        imageUrl: values.imageUrl || undefined,
-        buttons: validButtons.length > 0 ? validButtons : undefined,
-        parseMode: values.parseMode,
-        userIds: selectedUserIds
+        channel: 'telegram',
+        priority: 'normal',
+        metadata: {
+          imageUrl: values.imageUrl || undefined,
+          buttons: validButtons.length > 0 ? validButtons : undefined,
+          parseMode: values.parseMode
+        }
       };
 
       const response = await fetch(`/api/projects/${projectId}/notifications`, {

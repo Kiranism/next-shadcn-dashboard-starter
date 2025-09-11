@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,155 +7,126 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Проекты (Тенанты) - каждый клиент создает свой проект
 model Project {
-  id               String   @id @default(cuid())
-  name             String
-  domain           String?  @unique
-  webhookSecret    String   @unique @default(cuid()) @map("webhook_secret")
-  bonusPercentage  Decimal  @default(1.0) @map("bonus_percentage") @db.Decimal(5, 2)
-  bonusExpiryDays  Int      @default(365) @map("bonus_expiry_days")
-  isActive         Boolean  @default(true) @map("is_active")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
-
-  // Настройки бота (самостоятельная настройка владельцем)
-  botToken         String?   @map("bot_token")       // Токен бота от владельца
-  botUsername      String?   @map("bot_username")    // Username бота
-  botStatus        BotStatus @default(INACTIVE) @map("bot_status") // Статус бота
-
-  // Связи
-  users            User[]
-  botSettings      BotSettings? // Deprecated, оставлено для совместимости
-  webhookLogs      WebhookLog[]
-  bonusLevels      BonusLevel[]
-  referralProgram  ReferralProgram?
+  id              String           @id @default(cuid())
+  name            String
+  domain          String?          @unique
+  webhookSecret   String           @unique @default(cuid()) @map("webhook_secret")
+  bonusPercentage Decimal          @default(1.0) @map("bonus_percentage") @db.Decimal(5, 2)
+  bonusExpiryDays Int              @default(365) @map("bonus_expiry_days")
+  isActive        Boolean          @default(true) @map("is_active")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  botStatus       BotStatus        @default(INACTIVE) @map("bot_status")
+  botToken        String?          @map("bot_token")
+  botUsername     String?          @map("bot_username")
+  bonusLevels     BonusLevel[]
+  botSettings     BotSettings?
+  referralProgram ReferralProgram?
+  users           User[]
+  webhookLogs     WebhookLog[]
+  notifications   Notification[]
 
   @@map("projects")
 }
 
-// Уровни бонусной программы проекта
 model BonusLevel {
-  id             String  @id @default(cuid())
-  projectId      String  @map("project_id")
-  name           String  // "Базовый", "Серебряный", "Золотой"
-  minAmount      Decimal @default(0) @map("min_amount") @db.Decimal(10, 2)
-  maxAmount      Decimal? @map("max_amount") @db.Decimal(10, 2) // null для последнего уровня
-  bonusPercent   Int     @map("bonus_percent")   // 5, 7, 10
-  paymentPercent Int     @map("payment_percent") // 10, 15, 20
-  order          Int     @default(0)             // Порядок сортировки
-  isActive       Boolean @default(true) @map("is_active")
+  id             String   @id @default(cuid())
+  projectId      String   @map("project_id")
+  name           String
+  minAmount      Decimal  @default(0) @map("min_amount") @db.Decimal(10, 2)
+  maxAmount      Decimal? @map("max_amount") @db.Decimal(10, 2)
+  bonusPercent   Int      @map("bonus_percent")
+  paymentPercent Int      @map("payment_percent")
+  order          Int      @default(0)
+  isActive       Boolean  @default(true) @map("is_active")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
-
-  // Связи
-  project        Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, name])
   @@map("bonus_levels")
 }
 
-// Реферальная программа проекта
 model ReferralProgram {
-  id             String  @id @default(cuid())
-  projectId      String  @unique @map("project_id")
-  isActive       Boolean @default(true) @map("is_active")
-  bonusPercent   Int     @default(5) @map("bonus_percent")    // % от покупки рефера
-  referrerBonus  Decimal @default(0) @map("referrer_bonus") @db.Decimal(10, 2) // фиксированный бонус рефереру
-  description    String? // Описание программы
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-
-  // Связи
-  project        Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  projectId     String   @unique @map("project_id")
+  isActive      Boolean  @default(true) @map("is_active")
+  bonusPercent  Int      @default(5) @map("bonus_percent")
+  referrerBonus Decimal  @default(0) @map("referrer_bonus") @db.Decimal(10, 2)
+  description   String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@map("referral_programs")
 }
 
-// Настройки Telegram бота для каждого проекта
 model BotSettings {
-  id                  String   @id @default(cuid())
-  projectId           String   @unique @map("project_id")
-  botToken            String   @map("bot_token")
-  botUsername         String   @map("bot_username")
-  isActive            Boolean  @default(true) @map("is_active")
-  welcomeMessage      Json?    @default("{\"text\": \"Добро пожаловать! Отправьте свой номер телефона для привязки аккаунта.\"}") @map("welcome_message")
-  messageSettings     Json?    @default("{}") @map("message_settings")
-  functionalSettings  Json?    @default("{}") @map("functional_settings")
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
-
-  // Связи
-  project             Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id                 String   @id @default(cuid())
+  projectId          String   @unique @map("project_id")
+  botToken           String   @map("bot_token")
+  botUsername        String   @map("bot_username")
+  isActive           Boolean  @default(true) @map("is_active")
+  welcomeMessage     Json?    @default("{\"text\": \"Добро пожаловать! Отправьте свой номер телефона для привязки аккаунта.\"}") @map("welcome_message")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+  messageSettings    Json?    @default("{}") @map("message_settings")
+  functionalSettings Json?    @default("{}") @map("functional_settings")
+  project            Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@map("bot_settings")
 }
 
-// Пользователи проекта
 model User {
-  id               String   @id @default(cuid())
-  projectId        String   @map("project_id")
+  id               String        @id @default(cuid())
+  projectId        String        @map("project_id")
   email            String?
   phone            String?
-  firstName        String?  @map("first_name")
-  lastName         String?  @map("last_name")
-  birthDate        DateTime? @map("birth_date") @db.Date
-  telegramId       BigInt?  @map("telegram_id")
-  telegramUsername String?  @map("telegram_username")
-  isActive         Boolean  @default(true) @map("is_active")
-  registeredAt     DateTime @default(now()) @map("registered_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
-
-  // Статистика для уровней бонусов
-  totalPurchases   Decimal  @default(0) @map("total_purchases") @db.Decimal(10, 2)
-  currentLevel     String   @default("Базовый") @map("current_level")
-
-  // Реферальная система
-  referredBy       String?  @map("referred_by") // ID пользователя-рефера
-  referralCode     String?  @unique @map("referral_code") // Уникальный реферальный код
-
-  // UTM метки при регистрации
-  utmSource        String?  @map("utm_source")
-  utmMedium        String?  @map("utm_medium") 
-  utmCampaign      String?  @map("utm_campaign")
-  utmContent       String?  @map("utm_content")
-  utmTerm          String?  @map("utm_term")
-
-  // Связи
-  project          Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  firstName        String?       @map("first_name")
+  lastName         String?       @map("last_name")
+  birthDate        DateTime?     @map("birth_date") @db.Date
+  telegramId       BigInt?       @unique @map("telegram_id")
+  telegramUsername String?       @map("telegram_username")
+  isActive         Boolean       @default(true) @map("is_active")
+  registeredAt     DateTime      @default(now()) @map("registered_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+  currentLevel     String        @default("Базовый") @map("current_level")
+  referralCode     String?       @unique @map("referral_code")
+  referredBy       String?       @map("referred_by")
+  totalPurchases   Decimal       @default(0) @map("total_purchases") @db.Decimal(10, 2)
+  utmCampaign      String?       @map("utm_campaign")
+  utmContent       String?       @map("utm_content")
+  utmMedium        String?       @map("utm_medium")
+  utmSource        String?       @map("utm_source")
+  utmTerm          String?       @map("utm_term")
   bonuses          Bonus[]
   transactions     Transaction[]
-  
-  // Реферальные связи
-  referrer         User?    @relation("UserReferrals", fields: [referredBy], references: [id])
-  referrals        User[]   @relation("UserReferrals")
+  notifications    Notification[]
+  project          Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  referrer         User?         @relation("UserReferrals", fields: [referredBy], references: [id])
+  referrals        User[]        @relation("UserReferrals")
 
-  // Уникальные ограничения
   @@unique([projectId, email])
   @@unique([projectId, phone])
-  @@unique([projectId, telegramId])
   @@map("users")
 }
 
-// Бонусы пользователей
 model Bonus {
-  id          String      @id @default(cuid())
-  userId      String      @map("user_id")
-  amount      Decimal     @db.Decimal(10, 2)
-  type        BonusType   @default(MANUAL)
-  description String?
-  expiresAt   DateTime?   @map("expires_at")
-  isUsed      Boolean     @default(false) @map("is_used")
-  createdAt   DateTime    @default(now()) @map("created_at")
-
-  // Связи
-  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String        @id @default(cuid())
+  userId       String        @map("user_id")
+  amount       Decimal       @db.Decimal(10, 2)
+  type         BonusType     @default(MANUAL)
+  description  String?
+  expiresAt    DateTime?     @map("expires_at")
+  isUsed       Boolean       @default(false) @map("is_used")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions Transaction[]
 
   @@map("bonuses")
 }
 
-// Транзакции (история операций)
 model Transaction {
   id              String          @id @default(cuid())
   userId          String          @map("user_id")
@@ -169,28 +134,21 @@ model Transaction {
   amount          Decimal         @db.Decimal(10, 2)
   type            TransactionType
   description     String?
-  metadata        Json?           // Дополнительная информация (ID заказа, и т.д.)
+  metadata        Json?
   createdAt       DateTime        @default(now()) @map("created_at")
-
-  // Контекст уровня пользователя
-  userLevel       String?         @map("user_level")      // Уровень пользователя на момент операции
-  appliedPercent  Int?            @map("applied_percent") // Применённый процент бонусов
-
-  // Реферальная система
+  appliedPercent  Int?            @map("applied_percent")
   isReferralBonus Boolean         @default(false) @map("is_referral_bonus")
-  referralUserId  String?         @map("referral_user_id") // Кому начислен реферальный бонус
-
-  // Связи
-  user            User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bonus           Bonus? @relation(fields: [bonusId], references: [id], onDelete: SetNull)
+  referralUserId  String?         @map("referral_user_id")
+  userLevel       String?         @map("user_level")
+  bonus           Bonus?          @relation(fields: [bonusId], references: [id])
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("transactions")
 }
 
-// Логи webhook запросов
 model WebhookLog {
-  id        String     @id @default(cuid())
-  projectId String     @map("project_id")
+  id        String   @id @default(cuid())
+  projectId String   @map("project_id")
   endpoint  String
   method    String
   headers   Json?
@@ -198,94 +156,69 @@ model WebhookLog {
   response  Json?
   status    Int
   success   Boolean
-  createdAt DateTime   @default(now()) @map("created_at")
-
-  // Связи
-  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@map("webhook_logs")
 }
 
-// Перечисления
+model AdminAccount {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  role         String?   @default("ADMIN")
+  isActive     Boolean?  @default(true) @map("is_active")
+  createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt    DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  @@map("admin_accounts")
+}
+
+model Notification {
+  id        String             @id @default(cuid())
+  projectId String             @map("project_id")
+  userId    String?            @map("user_id")
+  channel   NotificationChannel
+  title     String
+  message   String
+  metadata  Json?
+  sentAt    DateTime?          @map("sent_at")
+  createdAt DateTime           @default(now()) @map("created_at")
+  project   Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
 enum BotStatus {
-  INACTIVE   // Бот не настроен
-  ACTIVE     // Бот работает
-  ERROR      // Ошибка настройки
+  INACTIVE
+  ACTIVE
+  ERROR
+}
+
+enum NotificationChannel {
+  TELEGRAM
+  EMAIL
+  SMS
 }
 
 enum BonusType {
-  PURCHASE     // За покупку
-  BIRTHDAY     // За день рождения
-  MANUAL       // Ручное начисление админом
-  REFERRAL     // За реферальную программу
-  PROMO        // За промокод
+  PURCHASE
+  BIRTHDAY
+  MANUAL
+  REFERRAL
+  PROMO
 }
 
 enum TransactionType {
-  EARN         // Начисление
-  SPEND        // Списание
-  EXPIRE       // Истечение срока
-  REFUND       // Возврат
+  EARN
+  SPEND
+  EXPIRE
+  REFUND
 }
 
-// Роли администраторов (доступ в админ-панель)
 enum AdminRole {
   SUPERADMIN
   ADMIN
   MANAGER
-}
-
-// Системные уведомления для администраторов
-model SystemNotification {
-  id          String   @id @default(cuid())
-  adminId     String   @map("admin_id")
-  type        String   // subscription, bot, security, system, billing
-  title       String
-  message     String
-  status      String   @default("unread") // unread, read, dismissed
-  priority    String   @default("medium") // low, medium, high, critical
-  actionUrl   String?  @map("action_url")
-  actionText  String?  @map("action_text")
-  metadata    Json?    // Дополнительные данные
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  // Связи
-  admin       AdminAccount @relation(fields: [adminId], references: [id], onDelete: Cascade)
-
-  @@map("system_notifications")
-}
-
-// Администраторы системы (аутентификация по email/паролю)
-model AdminAccount {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  passwordHash  String    @map("password_hash")
-  role          AdminRole @default(ADMIN)
-  isActive      Boolean   @default(true) @map("is_active")
-  
-  // Профильные данные
-  firstName     String?   @map("first_name")
-  lastName      String?   @map("last_name")
-  phone         String?
-  avatar        String?
-  timezone      String?   @default("Europe/Moscow")
-  language      String?   @default("ru")
-  
-  // Настройки безопасности
-  twoFactorEnabled Boolean @default(false) @map("two_factor_enabled")
-  sessionTimeout   Int?    @default(30) @map("session_timeout") // минуты
-  
-  // Настройки уведомлений
-  emailNotifications Boolean @default(true) @map("email_notifications")
-  smsNotifications   Boolean @default(false) @map("sms_notifications")
-  telegramNotifications Boolean @default(true) @map("telegram_notifications")
-  
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
-
-  // Связи
-  notifications SystemNotification[]
-
-  @@map("admin_accounts")
 }

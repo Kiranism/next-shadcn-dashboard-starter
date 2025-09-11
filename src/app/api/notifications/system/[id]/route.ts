@@ -38,16 +38,21 @@ export async function PUT(
     const { status } = updateNotificationStatusSchema.parse(body);
 
     // Обновляем статус уведомления в БД
-    const updatedNotification = await db.systemNotification.update({
+    const updatedNotification = await db.notification.update({
       where: {
-        id: id,
-        adminId: payload.sub // Убеждаемся, что уведомление принадлежит текущему админу
+        id: id
       },
-      data: { status },
+      data: {
+        metadata: {
+          ...(((await db.notification.findUnique({ where: { id } }))
+            ?.metadata as any) || {}),
+          status
+        }
+      },
       select: {
         id: true,
-        status: true,
-        title: true
+        title: true,
+        metadata: true
       }
     });
 
@@ -61,7 +66,7 @@ export async function PUT(
     return NextResponse.json({
       message: 'Статус уведомления обновлен',
       notificationId: id,
-      status: updatedNotification.status
+      status: status
     });
   } catch (error) {
     logger.error('Error updating notification status:', {

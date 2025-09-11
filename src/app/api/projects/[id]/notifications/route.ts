@@ -98,8 +98,9 @@ export async function POST(
 
       const result = await sendRichBroadcastMessage(projectId, {
         message: `${title}\n\n${message}`,
-        imageUrl: metadata.imageUrl,
-        parseMode: metadata.parseMode || 'Markdown'
+        imageUrl: metadata?.imageUrl,
+        buttons: metadata?.buttons,
+        parseMode: metadata?.parseMode || 'Markdown'
       });
 
       return NextResponse.json({
