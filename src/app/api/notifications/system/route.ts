@@ -1,8 +1,8 @@
 /**
  * @file: src/app/api/notifications/system/route.ts
- * @description: API endpoint для системных уведомлений
+ * @description: API endpoint для системных уведомлений с реальными данными
  * @project: SaaS Bonus System
- * @dependencies: Prisma, JWT auth
+ * @dependencies: Next.js, Prisma, JWT
  * @created: 2025-01-28
  * @author: AI Assistant + User
  */
@@ -24,14 +24,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    // Получаем данные администратора
     const admin = await db.adminAccount.findUnique({
       where: { id: payload.sub },
       select: {
         id: true,
         email: true,
         role: true,
-        createdAt: true
+        twoFactorEnabled: true,
+        firstName: true,
+        lastName: true
       }
     });
 
@@ -39,7 +40,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Admin not found' }, { status: 404 });
     }
 
-    // Получаем статистику для генерации уведомлений
+    // Получаем существующие уведомления из БД
+    const existingNotifications = await db.systemNotification.findMany({
+      where: { adminId: admin.id },
+      orderBy: { createdAt: 'desc' },
+      take: 20
+    });
+
+    // Получаем статистику системы для генерации новых уведомлений
     const projectsCount = await db.project.count();
     const usersCount = await db.user.count();
     const botsCount = await db.botSettings.count();
@@ -47,111 +55,127 @@ export async function GET(request: NextRequest) {
       where: { isActive: true }
     });
 
-    // Генерируем системные уведомления на основе текущего состояния
-    const notifications = [];
+    // Генерируем новые уведомления на основе текущего состояния
+    const newNotifications = [];
 
     // Уведомления о подписке
     if (admin.role === 'ADMIN' || admin.role === 'SUPERADMIN') {
-      notifications.push({
-        id: 'sub-1',
-        type: 'subscription',
-        title: 'Подписка активна',
-        message:
-          'Ваша подписка на Профессиональный план активна до 28 февраля 2025',
-        status: 'read',
-        priority: 'medium',
-        createdAt: new Date().toISOString(),
-        actionUrl: '/dashboard/billing',
-        actionText: 'Управление подпиской'
-      });
+      const hasSubscriptionNotification = existingNotifications.some(
+        (n) => n.type === 'subscription' && n.status !== 'dismissed'
+      );
+
+      if (!hasSubscriptionNotification) {
+        newNotifications.push({
+          adminId: admin.id,
+          type: 'subscription',
+          title: 'Подписка активна',
+          message: 'Ваша подписка на Профессиональный план активна',
+          status: 'read',
+          priority: 'medium',
+          actionUrl: '/dashboard/billing',
+          actionText: 'Управление подпиской',
+          metadata: { planType: 'professional' }
+        });
+      }
     }
 
-    // Уведомления о ботах
+    // Уведомления о неактивных ботах
     if (activeBotsCount < botsCount) {
-      notifications.push({
-        id: 'bot-1',
-        type: 'bot',
-        title: 'Неактивные Telegram боты',
-        message: `${botsCount - activeBotsCount} из ${botsCount} Telegram ботов неактивны. Проверьте настройки.`,
-        status: 'unread',
-        priority: 'high',
-        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 часа назад
-        actionUrl: '/dashboard/projects',
-        actionText: 'Проверить боты'
-      });
+      const hasBotNotification = existingNotifications.some(
+        (n) => n.type === 'bot' && n.status !== 'dismissed'
+      );
+
+      if (!hasBotNotification) {
+        newNotifications.push({
+          adminId: admin.id,
+          type: 'bot',
+          title: 'Неактивные Telegram боты',
+          message: `${botsCount - activeBotsCount} из ${botsCount} Telegram ботов неактивны. Проверьте настройки.`,
+          status: 'unread',
+          priority: 'high',
+          actionUrl: '/dashboard/projects',
+          actionText: 'Проверить боты',
+          metadata: {
+            totalBots: botsCount,
+            inactiveBots: botsCount - activeBotsCount
+          }
+        });
+      }
     }
 
-    // Уведомления о безопасности
-    notifications.push({
-      id: 'sec-1',
-      type: 'security',
-      title: 'Рекомендация по безопасности',
-      message:
-        'Рекомендуется включить двухфакторную аутентификацию для повышения безопасности',
-      status: 'unread',
-      priority: 'medium',
-      createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 день назад
-      actionUrl: '/dashboard/settings',
-      actionText: 'Настройки безопасности'
-    });
+    // Уведомления о безопасности (2FA)
+    if (!admin.twoFactorEnabled) {
+      const hasSecurityNotification = existingNotifications.some(
+        (n) => n.type === 'security' && n.status !== 'dismissed'
+      );
 
-    // Системные уведомления
-    notifications.push({
-      id: 'sys-1',
-      type: 'system',
-      title: 'Обновление системы',
-      message:
-        'Доступно обновление системы. Рекомендуется обновить до последней версии.',
-      status: 'read',
-      priority: 'low',
-      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 дня назад
-      actionUrl: '/dashboard',
-      actionText: 'Подробнее'
-    });
+      if (!hasSecurityNotification) {
+        newNotifications.push({
+          adminId: admin.id,
+          type: 'security',
+          title: 'Рекомендация по безопасности',
+          message:
+            'Рекомендуется включить двухфакторную аутентификацию для повышения безопасности',
+          status: 'unread',
+          priority: 'medium',
+          actionUrl: '/dashboard/settings',
+          actionText: 'Настройки безопасности',
+          metadata: { securityType: '2fa' }
+        });
+      }
+    }
 
     // Уведомления о биллинге
-    if (admin.role === 'ADMIN' || admin.role === 'SUPERADMIN') {
-      notifications.push({
-        id: 'bill-1',
+    const hasBillingNotification = existingNotifications.some(
+      (n) => n.type === 'billing' && n.status !== 'dismissed'
+    );
+
+    if (!hasBillingNotification) {
+      newNotifications.push({
+        adminId: admin.id,
         type: 'billing',
         title: 'Использование ресурсов',
-        message: `Используется ${projectsCount} проектов, ${usersCount} пользователей. Лимит: 5 проектов, 1000 пользователей.`,
+        message: `Используется ${projectsCount} проектов, ${usersCount} пользователей. Лимит: ${admin.role === 'ADMIN' ? '5 проектов, 1000 пользователей' : '1 проект, 100 пользователей'}.`,
         status: 'read',
         priority: 'low',
-        createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 1 неделя назад
         actionUrl: '/dashboard/billing',
-        actionText: 'Посмотреть использование'
+        actionText: 'Посмотреть использование',
+        metadata: {
+          projectsUsed: projectsCount,
+          usersUsed: usersCount,
+          adminRole: admin.role
+        }
       });
     }
 
-    // Критическое уведомление если нет активных ботов
-    if (activeBotsCount === 0 && botsCount > 0) {
-      notifications.push({
-        id: 'bot-critical',
-        type: 'bot',
-        title: 'КРИТИЧНО: Все Telegram боты неактивны',
-        message:
-          'Все Telegram боты в системе неактивны. Пользователи не могут получать уведомления.',
-        status: 'unread',
-        priority: 'critical',
-        createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 минут назад
-        actionUrl: '/dashboard/projects',
-        actionText: 'Настроить боты'
+    // Создаем новые уведомления в БД
+    if (newNotifications.length > 0) {
+      await db.systemNotification.createMany({
+        data: newNotifications
       });
     }
 
-    return NextResponse.json({
-      notifications: notifications.sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      ),
-      stats: {
-        total: notifications.length,
-        unread: notifications.filter((n) => n.status === 'unread').length,
-        critical: notifications.filter((n) => n.priority === 'critical').length,
-        read: notifications.filter((n) => n.status === 'read').length
-      }
+    // Получаем все уведомления (существующие + новые)
+    const allNotifications = await db.systemNotification.findMany({
+      where: { adminId: admin.id },
+      orderBy: { createdAt: 'desc' },
+      take: 20
     });
+
+    // Форматируем уведомления для фронтенда
+    const formattedNotifications = allNotifications.map((notification) => ({
+      id: notification.id,
+      type: notification.type,
+      title: notification.title,
+      message: notification.message,
+      status: notification.status,
+      priority: notification.priority,
+      createdAt: notification.createdAt.toISOString(),
+      actionUrl: notification.actionUrl,
+      actionText: notification.actionText
+    }));
+
+    return NextResponse.json({ notifications: formattedNotifications });
   } catch (error) {
     logger.error('Error fetching system notifications:', {
       error: String(error)

@@ -235,6 +235,27 @@ enum AdminRole {
   MANAGER
 }
 
+// Системные уведомления для администраторов
+model SystemNotification {
+  id          String   @id @default(cuid())
+  adminId     String   @map("admin_id")
+  type        String   // subscription, bot, security, system, billing
+  title       String
+  message     String
+  status      String   @default("unread") // unread, read, dismissed
+  priority    String   @default("medium") // low, medium, high, critical
+  actionUrl   String?  @map("action_url")
+  actionText  String?  @map("action_text")
+  metadata    Json?    // Дополнительные данные
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Связи
+  admin       AdminAccount @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@map("system_notifications")
+}
+
 // Администраторы системы (аутентификация по email/паролю)
 model AdminAccount {
   id            String    @id @default(cuid())
@@ -242,8 +263,29 @@ model AdminAccount {
   passwordHash  String    @map("password_hash")
   role          AdminRole @default(ADMIN)
   isActive      Boolean   @default(true) @map("is_active")
+  
+  // Профильные данные
+  firstName     String?   @map("first_name")
+  lastName      String?   @map("last_name")
+  phone         String?
+  avatar        String?
+  timezone      String?   @default("Europe/Moscow")
+  language      String?   @default("ru")
+  
+  // Настройки безопасности
+  twoFactorEnabled Boolean @default(false) @map("two_factor_enabled")
+  sessionTimeout   Int?    @default(30) @map("session_timeout") // минуты
+  
+  // Настройки уведомлений
+  emailNotifications Boolean @default(true) @map("email_notifications")
+  smsNotifications   Boolean @default(false) @map("sms_notifications")
+  telegramNotifications Boolean @default(true) @map("telegram_notifications")
+  
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Связи
+  notifications SystemNotification[]
 
   @@map("admin_accounts")
 }

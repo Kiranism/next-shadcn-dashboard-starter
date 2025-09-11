@@ -219,13 +219,24 @@ export default function BillingPage() {
   const handleUpgradePlan = async (planId: string) => {
     try {
       toast.info('Обновление тарифного плана...');
-      // В реальном приложении здесь был бы запрос к API
-      await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      const plan = PLANS.find((p) => p.id === planId);
-      if (plan) {
-        setCurrentPlan(plan);
-        toast.success(`Тарифный план обновлен на "${plan.name}"`);
+      const response = await fetch('/api/billing/plan', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ planId })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentPlan(data.plan);
+        toast.success(data.message);
+        // Перезагружаем данные биллинга
+        await loadBillingData();
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Ошибка обновления тарифного плана');
       }
     } catch (error) {
       console.error('Error upgrading plan:', error);

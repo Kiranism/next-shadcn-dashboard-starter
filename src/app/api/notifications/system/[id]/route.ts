@@ -8,14 +8,22 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
 import { verifyJwt } from '@/lib/jwt';
 import { logger } from '@/lib/logger';
+import { NotificationStatus } from '@/types/notification';
+import { z } from 'zod';
 
-export async function PATCH(
+const updateNotificationStatusSchema = z.object({
+  status: z.nativeEnum(NotificationStatus)
+});
+
+export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
+    const { id } = params;
     const token = request.cookies.get('sb_auth')?.value;
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -26,22 +34,34 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const { id } = await params;
     const body = await request.json();
-    const { status } = body;
+    const { status } = updateNotificationStatusSchema.parse(body);
 
-    // В реальном приложении здесь будет обновление статуса уведомления в БД
-    // Пока что просто логируем изменение
-    logger.info('Notification status updated:', {
+    // Обновляем статус уведомления в БД
+    const updatedNotification = await db.systemNotification.update({
+      where: {
+        id: id,
+        adminId: payload.sub // Убеждаемся, что уведомление принадлежит текущему админу
+      },
+      data: { status },
+      select: {
+        id: true,
+        status: true,
+        title: true
+      }
+    });
+
+    logger.info(`Notification status updated`, {
       notificationId: id,
       adminId: payload.sub,
-      newStatus: status
+      newStatus: status,
+      title: updatedNotification.title
     });
 
     return NextResponse.json({
       message: 'Статус уведомления обновлен',
       notificationId: id,
-      status
+      status: updatedNotification.status
     });
   } catch (error) {
     logger.error('Error updating notification status:', {

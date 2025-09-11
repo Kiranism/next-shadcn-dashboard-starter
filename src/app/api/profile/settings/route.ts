@@ -31,6 +31,17 @@ export async function GET(request: NextRequest) {
         id: true,
         email: true,
         role: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        avatar: true,
+        timezone: true,
+        language: true,
+        twoFactorEnabled: true,
+        sessionTimeout: true,
+        emailNotifications: true,
+        smsNotifications: true,
+        telegramNotifications: true,
         createdAt: true,
         updatedAt: true
       }
@@ -43,26 +54,26 @@ export async function GET(request: NextRequest) {
     // Формируем настройки профиля
     const settings = {
       personal: {
-        firstName: 'Администратор', // В реальном приложении это будет из профиля
-        lastName: 'Системы',
+        firstName: admin.firstName || '',
+        lastName: admin.lastName || '',
         email: admin.email,
-        phone: '', // В реальном приложении это будет из профиля
-        avatar: ''
+        phone: admin.phone || '',
+        avatar: admin.avatar || ''
       },
       security: {
-        enableTwoFactor: false,
-        sessionTimeout: 24,
+        enableTwoFactor: admin.twoFactorEnabled,
+        sessionTimeout: admin.sessionTimeout || 30,
         changePassword: false
       },
       notifications: {
-        enableEmailNotifications: true,
-        enableSystemNotifications: true,
-        enableSecurityAlerts: true,
+        enableEmailNotifications: admin.emailNotifications,
+        enableSystemNotifications: admin.telegramNotifications,
+        enableSecurityAlerts: admin.smsNotifications,
         notificationEmail: admin.email
       },
       preferences: {
-        language: 'ru',
-        timezone: 'Europe/Moscow',
+        language: admin.language || 'ru',
+        timezone: admin.timezone || 'Europe/Moscow',
         theme: 'system',
         dateFormat: 'DD.MM.YYYY'
       }
@@ -102,16 +113,92 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const { settings } = body;
 
-    // В реальном приложении здесь будет обновление профиля в БД
-    // Пока что просто логируем изменения
+    // Обновляем профиль администратора в БД
+    const updatedAdmin = await db.adminAccount.update({
+      where: { id: payload.sub },
+      data: {
+        firstName: settings.personal?.firstName,
+        lastName: settings.personal?.lastName,
+        phone: settings.personal?.phone,
+        avatar: settings.personal?.avatar,
+        timezone: settings.preferences?.timezone,
+        language: settings.preferences?.language,
+        twoFactorEnabled: settings.security?.enableTwoFactor,
+        sessionTimeout: settings.security?.sessionTimeout,
+        emailNotifications: settings.notifications?.enableEmailNotifications,
+        smsNotifications: settings.notifications?.enableSecurityAlerts,
+        telegramNotifications: settings.notifications?.enableSystemNotifications
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        avatar: true,
+        timezone: true,
+        language: true,
+        twoFactorEnabled: true,
+        sessionTimeout: true,
+        emailNotifications: true,
+        smsNotifications: true,
+        telegramNotifications: true
+      }
+    });
+
     logger.info('Profile settings updated:', {
       adminId: payload.sub,
-      settings
+      settings: {
+        personal: {
+          firstName: updatedAdmin.firstName,
+          lastName: updatedAdmin.lastName,
+          phone: updatedAdmin.phone,
+          avatar: updatedAdmin.avatar
+        },
+        preferences: {
+          timezone: updatedAdmin.timezone,
+          language: updatedAdmin.language
+        },
+        security: {
+          twoFactorEnabled: updatedAdmin.twoFactorEnabled,
+          sessionTimeout: updatedAdmin.sessionTimeout
+        },
+        notifications: {
+          email: updatedAdmin.emailNotifications,
+          sms: updatedAdmin.smsNotifications,
+          telegram: updatedAdmin.telegramNotifications
+        }
+      }
     });
 
     return NextResponse.json({
       message: 'Настройки профиля обновлены',
-      settings
+      settings: {
+        personal: {
+          firstName: updatedAdmin.firstName || '',
+          lastName: updatedAdmin.lastName || '',
+          email: updatedAdmin.email,
+          phone: updatedAdmin.phone || '',
+          avatar: updatedAdmin.avatar || ''
+        },
+        security: {
+          enableTwoFactor: updatedAdmin.twoFactorEnabled,
+          sessionTimeout: updatedAdmin.sessionTimeout || 30,
+          changePassword: false
+        },
+        notifications: {
+          enableEmailNotifications: updatedAdmin.emailNotifications,
+          enableSystemNotifications: updatedAdmin.telegramNotifications,
+          enableSecurityAlerts: updatedAdmin.smsNotifications,
+          notificationEmail: updatedAdmin.email
+        },
+        preferences: {
+          language: updatedAdmin.language || 'ru',
+          timezone: updatedAdmin.timezone || 'Europe/Moscow',
+          theme: 'system',
+          dateFormat: 'DD.MM.YYYY'
+        }
+      }
     });
   } catch (error) {
     logger.error('Error updating profile settings:', { error: String(error) });
