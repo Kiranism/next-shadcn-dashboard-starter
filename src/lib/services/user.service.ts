@@ -137,6 +137,16 @@ export class UserService {
       orConditions.push({ phone: p });
     }
 
+    if (process.env.NODE_ENV !== 'production') {
+      logger.info('Поиск пользователя по контакту (точный матч)', {
+        projectId,
+        email,
+        phonePreview: phone ? String(phone).slice(-6) : undefined,
+        phoneCandidates,
+        component: 'user-service/findUserByContact'
+      });
+    }
+
     let user = await db.user.findFirst({
       where: {
         projectId,
@@ -182,6 +192,16 @@ export class UserService {
             // Сравниваем по последним 10 цифрам
             return nd.slice(-10) === last10;
           }) as any;
+
+          if (process.env.NODE_ENV !== 'production') {
+            logger.info('Фолбэк-поиск по последним цифрам телефона', {
+              projectId,
+              phoneLast10: last10,
+              candidatesChecked: possible.length,
+              matchedUserId: (user as any)?.id,
+              component: 'user-service/findUserByContact'
+            });
+          }
         }
       } catch {
         // ignore fallback errors
