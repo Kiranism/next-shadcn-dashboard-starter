@@ -46,7 +46,7 @@ import * as React from 'react';
 import { Icons } from '../icons';
 
 export const company = {
-  name: 'SaaS Bonus System',
+  name: 'Gupil.ru',
   logo: IconPhotoUp,
   plan: 'Enterprise'
 };
@@ -71,7 +71,7 @@ export default function AppSidebar() {
                   <IconPhotoUp className='size-4' />
                 </div>
                 <div className='flex flex-col gap-0.5 leading-none'>
-                  <span className='font-semibold'>SaaS Bonus System</span>
+                  <span className='font-semibold'>Gupil.ru</span>
                   <span className='text-xs'>Система бонусных программ</span>
                 </div>
               </Link>

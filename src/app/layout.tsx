@@ -24,8 +24,9 @@ const META_THEME_COLORS = {
 };
 
 export const metadata: Metadata = {
-  title: 'Next Shadcn',
-  description: 'Basic dashboard with Next.js and Shadcn'
+  title: 'Gupil.ru - Система бонусных программ',
+  description:
+    'Gupil.ru - Платформа для управления бонусными программами и лояльностью клиентов'
 };
 
 export const viewport: Viewport = {

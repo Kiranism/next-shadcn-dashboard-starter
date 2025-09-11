@@ -20,7 +20,8 @@ import {
   Settings,
   Coins,
   Share2,
-  Code
+  Code,
+  Bell as IconBell
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -362,10 +363,10 @@ export function ProjectSettingsView({ projectId }: ProjectSettingsViewProps) {
                   Статистика и аналитика
                 </Button>
               </Link>
-              <Link href={`/dashboard/projects/${projectId}/integration`}>
+              <Link href={`/dashboard/projects/${projectId}/notifications`}>
                 <Button variant='outline' className='mt-2 w-full justify-start'>
-                  <Code className='mr-2 h-4 w-4' />
-                  Интеграция с Tilda
+                  <IconBell className='mr-2 h-4 w-4' />
+                  Уведомления
                 </Button>
               </Link>
             </CardContent>
