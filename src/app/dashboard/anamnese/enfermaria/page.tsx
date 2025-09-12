@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronRight,
@@ -14,8 +14,7 @@ import {
   Download,
   Copy,
   RotateCcw,
-  Clock,
-  AlertCircle
+  Activity
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -42,7 +41,7 @@ type Step =
   | 'medications'
   | 'preview';
 
-export default function AnamnesePage() {
+export default function EnfermariaAnamnesePage() {
   const [currentStep, setCurrentStep] = useState<Step>('patient');
   const [completed, setCompleted] = useState<Record<Step, boolean>>({
     patient: false,
@@ -52,6 +51,7 @@ export default function AnamnesePage() {
     medications: false,
     preview: false
   });
+
   const {
     anamnesisData,
     medicalColors,
@@ -61,64 +61,66 @@ export default function AnamnesePage() {
     setContextType
   } = useMedical();
 
-  // Ensure context type is set for general route
   useEffect(() => {
-    if (anamnesisData.contextType !== 'geral') {
-      setContextType('geral');
+    if (anamnesisData.contextType !== 'enfermaria') {
+      setContextType('enfermaria');
     }
   }, [anamnesisData.contextType, setContextType]);
 
-  const steps: StepConfig<Step>[] = [
-    {
-      id: 'patient',
-      label: 'Dados do Paciente',
-      icon: User,
-      description: 'Informações básicas anônimas',
-      color: medicalColors.primary
-    },
-    {
-      id: 'complaint',
-      label: 'Queixa Principal',
-      icon: MessageSquare,
-      description: 'HDA e sintomas atuais',
-      color: medicalColors.warning
-    },
-    {
-      id: 'history',
-      label: 'História Médica',
-      icon: History,
-      description: 'Antecedentes e comorbidades',
-      color: medicalColors.neurology
-    },
-    {
-      id: 'exam',
-      label: 'Exame Físico',
-      icon: Stethoscope,
-      description: 'Sinais vitais e exame',
-      color: medicalColors.cardiology
-    },
-    {
-      id: 'medications',
-      label: 'Medicamentos',
-      icon: Pill,
-      description: 'Prescrições e orientações',
-      color: medicalColors.success
-    },
-    {
-      id: 'preview',
-      label: 'Revisão Final',
-      icon: FileText,
-      description: 'Revisão e exportação',
-      color: medicalColors.gastro
-    }
-  ];
+  const steps = useMemo<StepConfig<Step>[]>(
+    () => [
+      {
+        id: 'patient',
+        label: 'Identificação',
+        icon: User,
+        description: 'Dados do paciente',
+        color: medicalColors.neurology
+      },
+      {
+        id: 'complaint',
+        label: 'Motivo',
+        icon: MessageSquare,
+        description: 'Motivo da internação/evolução',
+        color: medicalColors.warning
+      },
+      {
+        id: 'history',
+        label: 'História',
+        icon: History,
+        description: 'Antec./comorbidades',
+        color: medicalColors.info
+      },
+      {
+        id: 'exam',
+        label: 'Exame/Vitais',
+        icon: Stethoscope,
+        description: 'Exame e vitais',
+        color: medicalColors.cardiology
+      },
+      {
+        id: 'medications',
+        label: 'Intervenções',
+        icon: Pill,
+        description: 'Prescrições e condutas',
+        color: medicalColors.success
+      },
+      {
+        id: 'preview',
+        label: 'Revisão',
+        icon: FileText,
+        description: 'Revisão e exportação',
+        color: medicalColors.neurology
+      }
+    ],
+    [medicalColors]
+  );
 
-  // Helper function for safe object value checking
   const someValues = useCallback(
     (obj?: Record<string, any>) => Object.values(obj ?? {}).some(Boolean),
     []
   );
 
+  // Inpatient-specific validation: consider vitals timeline and interventions
   const isStepCompleted = useCallback(
     (stepId: Step): boolean => {
       switch (stepId) {
@@ -128,7 +130,10 @@ export default function AnamnesePage() {
             anamnesisData?.paciente?.sexoBiologico
           );
         case 'complaint':
-          return someValues(anamnesisData.queixaPrincipal?.selectedComplaints);
+          return (
+            someValues(anamnesisData.queixaPrincipal?.selectedComplaints) ||
+            !!anamnesisData?.queixaPrincipal?.generatedText
+          );
         case 'history':
           return !!(
             anamnesisData?.historicoMedico?.comorbidades?.length ||
@@ -139,10 +144,15 @@ export default function AnamnesePage() {
           return !!(
             anamnesisData?.exameFisico?.sinaisVitais?.pa ||
             anamnesisData?.exameFisico?.sinaisVitais?.fc ||
-            anamnesisData?.exameFisico?.exameFisico?.aspectoGeral
+            (anamnesisData?.vitalsTimeline &&
+              anamnesisData?.vitalsTimeline?.length > 0)
           );
         case 'medications':
-          return !!anamnesisData?.medicamentos?.prescricaoAtual?.length;
+          return !!(
+            anamnesisData?.medicamentos?.prescricaoAtual?.length ||
+            (anamnesisData?.interventions &&
+              anamnesisData?.interventions.length > 0)
+          );
         case 'preview':
           return validateData();
         default:
@@ -152,7 +162,6 @@ export default function AnamnesePage() {
     [anamnesisData, validateData, someValues]
   );
 
-  // Initialize completion state based on existing data
   useEffect(() => {
     const initialCompleted: Record<Step, boolean> = {
       patient: isStepCompleted('patient'),
@@ -166,159 +175,120 @@ export default function AnamnesePage() {
   }, [anamnesisData, isStepCompleted]);
 
   const getCurrentStepIndex = () =>
-    steps.findIndex((step) => step.id === currentStep);
-
-  const getProgressPercentage = () => {
-    const completedSteps = steps.filter(
-      (step) => completed[step.id as Step]
-    ).length;
-    return (completedSteps / steps.length) * 100;
-  };
-
-  const canProceedToNext = () => {
-    return completed[currentStep] || currentStep === 'preview';
-  };
+    steps.findIndex((s) => s.id === currentStep);
+  // progressPercentage is computed via useMemo below
+  const canProceedToNext = () =>
+    completed[currentStep] || currentStep === 'preview';
 
   const handleNext = () => {
-    const currentIndex = getCurrentStepIndex();
-    if (currentIndex < steps.length - 1) {
-      setCurrentStep(steps[currentIndex + 1].id as Step);
-    }
+    const idx = getCurrentStepIndex();
+    if (idx < steps.length - 1) setCurrentStep(steps[idx + 1].id as Step);
   };
-
   const handlePrevious = () => {
-    const currentIndex = getCurrentStepIndex();
-    if (currentIndex > 0) {
-      setCurrentStep(steps[currentIndex - 1].id as Step);
-    }
+    const idx = getCurrentStepIndex();
+    if (idx > 0) setCurrentStep(steps[idx - 1].id as Step);
   };
-
-  const handleStepClick = (stepId: Step) => {
-    const stepIndex = steps.findIndex((s) => s.id === stepId);
-    const currentIndex = getCurrentStepIndex();
-    if (stepId === 'preview') {
-      setCurrentStep('preview');
-      return;
-    }
-    if (
-      stepIndex <= currentIndex ||
-      (stepIndex === currentIndex + 1 && canProceedToNext())
-    ) {
-      setCurrentStep(stepId);
-    }
+  const handleStepClick = (id: Step) => {
+    const idx = steps.findIndex((s) => s.id === id);
+    const cur = getCurrentStepIndex();
+    if (id === 'preview') return setCurrentStep('preview');
+    if (idx <= cur || (idx === cur + 1 && canProceedToNext()))
+      setCurrentStep(id);
   };
 
   const handleExport = async () => {
     try {
-      const anamnesisText = exportAnamnese();
-
-      // Tentar usar a API de clipboard moderna
+      const text = exportAnamnese();
       if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(anamnesisText);
+        await navigator.clipboard.writeText(text);
         toast.success('Anamnese copiada para a área de transferência!');
       } else {
-        // Fallback para navegadores antigos
-        const textArea = document.createElement('textarea');
-        textArea.value = anamnesisText;
-        document.body.appendChild(textArea);
-        textArea.select();
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
         document.execCommand('copy');
-        document.body.removeChild(textArea);
+        document.body.removeChild(ta);
         toast.success('Anamnese copiada!');
       }
-    } catch (error) {
+    } catch {
       toast.error('Erro ao copiar anamnese');
     }
   };
 
   const handleDownload = () => {
     try {
-      const anamnesisText = exportAnamnese();
-      const blob = new Blob([anamnesisText], {
-        type: 'text/plain;charset=utf-8'
-      });
+      const text = exportAnamnese();
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-
       const patientId = anamnesisData.paciente?.id?.slice(-8) || 'novo';
       const timestamp = new Date().toISOString().slice(0, 10);
-      link.download = `anamnese_${patientId}_${timestamp}.txt`;
+      link.download = `anamnese_enf_${patientId}_${timestamp}.txt`;
       link.href = url;
-
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-
       toast.success('Anamnese baixada com sucesso!');
-    } catch (error) {
+    } catch {
       toast.error('Erro ao baixar anamnese');
     }
   };
 
   const handleReset = () => {
-    resetAnamnese('geral');
+    resetAnamnese('enfermaria');
     setCurrentStep('patient');
-    toast.success('Nova anamnese iniciada');
+    toast.success('Nova evolução/enfermaria iniciada');
   };
 
   const renderStepContent = () => {
-    const contentVariants = {
+    const variants = {
       hidden: { opacity: 0, x: 20 },
       visible: { opacity: 1, x: 0 },
       exit: { opacity: 0, x: -20 }
     };
-
     return (
       <AnimatePresence mode='wait'>
         <motion.div
           key={currentStep}
-          variants={contentVariants}
+          variants={variants}
           initial='hidden'
           animate='visible'
           exit='exit'
           transition={{ duration: 0.2, ease: 'easeInOut' }}
           className='w-full'
         >
-          {(() => {
-            switch (currentStep) {
-              case 'patient':
-                return <PatientDataStep />;
-              case 'complaint':
-                return <ChiefComplaintStep />;
-              case 'history':
-                return <MedicalHistoryStep />;
-              case 'exam':
-                return <PhysicalExamStep />;
-              case 'medications':
-                return <MedicationsStep />;
-              case 'preview':
-                return <PreviewStep />;
-              default:
-                return <PatientDataStep />;
-            }
-          })()}
+          {currentStep === 'patient' && <PatientDataStep />}
+          {currentStep === 'complaint' && <ChiefComplaintStep />}
+          {currentStep === 'history' && <MedicalHistoryStep />}
+          {currentStep === 'exam' && <PhysicalExamStep />}
+          {currentStep === 'medications' && <MedicationsStep />}
+          {currentStep === 'preview' && <PreviewStep />}
         </motion.div>
       </AnimatePresence>
     );
   };
 
-  const currentStepConfig = steps.find((step) => step.id === currentStep);
-  const progressPercentage = getProgressPercentage();
-  const completedSteps = steps.map((step) => completed[step.id as Step]);
+  const currentStepConfig = steps.find((s) => s.id === currentStep)!;
+  const progressPercentage = useMemo(
+    () =>
+      (steps.filter((s) => completed[s.id as Step]).length / steps.length) *
+      100,
+    [completed, steps]
+  );
 
   return (
     <AnamneseLayout
       sidebar={
         <div className='space-y-6'>
-          {/* Progress Section */}
           <div className='space-y-4'>
             <div className='flex items-center justify-between'>
               <h3 className='text-sm font-semibold tracking-wide text-slate-700 uppercase dark:text-slate-300'>
-                Progresso da Anamnese
+                Progresso (Enf.)
               </h3>
               <div className='flex items-center gap-2'>
-                <span className='text-2xl font-bold text-blue-600 dark:text-blue-400'>
+                <span className='text-2xl font-bold text-purple-600 dark:text-purple-400'>
                   {Math.round(progressPercentage)}
                 </span>
                 <span className='text-sm text-slate-500 dark:text-slate-400'>
@@ -336,87 +306,68 @@ export default function AnamnesePage() {
             >
               <div className='absolute top-1/2 left-0 h-2 w-full -translate-y-1/2 rounded-full bg-slate-200 dark:bg-slate-700'></div>
               <motion.div
-                className='absolute top-1/2 left-0 h-2 -translate-y-1/2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/25'
+                className='absolute top-1/2 left-0 h-2 -translate-y-1/2 rounded-full bg-gradient-to-r from-purple-500 to-indigo-600 shadow-lg shadow-purple-500/25'
                 initial={{ width: 0 }}
                 animate={{ width: `${progressPercentage}%` }}
                 transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
-              ></motion.div>
-              <span className='sr-only'>{`${Math.round(progressPercentage)}% concluído`}</span>
+              />
             </div>
           </div>
-
-          {/* Step Navigation */}
           <AnamneseStepper<Step>
             steps={steps}
             currentStepIndex={getCurrentStepIndex()}
-            completedSteps={completedSteps}
+            completedSteps={steps.map((s) => completed[s.id as Step])}
             onStepClick={handleStepClick}
           />
         </div>
       }
     >
-      {/* Modern Header com Progress Premium */}
       <motion.header
-        className='glass-medical border-b border-slate-200/60 shadow-xl shadow-blue-500/5 dark:border-slate-700/50'
+        className='glass-medical border-b border-slate-200/60 shadow-xl shadow-purple-500/10 dark:border-slate-700/50'
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
       >
-        {/* Top Header Bar */}
         <div className='w-full px-6 py-6'>
           <div className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
-            {/* Title Section */}
             <div className='flex items-center gap-4'>
               <motion.div
-                className='rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 p-3 shadow-lg'
+                className='rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 p-3 shadow-lg'
                 whileHover={{ scale: 1.05, rotate: 3 }}
                 whileTap={{ scale: 0.95 }}
               >
                 <Stethoscope className='h-6 w-6 text-white' />
               </motion.div>
               <div>
-                <h1 className='text-xl font-bold text-slate-900 sm:text-2xl lg:text-3xl dark:text-white'>
-                  Nova Anamnese
+                <h1 className='text-xl font-bold tracking-tight text-slate-900 sm:text-2xl dark:text-slate-100'>
+                  Enfermaria / Evolução
                 </h1>
-                <p className='mt-1 text-sm text-slate-600 sm:text-base dark:text-slate-400'>
-                  Preencha os campos para gerar a anamnese do paciente
+                <p className='mt-1 text-sm text-slate-600 dark:text-slate-400'>
+                  Foco em evolução diária, intervenções e plano.
                 </p>
               </div>
             </div>
-
-            {/* Header Actions */}
-            <div className='flex items-center gap-2 sm:gap-3'>
+            <div className='flex items-center gap-2'>
               <Badge
                 variant='outline'
-                className='gap-1.5 border-slate-300 bg-white/50 text-xs sm:text-sm dark:border-slate-600 dark:bg-slate-800/50'
+                className='border-purple-300 bg-purple-50 text-purple-700 dark:border-purple-800/50 dark:bg-purple-900/20 dark:text-purple-300'
               >
-                <Clock className='h-3 w-3 sm:h-4 sm:w-4' />
-                {anamnesisData.paciente?.timestamp
-                  ? new Date(
-                      anamnesisData.paciente.timestamp
-                    ).toLocaleTimeString('pt-BR', {
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })
-                  : 'Nova'}
+                <Activity className='mr-1 h-3 w-3' /> Enfermaria
               </Badge>
-
               <Button
                 variant='ghost'
                 size='sm'
+                className='gap-2'
                 onClick={handleReset}
-                className='btn-medical gap-2 text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
               >
                 <RotateCcw className='h-4 w-4' />
-                <span className='hidden sm:inline'>Nova Anamnese</span>
-                <span className='sm:hidden'>Nova</span>
+                Nova evolução
               </Button>
             </div>
           </div>
         </div>
       </motion.header>
 
-      {/* Step Header Card */}
       {currentStepConfig && (
         <AnamneseStepHeader
           title={currentStepConfig.label}
@@ -426,7 +377,6 @@ export default function AnamnesePage() {
         />
       )}
 
-      {/* Step Content */}
       <motion.div
         key={currentStep}
         initial={{ opacity: 0, x: 20 }}
@@ -437,7 +387,6 @@ export default function AnamnesePage() {
         {renderStepContent()}
       </motion.div>
 
-      {/* Premium Footer Navigation */}
       <motion.footer
         className='glass-medical border-t border-slate-200/60 shadow-2xl shadow-slate-900/5 dark:border-slate-700/50'
         initial={{ opacity: 0, y: 20 }}
@@ -456,7 +405,6 @@ export default function AnamnesePage() {
               <ChevronLeft className='h-4 w-4' />
               <span className='hidden sm:inline'>Anterior</span>
             </Button>
-
             <div className='flex items-center gap-2 sm:gap-3'>
               {currentStep === 'preview' ? (
                 <>
@@ -480,12 +428,6 @@ export default function AnamnesePage() {
                     <Download className='h-4 w-4' />
                     <span className='hidden sm:inline'>Baixar TXT</span>
                   </Button>
-                  {!validateData() && (
-                    <p className='text-xs text-amber-700 dark:text-amber-300'>
-                      Preencha os campos obrigatórios para habilitar a
-                      exportação.
-                    </p>
-                  )}
                 </>
               ) : (
                 <Button
@@ -494,7 +436,7 @@ export default function AnamnesePage() {
                     !canProceedToNext() ||
                     getCurrentStepIndex() === steps.length - 1
                   }
-                  className='btn-medical gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25 hover:from-blue-600 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none'
+                  className='btn-medical gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg shadow-purple-500/25 hover:from-purple-600 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none'
                   size='sm'
                 >
                   <span className='hidden sm:inline'>Próximo</span>
@@ -504,8 +446,6 @@ export default function AnamnesePage() {
               )}
             </div>
           </div>
-
-          {/* Progress Summary */}
           <div className='mt-4 border-t border-slate-200/60 pt-4 dark:border-slate-700/50'>
             <div className='flex items-center justify-center gap-4 text-xs text-slate-600 sm:text-sm dark:text-slate-400'>
               <span>
@@ -519,32 +459,6 @@ export default function AnamnesePage() {
           </div>
         </div>
       </motion.footer>
-
-      {/* Validation Alert */}
-      <AnimatePresence>
-        {!validateData() && progressPercentage > 50 && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className='fixed right-4 bottom-20 z-50 max-w-sm sm:right-6 sm:bottom-24'
-          >
-            <div className='rounded-lg border-amber-200 bg-amber-50 p-4 shadow-xl shadow-amber-500/10 dark:border-amber-800/50 dark:bg-amber-900/20'>
-              <div className='flex items-start gap-3'>
-                <AlertCircle className='mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400' />
-                <div>
-                  <p className='text-sm font-medium text-amber-800 dark:text-amber-200'>
-                    Campos obrigatórios
-                  </p>
-                  <p className='mt-1 text-xs text-amber-700 dark:text-amber-300'>
-                    Alguns campos obrigatórios não foram preenchidos
-                  </p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </AnamneseLayout>
   );
 }

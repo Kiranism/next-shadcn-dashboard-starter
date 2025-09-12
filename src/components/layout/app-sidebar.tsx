@@ -49,7 +49,8 @@ import { OrgSwitcher } from '../org-switcher';
 export const company = {
   name: 'Sistema Médico',
   logo: IconPhotoUp,
-  plan: 'Professional'
+  plan: 'Professional',
+  description: 'Plataforma de Gestão Médica'
 };
 
 const tenants = [
@@ -68,6 +69,7 @@ export default function AppSidebar() {
   } as any;
   const router = useRouter();
   const handleSwitchTenant = (_tenantId: string) => {
+    void _tenantId;
     // Tenant switching functionality would be implemented here
   };
 
@@ -78,18 +80,38 @@ export default function AppSidebar() {
   }, [isOpen]);
 
   return (
-    <Sidebar collapsible='icon'>
-      <SidebarHeader>
-        <OrgSwitcher
-          tenants={tenants}
-          defaultTenant={activeTenant}
-          onTenantSwitch={handleSwitchTenant}
-        />
+    <Sidebar
+      collapsible='icon'
+      className='glass-medical border-border/50 border-r'
+    >
+      <SidebarHeader className='border-border/50 border-b pb-3'>
+        <div className='px-3 py-2'>
+          <div className='mb-2 flex items-center gap-2'>
+            <div className='rounded-medical-md bg-medical-primary flex h-8 w-8 items-center justify-center text-white'>
+              <company.logo className='h-5 w-5' />
+            </div>
+            <div className='min-w-0 flex-1'>
+              <h1 className='text-foreground truncate text-sm font-semibold'>
+                {company.name}
+              </h1>
+              <p className='text-muted-foreground truncate text-xs'>
+                {company.description}
+              </p>
+            </div>
+          </div>
+          <OrgSwitcher
+            tenants={tenants}
+            defaultTenant={activeTenant}
+            onTenantSwitch={handleSwitchTenant}
+          />
+        </div>
       </SidebarHeader>
-      <SidebarContent className='overflow-x-hidden'>
+      <SidebarContent className='overflow-x-hidden px-2'>
         <SidebarGroup>
-          <SidebarGroupLabel>Overview</SidebarGroupLabel>
-          <SidebarMenu>
+          <SidebarGroupLabel className='text-muted-foreground mb-2 px-2 text-xs font-semibold tracking-wider uppercase'>
+            Navegação Principal
+          </SidebarGroupLabel>
+          <SidebarMenu className='space-y-1'>
             {navItems.map((item) => {
               const Icon = item.icon ? Icons[item.icon] : Icons.logo;
               return item?.items && item?.items?.length > 0 ? (
@@ -104,10 +126,11 @@ export default function AppSidebar() {
                       <SidebarMenuButton
                         tooltip={item.title}
                         isActive={pathname === item.url}
+                        className='data-[active=true]:bg-medical-primary/10 data-[active=true]:text-medical-primary data-[active=true]:border-medical-primary/20 hover:bg-accent/50 duration-medical rounded-medical-md transition-all'
                       >
-                        {item.icon && <Icon />}
-                        <span>{item.title}</span>
-                        <IconChevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
+                        {item.icon && <Icon className='h-4 w-4' />}
+                        <span className='font-medium'>{item.title}</span>
+                        <IconChevronRight className='duration-medical ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-90' />
                       </SidebarMenuButton>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
@@ -134,10 +157,11 @@ export default function AppSidebar() {
                     asChild
                     tooltip={item.title}
                     isActive={pathname === item.url}
+                    className='data-[active=true]:bg-medical-primary/10 data-[active=true]:text-medical-primary data-[active=true]:border-medical-primary/20 hover:bg-accent/50 duration-medical rounded-medical-md transition-all'
                   >
-                    <Link href={item.url}>
-                      <Icon />
-                      <span>{item.title}</span>
+                    <Link href={item.url} className='flex items-center gap-3'>
+                      <Icon className='h-4 w-4' />
+                      <span className='font-medium'>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -146,7 +170,7 @@ export default function AppSidebar() {
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className='border-border/50 border-t px-2 pt-3'>
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
@@ -166,7 +190,7 @@ export default function AppSidebar() {
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                className='w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg'
+                className='w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg'
                 side='bottom'
                 align='end'
                 sideOffset={4}

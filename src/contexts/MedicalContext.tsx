@@ -17,6 +17,8 @@ export interface Patient {
 
 // Extended interface for the new anamnesis structure
 export interface ExtendedAnamneseData {
+  // Context discriminator to specialize flows
+  contextType: 'geral' | 'pronto-socorro' | 'ambulatorio' | 'enfermaria';
   paciente: {
     id: string;
     faixaEtaria: 'pediatrico' | 'adulto' | 'idoso' | '';
@@ -26,8 +28,25 @@ export interface ExtendedAnamneseData {
     consentimentoWhatsApp: boolean;
     timestamp: Date;
   };
+  // Emergency triage information
+  triage?: {
+    manchesterLevel?: 1 | 2 | 3 | 4 | 5;
+    arrivalTime?: string;
+    chiefComplaintTriage?: string;
+    vitalSignsOnArrival?: {
+      pa?: string;
+      fc?: string;
+      fr?: string;
+      temp?: string;
+      sat?: string;
+      glicemia?: string;
+    };
+    painScale?: number;
+    consciousnessLevel?: 'A' | 'V' | 'P' | 'U' | 'GCS';
+  };
   queixaPrincipal: {
-    queixaPrincipal: string;
+    selectedComplaints: Record<string, boolean>;
+    generatedText: string;
     duracaoSintomas: string;
     intensidade: number;
     caracteristicas: string[];
@@ -63,6 +82,18 @@ export interface ExtendedAnamneseData {
     };
     observacoes: string;
   };
+  // Timeline of vitals during stay/evolution
+  vitalsTimeline?: Array<{
+    timestamp: string; // ISO string
+    pa?: string;
+    fc?: string;
+    fr?: string;
+    temp?: string;
+    sat?: string;
+    glicemia?: string;
+    painScale?: number;
+    notes?: string;
+  }>;
   medicamentos: {
     prescricaoAtual: Array<{
       medicamento: string;
@@ -81,18 +112,49 @@ export interface ExtendedAnamneseData {
     retorno: string;
     orientacoes: string[];
   };
+  // Interventions performed with timestamps
+  interventions?: Array<{
+    timestamp: string; // ISO string
+    type: string;
+    details?: string;
+  }>;
+  // Disposition after care
+  disposition?: {
+    dischargeType?: 'alta' | 'internacao' | 'transferencia' | 'obito';
+    followUpInstructions?: string;
+    returnPrecautions?: string;
+    dischargeTime?: string;
+  };
+  // Clinician block for medical-legal
+  clinician?: {
+    name: string;
+    crm: string;
+    specialty?: string;
+    signature?: string; // base64 or text
+  };
+  // Consent metadata
+  consent?: {
+    informedConsent: boolean;
+    consentDate?: string; // ISO date
+    witnessName?: string;
+    patientSignature?: string;
+  };
 }
 
 interface MedicalContextType {
   // Anamnese estendida (novo formato)
   anamnesisData: ExtendedAnamneseData;
   updateAnamnesisData: (data: Partial<ExtendedAnamneseData>) => void;
+  setContextType: (type: ExtendedAnamneseData['contextType']) => void;
   updateNestedAnamnesisData: <T extends keyof ExtendedAnamneseData>(
     section: T,
     field: keyof ExtendedAnamneseData[T],
     value: any
   ) => void;
-  resetAnamnese: () => void;
+  updateQueixaPrincipal: (
+    data: Partial<ExtendedAnamneseData['queixaPrincipal']>
+  ) => void;
+  resetAnamnese: (contextType?: ExtendedAnamneseData['contextType']) => void;
 
   // Validação e exportação
   validateData: () => boolean;
@@ -159,64 +221,93 @@ interface MedicalContextType {
   };
 }
 
-const defaultExtendedAnamnese: ExtendedAnamneseData = {
-  paciente: {
-    id: `PAC-${Date.now().toString().slice(-6)}`,
-    faixaEtaria: '',
-    sexoBiologico: '',
-    gestante: false,
-    telefone: '',
-    consentimentoWhatsApp: false,
-    timestamp: new Date()
-  },
-  queixaPrincipal: {
-    queixaPrincipal: '',
-    duracaoSintomas: '',
-    intensidade: 5,
-    caracteristicas: [],
-    fatoresAssociados: [],
-    observacoes: ''
-  },
-  historicoMedico: {
-    comorbidades: [],
-    medicamentosUso: [],
-    alergias: [],
-    cirurgiasAnteriores: [],
-    historicoFamiliar: [],
-    habitosVida: []
-  },
-  exameFisico: {
-    sinaisVitais: {
-      pa: '',
-      fc: '',
-      fr: '',
-      temp: '',
-      sat: '',
-      glicemia: ''
+const createDefaultExtendedAnamnese = (
+  type: ExtendedAnamneseData['contextType'] = 'geral'
+): ExtendedAnamneseData => {
+  const uniqueId = (() => {
+    try {
+      const g: any =
+        typeof globalThis !== 'undefined' ? (globalThis as any) : undefined;
+      if (g?.crypto && typeof g.crypto.randomUUID === 'function') {
+        return `PAC-${g.crypto.randomUUID()}`;
+      }
+    } catch {}
+    const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
+    return `PAC-${Date.now().toString().slice(-6)}-${rand}`;
+  })();
+
+  return {
+    contextType: type,
+    paciente: {
+      id: uniqueId,
+      faixaEtaria: '',
+      sexoBiologico: '',
+      gestante: false,
+      telefone: '',
+      consentimentoWhatsApp: false,
+      timestamp: new Date()
+    },
+    triage: {},
+    queixaPrincipal: {
+      selectedComplaints: {},
+      generatedText: '',
+      duracaoSintomas: '',
+      intensidade: 5,
+      caracteristicas: [],
+      fatoresAssociados: [],
+      observacoes: ''
+    },
+    historicoMedico: {
+      comorbidades: [],
+      medicamentosUso: [],
+      alergias: [],
+      cirurgiasAnteriores: [],
+      historicoFamiliar: [],
+      habitosVida: []
     },
     exameFisico: {
-      aspectoGeral: '',
-      cabecaPescoco: '',
-      torax: '',
-      cardiovascular: '',
-      respiratorio: '',
-      abdome: '',
-      extremidades: '',
-      neurologico: ''
+      sinaisVitais: {
+        pa: '',
+        fc: '',
+        fr: '',
+        temp: '',
+        sat: '',
+        glicemia: ''
+      },
+      exameFisico: {
+        aspectoGeral: '',
+        cabecaPescoco: '',
+        torax: '',
+        cardiovascular: '',
+        respiratorio: '',
+        abdome: '',
+        extremidades: '',
+        neurologico: ''
+      },
+      observacoes: ''
     },
-    observacoes: ''
-  },
-  medicamentos: {
-    prescricaoAtual: [],
-    medicamentosEmUso: []
-  },
-  avaliacaoConduta: {
-    hipoteseDiagnostica: [],
-    condutaImediata: [],
-    examesSolicitados: [],
-    retorno: '',
-    orientacoes: []
-  }
+    vitalsTimeline: [],
+    medicamentos: {
+      prescricaoAtual: [],
+      medicamentosEmUso: []
+    },
+    avaliacaoConduta: {
+      hipoteseDiagnostica: [],
+      condutaImediata: [],
+      examesSolicitados: [],
+      retorno: '',
+      orientacoes: []
+    },
+    interventions: [],
+    disposition: {},
+    clinician: {
+      name: '',
+      crm: ''
+    },
+    consent: {
+      informedConsent: false
+    }
+  };
 };
 
 const MedicalContext = createContext<MedicalContextType | undefined>(undefined);
@@ -224,8 +315,8 @@ const MedicalContext = createContext<MedicalContextType | undefined>(undefined);
 export const MedicalProvider: React.FC<{ children: ReactNode }> = ({
   children
 }) => {
-  const [anamnesisData, setAnamnesisData] = useState<ExtendedAnamneseData>(
-    defaultExtendedAnamnese
+  const [anamnesisData, setAnamnesisData] = useState<ExtendedAnamneseData>(() =>
+    createDefaultExtendedAnamnese()
   );
   const [patients, setPatients] = useState<Patient[]>([
     {
@@ -311,6 +402,10 @@ export const MedicalProvider: React.FC<{ children: ReactNode }> = ({
     setAnamnesisData((prev) => ({ ...prev, ...data }));
   };
 
+  const setContextType = (type: ExtendedAnamneseData['contextType']) => {
+    updateAnamnesisData({ contextType: type });
+  };
+
   const updateNestedAnamnesisData = <T extends keyof ExtendedAnamneseData>(
     section: T,
     field: keyof ExtendedAnamneseData[T],
@@ -319,21 +414,26 @@ export const MedicalProvider: React.FC<{ children: ReactNode }> = ({
     setAnamnesisData((prev) => ({
       ...prev,
       [section]: {
-        ...prev[section],
+        ...(((prev as any)[section] as any) || {}),
         [field]: value
       }
     }));
   };
 
-  const resetAnamnese = () => {
-    setAnamnesisData({
-      ...defaultExtendedAnamnese,
-      paciente: {
-        ...defaultExtendedAnamnese.paciente,
-        id: `PAC-${Date.now().toString().slice(-6)}`,
-        timestamp: new Date()
+  const updateQueixaPrincipal = (
+    data: Partial<ExtendedAnamneseData['queixaPrincipal']>
+  ) => {
+    setAnamnesisData((prev) => ({
+      ...prev,
+      queixaPrincipal: {
+        ...prev.queixaPrincipal,
+        ...data
       }
-    });
+    }));
+  };
+
+  const resetAnamnese = (contextType?: ExtendedAnamneseData['contextType']) => {
+    setAnamnesisData(createDefaultExtendedAnamnese(contextType ?? 'geral'));
   };
 
   const validateData = (): boolean => {
@@ -344,7 +444,7 @@ export const MedicalProvider: React.FC<{ children: ReactNode }> = ({
 
     // Validate chief complaint
     const hasChiefComplaint =
-      !!anamnesisData.queixaPrincipal.queixaPrincipal?.trim();
+      !!anamnesisData.queixaPrincipal.generatedText?.trim();
 
     // Validate at least one section with meaningful data
     const hasMedicalData = !!(
@@ -360,19 +460,28 @@ export const MedicalProvider: React.FC<{ children: ReactNode }> = ({
 
   const exportAnamnese = (): string => {
     const {
+      contextType,
       paciente,
+      triage,
+      vitalsTimeline,
+      clinician,
+      consent,
       queixaPrincipal,
       historicoMedico,
       exameFisico,
       medicamentos,
-      avaliacaoConduta
+      avaliacaoConduta,
+      interventions,
+      disposition
     } = anamnesisData;
 
     let anamneseText = '';
 
     // Header com branding WellWave
     anamneseText += `🌊 WELLWAVE - ANAMNESE MÉDICA DIGITAL\n`;
-    anamneseText += `=====================================\n\n`;
+    anamneseText += `=====================================\n`;
+    // Contexto (linha solicitada)
+    anamneseText += `Contexto: ${contextType || 'geral'}\n\n`;
 
     // Patient identification (anonymous)
     anamneseText += `📋 IDENTIFICAÇÃO PACIENTE:\n`;
@@ -387,10 +496,41 @@ export const MedicalProvider: React.FC<{ children: ReactNode }> = ({
     }
     anamneseText += `Data/Hora: ${paciente.timestamp.toLocaleString('pt-BR')}\n\n`;
 
+    // Emergency triage (if present)
+    if (
+      triage &&
+      (triage.manchesterLevel ||
+        triage.arrivalTime ||
+        triage.chiefComplaintTriage)
+    ) {
+      anamneseText += `🚨 TRIAGEM (Manchester):\n`;
+      if (typeof triage.manchesterLevel !== 'undefined')
+        anamneseText += `Prioridade: ${triage.manchesterLevel}\n`;
+      if (triage.arrivalTime)
+        anamneseText += `Chegada: ${triage.arrivalTime}\n`;
+      if (triage.chiefComplaintTriage)
+        anamneseText += `Queixa na triagem: ${triage.chiefComplaintTriage}\n`;
+      const v = triage.vitalSignsOnArrival || ({} as any);
+      if (v.pa || v.fc || v.fr || v.temp || v.sat || v.glicemia) {
+        anamneseText += `Sinais vitais na chegada:\n`;
+        if (v.pa) anamneseText += `  • PA: ${v.pa} mmHg\n`;
+        if (v.fc) anamneseText += `  • FC: ${v.fc} bpm\n`;
+        if (v.fr) anamneseText += `  • FR: ${v.fr} irpm\n`;
+        if (v.temp) anamneseText += `  • T°: ${v.temp}°C\n`;
+        if (v.sat) anamneseText += `  • SatO2: ${v.sat}%\n`;
+        if (v.glicemia) anamneseText += `  • Glicemia: ${v.glicemia} mg/dL\n`;
+      }
+      if (typeof triage.painScale === 'number')
+        anamneseText += `Dor (0-10): ${triage.painScale}\n`;
+      if (triage.consciousnessLevel)
+        anamneseText += `Nível de consciência: ${triage.consciousnessLevel}\n`;
+      anamneseText += `\n`;
+    }
+
     // Chief complaint
-    if (queixaPrincipal.queixaPrincipal) {
+    if (queixaPrincipal.generatedText) {
       anamneseText += `🔍 QUEIXA PRINCIPAL:\n`;
-      anamneseText += `${queixaPrincipal.queixaPrincipal}\n`;
+      anamneseText += `${queixaPrincipal.generatedText}\n`;
       if (queixaPrincipal.duracaoSintomas) {
         anamneseText += `Duração: ${queixaPrincipal.duracaoSintomas}\n`;
       }
@@ -459,6 +599,28 @@ export const MedicalProvider: React.FC<{ children: ReactNode }> = ({
       anamneseText += `Observações: ${exameFisico.observacoes}\n`;
     anamneseText += `\n`;
 
+    // Vitals timeline (if present)
+    if (vitalsTimeline && vitalsTimeline.length) {
+      anamneseText += `📈 EVOLUÇÃO DOS SINAIS VITAIS:\n`;
+      vitalsTimeline.forEach((entry, idx) => {
+        anamneseText += `${idx + 1}. ${entry.timestamp}`;
+        const fields = [
+          entry.pa && `PA ${entry.pa} mmHg`,
+          entry.fc && `FC ${entry.fc} bpm`,
+          entry.fr && `FR ${entry.fr} irpm`,
+          entry.temp && `T° ${entry.temp}°C`,
+          entry.sat && `SatO2 ${entry.sat}%`,
+          entry.glicemia && `Glicemia ${entry.glicemia} mg/dL`
+        ].filter(Boolean);
+        if (fields.length) anamneseText += ` — ${fields.join(' | ')}`;
+        if (typeof entry.painScale === 'number')
+          anamneseText += ` — Dor: ${entry.painScale}/10`;
+        if (entry.notes) anamneseText += ` — ${entry.notes}`;
+        anamneseText += `\n`;
+      });
+      anamneseText += `\n`;
+    }
+
     // Medications
     if (medicamentos.prescricaoAtual.length) {
       anamneseText += `💊 PRESCRIÇÃO MÉDICA:\n`;
@@ -482,6 +644,17 @@ export const MedicalProvider: React.FC<{ children: ReactNode }> = ({
       });
     }
 
+    // Interventions (if any)
+    if (interventions && interventions.length) {
+      anamneseText += `🛠️ INTERVENÇÕES REALIZADAS:\n`;
+      interventions.forEach((it, i) => {
+        anamneseText += `${i + 1}. ${it.timestamp} — ${it.type}`;
+        if (it.details) anamneseText += `: ${it.details}`;
+        anamneseText += `\n`;
+      });
+      anamneseText += `\n`;
+    }
+
     // Assessment and plan
     anamneseText += `⚕️ AVALIAÇÃO E CONDUTA:\n`;
     if (avaliacaoConduta.hipoteseDiagnostica.length) {
@@ -500,11 +673,50 @@ export const MedicalProvider: React.FC<{ children: ReactNode }> = ({
       anamneseText += `Orientações: ${avaliacaoConduta.orientacoes.join(', ')}\n`;
     }
 
+    // Disposition (if any)
+    if (
+      disposition &&
+      (disposition.dischargeType ||
+        disposition.followUpInstructions ||
+        disposition.returnPrecautions)
+    ) {
+      anamneseText += `🚪 DESFECHO/ALTA:\n`;
+      if (disposition.dischargeType)
+        anamneseText += `Tipo: ${disposition.dischargeType}\n`;
+      if (disposition.dischargeTime)
+        anamneseText += `Horário: ${disposition.dischargeTime}\n`;
+      if (disposition.followUpInstructions)
+        anamneseText += `Acompanhamento: ${disposition.followUpInstructions}\n`;
+      if (disposition.returnPrecautions)
+        anamneseText += `Sinais de alarme: ${disposition.returnPrecautions}\n`;
+      anamneseText += `\n`;
+    }
+
     // Footer
     anamneseText += `\n`;
     anamneseText += `🌊 Documento gerado pelo WellWave Medical System\n`;
     anamneseText += `📅 ${new Date().toLocaleString('pt-BR')}\n`;
     anamneseText += `🔒 Sistema que preserva privacidade médica\n`;
+    if (clinician && (clinician.name || clinician.crm || clinician.specialty)) {
+      anamneseText += `\n👩‍⚕️ Profissional responsável:\n`;
+      if (clinician.name) anamneseText += `Nome: ${clinician.name}\n`;
+      if (clinician.crm) anamneseText += `CRM: ${clinician.crm}\n`;
+      if (clinician.specialty)
+        anamneseText += `Especialidade: ${clinician.specialty}\n`;
+    }
+    if (
+      consent &&
+      (consent.informedConsent ||
+        consent.patientSignature ||
+        consent.witnessName)
+    ) {
+      anamneseText += `\n✅ Consentimento e registros:\n`;
+      anamneseText += `Consentimento informado: ${consent.informedConsent ? 'Sim' : 'Não'}\n`;
+      if (consent.consentDate)
+        anamneseText += `Data do consentimento: ${consent.consentDate}\n`;
+      if (consent.witnessName)
+        anamneseText += `Testemunha: ${consent.witnessName}\n`;
+    }
 
     return anamneseText;
   };
@@ -534,7 +746,9 @@ export const MedicalProvider: React.FC<{ children: ReactNode }> = ({
       value={{
         anamnesisData,
         updateAnamnesisData,
+        setContextType,
         updateNestedAnamnesisData,
+        updateQueixaPrincipal,
         resetAnamnese,
         validateData,
         exportAnamnese,
