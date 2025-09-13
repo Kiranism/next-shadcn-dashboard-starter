@@ -29,7 +29,7 @@
     "@dnd-kit/modifiers": "^7.0.0",
     "@dnd-kit/sortable": "^8.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "@hookform/resolvers": "^3.9.1",
+    "@hookform/resolvers": "^5.2.1",
     "@radix-ui/react-accordion": "^1.2.3",
     "@radix-ui/react-alert-dialog": "^1.1.6",
     "@radix-ui/react-aspect-ratio": "^1.1.2",
@@ -95,7 +95,7 @@
     "typescript": "5.7.2",
     "uuid": "^11.0.3",
     "vaul": "^1.1.2",
-    "zod": "^3.24.1",
+    "zod": "^4.1.8",
     "zustand": "^5.0.2"
   },
   "devDependencies": {
