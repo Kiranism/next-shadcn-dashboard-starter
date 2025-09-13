@@ -15,7 +15,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useControllableState } from '@/hooks/use-controllable-state';
 import { cn, formatBytes } from '@/lib/utils';
 
-interface FileUploaderProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface FileUploaderProps
+  extends React.HTMLAttributes<HTMLDivElement> {
   /**
    * Value of the uploader.
    * @type File[]

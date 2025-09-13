@@ -7,6 +7,7 @@ import {
   Controller,
   FormProvider,
   useFormContext,
+  UseFormReturn,
   useFormState,
   type ControllerProps,
   type FieldPath,
@@ -16,7 +17,25 @@ import {
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 
-const Form = FormProvider;
+const Form = ({
+  children,
+  onSubmit,
+  form,
+  className
+}: {
+  children: React.ReactNode;
+  onSubmit: (data: any) => void;
+  form: UseFormReturn<any, any, undefined>;
+  className?: string;
+}) => {
+  return (
+    <FormProvider {...form}>
+      <form onSubmit={onSubmit} className={className}>
+        {children}
+      </form>
+    </FormProvider>
+  );
+};
 
 type FormFieldContextValue<
   TFieldValues extends FieldValues = FieldValues,

@@ -1,27 +1,15 @@
 'use client';
 
-import { FileUploader } from '@/components/file-uploader';
+import { FormFileUpload } from '@/components/forms/form-file-upload';
+import { FormInput } from '@/components/forms/form-input';
+import { FormSelect } from '@/components/forms/form-select';
+import { FormTextarea } from '@/components/forms/form-textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+import { Form } from '@/components/ui/form';
 import { Product } from '@/constants/mock-api';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
@@ -65,17 +53,21 @@ export default function ProductForm({
   const defaultValues = {
     name: initialData?.name || '',
     category: initialData?.category || '',
-    price: initialData?.price || 0,
+    price: initialData?.price || undefined,
     description: initialData?.description || ''
   };
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    values: defaultValues
+    defaultValues: defaultValues
   });
+
+  const router = useRouter();
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     // Form submission logic would be implemented here
+    console.log(values);
+    router.push('/dashboard/product');
   }
 
   return (
@@ -86,115 +78,83 @@ export default function ProductForm({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
-            <FormField
+        <Form
+          form={form}
+          onSubmit={form.handleSubmit(onSubmit)}
+          className='space-y-8'
+        >
+          <FormFileUpload
+            control={form.control}
+            name='image'
+            label='Product Image'
+            description='Upload a product image'
+            config={{
+              maxSize: 5 * 1024 * 1024,
+              maxFiles: 4
+            }}
+          />
+
+          <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+            <FormInput
               control={form.control}
-              name='image'
-              render={({ field }) => (
-                <div className='space-y-6'>
-                  <FormItem className='w-full'>
-                    <FormLabel>Images</FormLabel>
-                    <FormControl>
-                      <FileUploader
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        maxFiles={4}
-                        maxSize={4 * 1024 * 1024}
-                        // disabled={loading}
-                        // progresses={progresses}
-                        // pass the onUpload function here for direct upload
-                        // onUpload={uploadFiles}
-                        // disabled={isUploading}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                </div>
-              )}
+              name='name'
+              label='Product Name'
+              placeholder='Enter product name'
+              required
             />
 
-            <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
-              <FormField
-                control={form.control}
-                name='name'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Product Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder='Enter product name' {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='category'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <Select
-                      onValueChange={(value) => field.onChange(value)}
-                      value={field.value[field.value.length - 1]}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder='Select categories' />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value='beauty'>Beauty Products</SelectItem>
-                        <SelectItem value='electronics'>Electronics</SelectItem>
-                        <SelectItem value='clothing'>Clothing</SelectItem>
-                        <SelectItem value='home'>Home & Garden</SelectItem>
-                        <SelectItem value='sports'>
-                          Sports & Outdoors
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='price'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Price</FormLabel>
-                    <FormControl>
-                      <Input
-                        type='number'
-                        step='0.01'
-                        placeholder='Enter price'
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <FormField
+            <FormSelect
               control={form.control}
-              name='description'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder='Enter product description'
-                      className='resize-none'
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              name='category'
+              label='Category'
+              placeholder='Select category'
+              required
+              options={[
+                {
+                  label: 'Beauty Products',
+                  value: 'beauty'
+                },
+                {
+                  label: 'Electronics',
+                  value: 'electronics'
+                },
+                {
+                  label: 'Home & Garden',
+                  value: 'home'
+                },
+                {
+                  label: 'Sports & Outdoors',
+                  value: 'sports'
+                }
+              ]}
             />
-            <Button type='submit'>Add Product</Button>
-          </form>
+
+            <FormInput
+              control={form.control}
+              name='price'
+              label='Price'
+              placeholder='Enter price'
+              required
+              type='number'
+              min={0}
+              step='0.01'
+            />
+          </div>
+
+          <FormTextarea
+            control={form.control}
+            name='description'
+            label='Description'
+            placeholder='Enter product description'
+            required
+            config={{
+              maxLength: 500,
+              showCharCount: true,
+              rows: 4
+            }}
+          />
+
+          <Button type='submit'>Add Product</Button>
         </Form>
       </CardContent>
     </Card>
