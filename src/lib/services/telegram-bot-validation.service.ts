@@ -95,12 +95,13 @@ export class TelegramBotValidationService {
             ).toISOString();
           }
         }
-      } catch (updateError: any) {
+      } catch (updateError) {
         // Если getUpdates не работает из-за webhook, это нормально
-        if (updateError.message?.includes('webhook')) {
+        const errorMessage = updateError instanceof Error ? updateError.message : String(updateError);
+        if (errorMessage.includes('webhook')) {
           canReceiveUpdates = true; // webhook активен, значит бот может получать обновления
         }
-        logger.warn('Failed to check updates', { error: updateError.message });
+        logger.warn('Failed to check updates', { error: errorMessage });
       }
 
       logger.info('Bot status checked successfully', {
@@ -125,7 +126,7 @@ export class TelegramBotValidationService {
           canReceiveUpdates
         }
       };
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Bot status check failed', {
         error: error.message,
         tokenPreview: token.substring(0, 10) + '...'
@@ -189,7 +190,7 @@ export class TelegramBotValidationService {
           supportsInlineQueries: botInfo.supports_inline_queries || false
         }
       };
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Bot token validation failed', {
         error: error.message,
         tokenPreview: token.substring(0, 10) + '...'
@@ -253,7 +254,7 @@ export class TelegramBotValidationService {
             ).toLocaleString('ru-RU');
           }
         }
-      } catch (updateError: any) {
+      } catch (updateError) {
         if (updateError.message?.includes('webhook')) {
           canReceiveUpdates = true;
           webhookStatus = 'webhook active (polling disabled)';
@@ -283,7 +284,7 @@ export class TelegramBotValidationService {
             chatId: testChatId,
             botUsername: botInfo.username
           });
-        } catch (sendError: any) {
+        } catch (sendError) {
           logger.warn('Failed to send test message', {
             error: sendError.message,
             chatId: testChatId
@@ -315,7 +316,7 @@ export class TelegramBotValidationService {
           canSendMessages
         }
       };
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Bot test failed', {
         error: error.message,
         chatId: testChatId,
@@ -347,7 +348,7 @@ export class TelegramBotValidationService {
         firstName: botInfo.first_name,
         isBot: botInfo.is_bot
       };
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Failed to get bot info', {
         error: error.message,
         tokenPreview: token.substring(0, 10) + '...'
@@ -381,7 +382,7 @@ export class TelegramBotValidationService {
       });
 
       return true;
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Failed to set bot commands', {
         error: error.message,
         tokenPreview: token.substring(0, 10) + '...'
