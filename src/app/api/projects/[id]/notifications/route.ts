@@ -15,8 +15,9 @@ import {
   NotificationPriority
 } from '@/types/notification';
 import { logger } from '@/lib/logger';
+import { withApiRateLimit } from '@/lib';
 
-export async function GET(
+async function handleGET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -47,7 +48,7 @@ export async function GET(
   }
 }
 
-export async function POST(
+async function handlePOST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -55,81 +56,81 @@ export async function POST(
     const { id: projectId } = await params;
     const body = await request.json();
 
-    const {
-      userId,
-      type,
-      channel = NotificationChannel.TELEGRAM,
-      title,
-      message,
-      priority = NotificationPriority.NORMAL,
-      variables = {},
-      metadata = {}
-    } = body;
+    // Валидация типа уведомления
+    if (!body.type || !Object.values(NotificationType).includes(body.type)) {
+      return NextResponse.json(
+        { error: 'Неверный тип уведомления' },
+        { status: 400 }
+      );
+    }
+
+    // Валидация типа канала
+    if (
+      !body.channel ||
+      !Object.values(NotificationChannel).includes(body.channel)
+    ) {
+      return NextResponse.json(
+        { error: 'Неверный канал отправки' },
+        { status: 400 }
+      );
+    }
 
     // Валидация обязательных полей
-    if (!type || !title || !message) {
+    if (!body.title || !body.message) {
       return NextResponse.json(
-        { error: 'Отсутствуют обязательные поля: type, title, message' },
+        { error: 'Отсутствуют обязательные поля: title, message' },
         { status: 400 }
       );
     }
 
-    // Валидация типа уведомления
-    if (!Object.values(NotificationType).includes(type)) {
-      return NextResponse.json(
-        { error: 'Недопустимый тип уведомления' },
-        { status: 400 }
-      );
+    // Определяем пользователей для отправки
+    let userIds: string[] = [];
+
+    if (body.userId) {
+      // Отправка конкретному пользователю
+      userIds = [body.userId];
+    } else if (body.userIds && Array.isArray(body.userIds)) {
+      // Отправка списку пользователей
+      userIds = body.userIds;
+    } else {
+      // Отправка всем пользователям проекта
+      const users = await NotificationService.getProjectUsers(projectId);
+      userIds = users.map((user) => user.id);
     }
 
-    // Валидация канала
-    if (!Object.values(NotificationChannel).includes(channel)) {
-      return NextResponse.json(
-        { error: 'Недопустимый канал уведомления' },
-        { status: 400 }
-      );
-    }
+    // Готовим данные для отправки
+    const notificationData = {
+      type: body.type as NotificationType,
+      channel: body.channel as NotificationChannel,
+      priority: body.priority || NotificationPriority.MEDIUM,
+      title: body.title,
+      message: body.message,
+      imageUrl: body.imageUrl,
+      buttons: body.buttons
+    };
 
-    // Если userId не указан, отправляем рассылку всем пользователям проекта
-    if (!userId && channel === NotificationChannel.TELEGRAM) {
-      const { sendRichBroadcastMessage } = await import(
-        '@/lib/telegram/notifications'
-      );
+    // Отправляем уведомления
+    const results = await Promise.all(
+      userIds.map((userId) =>
+        NotificationService.send({
+          ...notificationData,
+          userId,
+          projectId
+        })
+      )
+    );
 
-      const result = await sendRichBroadcastMessage(projectId, {
-        message: `${title}\n\n${message}`,
-        imageUrl: metadata?.imageUrl,
-        buttons: metadata?.buttons,
-        parseMode: metadata?.parseMode || 'Markdown'
-      });
-
-      return NextResponse.json({
-        success: true,
-        data: {
-          result,
-          message: 'Рассылка отправлена'
-        }
-      });
-    }
-
-    // Отправляем уведомление конкретному пользователю
-    const logs = await NotificationService.sendNotification({
-      projectId,
-      userId,
-      type,
-      channel,
-      title,
-      message,
-      priority,
-      variables,
-      metadata
-    });
+    // Подсчитываем результаты
+    const sent = results.filter((r) => r.success).length;
+    const failed = results.filter((r) => !r.success).length;
 
     return NextResponse.json({
       success: true,
       data: {
-        logs,
-        message: 'Уведомление отправлено'
+        sent,
+        failed,
+        total: userIds.length,
+        results: results.filter((r) => !r.success) // Возвращаем только ошибки
       }
     });
   } catch (error) {
@@ -142,3 +143,7 @@ export async function POST(
     );
   }
 }
+
+// Применяем rate limiting
+export const GET = withApiRateLimit(handleGET);
+export const POST = withApiRateLimit(handlePOST);

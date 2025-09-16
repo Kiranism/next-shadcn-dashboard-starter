@@ -3,81 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Тестовая страница Tilda - Бонусная система</title>
+    <title>Тест интеграции с Tilda - SaaS Bonus System</title>
     <style>
         body {
-            font-family: 'Arial', sans-serif;
-            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
             padding: 20px;
-            background-color: #f5f5f5;
-            line-height: 1.6;
+            background: #f5f5f5;
         }
         
         .container {
-            max-width: 800px;
-            margin: 0 auto;
             background: white;
             padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #eee;
-        }
-        
-        .header h1 {
+        h1 {
             color: #333;
             margin-bottom: 10px;
         }
         
-        .header p {
+        .subtitle {
             color: #666;
-            font-size: 16px;
-        }
-        
-        .form-section {
             margin-bottom: 30px;
-        }
-        
-        .form-section h2 {
-            color: #333;
-            margin-bottom: 15px;
-            border-left: 4px solid #007bff;
-            padding-left: 15px;
         }
         
         .form-group {
             margin-bottom: 20px;
         }
         
-        .form-group label {
+        label {
             display: block;
             margin-bottom: 5px;
-            font-weight: bold;
+            font-weight: 500;
             color: #333;
         }
         
-        .form-group input,
-        .form-group select {
+        input {
             width: 100%;
-            padding: 12px;
+            padding: 10px;
             border: 1px solid #ddd;
-            border-radius: 5px;
+            border-radius: 4px;
             font-size: 16px;
-            box-sizing: border-box;
         }
         
-        .form-group input:focus {
-            border-color: #007bff;
-            outline: none;
-            box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
-        }
-        
-        .cart-section {
+        .cart {
             background: #f8f9fa;
             padding: 20px;
             border-radius: 8px;
@@ -87,420 +59,246 @@
         .cart-item {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            padding: 15px 0;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .cart-item:last-child {
-            border-bottom: none;
-        }
-        
-        .item-info {
-            flex: 1;
-        }
-        
-        .item-name {
-            font-weight: bold;
-            color: #333;
-        }
-        
-        .item-description {
-            color: #666;
-            font-size: 14px;
-        }
-        
-        .item-price {
-            font-weight: bold;
-            color: #007bff;
-            font-size: 18px;
-        }
-        
-        .total-section {
-            background: #e9ecef;
-            padding: 15px;
-            border-radius: 5px;
-            margin-top: 15px;
-        }
-        
-        .total-row {
-            display: flex;
-            justify-content: space-between;
             margin-bottom: 10px;
         }
         
-        .total-row.final {
+        .cart-total {
+            font-size: 20px;
             font-weight: bold;
-            font-size: 18px;
-            color: #007bff;
-            border-top: 2px solid #007bff;
-            padding-top: 10px;
             margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid #dee2e6;
         }
         
-        .submit-btn {
+        /* Имитация корзины Tilda */
+        .t706__cartwin {
+            display: block;
+        }
+        
+        .t706__cartwin-totalamount {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .button {
             background: #007bff;
             color: white;
-            padding: 15px 30px;
+            padding: 12px 24px;
             border: none;
-            border-radius: 5px;
+            border-radius: 4px;
             font-size: 16px;
-            font-weight: bold;
             cursor: pointer;
             width: 100%;
             margin-top: 20px;
-            transition: background-color 0.3s;
         }
         
-        .submit-btn:hover {
+        .button:hover {
             background: #0056b3;
         }
         
-        .test-info {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 5px;
-            padding: 15px;
-            margin-bottom: 20px;
+        .test-actions {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid #dee2e6;
         }
         
-        .test-info h3 {
-            margin-top: 0;
-            color: #856404;
-        }
-        
-        .test-info ul {
-            margin-bottom: 0;
-        }
-        
-        .test-info li {
-            margin-bottom: 5px;
-        }
-        
-        .config-section {
-            background: #d1ecf1;
-            border: 1px solid #bee5eb;
-            border-radius: 5px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .config-section h3 {
-            margin-top: 0;
-            color: #0c5460;
-        }
-        
-        .config-row {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 10px;
-            align-items: center;
-        }
-        
-        .config-row label {
-            min-width: 120px;
-            font-weight: bold;
-        }
-        
-        .config-row input {
-            flex: 1;
-            padding: 8px 12px;
-            border: 1px solid #aed9da;
-            border-radius: 4px;
-        }
-        
-        .apply-config-btn {
-            background: #17a2b8;
+        .test-button {
+            background: #28a745;
             color: white;
-            padding: 8px 16px;
+            padding: 10px 20px;
             border: none;
             border-radius: 4px;
+            margin-right: 10px;
             cursor: pointer;
+        }
+        
+        .test-button:hover {
+            background: #218838;
+        }
+        
+        .logs {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-family: monospace;
             font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
         }
         
-        .apply-config-btn:hover {
-            background: #138496;
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            background: white;
+            border-radius: 3px;
         }
         
-        @media (max-width: 600px) {
-            .container {
-                margin: 10px;
-                padding: 20px;
-            }
-            
-            .cart-item {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .item-price {
-                margin-top: 10px;
-            }
-            
-            .config-row {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .config-row label {
-                min-width: auto;
-                margin-bottom: 5px;
-            }
+        .log-time {
+            color: #666;
+            font-size: 12px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🛒 Тестовая корзина Tilda</h1>
-            <p>Страница для тестирования интеграции бонусной системы</p>
+        <h1>🧪 Тестовая страница интеграции с Tilda</h1>
+        <p class="subtitle">Эта страница имитирует корзину Tilda для тестирования бонусной системы</p>
+        
+        <!-- Форма пользователя -->
+        <div class="form-group">
+            <label for="email">Email пользователя:</label>
+            <input type="email" id="email" name="email" placeholder="user@example.com" value="test@example.com">
         </div>
-
-        <!-- Конфигурация виджета -->
-        <div class="config-section">
-            <h3>⚙️ Настройки тестирования</h3>
-            <div class="config-row">
-                <label>Project ID:</label>
-                <input type="text" id="projectId" value="YOUR_PROJECT_ID" placeholder="Введите ID проекта">
-            </div>
-            <div class="config-row">
-                <label>API URL:</label>
-                <input type="text" id="apiUrl" value="http://localhost:5006" placeholder="URL вашего API">
-            </div>
-            <div class="config-row">
-                <label>Текст кнопки:</label>
-                <input type="text" id="buttonText" value="Применить бонусы" placeholder="Текст кнопки">
-            </div>
-            <div class="config-row">
-                <label></label>
-                <button class="apply-config-btn" onclick="reinitializeWidget()">Применить настройки</button>
-            </div>
+        
+        <div class="form-group">
+            <label for="phone">Телефон пользователя:</label>
+            <input type="tel" id="phone" name="phone" placeholder="+7 (999) 999-99-99">
         </div>
-
-        <!-- Информация о тестировании -->
-        <div class="test-info">
-            <h3>📋 Инструкция по тестированию</h3>
-            <ul>
-                <li>Замените <strong>YOUR_PROJECT_ID</strong> на реальный ID проекта</li>
-                <li>Убедитесь, что API URL указывает на ваш сервер</li>
-                <li>Введите email в форму ниже (пользователь должен существовать в системе)</li>
-                <li>Виджет автоматически проверит доступные бонусы</li>
-                <li>Попробуйте применить бонусы и проверьте результат</li>
-            </ul>
-        </div>
-
-        <!-- Форма заказа -->
-        <div class="form-section">
-            <h2>📝 Форма заказа</h2>
-            
-            <div class="form-group">
-                <label for="name">Имя *</label>
-                <input type="text" id="name" name="name" required placeholder="Введите ваше имя">
-            </div>
-            
-            <div class="form-group">
-                <label for="email">Email *</label>
-                <input type="email" id="email" name="email" required placeholder="your@email.com">
-            </div>
-            
-            <div class="form-group">
-                <label for="phone">Телефон</label>
-                <input type="tel" id="phone" name="phone" placeholder="+7 (999) 123-45-67">
-            </div>
-        </div>
-
-        <!-- Корзина -->
-        <div class="cart-section">
-            <h2>🛍️ Ваш заказ</h2>
-            
+        
+        <!-- Имитация корзины Tilda -->
+        <div class="cart t706__cartwin">
+            <h3>🛒 Корзина</h3>
             <div class="cart-item">
-                <div class="item-info">
-                    <div class="item-name">Консультация по маркетингу</div>
-                    <div class="item-description">Персональная консультация 1 час</div>
-                </div>
-                <div class="item-price">5 000 ₽</div>
+                <span>Товар 1</span>
+                <span>500 ₽</span>
             </div>
-            
             <div class="cart-item">
-                <div class="item-info">
-                    <div class="item-name">Аудит сайта</div>
-                    <div class="item-description">Полный технический аудит</div>
-                </div>
-                <div class="item-price">3 000 ₽</div>
+                <span>Товар 2</span>
+                <span>300 ₽</span>
             </div>
+            <div class="cart-item">
+                <span>Доставка</span>
+                <span>200 ₽</span>
+            </div>
+            <div class="cart-total">
+                <span>Итого: </span>
+                <span class="t706__cartwin-totalamount">1000 ₽</span>
+            </div>
+        </div>
+        
+        <!-- Место для виджета бонусов -->
+        <div id="bonus-widget-placeholder"></div>
+        
+        <button class="button">Оформить заказ</button>
+        
+        <!-- Тестовые действия -->
+        <div class="test-actions">
+            <h3>🔧 Тестовые действия</h3>
+            <button class="test-button" onclick="testGetBalance()">Получить баланс</button>
+            <button class="test-button" onclick="testPurchase()">Тест покупки</button>
+            <button class="test-button" onclick="clearLogs()">Очистить логи</button>
             
-            <div class="total-section">
-                <div class="total-row">
-                    <span>Подытог:</span>
-                    <span id="subtotal">8 000 ₽</span>
-                </div>
-                <div class="total-row" id="discount-row" style="display: none; color: #28a745;">
-                    <span>Скидка бонусами:</span>
-                    <span id="discount-amount">0 ₽</span>
-                </div>
-                <div class="total-row final">
-                    <span>Итого к оплате:</span>
-                    <span id="total">8 000 ₽</span>
+            <div id="logs" class="logs">
+                <div class="log-entry">
+                    <span class="log-time">[00:00:00]</span> Страница загружена, ожидание инициализации виджета...
                 </div>
             </div>
         </div>
-
-        <!-- Здесь будет вставлен виджет бонусов -->
-        <div id="bonus-widget-container"></div>
-
-        <button type="submit" class="submit-btn" onclick="submitOrder()">
-            💳 Оформить заказ
-        </button>
     </div>
 
-    <!-- Подключение виджета бонусов -->
-    <script src="./tilda-bonus-widget.js"></script>
+    <!-- Подключение бонусного виджета -->
+    <script src="/tilda-bonus-widget.js"></script>
     <script>
-        let currentWidget = null;
-        let currentSubtotal = 8000;
-        let currentDiscount = 0;
-
-        function initializeWidget() {
-            const projectId = document.getElementById('projectId').value;
-            const apiUrl = document.getElementById('apiUrl').value;
-            const buttonText = document.getElementById('buttonText').value;
-
-            if (!projectId || projectId === 'YOUR_PROJECT_ID') {
-                console.warn('⚠️ Необходимо указать реальный Project ID');
-                return;
-            }
-
-            if (window.TildaBonusWidget) {
-                currentWidget = window.TildaBonusWidget.init({
-                    projectId: projectId,
-                    apiUrl: apiUrl,
-                    buttonText: buttonText,
-                    minBonusAmount: 1,
-                    discountPercentage: 1,
-                    currency: '₽'
-                });
-
-                console.log('🎁 Виджет бонусов инициализирован');
-            } else {
-                console.error('❌ Виджет бонусов не загружен');
-            }
+        // Инициализация виджета
+        TildaBonusWidget.init({
+            projectId: 'TEST_PROJECT_ID', // Замените на реальный ID проекта
+            apiUrl: window.location.origin,
+            bonusToRuble: 1,
+            minOrderAmount: 100,
+            debug: true // Включаем отладку
+        });
+        
+        // Функция логирования
+        function addLog(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const time = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `<span class="log-time">[${time}]</span> ${message}`;
+            logs.appendChild(entry);
+            logs.scrollTop = logs.scrollHeight;
         }
-
-        function reinitializeWidget() {
-            // Удаляем старый виджет
-            const oldWidget = document.querySelector('.tilda-bonus-widget');
-            if (oldWidget) {
-                oldWidget.remove();
-            }
-
-            // Инициализируем новый
-            setTimeout(initializeWidget, 100);
-        }
-
-        function updateTotal() {
-            const total = currentSubtotal - currentDiscount;
-            document.getElementById('subtotal').textContent = currentSubtotal.toLocaleString() + ' ₽';
-            document.getElementById('total').textContent = total.toLocaleString() + ' ₽';
-            
-            const discountRow = document.getElementById('discount-row');
-            const discountAmount = document.getElementById('discount-amount');
-            
-            if (currentDiscount > 0) {
-                discountRow.style.display = 'flex';
-                discountAmount.textContent = '-' + currentDiscount.toLocaleString() + ' ₽';
-            } else {
-                discountRow.style.display = 'none';
-            }
-        }
-
-        function applyDiscount(amount) {
-            currentDiscount = amount;
-            updateTotal();
-            console.log(`💰 Применена скидка: ${amount} ₽`);
-        }
-
-        function removeDiscount() {
-            currentDiscount = 0;
-            updateTotal();
-            console.log('🔄 Скидка снята');
-        }
-
-        function submitOrder() {
-            const name = document.getElementById('name').value;
+        
+        // Тестовые функции
+        async function testGetBalance() {
             const email = document.getElementById('email').value;
             const phone = document.getElementById('phone').value;
-
-            if (!name || !email) {
-                alert('❌ Пожалуйста, заполните обязательные поля (Имя и Email)');
-                return;
-            }
-
-            const orderData = {
-                customer: {
-                    name: name,
-                    email: email,
-                    phone: phone
-                },
-                order: {
-                    subtotal: currentSubtotal,
-                    discount: currentDiscount,
-                    total: currentSubtotal - currentDiscount,
-                    bonusesUsed: currentDiscount
+            
+            addLog(`Запрос баланса для email: ${email}, phone: ${phone}`);
+            
+            try {
+                const params = new URLSearchParams();
+                if (email) params.append('email', email);
+                if (phone) params.append('phone', phone);
+                
+                const response = await fetch(`/api/projects/TEST_PROJECT_ID/users/balance?${params}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog(`✅ Баланс получен: ${data.balance} бонусов`, 'success');
+                } else {
+                    addLog(`❌ Ошибка: ${data.error || 'Неизвестная ошибка'}`, 'error');
                 }
-            };
-
-            console.log('📦 Заказ отправлен:', orderData);
-            alert(`✅ Заказ успешно оформлен!\n\nСумма: ${orderData.order.total} ₽\nСкидка бонусами: ${orderData.order.discount} ₽\n\nДанные заказа выведены в консоль браузера.`);
+            } catch (error) {
+                addLog(`❌ Ошибка сети: ${error.message}`, 'error');
+            }
         }
-
-        // Инициализация при загрузке страницы
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Тестовая страница загружена');
+        
+        async function testPurchase() {
+            const email = document.getElementById('email').value;
             
-            // Устанавливаем тестовые значения
-            const projectIdField = document.getElementById('projectId');
-            const apiUrlField = document.getElementById('apiUrl');
+            addLog(`Тестовая покупка для email: ${email}`);
             
-            // Попытка автоматической инициализации через 1 секунду
+            try {
+                const response = await fetch(`/api/webhook/TEST_WEBHOOK_SECRET`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'purchase',
+                        payload: {
+                            userEmail: email,
+                            purchaseAmount: 1000,
+                            orderId: 'TEST-' + Date.now(),
+                            description: 'Тестовый заказ'
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog(`✅ Покупка обработана успешно`, 'success');
+                } else {
+                    addLog(`❌ Ошибка: ${data.error || 'Неизвестная ошибка'}`, 'error');
+                }
+            } catch (error) {
+                addLog(`❌ Ошибка сети: ${error.message}`, 'error');
+            }
+        }
+        
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+            addLog('Логи очищены');
+        }
+        
+        // Слушаем события от виджета
+        window.addEventListener('load', () => {
+            addLog('✅ Виджет бонусной системы должен быть инициализирован');
+            
+            // Проверяем наличие виджета через секунду
             setTimeout(() => {
-                if (projectIdField.value !== 'YOUR_PROJECT_ID') {
-                    initializeWidget();
+                const widget = document.querySelector('.bonus-widget-container');
+                if (widget) {
+                    addLog('✅ Виджет успешно добавлен на страницу');
+                } else {
+                    addLog('⚠️ Виджет не найден на странице. Проверьте настройки projectId');
                 }
             }, 1000);
-
-            // Обновляем итог при загрузке
-            updateTotal();
         });
-
-        // Глобальные функции для интеграции с виджетом
-        window.testPage = {
-            applyDiscount: applyDiscount,
-            removeDiscount: removeDiscount,
-            updateTotal: updateTotal
-        };
     </script>
-
-    <style>
-        /* Дополнительные стили для виджета на тестовой странице */
-        .tilda-bonus-widget {
-            margin: 20px 0 !important;
-        }
-        
-        .bonus-widget-container {
-            border: 2px dashed #007bff !important;
-            background: linear-gradient(135deg, #e3f2fd 0%, #f8f9fa 100%) !important;
-        }
-        
-        .bonus-widget-container::before {
-            content: "🎁 Виджет бонусной системы";
-            display: block;
-            text-align: center;
-            font-weight: bold;
-            color: #007bff;
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-    </style>
 </body>
 </html>

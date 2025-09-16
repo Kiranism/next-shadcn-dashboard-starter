@@ -12,13 +12,14 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { setSessionCookie, verifyPassword } from '@/lib/auth';
 import { signJwt } from '@/lib/jwt';
+import { withAuthRateLimit } from '@/lib';
 
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8).max(72)
 });
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+async function handlePOST(request: NextRequest): Promise<NextResponse> {
   try {
     const body = await request.json();
     const data = loginSchema.parse(body);
@@ -67,3 +68,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Внутренняя ошибка', details: errorMessage }, { status: 500 });
   }
 }
+
+// Применяем rate limiting к POST запросам (5 попыток за 15 минут)
+export const POST = withAuthRateLimit(handlePOST);

@@ -2,430 +2,379 @@
  * @file: tilda-integration-view.tsx
  * @description: Компонент для настройки интеграции с Tilda
  * @project: SaaS Bonus System
- * @dependencies: Next.js, React, UI components
- * @created: 2025-01-31
+ * @dependencies: React, shadcn/ui
+ * @created: 2025-01-28
  * @author: AI Assistant + User
  */
 
 'use client';
 
-import { useEffect, useState } from 'react';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Copy, ExternalLink } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
+import { Copy, CheckCircle2, AlertCircle, Code, Webhook, Settings } from 'lucide-react';
+import { Project } from '@/types';
+import { PageContainer } from '@/components/page-container';
 
-interface Project {
-  id: string;
-  name: string;
-  domain?: string | null;
-  webhookSecret: string;
-  bonusPercentage: number;
-  _count?: {
-    users: number;
-  };
-}
-
-interface TildaIntegrationViewProps {
-  project: Project;
-}
-
-export function TildaIntegrationView({ project }: TildaIntegrationViewProps) {
-  const [config, setConfig] = useState({
-    tildaFormId: '',
-    tildaPageId: '',
-    bonusDisplayText: 'Использовать бонусы',
-    successMessage: 'Бонусы успешно применены!',
-    errorMessage: 'Ошибка применения бонусов'
-  });
-
-  const baseUrl =
-    typeof window !== 'undefined'
-      ? window.location.origin
-      : 'https://your-domain.com';
-  const webhookUrl = `${baseUrl}/api/webhook/${project.webhookSecret}`;
-  const balanceApiUrl = `${baseUrl}/api/projects/${project.id}/users/balance`;
-  const spendApiUrl = `${baseUrl}/api/projects/${project.id}/users/spend`;
-  const statusApiUrl = `${baseUrl}/api/projects/${project.id}/integration/status`;
-  const logsApiUrl = `${baseUrl}/api/projects/${project.id}/integration/logs?limit=10`;
-
-  const [status, setStatus] = useState<{
-    connected: boolean;
-    lastSuccessAt?: string | null;
-  } | null>(null);
-  const [logs, setLogs] = useState<
-    Array<{
-      id: string;
-      method: string;
-      endpoint: string;
-      headers?: any;
-      status: number;
-      success: boolean;
-      createdAt: string;
-      body?: any;
-      response?: any;
-    }>
-  >([]);
+export function ProjectIntegrationView({ params }: { params: Promise<{ id: string }> }) {
+  const [project, setProject] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [widgetUrl, setWidgetUrl] = useState('');
+  const resolvedParams = useParams();
+  const projectId = resolvedParams?.id as string;
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const [s, l] = await Promise.all([
-          fetch(statusApiUrl).then((r) => r.json()),
-          fetch(logsApiUrl).then((r) => r.json())
-        ]);
-        setStatus(s);
-        setLogs(l.logs || []);
-      } catch (_e) {
-        // ignore
-      }
-    };
-    load();
-  }, [statusApiUrl, logsApiUrl]);
+    if (!projectId) return;
+    
+    // Формируем URL для виджета
+    const currentUrl = window.location.origin;
+    setWidgetUrl(`${currentUrl}/tilda-bonus-widget.js`);
+    
+    // Загружаем данные проекта
+    loadProject();
+  }, [projectId]);
 
-  const generateJavaScriptCode = () => {
-    const scriptSrc = `${baseUrl}/tilda-bonus-widget.js?projectId=${project.id}&apiUrl=${baseUrl}`;
-    return `<script src="${scriptSrc}"></script>`;
-  };
-
-  const copyToClipboard = async (text: string, label: string) => {
-    const fallbackCopy = (value: string) => {
-      const el = document.createElement('textarea');
-      el.value = value;
-      el.setAttribute('readonly', '');
-      el.style.position = 'absolute';
-      el.style.left = '-9999px';
-      document.body.appendChild(el);
-      el.select();
-      const ok = document.execCommand('copy');
-      document.body.removeChild(el);
-      return ok;
-    };
-
+  async function loadProject() {
     try {
-      if (
-        navigator.clipboard &&
-        typeof navigator.clipboard.writeText === 'function'
-      ) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        const ok = fallbackCopy(text);
-        if (!ok) throw new Error('copy failed');
-      }
-      toast.success(`${label} скопирован`);
-    } catch (_e) {
-      const ok = fallbackCopy(text);
-      if (ok) toast.success(`${label} скопирован`);
-      else toast.error('Не удалось скопировать');
+      const response = await fetch(`/api/projects/${projectId}`);
+      if (!response.ok) throw new Error('Failed to load project');
+      
+      const data = await response.json();
+      setProject(data);
+    } catch (error) {
+      toast.error('Ошибка загрузки проекта');
+    } finally {
+      setLoading(false);
     }
-  };
+  }
 
-  const downloadFile = (content: string, filename: string) => {
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success(`Файл ${filename} загружен`);
-  };
+  function copyToClipboard(text: string, type: string) {
+    navigator.clipboard.writeText(text);
+    setCopied(type);
+    toast.success('Скопировано в буфер обмена');
+    
+    setTimeout(() => setCopied(null), 3000);
+  }
+
+  if (loading) {
+    return (
+      <PageContainer>
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="h-64 bg-gray-200 rounded"></div>
+        </div>
+      </PageContainer>
+    );
+  }
+
+  if (!project) {
+    return (
+      <PageContainer>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Ошибка</AlertTitle>
+          <AlertDescription>Проект не найден</AlertDescription>
+        </Alert>
+      </PageContainer>
+    );
+  }
+
+  const webhookUrl = `${window.location.origin}/api/webhook/${project.webhookSecret}`;
+  
+  const widgetCode = `<!-- Бонусная система для Tilda -->
+<script src="${widgetUrl}"></script>
+<script>
+  // Инициализация виджета бонусной системы
+  TildaBonusWidget.init({
+    projectId: '${projectId}',
+    apiUrl: '${window.location.origin}',
+    bonusToRuble: 1, // 1 бонус = 1 рубль
+    minOrderAmount: 100, // Минимальная сумма заказа
+    debug: false // Включить отладку в консоли
+  });
+</script>`;
+
+  const testWebhookData = JSON.stringify({
+    action: "purchase",
+    payload: {
+      userEmail: "test@example.com",
+      purchaseAmount: 1000,
+      orderId: "TEST-" + Date.now(),
+      description: "Тестовый заказ"
+    }
+  }, null, 2);
 
   return (
-    <div className='space-y-6'>
-      <div>
-        <h1 className='text-2xl font-bold'>Интеграция с Tilda</h1>
-        <p className='text-muted-foreground'>
-          Настройка виджета бонусной системы для сайта на Tilda
-        </p>
-      </div>
-
-      {/* Информация о проекте */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Информация о проекте</CardTitle>
-        </CardHeader>
-        <CardContent className='space-y-3'>
-          <div className='flex items-center justify-between'>
-            <span className='font-medium'>Проект:</span>
-            <Badge variant='secondary'>{project.name}</Badge>
-          </div>
-          <div className='flex items-center justify-between'>
-            <span className='font-medium'>Процент бонусов:</span>
-            <Badge>{project.bonusPercentage}%</Badge>
-          </div>
-          <div className='flex items-center justify-between'>
-            <span className='font-medium'>Пользователей:</span>
-            <Badge variant='outline'>{project._count?.users || 0}</Badge>
-          </div>
-          <div className='flex items-center justify-between'>
-            <span className='font-medium'>Статус подключения сайта:</span>
-            {status?.connected ? (
-              <Badge className='bg-green-600 text-white hover:bg-green-700'>
-                Подключен
-              </Badge>
-            ) : (
-              <Badge className='bg-red-600 text-white hover:bg-red-700'>
-                Нет событий
-              </Badge>
-            )}
-          </div>
-          {status?.lastSuccessAt && (
-            <div className='text-muted-foreground text-xs'>
-              Последний успешный webhook:{' '}
-              {new Date(status.lastSuccessAt).toLocaleString()}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Настройки виджета */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Настройки виджета</CardTitle>
-          <CardDescription>
-            Настройте параметры виджета бонусной системы для вашего сайта
-          </CardDescription>
-        </CardHeader>
-        <CardContent className='space-y-4'>
-          <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-            <div>
-              <Label htmlFor='tilda-form-id'>ID формы Tilda</Label>
-              <Input
-                id='tilda-form-id'
-                placeholder='form123456789'
-                value={config.tildaFormId}
-                onChange={(e) =>
-                  setConfig({ ...config, tildaFormId: e.target.value })
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor='tilda-page-id'>ID страницы Tilda</Label>
-              <Input
-                id='tilda-page-id'
-                placeholder='page123456789'
-                value={config.tildaPageId}
-                onChange={(e) =>
-                  setConfig({ ...config, tildaPageId: e.target.value })
-                }
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor='bonus-text'>Текст кнопки применения бонусов</Label>
-            <Input
-              id='bonus-text'
-              value={config.bonusDisplayText}
-              onChange={(e) =>
-                setConfig({ ...config, bonusDisplayText: e.target.value })
-              }
-            />
-          </div>
-
-          <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-            <div>
-              <Label htmlFor='success-message'>Сообщение об успехе</Label>
-              <Input
-                id='success-message'
-                value={config.successMessage}
-                onChange={(e) =>
-                  setConfig({ ...config, successMessage: e.target.value })
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor='error-message'>Сообщение об ошибке</Label>
-              <Input
-                id='error-message'
-                value={config.errorMessage}
-                onChange={(e) =>
-                  setConfig({ ...config, errorMessage: e.target.value })
-                }
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* API endpoints */}
-      <Card>
-        <CardHeader>
-          <CardTitle>API Эндпоинты</CardTitle>
-          <CardDescription>
-            Точки интеграции с внешними системами
-          </CardDescription>
-        </CardHeader>
-        <CardContent className='space-y-4'>
-          <div>
-            <Label>Webhook URL (для автоматического начисления бонусов)</Label>
-            <div className='mt-1 flex gap-2'>
-              <Input
-                value={webhookUrl}
-                readOnly
-                onFocus={(e) => e.currentTarget.select()}
-              />
-              <Button
-                variant='outline'
-                size='icon'
-                onClick={() => copyToClipboard(webhookUrl, 'Webhook URL')}
-              >
-                <Copy className='h-4 w-4' />
-              </Button>
-            </div>
-          </div>
-
-          <div>
-            <Label>API для проверки баланса</Label>
-            <div className='mt-1 flex gap-2'>
-              <Input value={balanceApiUrl} readOnly />
-              <Button
-                variant='outline'
-                size='icon'
-                onClick={() =>
-                  copyToClipboard(balanceApiUrl, 'Balance API URL')
-                }
-              >
-                <Copy className='h-4 w-4' />
-              </Button>
-            </div>
-          </div>
-
-          <div>
-            <Label>API для списания бонусов</Label>
-            <div className='mt-1 flex gap-2'>
-              <Input value={spendApiUrl} readOnly />
-              <Button
-                variant='outline'
-                size='icon'
-                onClick={() => copyToClipboard(spendApiUrl, 'Spend API URL')}
-              >
-                <Copy className='h-4 w-4' />
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Последние вебхук события */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Последние события вебхука</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {logs.length === 0 ? (
-            <p className='text-muted-foreground text-sm'>
-              Событий пока нет. Tilda при подключении отправляет тестовый POST
-              <code className='mx-1 rounded bg-gray-100 px-1 py-0.5'>
-                test=test
-              </code>
-              — выполните тест, чтобы увидеть статус.
-            </p>
-          ) : (
-            <div className='space-y-2'>
-              {logs.map((l) => {
-                const pretty = (v: unknown, limit = 20000) => {
-                  try {
-                    const s =
-                      typeof v === 'string' ? v : JSON.stringify(v, null, 2);
-                    return s.length > limit
-                      ? s.slice(0, limit) + '\n… (truncated)'
-                      : s;
-                  } catch {
-                    return String(v);
-                  }
-                };
-                return (
-                  <details key={l.id} className='rounded border p-2 text-sm'>
-                    <summary className='flex cursor-pointer items-center justify-between'>
-                      <span className='truncate'>
-                        {new Date(l.createdAt).toLocaleString()} — {l.method}{' '}
-                        {l.endpoint}
-                      </span>
-                      <span
-                        className={
-                          l.success ? 'text-green-600' : 'text-red-600'
-                        }
-                      >
-                        {l.success ? '200 OK' : l.status}
-                      </span>
-                    </summary>
-                    <div className='mt-2 grid gap-2 md:grid-cols-2'>
-                      <div className='rounded bg-gray-50 p-2'>
-                        <div className='mb-1 text-xs font-semibold'>
-                          Request
-                        </div>
-                        <pre className='text-xs break-all whitespace-pre-wrap'>
-                          {pretty({
-                            method: l.method,
-                            url: l.endpoint,
-                            headers: l.headers,
-                            body: l.body
-                          })}
-                        </pre>
-                      </div>
-                      <div className='rounded bg-gray-50 p-2'>
-                        <div className='mb-1 text-xs font-semibold'>
-                          Response
-                        </div>
-                        <pre className='text-xs break-all whitespace-pre-wrap'>
-                          {pretty({
-                            status: l.status,
-                            success: l.success,
-                            body: l.response
-                          })}
-                        </pre>
-                      </div>
-                    </div>
-                  </details>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Быстрое подключение виджета (по Tilda) */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Быстрое подключение виджета</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Alert className='mb-3'>
-            <AlertDescription>
-              В Tilda подключите приемщик «Webhook» (Настройки сайта → Формы →
-              Webhook). Сразу после подключения Tilda отправит POST с данными
-              <code className='mx-1 rounded bg-gray-100 px-1 py-0.5'>
-                test=test
-              </code>
-              и ожидает ответ <b>200 OK</b> за &lt;5 секунд.
-            </AlertDescription>
-          </Alert>
-          <p className='text-muted-foreground mb-2 text-sm'>
-            Добавьте одну строку перед закрывающим тегом{' '}
-            <code>&lt;/body&gt;</code> на вашем сайте:
+    <PageContainer scrollable>
+      <div className="space-y-6">
+        {/* Заголовок */}
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Интеграция с Tilda</h1>
+          <p className="text-muted-foreground mt-2">
+            Настройте интеграцию бонусной системы с вашим сайтом на Tilda
           </p>
-          <div className='rounded-lg bg-gray-50 p-3'>
-            <code className='text-xs break-all'>
-              {`<script src="${baseUrl}/tilda-bonus-widget.js?projectId=${project.id}&apiUrl=${baseUrl}"></script>`}
-            </code>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+
+        {/* Статус интеграции */}
+        <Alert>
+          <CheckCircle2 className="h-4 w-4" />
+          <AlertTitle>Готово к интеграции</AlertTitle>
+          <AlertDescription>
+            Следуйте инструкциям ниже для подключения бонусной системы к вашему сайту
+          </AlertDescription>
+        </Alert>
+
+        {/* Табы с инструкциями */}
+        <Tabs defaultValue="widget" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="widget">
+              <Code className="mr-2 h-4 w-4" />
+              Виджет
+            </TabsTrigger>
+            <TabsTrigger value="webhook">
+              <Webhook className="mr-2 h-4 w-4" />
+              Webhook
+            </TabsTrigger>
+            <TabsTrigger value="settings">
+              <Settings className="mr-2 h-4 w-4" />
+              Настройки
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Виджет */}
+          <TabsContent value="widget" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Шаг 1: Установка виджета</CardTitle>
+                <CardDescription>
+                  Вставьте этот код в настройки вашего сайта на Tilda
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Где вставить код:</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Настройки сайта → Дополнительно → Вставить код → В футер (перед &lt;/body&gt;)
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Код для вставки:</Label>
+                  <div className="relative">
+                    <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
+                      <code>{widgetCode}</code>
+                    </pre>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="absolute top-2 right-2"
+                      onClick={() => copyToClipboard(widgetCode, 'widget')}
+                    >
+                      {copied === 'widget' ? (
+                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Что делает виджет:</AlertTitle>
+                  <AlertDescription>
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      <li>Показывает баланс бонусов в корзине</li>
+                      <li>Позволяет применить бонусы к заказу</li>
+                      <li>Автоматически определяет пользователя по email/телефону</li>
+                      <li>Работает со всеми типами корзин Tilda</li>
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Webhook */}
+          <TabsContent value="webhook" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Шаг 2: Настройка Webhook</CardTitle>
+                <CardDescription>
+                  Настройте автоматическую отправку данных о заказах
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Webhook URL:</Label>
+                  <div className="flex space-x-2">
+                    <Input 
+                      value={webhookUrl} 
+                      readOnly 
+                      className="font-mono text-sm"
+                    />
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      onClick={() => copyToClipboard(webhookUrl, 'webhook')}
+                    >
+                      {copied === 'webhook' ? (
+                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Где настроить в Tilda:</Label>
+                  <ol className="list-decimal list-inside text-sm text-muted-foreground space-y-1">
+                    <li>Перейдите в настройки сайта</li>
+                    <li>Найдите раздел "Уведомления и интеграции"</li>
+                    <li>Добавьте новый webhook</li>
+                    <li>Вставьте URL и выберите тип "Заказы"</li>
+                    <li>Сохраните настройки</li>
+                  </ol>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label>Тестовые данные для проверки:</Label>
+                  <div className="relative">
+                    <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
+                      <code>{testWebhookData}</code>
+                    </pre>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="absolute top-2 right-2"
+                      onClick={() => copyToClipboard(testWebhookData, 'test')}
+                    >
+                      {copied === 'test' ? (
+                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Используйте эти данные для тестирования webhook через Postman или curl
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Настройки */}
+          <TabsContent value="settings" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Настройки интеграции</CardTitle>
+                <CardDescription>
+                  Дополнительные параметры для тонкой настройки
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="bonus-rate">Курс бонусов</Label>
+                    <Input 
+                      id="bonus-rate" 
+                      type="number" 
+                      defaultValue="1" 
+                      min="0.1" 
+                      step="0.1"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Сколько рублей равен 1 бонус
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="min-order">Минимальная сумма заказа</Label>
+                    <Input 
+                      id="min-order" 
+                      type="number" 
+                      defaultValue="100" 
+                      min="0"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Минимальная сумма для применения бонусов
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="max-percent">Максимальный процент оплаты бонусами</Label>
+                    <Input 
+                      id="max-percent" 
+                      type="number" 
+                      defaultValue="50" 
+                      min="1" 
+                      max="100"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Какую часть заказа можно оплатить бонусами (в %)
+                    </p>
+                  </div>
+                </div>
+
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Примечание</AlertTitle>
+                  <AlertDescription>
+                    Эти настройки применяются только к новым заказам. 
+                    Изменения вступят в силу после обновления кода виджета на сайте.
+                  </AlertDescription>
+                </Alert>
+
+                <div className="flex justify-end">
+                  <Button>Сохранить настройки</Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Дополнительная информация */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Нужна помощь?</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <h4 className="font-medium mb-2">📚 Документация</h4>
+                <p className="text-sm text-muted-foreground">
+                  Подробное руководство по интеграции с примерами кода
+                </p>
+                <Button variant="link" className="px-0 mt-2">
+                  Читать документацию →
+                </Button>
+              </div>
+              
+              <div>
+                <h4 className="font-medium mb-2">💬 Техподдержка</h4>
+                <p className="text-sm text-muted-foreground">
+                  Свяжитесь с нами, если возникли вопросы
+                </p>
+                <Button variant="link" className="px-0 mt-2">
+                  Написать в поддержку →
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </PageContainer>
   );
 }
