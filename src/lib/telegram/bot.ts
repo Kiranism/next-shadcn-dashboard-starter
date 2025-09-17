@@ -201,7 +201,12 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
         );
       }
     } catch (error) {
-      // TODO: логгер
+      logger.error('Ошибка привязки аккаунта по телефону', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        projectId: ctx.session.projectId,
+        fromId: ctx.from?.id,
+        component: 'telegram-bot'
+      });
       await ctx.reply(
         '❌ Произошла ошибка при привязке аккаунта. Попробуйте позже.',
         {
@@ -253,7 +258,12 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
           );
         }
       } catch (error) {
-        // TODO: логгер
+        logger.error('Ошибка привязки аккаунта по email', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          projectId: ctx.session.projectId,
+          fromId: ctx.from?.id,
+          component: 'telegram-bot'
+        });
         await ctx.reply(
           '❌ Произошла ошибка при привязке аккаунта. Попробуйте позже.'
         );
@@ -290,7 +300,12 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
           `⏰ Истекает в ближайшие 30 дней: ${balance.expiringSoon}₽`
       );
     } catch (error) {
-      // TODO: логгер
+      logger.error('Ошибка при получении баланса пользователя', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        projectId,
+        fromId: ctx.from?.id,
+        component: 'telegram-bot'
+      });
       await ctx.reply(
         '❌ Произошла ошибка при получении баланса. Попробуйте позже.'
       );
@@ -335,7 +350,12 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
 
       await ctx.reply(message);
     } catch (error) {
-      // TODO: логгер
+      logger.error('Ошибка при получении истории операций', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        projectId,
+        fromId: ctx.from?.id,
+        component: 'telegram-bot'
+      });
       await ctx.reply(
         '❌ Произошла ошибка при получении истории. Попробуйте позже.'
       );
@@ -560,7 +580,12 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
         }
       );
     } catch (error) {
-      // TODO: логгер
+      logger.error('Ошибка при получении баланса (callback check_balance)', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        projectId,
+        fromId: ctx.from?.id,
+        component: 'telegram-bot'
+      });
       await ctx.editMessageText('❌ Произошла ошибка при получении баланса.');
     }
   });
@@ -931,8 +956,12 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
   });
 
   // Обработка ошибок
-  bot.catch(() => {
-    // TODO: логгер
+  bot.catch((err) => {
+    logger.error('Необработанная ошибка Telegram бота', {
+      error: err instanceof Error ? err.message : 'Unknown error',
+      projectId,
+      component: 'telegram-bot'
+    });
   });
 
   return bot;
