@@ -4,9 +4,7 @@
 
 import { faker } from '@faker-js/faker';
 import { matchSorter } from 'match-sorter'; // For filtering
-
-export const delay = (ms: number) =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+import { setTimeout } from 'node:timers/promises';
 
 // Define the shape of Product data
 export type Product = {
@@ -100,7 +98,7 @@ export const fakeProducts = {
     categories?: string;
     search?: string;
   }) {
-    await delay(1000);
+    await setTimeout(1000);
     const categoriesArray = categories ? categories.split('.') : [];
     const allProducts = await this.getAll({
       categories: categoriesArray,
@@ -129,7 +127,7 @@ export const fakeProducts = {
 
   // Get a specific product by its ID
   async getProductById(id: number) {
-    await delay(1000); // Simulate a delay
+    await setTimeout(1000); // Simulate a delay
 
     // Find the product by its ID
     const product = this.records.find((product) => product.id === id);
