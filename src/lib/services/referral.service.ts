@@ -446,7 +446,7 @@ export class ReferralService {
           email: string | null;
           phone: string | null;
           _count: { referrals: number };
-          transactions: Array<{ amount: any }>;
+          transactions: Array<{ amount: string | number | bigint | null }>;
         }) => ({
           id: user.id,
           firstName: user.firstName,
@@ -455,7 +455,7 @@ export class ReferralService {
           phone: user.phone,
           referralCount: user._count.referrals,
           totalBonus: user.transactions.reduce(
-            (sum: number, t: { amount: any }) => sum + Number(t.amount),
+            (sum: number, t) => sum + Number(t.amount),
             0
           )
         })

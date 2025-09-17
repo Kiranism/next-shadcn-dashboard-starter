@@ -28,7 +28,7 @@ export class BonusLevelService {
         include: { project: true }
       });
 
-      return levels.map((level: any) => ({
+      return levels.map((level) => ({
         ...level,
         minAmount: Number(level.minAmount),
         maxAmount: level.maxAmount ? Number(level.maxAmount) : null,

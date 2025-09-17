@@ -99,7 +99,7 @@ function AuthForm() {
             name='email'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel>Эл. почта</FormLabel>
                 <FormControl>
                   <Input
                     type='email'

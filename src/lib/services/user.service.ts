@@ -131,7 +131,7 @@ export class UserService {
       }
     }
 
-    const orConditions: any[] = [];
+    const orConditions: Array<{ email?: string; phone?: string }> = [];
     if (email) orConditions.push({ email });
     for (const p of phoneCandidates) {
       orConditions.push({ phone: p });
@@ -187,11 +187,11 @@ export class UserService {
             take: 50
           });
 
-          user = possible.find((u: any) => {
+          user = possible.find((u) => {
             const nd = onlyDigits(String(u.phone || ''));
             // Сравниваем по последним 10 цифрам
             return nd.slice(-10) === last10;
-          }) as any;
+          });
 
           if (process.env.NODE_ENV !== 'production') {
             logger.info('Фолбэк-поиск по последним цифрам телефона', {
@@ -379,7 +379,7 @@ export class UserService {
     }
 
     // Считаем уровень на основе уже загруженных уровней (без доп. запросов)
-    const usersWithBonuses = users.map((user: any) => {
+    const usersWithBonuses = users.map((user) => {
       const activeBonuses = activeBonusMap.get(user.id) ?? 0;
       const totalEarned = earnedMap.get(user.id) ?? 0;
       const totalSpent = spentMap.get(user.id) ?? 0;
@@ -432,7 +432,7 @@ export class UserService {
     if (!user) return null;
 
     const activeBonuses = user.bonuses.reduce(
-      (sum: number, bonus: { amount: any }) => sum + Number(bonus.amount),
+      (sum: number, bonus) => sum + Number(bonus.amount),
       0
     );
 
@@ -559,7 +559,7 @@ export class BonusService {
       });
 
       const totalAvailable = availableBonuses.reduce(
-        (sum: number, bonus: any) => sum + Number(bonus.amount),
+        (sum: number, bonus) => sum + Number(bonus.amount),
         0
       );
 

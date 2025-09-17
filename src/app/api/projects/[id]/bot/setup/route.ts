@@ -12,8 +12,9 @@ import { botManager } from '@/lib/telegram/bot-manager';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { BotSettings } from '@/types/bonus';
+import { withApiRateLimit } from '@/lib';
 
-export async function POST(
+async function handlePOST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -102,3 +103,6 @@ export async function POST(
     );
   }
 }
+
+// Применяем rate limiting
+export const POST = withApiRateLimit(handlePOST);

@@ -1,542 +1,509 @@
 /**
- * Tilda Bonus Widget
- * Виджет для интеграции бонусной системы с сайтами Tilda
- * Версия: 1.0.0
+ * @file: tilda-bonus-widget.js
+ * @description: Готовый виджет для интеграции бонусной системы с Tilda
+ * @project: SaaS Bonus System
+ * @version: 1.0.0
+ * @author: AI Assistant + User
  */
 
-(function () {
+(function() {
   'use strict';
 
-  // Конфигурация по умолчанию
-  const DEFAULT_CONFIG = {
-    projectId: '',
-    apiUrl: '',
-    buttonText: 'Применить бонусы',
-    buttonClass: 'bonus-apply-btn',
-    minBonusAmount: 1,
-    discountPercentage: 1, // 1 бонус = 1 рубль скидки
-    currency: '₽',
-    messages: {
-      loading: 'Загрузка...',
-      noUser: 'Введите email для проверки бонусов',
-      noBonuses: 'У вас нет доступных бонусов',
-      bonusesAvailable: 'Доступно: {amount} бонусов',
-      bonusesApplied: 'Применено {amount} бонусов',
-      error: 'Ошибка при проверке бонусов',
-      enterAmount: 'Введите сумму бонусов для списания',
-      insufficientBonuses: 'Недостаточно бонусов на счету'
-    }
-  };
+  // Глобальный объект для виджета
+  window.TildaBonusWidget = {
+    // Конфигурация по умолчанию
+    config: {
+      projectId: null,
+      apiUrl: 'https://bonus.example.com',
+      bonusToRuble: 1,
+      minOrderAmount: 100,
+      debug: false
+    },
 
-  // Основной класс виджета
-  class TildaBonusWidget {
-    constructor(config = {}) {
-      this.config = { ...DEFAULT_CONFIG, ...config };
-      this.userBonuses = 0;
-      this.appliedBonuses = 0;
-      this.userEmail = '';
+    // Состояние
+    state: {
+      userEmail: null,
+      userPhone: null,
+      bonusBalance: 0,
+      appliedBonuses: 0,
+      initialized: false
+    },
 
-      if (!this.config.projectId || !this.config.apiUrl) {
-        console.error(
-          'TildaBonusWidget: Необходимо указать projectId и apiUrl'
-        );
+    // Инициализация виджета
+    init: function(userConfig) {
+      // Объединяем конфигурацию
+      this.config = Object.assign({}, this.config, userConfig);
+
+      // Проверяем обязательные параметры
+      if (!this.config.projectId) {
+        console.error('[TildaBonusWidget] Ошибка: projectId не указан');
         return;
       }
 
-      this.init();
-    }
+      // Инициализируем UI
+      this.initUI();
+      
+      // Отслеживаем изменения в корзине
+      this.observeCart();
+      
+      // Отслеживаем ввод email/телефона
+      this.observeUserInput();
 
-    init() {
-      // Ждем загрузки DOM
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => this.initWidget());
-      } else {
-        this.initWidget();
+      this.state.initialized = true;
+      this.log('Виджет инициализирован', this.config);
+    },
+
+    // Логирование (только в debug режиме)
+    log: function() {
+      if (this.config.debug) {
+        console.log('[TildaBonusWidget]', ...arguments);
       }
+    },
 
-      // Для SPA режима Tilda
-      document.addEventListener('DOMContentLoaded', () => this.initWidget());
-      window.addEventListener('load', () => this.initWidget());
-    }
-
-    initWidget() {
-      console.log('🎁 Инициализация Tilda Bonus Widget');
-
-      // Поиск email полей
-      this.attachEmailListeners();
-
-      // Создание кнопки применения бонусов
-      this.createBonusButton();
-
-      // Восстановление email из localStorage
-      const savedEmail = localStorage.getItem('tilda_user_email');
-      if (savedEmail) {
-        this.userEmail = savedEmail;
-        this.loadUserBonuses();
-      }
-    }
-
-    attachEmailListeners() {
-      const emailInputs = document.querySelectorAll(
-        'input[name="email"], input[type="email"], input[name="Email"]'
-      );
-
-      emailInputs.forEach((input) => {
-        input.addEventListener('blur', (e) => {
-          const email = e.target.value.trim();
-          if (email && this.isValidEmail(email)) {
-            this.userEmail = email;
-            localStorage.setItem('tilda_user_email', email);
-            this.loadUserBonuses();
-          }
-        });
-      });
-
-      console.log(`📧 Найдено ${emailInputs.length} email полей`);
-    }
-
-    isValidEmail(email) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      return emailRegex.test(email);
-    }
-
-    async loadUserBonuses() {
-      if (!this.userEmail) return;
-
-      try {
-        console.log(`🔍 Проверка бонусов для ${this.userEmail}`);
-
-        const response = await fetch(
-          `${this.config.apiUrl}/api/projects/${this.config.projectId}/users/balance?email=${encodeURIComponent(this.userEmail)}`,
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          this.userBonuses = parseInt(data.activeBonuses) || 0;
-          console.log(`💰 Найдено бонусов: ${this.userBonuses}`);
-          this.updateBonusButton();
-        } else {
-          console.log('👤 Пользователь не найден или нет бонусов');
-          this.userBonuses = 0;
-          this.updateBonusButton();
+    // Создание UI элементов
+    initUI: function() {
+      // Стили для виджета
+      const style = document.createElement('style');
+      style.textContent = `
+        .bonus-widget-container {
+          background: #f8f9fa;
+          border: 1px solid #dee2e6;
+          border-radius: 8px;
+          padding: 16px;
+          margin: 16px 0;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
-      } catch (error) {
-        console.error('❌ Ошибка загрузки бонусов:', error);
-        this.userBonuses = 0;
-        this.updateBonusButton();
+        
+        .bonus-widget-title {
+          font-size: 18px;
+          font-weight: 600;
+          color: #212529;
+          margin-bottom: 12px;
+        }
+        
+        .bonus-balance {
+          font-size: 16px;
+          color: #495057;
+          margin-bottom: 16px;
+        }
+        
+        .bonus-balance-amount {
+          font-weight: 600;
+          color: #28a745;
+        }
+        
+        .bonus-input-group {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 12px;
+        }
+        
+        .bonus-input {
+          flex: 1;
+          padding: 8px 12px;
+          border: 1px solid #ced4da;
+          border-radius: 4px;
+          font-size: 14px;
+        }
+        
+        .bonus-button {
+          padding: 8px 16px;
+          background: #007bff;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: 500;
+          transition: background 0.2s;
+        }
+        
+        .bonus-button:hover {
+          background: #0056b3;
+        }
+        
+        .bonus-button:disabled {
+          background: #6c757d;
+          cursor: not-allowed;
+        }
+        
+        .bonus-applied {
+          padding: 8px 12px;
+          background: #d4edda;
+          border: 1px solid #c3e6cb;
+          border-radius: 4px;
+          color: #155724;
+          font-size: 14px;
+        }
+        
+        .bonus-error {
+          padding: 8px 12px;
+          background: #f8d7da;
+          border: 1px solid #f5c6cb;
+          border-radius: 4px;
+          color: #721c24;
+          font-size: 14px;
+          margin-top: 8px;
+        }
+        
+        .bonus-loading {
+          display: inline-block;
+          width: 14px;
+          height: 14px;
+          border: 2px solid #f3f3f3;
+          border-top: 2px solid #007bff;
+          border-radius: 50%;
+          animation: bonus-spin 1s linear infinite;
+          margin-left: 8px;
+        }
+        
+        @keyframes bonus-spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `;
+      document.head.appendChild(style);
+
+      // Создаем контейнер для виджета
+      this.createWidget();
+    },
+
+    // Создание виджета
+    createWidget: function() {
+      const container = document.createElement('div');
+      container.className = 'bonus-widget-container';
+      container.innerHTML = `
+        <div class="bonus-widget-title">💰 Бонусная программа</div>
+        <div class="bonus-balance" style="display: none;">
+          Ваш баланс: <span class="bonus-balance-amount">0</span> бонусов
+        </div>
+        <div class="bonus-input-group">
+          <input type="number" 
+                 class="bonus-input" 
+                 id="bonus-amount-input" 
+                 placeholder="Количество бонусов" 
+                 min="0"
+                 style="display: none;">
+          <button class="bonus-button" 
+                  id="apply-bonus-button" 
+                  onclick="TildaBonusWidget.applyBonuses()"
+                  style="display: none;">
+            Применить бонусы
+          </button>
+        </div>
+        <div id="bonus-status"></div>
+      `;
+
+      // Находим место для вставки (перед кнопкой оформления заказа)
+      const insertPoint = this.findInsertPoint();
+      if (insertPoint) {
+        insertPoint.parentNode.insertBefore(container, insertPoint);
+        this.log('Виджет добавлен на страницу');
+      } else {
+        this.log('Не удалось найти место для виджета');
       }
-    }
+    },
 
-    createBonusButton() {
-      // Удаляем существующую кнопку если есть
-      const existingBtn = document.querySelector('.tilda-bonus-widget');
-      if (existingBtn) {
-        existingBtn.remove();
-      }
-
-      // Ищем место для вставки кнопки (рядом с формой заказа)
-      const targetContainer = this.findBonusButtonContainer();
-      if (!targetContainer) {
-        console.warn('⚠️ Не найден контейнер для кнопки бонусов');
-        return;
-      }
-
-      // Создаем кнопку
-      const bonusButton = document.createElement('div');
-      bonusButton.className = 'tilda-bonus-widget';
-      bonusButton.innerHTML = this.getBonusButtonHTML();
-
-      // Стили кнопки
-      this.addBonusButtonStyles();
-
-      // Вставляем кнопку
-      targetContainer.appendChild(bonusButton);
-
-      // Обработчик клика
-      const applyBtn = bonusButton.querySelector('.bonus-apply-btn');
-      if (applyBtn) {
-        applyBtn.addEventListener('click', () => this.handleBonusApplication());
-      }
-
-      console.log('🎨 Кнопка бонусов создана');
-    }
-
-    findBonusButtonContainer() {
-      // Ищем различные варианты контейнеров в Tilda
+    // Поиск места для вставки виджета
+    findInsertPoint: function() {
+      // Ищем блок с итоговой суммой или кнопку оформления
       const selectors = [
-        '.t-form__submit',
+        '.t706__cartwin-totalamount',
         '.t706__cartwin-bottom',
-        '.t778__wrapper',
-        '.t-container',
-        '.t-form',
-        '[data-form-type]',
-        '.t-rec'
+        '.t-form__submit',
+        '[href*="tilda.cc/rec"]'
       ];
 
       for (const selector of selectors) {
         const element = document.querySelector(selector);
         if (element) {
-          return element.parentElement || element;
+          return element;
         }
       }
 
-      // Возвращаем body как последний вариант
-      return document.body;
-    }
+      return null;
+    },
 
-    getBonusButtonHTML() {
-      if (!this.userEmail) {
-        return `
-          <div class="bonus-widget-container">
-            <div class="bonus-info">
-              <span class="bonus-icon">🎁</span>
-              <span class="bonus-text">${this.config.messages.noUser}</span>
-            </div>
-          </div>
-        `;
+    // Наблюдение за корзиной
+    observeCart: function() {
+      // Отслеживаем открытие корзины
+      const observer = new MutationObserver((mutations) => {
+        const cartWindow = document.querySelector('.t706__cartwin');
+        if (cartWindow && cartWindow.style.display !== 'none') {
+          this.onCartOpen();
+        }
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['style']
+      });
+    },
+
+    // Обработка открытия корзины
+    onCartOpen: function() {
+      this.log('Корзина открыта');
+      
+      // Получаем email/телефон пользователя
+      const userContact = this.getUserContact();
+      if (userContact) {
+        this.loadUserBalance(userContact);
+      }
+    },
+
+    // Наблюдение за вводом пользователя
+    observeUserInput: function() {
+      // Отслеживаем изменения в полях email и телефона
+      document.addEventListener('input', (e) => {
+        if (e.target.type === 'email' || e.target.name === 'email' ||
+            e.target.type === 'tel' || e.target.name === 'phone') {
+          this.onUserInputChange(e.target);
+        }
+      });
+    },
+
+    // Обработка изменения данных пользователя
+    onUserInputChange: function(input) {
+      const value = input.value.trim();
+      if (!value) return;
+
+      if (input.type === 'email' || input.name === 'email') {
+        this.state.userEmail = value;
+        localStorage.setItem('tilda_user_email', value);
+      } else if (input.type === 'tel' || input.name === 'phone') {
+        this.state.userPhone = value;
+        localStorage.setItem('tilda_user_phone', value);
       }
 
-      if (this.userBonuses === 0) {
-        return `
-          <div class="bonus-widget-container">
-            <div class="bonus-info">
-              <span class="bonus-icon">💰</span>
-              <span class="bonus-text">${this.config.messages.noBonuses}</span>
-            </div>
-          </div>
-        `;
+      // Загружаем баланс
+      this.loadUserBalance({ email: this.state.userEmail, phone: this.state.userPhone });
+    },
+
+    // Получение контактов пользователя
+    getUserContact: function() {
+      // Из localStorage
+      const savedEmail = localStorage.getItem('tilda_user_email');
+      const savedPhone = localStorage.getItem('tilda_user_phone');
+      
+      if (savedEmail || savedPhone) {
+        return { email: savedEmail, phone: savedPhone };
       }
 
-      return `
-        <div class="bonus-widget-container">
-          <div class="bonus-info">
-            <span class="bonus-icon">💰</span>
-            <span class="bonus-text">${this.config.messages.bonusesAvailable.replace('{amount}', this.userBonuses)}</span>
-          </div>
-          ${
-            this.appliedBonuses === 0
-              ? `
-            <div class="bonus-input-group">
-              <input type="number" 
-                     class="bonus-amount-input" 
-                     placeholder="Сумма бонусов" 
-                     min="1" 
-                     max="${this.userBonuses}"
-                     value="">
-              <button class="bonus-apply-btn" type="button">
-                ${this.config.buttonText}
-              </button>
-            </div>
-          `
-              : `
-            <div class="bonus-applied">
-              <span class="bonus-applied-text">
-                ${this.config.messages.bonusesApplied.replace('{amount}', this.appliedBonuses)}
-              </span>
-              <button class="bonus-cancel-btn" type="button">Отменить</button>
-            </div>
-          `
+      // Из полей формы
+      const emailField = document.querySelector('input[name="email"], input[type="email"]');
+      const phoneField = document.querySelector('input[name="phone"], input[type="tel"]');
+      
+      const email = emailField ? emailField.value : null;
+      const phone = phoneField ? phoneField.value : null;
+      
+      if (email || phone) {
+        return { email, phone };
+      }
+
+      return null;
+    },
+
+    // Загрузка баланса пользователя
+    loadUserBalance: async function(contact) {
+      if (!contact || (!contact.email && !contact.phone)) return;
+
+      try {
+        this.showLoading(true);
+        
+        const params = new URLSearchParams();
+        if (contact.email) params.append('email', contact.email);
+        if (contact.phone) params.append('phone', contact.phone);
+
+        const response = await fetch(
+          `${this.config.apiUrl}/api/projects/${this.config.projectId}/users/balance?${params}`,
+          {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
           }
-        </div>
-      `;
-    }
+        );
 
-    addBonusButtonStyles() {
-      if (document.querySelector('#tilda-bonus-styles')) return;
+        const data = await response.json();
+        
+        if (data.success) {
+          this.state.bonusBalance = data.balance || 0;
+          this.updateBalanceDisplay();
+          this.log('Баланс загружен:', this.state.bonusBalance);
+        }
+      } catch (error) {
+        this.log('Ошибка загрузки баланса:', error);
+      } finally {
+        this.showLoading(false);
+      }
+    },
 
-      const styles = document.createElement('style');
-      styles.id = 'tilda-bonus-styles';
-      styles.textContent = `
-        .tilda-bonus-widget {
-          margin: 15px 0;
-          font-family: Arial, sans-serif;
-        }
-        
-        .bonus-widget-container {
-          background: #f8f9fa;
-          border: 1px solid #e9ecef;
-          border-radius: 8px;
-          padding: 15px;
-          text-align: center;
-        }
-        
-        .bonus-info {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 10px;
-          gap: 8px;
-        }
-        
-        .bonus-icon {
-          font-size: 18px;
-        }
-        
-        .bonus-text {
-          font-size: 14px;
-          color: #333;
-          font-weight: 500;
-        }
-        
-        .bonus-input-group {
-          display: flex;
-          gap: 10px;
-          justify-content: center;
-          align-items: center;
-          flex-wrap: wrap;
-        }
-        
-        .bonus-amount-input {
-          padding: 8px 12px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          width: 120px;
-          font-size: 14px;
-          text-align: center;
-        }
-        
-        .bonus-apply-btn, .bonus-cancel-btn {
-          background: #007bff;
-          color: white;
-          border: none;
-          padding: 8px 16px;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 14px;
-          font-weight: 500;
-          transition: background-color 0.2s;
-        }
-        
-        .bonus-apply-btn:hover {
-          background: #0056b3;
-        }
-        
-        .bonus-cancel-btn {
-          background: #dc3545;
-          font-size: 12px;
-          padding: 6px 12px;
-        }
-        
-        .bonus-cancel-btn:hover {
-          background: #c82333;
-        }
-        
-        .bonus-applied {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          flex-wrap: wrap;
-        }
-        
-        .bonus-applied-text {
-          color: #28a745;
-          font-weight: 500;
-          font-size: 14px;
-        }
-        
-        @media (max-width: 480px) {
-          .bonus-input-group, .bonus-applied {
-            flex-direction: column;
-          }
-          
-          .bonus-amount-input {
-            width: 100%;
-            max-width: 200px;
-          }
-        }
-      `;
+    // Обновление отображения баланса
+    updateBalanceDisplay: function() {
+      const balanceElement = document.querySelector('.bonus-balance');
+      const balanceAmount = document.querySelector('.bonus-balance-amount');
+      const amountInput = document.getElementById('bonus-amount-input');
+      const applyButton = document.getElementById('apply-bonus-button');
 
-      document.head.appendChild(styles);
-    }
+      if (this.state.bonusBalance > 0) {
+        balanceElement.style.display = 'block';
+        balanceAmount.textContent = this.state.bonusBalance;
+        amountInput.style.display = 'block';
+        applyButton.style.display = 'block';
+        
+        // Устанавливаем максимум для input
+        const cartTotal = this.getCartTotal();
+        const maxBonuses = Math.min(this.state.bonusBalance, cartTotal);
+        amountInput.max = maxBonuses;
+        amountInput.placeholder = `Макс: ${maxBonuses} бонусов`;
+      } else {
+        balanceElement.style.display = 'none';
+        amountInput.style.display = 'none';
+        applyButton.style.display = 'none';
+      }
+    },
 
-    async handleBonusApplication() {
-      const amountInput = document.querySelector('.bonus-amount-input');
-      const amount = parseInt(amountInput?.value) || 0;
+    // Получение суммы корзины
+    getCartTotal: function() {
+      // Ищем элемент с общей суммой
+      const totalElement = document.querySelector('.t706__cartwin-totalamount-withoutdelivery, .t706__cartwin-totalamount');
+      if (totalElement) {
+        const totalText = totalElement.textContent || '';
+        const total = parseFloat(totalText.replace(/[^\d.,]/g, '').replace(',', '.'));
+        return isNaN(total) ? 0 : total;
+      }
+      return 0;
+    },
+
+    // Применение бонусов
+    applyBonuses: async function() {
+      const amountInput = document.getElementById('bonus-amount-input');
+      const amount = parseInt(amountInput.value) || 0;
 
       if (amount <= 0) {
-        alert(this.config.messages.enterAmount);
+        this.showError('Укажите количество бонусов');
         return;
       }
 
-      if (amount > this.userBonuses) {
-        alert(this.config.messages.insufficientBonuses);
+      if (amount > this.state.bonusBalance) {
+        this.showError('Недостаточно бонусов');
+        return;
+      }
+
+      const cartTotal = this.getCartTotal();
+      if (amount > cartTotal) {
+        this.showError(`Максимум можно использовать ${cartTotal} бонусов`);
         return;
       }
 
       try {
-        console.log(`💳 Применение ${amount} бонусов`);
-
-        const response = await fetch(
-          `${this.config.apiUrl}/api/projects/${this.config.projectId}/users/spend`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              email: this.userEmail,
-              amount: amount,
-              description: 'Списание через Tilda виджет'
-            })
-          }
-        );
-
-        if (response.ok) {
-          this.appliedBonuses = amount;
-          this.userBonuses -= amount;
-
-          // Применяем скидку в Tilda
-          this.applyDiscountToTilda(amount);
-
-          // Обновляем интерфейс
-          this.updateBonusButton();
-
-          console.log(`✅ Бонусы применены: ${amount}`);
-        } else {
-          const error = await response.text();
-          alert(this.config.messages.error + ': ' + error);
-        }
+        this.showLoading(true);
+        
+        // Сохраняем примененные бонусы
+        this.state.appliedBonuses = amount;
+        localStorage.setItem('tilda_applied_bonuses', amount);
+        
+        // Обновляем отображение
+        this.showSuccess(`Применено ${amount} бонусов (-${amount} ₽)`);
+        
+        // Добавляем скрытое поле с бонусами для отправки в webhook
+        this.addHiddenBonusField(amount);
+        
+        // Обновляем визуальное отображение суммы
+        this.updateCartVisualTotal(cartTotal - amount);
+        
       } catch (error) {
-        console.error('❌ Ошибка применения бонусов:', error);
-        alert(this.config.messages.error);
+        this.showError('Ошибка применения бонусов');
+        this.log('Ошибка:', error);
+      } finally {
+        this.showLoading(false);
       }
-    }
-
-    applyDiscountToTilda(bonusAmount) {
-      // Попытка интеграции с различными виджетами Tilda
-      const discountAmount = bonusAmount * this.config.discountPercentage;
-
-      // Для T706 - корзина
-      this.applyT706Discount(discountAmount);
-
-      // Для T778 - каталог
-      this.applyT778Discount(discountAmount);
-
-      // Общий метод через промокод
-      this.applyPromoCodeDiscount(discountAmount);
-
-      console.log(
-        `💰 Применена скидка: ${discountAmount}${this.config.currency}`
-      );
-    }
-
-    applyT706Discount(discountAmount) {
-      // Логика для виджета корзины T706
-      if (window.t706_cart) {
-        // Добавляем скидку в корзину
-        console.log('🛒 Применение скидки к T706');
-      }
-    }
-
-    applyT778Discount(discountAmount) {
-      // Логика для каталога T778
-      if (window.t778) {
-        console.log('📦 Применение скидки к T778');
-      }
-    }
-
-    applyPromoCodeDiscount(discountAmount) {
-      // Попытка автоматического ввода промокода
-      const promoInputs = document.querySelectorAll(
-        'input[name="promocode"], input[name="promo"], input[placeholder*="промокод"]'
-      );
-
-      promoInputs.forEach((input) => {
-        input.value = `BONUS${discountAmount}`;
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-      });
-    }
-
-    updateBonusButton() {
-      const widget = document.querySelector('.tilda-bonus-widget');
-      if (widget) {
-        widget.innerHTML = this.getBonusButtonHTML();
-
-        // Переподключаем обработчики
-        const applyBtn = widget.querySelector('.bonus-apply-btn');
-        const cancelBtn = widget.querySelector('.bonus-cancel-btn');
-
-        if (applyBtn) {
-          applyBtn.addEventListener('click', () =>
-            this.handleBonusApplication()
-          );
-        }
-
-        if (cancelBtn) {
-          cancelBtn.addEventListener('click', () =>
-            this.cancelBonusApplication()
-          );
-        }
-      }
-    }
-
-    cancelBonusApplication() {
-      this.appliedBonuses = 0;
-      this.updateBonusButton();
-
-      // Сбрасываем скидки в Tilda
-      this.resetTildaDiscount();
-
-      console.log('🔄 Скидка отменена');
-    }
-
-    resetTildaDiscount() {
-      // Сброс промокодов
-      const promoInputs = document.querySelectorAll(
-        'input[name="promocode"], input[name="promo"], input[placeholder*="промокод"]'
-      );
-
-      promoInputs.forEach((input) => {
-        input.value = '';
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-      });
-    }
-  }
-
-  // Глобальный объект для инициализации
-  window.TildaBonusWidget = {
-    init: function (config) {
-      return new TildaBonusWidget(config);
     },
 
-    // Версия виджета
-    version: '1.0.0',
+    // Добавление скрытого поля с бонусами
+    addHiddenBonusField: function(amount) {
+      // Удаляем старое поле если есть
+      const oldField = document.getElementById('applied_bonuses_field');
+      if (oldField) oldField.remove();
 
-    // Конфигурация по умолчанию
-    defaultConfig: DEFAULT_CONFIG
+      // Создаем новое скрытое поле
+      const hiddenField = document.createElement('input');
+      hiddenField.type = 'hidden';
+      hiddenField.id = 'applied_bonuses_field';
+      hiddenField.name = 'appliedBonuses';
+      hiddenField.value = amount;
+
+      // Добавляем в форму
+      const form = document.querySelector('.t-form, form');
+      if (form) {
+        form.appendChild(hiddenField);
+      }
+    },
+
+    // Обновление визуального отображения суммы
+    updateCartVisualTotal: function(newTotal) {
+      const totalElement = document.querySelector('.t706__cartwin-totalamount-withoutdelivery, .t706__cartwin-totalamount');
+      if (totalElement) {
+        // Сохраняем оригинальную сумму
+        if (!totalElement.dataset.originalAmount) {
+          totalElement.dataset.originalAmount = totalElement.textContent;
+        }
+        
+        // Обновляем отображение
+        totalElement.innerHTML = `
+          <s style="color: #999; font-size: 0.9em;">${totalElement.dataset.originalAmount}</s>
+          <br>
+          ${newTotal} ₽
+        `;
+      }
+    },
+
+    // Отображение загрузки
+    showLoading: function(show) {
+      const button = document.getElementById('apply-bonus-button');
+      if (button) {
+        button.disabled = show;
+        button.innerHTML = show ? 'Применение...<span class="bonus-loading"></span>' : 'Применить бонусы';
+      }
+    },
+
+    // Отображение успеха
+    showSuccess: function(message) {
+      const status = document.getElementById('bonus-status');
+      status.innerHTML = `<div class="bonus-applied">✓ ${message}</div>`;
+    },
+
+    // Отображение ошибки
+    showError: function(message) {
+      const status = document.getElementById('bonus-status');
+      status.innerHTML = `<div class="bonus-error">✗ ${message}</div>`;
+      
+      // Убираем через 3 секунды
+      setTimeout(() => {
+        status.innerHTML = '';
+      }, 3000);
+    },
+
+    // Сброс примененных бонусов
+    resetAppliedBonuses: function() {
+      this.state.appliedBonuses = 0;
+      localStorage.removeItem('tilda_applied_bonuses');
+      
+      const totalElement = document.querySelector('.t706__cartwin-totalamount-withoutdelivery, .t706__cartwin-totalamount');
+      if (totalElement && totalElement.dataset.originalAmount) {
+        totalElement.textContent = totalElement.dataset.originalAmount;
+      }
+      
+      const status = document.getElementById('bonus-status');
+      if (status) status.innerHTML = '';
+    }
   };
 
-  // Автоинициализация, если параметры переданы через src
-  try {
-    const currentScript =
-      document.currentScript ||
-      (function () {
-        const scripts = document.getElementsByTagName('script');
-        return scripts[scripts.length - 1];
-      })();
-
-    if (currentScript && currentScript.src) {
-      const url = new URL(currentScript.src);
-      const projectId = url.searchParams.get('projectId');
-      const apiUrl = url.searchParams.get('apiUrl');
-
-      if (projectId && apiUrl) {
-        // Стартуем виджет без дополнительных строк кода
-        new TildaBonusWidget({ projectId, apiUrl });
-      }
-    }
-  } catch (e) {
-    // no-op
+  // Автоматическая инициализация при загрузке
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      // Виджет будет инициализирован вручную через TildaBonusWidget.init()
+    });
   }
 
-  console.log('🎁 Tilda Bonus Widget загружен');
 })();

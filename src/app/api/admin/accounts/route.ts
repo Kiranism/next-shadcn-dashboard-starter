@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { requireAdmin } from '@/lib/auth'
+import { withApiRateLimit } from '@/lib'
 
 const updateSchema = z.object({
   id: z.string().cuid(),
@@ -17,7 +18,7 @@ const updateSchema = z.object({
   role: z.enum(['SUPERADMIN', 'ADMIN', 'MANAGER']).optional(),
 })
 
-export async function GET() {
+async function handleGET() {
   const admin = await requireAdmin(['SUPERADMIN'])
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -28,7 +29,7 @@ export async function GET() {
   return NextResponse.json({ items: accounts })
 }
 
-export async function PATCH(request: NextRequest) {
+async function handlePATCH(request: NextRequest) {
   const admin = await requireAdmin(['SUPERADMIN'])
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -48,3 +49,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'Bad Request', details: msg }, { status: 400 })
   }
 }
+
+// Применяем rate limiting
+export const GET = withApiRateLimit(handleGET)
+export const PATCH = withApiRateLimit(handlePATCH)
