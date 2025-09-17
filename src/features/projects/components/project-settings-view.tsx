@@ -369,6 +369,18 @@ export function ProjectSettingsView({ projectId }: ProjectSettingsViewProps) {
                   Уведомления
                 </Button>
               </Link>
+              <Link href={`/dashboard/projects/${projectId}/integration`}>
+                <Button variant='outline' className='mt-2 w-full justify-start'>
+                  <Code className='mr-2 h-4 w-4' />
+                  Интеграция на сайт
+                </Button>
+              </Link>
+              <Link href={`/dashboard/projects/${projectId}/logs`}>
+                <Button variant='outline' className='mt-2 w-full justify-start'>
+                  <Share2 className='mr-2 h-4 w-4' />
+                  Логи интеграции
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 

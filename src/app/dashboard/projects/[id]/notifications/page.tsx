@@ -22,5 +22,9 @@ export default async function NotificationsPage({
 }: NotificationsPageProps) {
   const { id } = await params;
 
-  return <NotificationsView projectId={id} />;
+  return (
+    <div className='p-6'>
+      <NotificationsView projectId={id} />
+    </div>
+  );
 }
