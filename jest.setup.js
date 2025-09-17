@@ -28,6 +28,7 @@ jest.mock('@/lib/db', () => ({
       findUnique: jest.fn(),
       findFirst: jest.fn(),
       findMany: jest.fn(),
+      count: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
@@ -42,7 +43,12 @@ jest.mock('@/lib/db', () => ({
     transaction: {
       findMany: jest.fn(),
       create: jest.fn(),
-      groupBy: jest.fn()
+      groupBy: jest.fn(),
+      count: jest.fn(),
+      aggregate: jest.fn()
+    },
+    adminAccount: {
+      findUnique: jest.fn()
     },
     webhookLog: {
       create: jest.fn()
