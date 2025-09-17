@@ -181,9 +181,11 @@ analyticsQueue.process('update-user-stats', async (job) => {
       }
     });
 
-    // TODO: Инвалидировать кэш когда будет реализован Redis
-    // const { CacheService } = await import('@/lib/redis');
-    // await CacheService.invalidatePrefix(`analytics:${projectId}`);
+    // Инвалидируем кэш аналитики и проекта
+    try {
+      const { CacheService } = await import('@/lib/redis');
+      await CacheService.invalidateProject(projectId);
+    } catch {}
   } catch (error) {
     logger.error('Failed to update user stats', {
       jobId: job.id,

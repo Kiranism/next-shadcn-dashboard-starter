@@ -30,6 +30,28 @@ Authorization: Bearer <jwt_token>
 - POST /api/auth/login — вход, устанавливает httpOnly cookie
 - POST /api/auth/logout — выход, очищает cookie
 - GET /api/auth/me — текущий админ
+- POST /api/auth/forgot-password — восстановление пароля (безопасный ответ)
+
+#### POST /api/auth/forgot-password
+
+Запрос на отправку инструкции по восстановлению пароля. Всегда возвращает успешный ответ, не раскрывая наличие аккаунта.
+
+Тело запроса:
+```json
+{
+  "email": "admin@example.com"
+}
+```
+
+Ответ (200 OK):
+```json
+{
+  "success": true,
+  "message": "Если такой email существует, мы отправили инструкцию по восстановлению"
+}
+```
+
+Ограничение частоты: применяется auth rate limit.
 
 ---
 

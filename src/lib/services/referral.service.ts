@@ -413,6 +413,46 @@ export class ReferralService {
 
       const totalReferralBonuses = Number(referralBonusesSum._sum.amount || 0);
 
+      // Метрики за последние 30 дней
+      const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const [periodReferralsCount, periodBonusSum] = await Promise.all([
+        db.user.count({
+          where: {
+            projectId,
+            referredBy: { not: null },
+            isActive: true,
+            registeredAt: { gte: since }
+          }
+        }),
+        db.transaction.aggregate({
+          where: {
+            user: { projectId },
+            isReferralBonus: true,
+            type: 'EARN',
+            createdAt: { gte: since }
+          },
+          _sum: { amount: true }
+        })
+      ]);
+
+      const periodBonusPaid = Number(periodBonusSum._sum.amount || 0);
+
+      // Средний чек по проекту за период — по EARN из покупок (MANUAL/REFERRAL не учитываем)
+      const earmsForAvg = await db.transaction.findMany({
+        where: {
+          user: { projectId },
+          type: 'EARN',
+          isReferralBonus: false,
+          createdAt: { gte: since }
+        },
+        select: { amount: true }
+      });
+      const averageOrderValue =
+        earmsForAvg.length > 0
+          ? earmsForAvg.reduce((s, t) => s + Number(t.amount), 0) /
+            earmsForAvg.length
+          : 0;
+
       // Топ рефереров
       const topReferrersRaw = await db.user.findMany({
         where: {
@@ -461,15 +501,29 @@ export class ReferralService {
         })
       );
 
+      // UTM источники (по пользователям с referredBy)
+      const utmGrouped = await db.user.groupBy({
+        by: ['utmSource', 'utmMedium', 'utmCampaign'],
+        where: { projectId, referredBy: { not: null } },
+        _count: { _all: true }
+      });
+
+      const utmSources = utmGrouped.map((g: any) => ({
+        utm_source: g.utmSource,
+        utm_medium: g.utmMedium,
+        utm_campaign: g.utmCampaign,
+        count: Number(g._count?._all || 0)
+      }));
+
       return {
         totalReferrals,
-        periodReferrals: 0, // TODO: вычислить за период
+        periodReferrals: periodReferralsCount,
         activeReferrers: activeReferrals,
         totalBonusPaid: totalReferralBonuses,
-        periodBonusPaid: 0, // TODO: вычислить за период
-        averageOrderValue: 0, // TODO: вычислить среднюю сумму заказа
+        periodBonusPaid,
+        averageOrderValue,
         topReferrers,
-        utmSources: [] // TODO: анализировать UTM источники
+        utmSources
       };
     } catch (error) {
       logger.error('Ошибка получения статистики реферальной программы', {
