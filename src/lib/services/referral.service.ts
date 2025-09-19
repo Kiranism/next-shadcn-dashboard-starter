@@ -478,28 +478,19 @@ export class ReferralService {
         take: 10
       });
 
-      const topReferrers = topReferrersRaw.map(
-        (user: {
-          id: string;
-          firstName: string | null;
-          lastName: string | null;
-          email: string | null;
-          phone: string | null;
-          _count: { referrals: number };
-          transactions: Array<{ amount: string | number | bigint | null }>;
-        }) => ({
-          id: user.id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          phone: user.phone,
-          referralCount: user._count.referrals,
-          totalBonus: user.transactions.reduce(
-            (sum: number, t) => sum + Number(t.amount),
-            0
-          )
-        })
-      );
+      const topReferrers = topReferrersRaw.map((user) => ({
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        phone: user.phone,
+        referralCount: user._count.referrals,
+        totalBonus: user.transactions.reduce(
+          (sum: number, t: { amount: unknown }) =>
+            sum + Number((t as any).amount),
+          0
+        )
+      }));
 
       // UTM источники (по пользователям с referredBy)
       const utmGrouped = await db.user.groupBy({

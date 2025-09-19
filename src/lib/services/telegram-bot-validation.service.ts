@@ -97,7 +97,10 @@ export class TelegramBotValidationService {
         }
       } catch (updateError) {
         // Если getUpdates не работает из-за webhook, это нормально
-        const errorMessage = updateError instanceof Error ? updateError.message : String(updateError);
+        const errorMessage =
+          updateError instanceof Error
+            ? updateError.message
+            : String(updateError);
         if (errorMessage.includes('webhook')) {
           canReceiveUpdates = true; // webhook активен, значит бот может получать обновления
         }
@@ -127,24 +130,19 @@ export class TelegramBotValidationService {
         }
       };
     } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
       logger.error('Bot status check failed', {
-        error: error.message,
+        error: errMsg,
         tokenPreview: token.substring(0, 10) + '...'
       });
 
       let status: 'INACTIVE' | 'ERROR' = 'ERROR';
       let message = 'Ошибка проверки статуса бота';
 
-      if (
-        error.message?.includes('401') ||
-        error.message?.includes('Unauthorized')
-      ) {
+      if (errMsg.includes('401') || errMsg.includes('Unauthorized')) {
         status = 'INACTIVE';
         message = 'Неверный токен бота';
-      } else if (
-        error.message?.includes('network') ||
-        error.message?.includes('timeout')
-      ) {
+      } else if (errMsg.includes('network') || errMsg.includes('timeout')) {
         message = 'Ошибка сети или превышено время ожидания';
       }
 
@@ -191,18 +189,19 @@ export class TelegramBotValidationService {
         }
       };
     } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
       logger.error('Bot token validation failed', {
-        error: error.message,
+        error: errMsg,
         tokenPreview: token.substring(0, 10) + '...'
       });
 
       let errorMessage = 'Ошибка валидации токена';
 
-      if (error.message?.includes('401')) {
+      if (errMsg.includes('401')) {
         errorMessage = 'Неверный токен бота. Проверьте токен в @BotFather';
-      } else if (error.message?.includes('network')) {
+      } else if (errMsg.includes('network')) {
         errorMessage = 'Ошибка сети. Попробуйте позже';
-      } else if (error.message?.includes('timeout')) {
+      } else if (errMsg.includes('timeout')) {
         errorMessage = 'Превышено время ожидания. Попробуйте позже';
       }
 
@@ -255,7 +254,11 @@ export class TelegramBotValidationService {
           }
         }
       } catch (updateError) {
-        if (updateError.message?.includes('webhook')) {
+        const updMsg =
+          updateError instanceof Error
+            ? updateError.message
+            : String(updateError);
+        if (updMsg.includes('webhook')) {
           canReceiveUpdates = true;
           webhookStatus = 'webhook active (polling disabled)';
         }
@@ -285,16 +288,18 @@ export class TelegramBotValidationService {
             botUsername: botInfo.username
           });
         } catch (sendError) {
+          const sendMsg =
+            sendError instanceof Error ? sendError.message : String(sendError);
           logger.warn('Failed to send test message', {
-            error: sendError.message,
+            error: sendMsg,
             chatId: testChatId
           });
 
-          if (sendError.message?.includes('chat not found')) {
+          if (sendMsg.includes('chat not found')) {
             throw new Error(
               'Чат не найден. Убедитесь, что ID чата указан корректно'
             );
-          } else if (sendError.message?.includes('Forbidden')) {
+          } else if (sendMsg.includes('Forbidden')) {
             throw new Error(
               'Бот не имеет прав для отправки сообщений в этот чат'
             );
@@ -317,15 +322,16 @@ export class TelegramBotValidationService {
         }
       };
     } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
       logger.error('Bot test failed', {
-        error: error.message,
+        error: errMsg,
         chatId: testChatId,
         tokenPreview: token.substring(0, 10) + '...'
       });
 
       return {
         success: false,
-        error: error.message,
+        error: errMsg,
         details: {
           botActive: false,
           canSendMessages: false
@@ -349,8 +355,9 @@ export class TelegramBotValidationService {
         isBot: botInfo.is_bot
       };
     } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
       logger.error('Failed to get bot info', {
-        error: error.message,
+        error: errMsg,
         tokenPreview: token.substring(0, 10) + '...'
       });
       throw error;
@@ -383,8 +390,9 @@ export class TelegramBotValidationService {
 
       return true;
     } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
       logger.error('Failed to set bot commands', {
-        error: error.message,
+        error: errMsg,
         tokenPreview: token.substring(0, 10) + '...'
       });
       throw error;

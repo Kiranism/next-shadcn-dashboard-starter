@@ -187,11 +187,12 @@ export class UserService {
             take: 50
           });
 
-          user = possible.find((u) => {
+          const matched = possible.find((u) => {
             const nd = onlyDigits(String(u.phone || ''));
             // Сравниваем по последним 10 цифрам
             return nd.slice(-10) === last10;
           });
+          user = matched ?? null;
 
           if (process.env.NODE_ENV !== 'production') {
             logger.info('Фолбэк-поиск по последним цифрам телефона', {
