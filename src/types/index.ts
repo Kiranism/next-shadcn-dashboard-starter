@@ -1,5 +1,8 @@
 import { Icons } from '@/components/icons';
 
+// Re-export all types from api.ts
+export * from './api';
+
 export interface NavItem {
   title: string;
   url: string;

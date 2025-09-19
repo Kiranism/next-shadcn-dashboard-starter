@@ -28,6 +28,7 @@ export enum NotificationChannel {
 export enum NotificationPriority {
   LOW = 'low',
   NORMAL = 'normal',
+  MEDIUM = 'medium',
   HIGH = 'high',
   URGENT = 'urgent'
 }

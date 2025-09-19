@@ -437,17 +437,53 @@ export class NotificationService {
       id: n.id,
       projectId: n.projectId,
       userId: n.userId || undefined,
-      type:
-        (n.metadata as any)?.type || NotificationType.SYSTEM_ANNOUNCEMENT,
+      type: (n.metadata as any)?.type || NotificationType.SYSTEM_ANNOUNCEMENT,
       channel: n.channel as NotificationChannel,
       title: n.title,
       message: n.message,
       status: 'sent',
-      priority:
-        (n.metadata as any)?.priority || NotificationPriority.NORMAL,
+      priority: (n.metadata as any)?.priority || NotificationPriority.NORMAL,
       sentAt: n.sentAt || undefined,
       createdAt: n.createdAt,
       metadata: (n.metadata as Record<string, any>) || undefined
     }));
+  }
+
+  /**
+   * Получение пользователей проекта для массовой отправки уведомлений
+   */
+  static async getProjectUsers(
+    projectId: string
+  ): Promise<Array<{ id: string }>> {
+    const users = await db.user.findMany({
+      where: { projectId },
+      select: { id: true }
+    });
+
+    return users;
+  }
+
+  /**
+   * Отправка уведомления (упрощенный интерфейс для API)
+   */
+  static async send(
+    payload: NotificationPayload
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const logs = await this.sendNotification(payload);
+      const hasErrors = logs.some((log) => log.status === 'failed');
+
+      return {
+        success: !hasErrors,
+        error: hasErrors
+          ? logs.find((log) => log.status === 'failed')?.error
+          : undefined
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
   }
 }

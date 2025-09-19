@@ -835,7 +835,15 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
         reply_markup: keyboard
       });
     } catch (error) {
-      // TODO: логгер
+      logger.error(
+        'Ошибка при получении истории операций (callback view_history)',
+        {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          projectId,
+          fromId: ctx.from?.id,
+          component: 'telegram-bot'
+        }
+      );
       await ctx.editMessageText('❌ Произошла ошибка при получении истории.');
     }
   });

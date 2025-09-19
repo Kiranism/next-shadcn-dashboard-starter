@@ -429,6 +429,14 @@ export type NotificationInput = z.infer<typeof notificationSchema>;
 export type ProjectUsersQuery = z.infer<typeof projectUsersQuerySchema>;
 export type TransactionsQuery = z.infer<typeof transactionsQuerySchema>;
 
+// ===== СХЕМЫ АУТЕНТИФИКАЦИИ =====
+
+export const forgotPasswordSchema = z.object({
+  email: emailSchema
+});
+
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
 // ===== ВАЛИДАЦИОННЫЕ УТИЛИТЫ =====
 
 export function validateWithSchema<T>(

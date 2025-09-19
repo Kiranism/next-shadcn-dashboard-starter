@@ -95,7 +95,7 @@ async function handlePOST(
     } else {
       // Отправка всем пользователям проекта
       const users = await NotificationService.getProjectUsers(projectId);
-      userIds = users.map((user) => user.id);
+      userIds = users.map((user: { id: string }) => user.id);
     }
 
     // Готовим данные для отправки
@@ -121,8 +121,10 @@ async function handlePOST(
     );
 
     // Подсчитываем результаты
-    const sent = results.filter((r) => r.success).length;
-    const failed = results.filter((r) => !r.success).length;
+    const sent = results.filter((r: { success: boolean }) => r.success).length;
+    const failed = results.filter(
+      (r: { success: boolean }) => !r.success
+    ).length;
 
     return NextResponse.json({
       success: true,
@@ -130,7 +132,7 @@ async function handlePOST(
         sent,
         failed,
         total: userIds.length,
-        results: results.filter((r) => !r.success) // Возвращаем только ошибки
+        results: results.filter((r: { success: boolean }) => !r.success) // Возвращаем только ошибки
       }
     });
   } catch (error) {

@@ -42,7 +42,7 @@ import { Badge } from '@/components/ui/badge';
 import { WebhookLogEntry } from '@/types/api-responses';
 
 export function ProjectIntegrationView({
-  params
+  params: _params
 }: {
   params: Promise<{ id: string }>;
 }) {
@@ -297,9 +297,9 @@ export function ProjectIntegrationView({
                   <Label>Где настроить в Tilda:</Label>
                   <ol className='text-muted-foreground list-inside list-decimal space-y-1 text-sm'>
                     <li>Перейдите в настройки сайта</li>
-                    <li>Найдите раздел "Уведомления и интеграции"</li>
+                    <li>Найдите раздел &quot;Уведомления и интеграции&quot;</li>
                     <li>Добавьте новый webhook</li>
-                    <li>Вставьте URL и выберите тип "Заказы"</li>
+                    <li>Вставьте URL и выберите тип &quot;Заказы&quot;</li>
                     <li>Сохраните настройки</li>
                   </ol>
                 </div>

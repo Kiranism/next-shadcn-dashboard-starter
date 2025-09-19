@@ -1,69 +1,79 @@
 /**
  * @file: src/app/api/auth/forgot-password/route.ts
- * @description: Запрос на восстановление пароля (отправка инструкции на email)
+ * @description: API endpoint для восстановления пароля с Zod валидацией и rate limiting
  * @project: SaaS Bonus System
- * @dependencies: zod, withAuthRateLimit, db (опционально для проверки существования email)
- * @created: 2025-09-17
+ * @dependencies: Next.js, Zod, rate limiting
+ * @created: 2025-09-18
  * @author: AI Assistant + User
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+import { forgotPasswordSchema } from '@/lib/validation/schemas';
 import { withAuthRateLimit } from '@/lib';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
-const schema = z.object({
-  email: z.string().email()
-});
-
 async function handlePOST(request: NextRequest): Promise<NextResponse> {
   try {
     const body = await request.json();
-    const { email } = schema.parse(body);
+    const { email } = forgotPasswordSchema.parse(body);
 
-    // Безопасность: всегда возвращаем 200, не раскрывая наличие аккаунта
-    // Но для аудита и возможной интеграции с провайдером почты проверим наличие
+    // Безопасность: всегда возвращаем успех, не раскрывая наличие аккаунта
     try {
-      const account = await db.adminAccount.findUnique({ where: { email } });
+      const account = await db.adminAccount.findUnique({
+        where: { email },
+        select: { id: true, isActive: true }
+      });
+
       if (account?.isActive) {
-        // Здесь можно создать запись токена восстановления и отправить письмо
-        // Пока логируем-как-заглушка. Реальная отправка будет реализована в NotificationService.
+        // Логируем для аудита (без раскрытия деталей)
         logger.info('Запрошено восстановление пароля', {
-          email,
-          accountId: account.id,
+          email: email.substring(0, 3) + '***',
+          accountId: account.id.substring(0, 8) + '...',
           component: 'auth-forgot-password'
         });
+
+        // TODO: Реализовать через NotificationService
+        // 1. Создать токен восстановления
+        // 2. Отправить email с инструкциями
+        // 3. Сохранить токен в БД с expiration
       }
     } catch (e) {
-      // Не раскрываем детали наружу
+      // Логируем ошибку, но не раскрываем пользователю
       logger.error('Ошибка обработки forgot-password', {
-        email,
+        email: email.substring(0, 3) + '***',
         error: e instanceof Error ? e.message : 'Unknown error',
         component: 'auth-forgot-password'
       });
     }
 
+    // Всегда возвращаем успех для безопасности
     return NextResponse.json({
       success: true,
       message:
-        'Если такой email существует, мы отправили инструкцию по восстановлению'
+        'Если такой email существует, мы отправили инструкции для восстановления пароля'
     });
   } catch (err: unknown) {
-    if (err instanceof z.ZodError) {
+    if (err instanceof Error && 'issues' in err) {
+      // Ошибки валидации Zod
+      logger.warn('Ошибка валидации при восстановлении пароля', {
+        error: err.message
+      });
       return NextResponse.json(
-        { error: 'Неверные данные', details: err.flatten() },
+        { error: 'Неверный формат email' },
         { status: 400 }
       );
     }
 
-    const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка';
-    return NextResponse.json(
-      { error: 'Внутренняя ошибка', details: errorMessage },
-      { status: 500 }
-    );
+    logger.error('Ошибка при восстановлении пароля', { error: err });
+
+    // Безопасный ответ
+    return NextResponse.json({
+      success: true,
+      message:
+        'Если такой email существует, мы отправили инструкции для восстановления пароля'
+    });
   }
 }
 
 export const POST = withAuthRateLimit(handlePOST);
-
