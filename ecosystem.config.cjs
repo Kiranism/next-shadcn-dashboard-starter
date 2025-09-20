@@ -11,10 +11,9 @@ module.exports = {
   apps: [
     {
       name: 'bonus-app',
-      // Продакшн запуск standalone-сборки Next.js
-      // См. предупреждение: "next start" не совместим с output: standalone
-      script: '.next/standalone/server.js',
-      args: '',
+      // Продакшн запуск Next.js через next start (без standalone)
+      script: 'yarn',
+      args: 'start -H 0.0.0.0 -p 3000',
       cwd: '/opt/next-shadcn-dashboard-starter',
       env: {
         NODE_ENV: 'production',
