@@ -29,7 +29,10 @@
       appliedBonuses: 0,
       initialized: false,
       balanceDebounceTimer: null,
-      activeFetchController: null
+      activeFetchController: null,
+      cartOpenDebounceTimer: null,
+      _bodyObserver: null,
+      _cartObserver: null
     },
 
     // Инициализация виджета
@@ -173,6 +176,11 @@
 
     // Создание виджета
     createWidget: function () {
+      // Не вставляем повторно
+      if (document.querySelector('.bonus-widget-container')) {
+        this.log('Виджет уже добавлен, пропускаем');
+        return;
+      }
       const container = document.createElement('div');
       container.className = 'bonus-widget-container';
       container.innerHTML = `
@@ -227,22 +235,49 @@
       return null;
     },
 
-    // Наблюдение за корзиной
+    // Наблюдение за корзиной (без тяжёлого отслеживания style по всему документу)
     observeCart: function () {
-      // Отслеживаем открытие корзины
-      const observer = new MutationObserver((mutations) => {
+      const attachCartObserver = () => {
         const cartWindow = document.querySelector('.t706__cartwin');
-        if (cartWindow && cartWindow.style.display !== 'none') {
-          this.onCartOpen();
-        }
-      });
+        if (!cartWindow) return false;
+        const onChange = () => {
+          const isOpen = cartWindow.style.display !== 'none';
+          if (isOpen) this.onCartOpenDebounced();
+        };
+        // первичная проверка состояния
+        onChange();
+        this.state._cartObserver = new MutationObserver(onChange);
+        this.state._cartObserver.observe(cartWindow, {
+          attributes: true,
+          attributeFilter: ['style']
+        });
+        return true;
+      };
 
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ['style']
-      });
+      if (!attachCartObserver()) {
+        this.state._bodyObserver = new MutationObserver(() => {
+          if (attachCartObserver() && this.state._bodyObserver) {
+            this.state._bodyObserver.disconnect();
+            this.state._bodyObserver = null;
+          }
+        });
+        this.state._bodyObserver.observe(document.body, {
+          childList: true,
+          subtree: true
+        });
+      }
+    },
+
+    onCartOpenDebounced: function () {
+      if (this.state.cartOpenDebounceTimer)
+        clearTimeout(this.state.cartOpenDebounceTimer);
+      this.state.cartOpenDebounceTimer = setTimeout(() => {
+        try {
+          this.onCartOpen();
+        } catch (e) {
+          this.log('onCartOpen error', e);
+        }
+      }, 250);
     },
 
     // Обработка открытия корзины
