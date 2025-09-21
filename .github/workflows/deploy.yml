@@ -11,8 +11,8 @@ on:
       - develop
 
 env:
-  NODE_VERSION: '18'
-  PNPM_VERSION: '8'
+ NODE_VERSION: '18'
+  PNPM_VERSION: '8.15.4'
 
 jobs:
   # Lint and Type Check
