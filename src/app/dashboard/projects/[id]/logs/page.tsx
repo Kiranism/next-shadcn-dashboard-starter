@@ -4,18 +4,14 @@
  * @project: SaaS Bonus System
  */
 
-import { Metadata } from 'next';
-import { ProjectLogsView } from '@/features/projects/components/project-logs-view';
+// Перенесено: логи доступны во вкладке "Логи" на странице интеграции
+import { redirect } from 'next/navigation';
 
-export const metadata: Metadata = {
-  title: 'Логи интеграции | SaaS Bonus System',
-  description: 'Просмотр логов интеграции (webhook) по проекту'
-};
-
-export default function ProjectLogsPage({
+export default async function ProjectLogsPage({
   params
 }: {
   params: Promise<{ id: string }>;
 }) {
-  return <ProjectLogsView params={params} />;
+  const { id } = await params;
+  redirect(`/dashboard/projects/${id}/integration#logs`);
 }

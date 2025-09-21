@@ -12,6 +12,7 @@ import { botManager } from '@/lib/telegram/bot-manager';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { BotSettings } from '@/types/bonus';
+import { TelegramBotValidationService } from '@/lib/services/telegram-bot-validation.service';
 import { withApiRateLimit } from '@/lib';
 
 async function handlePOST(
@@ -75,6 +76,11 @@ async function handlePOST(
       id,
       botSettingsForManager as BotSettings
     );
+
+    // Устанавливаем команды бота сразу после запуска
+    try {
+      await TelegramBotValidationService.setBotCommands(botSettings.botToken);
+    } catch {}
 
     logger.info(`Бот перезапущен`, {
       projectId: id,

@@ -40,6 +40,7 @@ import { PageContainer } from '@/components/page-container';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { WebhookLogEntry } from '@/types/api-responses';
+import { ProjectLogsView } from '@/features/projects/components/project-logs-view';
 
 export function ProjectIntegrationView({
   params: _params
@@ -405,76 +406,9 @@ export function ProjectIntegrationView({
             </Card>
           </TabsContent>
 
-          {/* Логи (компактно) */}
+          {/* Логи: полноценный интерфейс */}
           <TabsContent value='logs' className='mt-0 space-y-4'>
-            <Card className='overflow-hidden'>
-              <CardHeader className='flex flex-row items-center justify-between'>
-                <div>
-                  <CardTitle>Последние логи</CardTitle>
-                  <CardDescription>
-                    Показаны последние 10 записей webhook
-                  </CardDescription>
-                </div>
-                <div className='flex items-center gap-2'>
-                  <Button
-                    variant='outline'
-                    size='sm'
-                    onClick={loadRecentLogs}
-                    disabled={recentLogsLoading}
-                  >
-                    <Clock
-                      className={`mr-2 h-4 w-4 ${recentLogsLoading ? 'animate-spin' : ''}`}
-                    />
-                    Обновить
-                  </Button>
-                  <Link href={`/dashboard/projects/${projectId}/logs`}>
-                    <Button size='sm'>Открыть все</Button>
-                  </Link>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {recentLogsLoading ? (
-                  <div className='bg-muted h-24 animate-pulse rounded' />
-                ) : recentLogs.length === 0 ? (
-                  <div className='text-muted-foreground text-sm'>
-                    Логи отсутствуют
-                  </div>
-                ) : (
-                  <div className='space-y-3'>
-                    {recentLogs.map((log) => (
-                      <div
-                        key={log.id}
-                        className='hover:bg-muted/50 rounded-lg border p-3 transition-colors'
-                      >
-                        <div className='mb-1 flex items-center justify-between'>
-                          <div className='flex items-center gap-2'>
-                            <Badge variant='outline'>{log.method}</Badge>
-                            <code className='max-w-[40vw] truncate font-mono text-xs md:max-w-[50vw] md:text-sm'>
-                              {log.endpoint}
-                            </code>
-                          </div>
-                          <div className='flex items-center gap-2'>
-                            <Badge
-                              variant={
-                                log.status >= 200 && log.status < 300
-                                  ? 'default'
-                                  : 'destructive'
-                              }
-                            >
-                              {log.status}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className='text-muted-foreground flex items-center gap-2 text-xs'>
-                          <Clock className='h-3 w-3' />{' '}
-                          {new Date(log.createdAt).toLocaleString('ru-RU')}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <ProjectLogsView params={Promise.resolve({ id: projectId })} />
           </TabsContent>
         </Tabs>
 
