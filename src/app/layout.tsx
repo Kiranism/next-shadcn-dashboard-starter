@@ -1,76 +1,75 @@
-import Providers from '@/components/layout/providers';
-import { Toaster } from '@/components/ui/sonner';
-import { fontVariables } from '@/lib/font';
-import ThemeProvider from '@/components/layout/ThemeToggle/theme-provider';
-import { cn } from '@/lib/utils';
-import type { Metadata, Viewport } from 'next';
-import { cookies } from 'next/headers';
-import NextTopLoader from 'nextjs-toploader';
-import { NuqsAdapter } from 'nuqs/adapters/next/app';
+import type { Metadata } from 'next';
 import './globals.css';
 import './theme.css';
-
-const META_THEME_COLORS = {
-  light: '#ffffff',
-  dark: '#09090b'
-};
+import { fontGeist, fontInter } from '@/lib/font';
+import { cn } from '@/lib/utils';
+import { ThemeProvider } from '@/components/layout/ThemeToggle/theme-provider';
+import { AuthProvider } from '@/lib/auth/use-auth';
+import { Toaster } from '@/components/ui/sonner';
+import NextTopLoader from 'nextjs-toploader';
 
 export const metadata: Metadata = {
-  title: 'Next Shadcn',
-  description: 'Basic dashboard with Next.js and Shadcn'
+  title: {
+    default: 'AMT Portal - AnalyzeMyTeam Platform',
+    template: '%s | AMT Portal',
+  },
+  description:
+    'AnalyzeMyTeam Platform - 12 Modules for Championship Excellence. Triangle Defense methodology with M.E.L. AI coaching intelligence.',
+  keywords: [
+    'AnalyzeMyTeam',
+    'AMT',
+    'Triangle Defense',
+    'M.E.L. AI',
+    'Football Analytics',
+    'Coaching Platform',
+  ],
+  authors: [
+    {
+      name: 'AnalyzeMyTeam',
+      url: 'https://analyzemyteam.com',
+    },
+  ],
+  creator: 'Denauld Brown',
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://portal.analyzemyteam.com',
+    title: 'AMT Portal - AnalyzeMyTeam Platform',
+    description: 'Triangle Defense methodology with M.E.L. AI coaching intelligence',
+    siteName: 'AMT Portal',
+  },
 };
 
-export const viewport: Viewport = {
-  themeColor: META_THEME_COLORS.light
-};
-
-export default async function RootLayout({
-  children
-}: {
+export default function RootLayout({
+  children,
+}: Readonly<{
   children: React.ReactNode;
-}) {
-  const cookieStore = await cookies();
-  const activeThemeValue = cookieStore.get('active_theme')?.value;
-  const isScaled = activeThemeValue?.endsWith('-scaled');
-
+}>) {
   return (
-    <html lang='en' suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              try {
-                if (localStorage.theme === 'dark' || ((!('theme' in localStorage) || localStorage.theme === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                  document.querySelector('meta[name="theme-color"]').setAttribute('content', '${META_THEME_COLORS.dark}')
-                }
-              } catch (_) {}
-            `
-          }}
-        />
-      </head>
+    <html lang="en" suppressHydrationWarning>
       <body
         className={cn(
-          'bg-background overflow-hidden overscroll-none font-sans antialiased',
-          activeThemeValue ? `theme-${activeThemeValue}` : '',
-          isScaled ? 'theme-scaled' : '',
-          fontVariables
+          'min-h-screen bg-background font-sans antialiased',
+          fontInter.variable,
+          fontGeist.variable
         )}
       >
-        <NextTopLoader color='var(--primary)' showSpinner={false} />
-        <NuqsAdapter>
-          <ThemeProvider
-            attribute='class'
-            defaultTheme='system'
-            enableSystem
-            disableTransitionOnChange
-            enableColorScheme
-          >
-            <Providers activeThemeValue={activeThemeValue as string}>
-              <Toaster />
-              {children}
-            </Providers>
-          </ThemeProvider>
-        </NuqsAdapter>
+        <NextTopLoader
+          color="#e2021a"
+          height={3}
+          showSpinner={false}
+        />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            {children}
+            <Toaster richColors position="top-right" />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
