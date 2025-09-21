@@ -1,115 +1,284 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/9113740/201498864-2a900c64-d88f-4ed4-b5cf-770bcb57e1f5.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/9113740/201498152-b171abb8-9225-487a-821c-6ff49ee48579.png">
-</picture>
+# AMT Portal - AnalyzeMyTeam Platform
 
-<div align="center"><strong>Next.js Admin Dashboard Starter Template With Shadcn-ui</strong></div>
-<div align="center">Built with the Next.js 15 App Router</div>
-<br />
-<div align="center">
-<a href="https://dub.sh/shadcn-dashboard">View Demo</a>
-<span>
-</div>
+The complete administrative portal for AnalyzeMyTeam's 12-module championship platform featuring Triangle Defense integration and M.E.L. AI coaching intelligence.
 
-## Overview
+## 🎯 Overview
 
-This is a starter template using the following stack:
+AMT Portal is the central command center for the AnalyzeMyTeam Platform, providing access to 12 specialized modules for championship-level football analytics and coaching.
 
-- Framework - [Next.js 15](https://nextjs.org/13)
-- Language - [TypeScript](https://www.typescriptlang.org)
-- Auth - [Clerk](https://go.clerk.com/ILdYhn7)
-- Error tracking - [<picture><img alt="Sentry" src="public/assets/sentry.svg">
-        </picture>](https://sentry.io/for/nextjs/?utm_source=github&utm_medium=paid-community&utm_campaign=general-fy26q2-nextjs&utm_content=github-banner-project-tryfree)
-- Styling - [Tailwind CSS v4](https://tailwindcss.com)
-- Components - [Shadcn-ui](https://ui.shadcn.com)
-- Schema Validations - [Zod](https://zod.dev)
-- State Management - [Zustand](https://zustand-demo.pmnd.rs)
-- Search params state manager - [Nuqs](https://nuqs.47ng.com/)
-- Tables - [Tanstack Data Tables](https://ui.shadcn.com/docs/components/data-table) • [Dice table](https://www.diceui.com/docs/components/data-table)
-- Forms - [React Hook Form](https://ui.shadcn.com/docs/components/form)
-- Command+k interface - [kbar](https://kbar.vercel.app/)
-- Linting - [ESLint](https://eslint.org)
-- Pre-commit Hooks - [Husky](https://typicode.github.io/husky/)
-- Formatting - [Prettier](https://prettier.io)
+### Active Modules
+- **Power Playbooks** - Interactive digital playbooks with yard-based animation
+- **M.E.L. AI** - Master Intelligence Engine powered by Claude Sonnet 4
 
-_If you are looking for a Tanstack start dashboard template, here is the [repo](https://git.new/tanstack-start-dashboard)._
+### Upcoming Modules (Q2-Q3 2025)
+- Executive Suite, Dynamic Fabricator, Game Changer, Q3 Quarterback, Dynamic Predictor, Pro Scout, Recruit, Strength, Medicine, Academics
 
-## Pages
+## 🏗️ Architecture
 
-| Pages                                                                                 | Specifications                                                                                                                                                                                                                                                          |
-| :------------------------------------------------------------------------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Signup / Signin](https://go.clerk.com/ILdYhn7)      | Authentication with **Clerk** provides secure authentication and user management with multiple sign-in options including passwordless authentication, social logins, and enterprise SSO - all designed to enhance security while delivering a seamless user experience. |
-| [Dashboard (Overview)](https://shadcn-dashboard.kiranism.dev/dashboard)    | Cards with Recharts graphs for analytics. Parallel routes in the overview sections feature independent loading, error handling, and isolated component rendering. |
-| [Product](https://shadcn-dashboard.kiranism.dev/dashboard/product)         | Tanstack tables with server side searching, filter, pagination by Nuqs which is a Type-safe search params state manager in nextjs                                                                                                                                       |
-| [Product/new](https://shadcn-dashboard.kiranism.dev/dashboard/product/new) | A Product Form with shadcn form (react-hook-form + zod).                                                                                                                                                                                                                |
-| [Profile](https://shadcn-dashboard.kiranism.dev/dashboard/profile)         | Clerk's full-featured account management UI that allows users to manage their profile and security settings                                                                                                                                                             |
-| [Kanban Board](https://shadcn-dashboard.kiranism.dev/dashboard/kanban)     | A Drag n Drop task management board with dnd-kit and zustand to persist state locally.                                                                                                                                                                                  |
-| [Not Found](https://shadcn-dashboard.kiranism.dev/dashboard/notfound)      | Not Found Page Added in the root level                                                                                                                                                                                                                                  |
-| [Global Error](https://sentry.io/for/nextjs/?utm_source=github&utm_medium=paid-community&utm_campaign=general-fy26q2-nextjs&utm_content=github-banner-project-tryfree)           | A centralized error page that captures and displays errors across the application. Integrated with **Sentry** to log errors, provide detailed reports, and enable replay functionality for better debugging. |
+### Tech Stack
+- **Frontend**: Next.js 15, React 19, TypeScript
+- **UI**: shadcn/ui, Tailwind CSS v4
+- **State**: Zustand
+- **Auth**: JWT with HTTP-only cookies
+- **API**: GraphQL Federation (Apollo Client)
+- **Backend**: Node.js, GraphQL, Hive Analytics, Supabase, Neo4j
 
-## Feature based organization
+### Project Structure
+amt-portal/
+├── src/
+│   ├── app/                    # Next.js App Router
+│   │   ├── (portal)/          # Protected portal routes
+│   │   ├── auth/              # Authentication pages
+│   │   ├── api/               # API routes
+│   │   └── layout.tsx         # Root layout
+│   ├── components/
+│   │   ├── portal/            # Portal-specific components
+│   │   ├── layout/            # Layout components
+│   │   └── ui/                # shadcn/ui components
+│   ├── lib/
+│   │   ├── auth/              # Authentication logic
+│   │   ├── graphql/           # GraphQL client & queries
+│   │   ├── triangle-defense/  # Triangle Defense utilities
+│   │   └── utils/             # Helper functions
+│   ├── stores/                # Zustand state management
+│   └── types/                 # TypeScript definitions
+├── public/                    # Static assets
+└── package.json
 
-```plaintext
-src/
-├── app/ # Next.js App Router directory
-│ ├── (auth)/ # Auth route group
-│ │ ├── (signin)/
-│ ├── (dashboard)/ # Dashboard route group
-│ │ ├── layout.tsx
-│ │ ├── loading.tsx
-│ │ └── page.tsx
-│ └── api/ # API routes
-│
-├── components/ # Shared components
-│ ├── ui/ # UI components (buttons, inputs, etc.)
-│ └── layout/ # Layout components (header, sidebar, etc.)
-│
-├── features/ # Feature-based modules
-│ ├── feature/
-│ │ ├── components/ # Feature-specific components
-│ │ ├── actions/ # Server actions
-│ │ ├── schemas/ # Form validation schemas
-│ │ └── utils/ # Feature-specific utilities
-│ │
-├── lib/ # Core utilities and configurations
-│ ├── auth/ # Auth configuration
-│ ├── db/ # Database utilities
-│ └── utils/ # Shared utilities
-│
-├── hooks/ # Custom hooks
-│ └── use-debounce.ts
-│
-├── stores/ # Zustand stores
-│ └── dashboard-store.ts
-│
-└── types/ # TypeScript types
-└── index.ts
-```
+## 🚀 Getting Started
 
-## Getting Started
+### Prerequisites
+- Node.js 18+ 
+- pnpm (recommended) or npm
 
-> [!NOTE]  
-> We are using **Next 15** with **React 19**, follow these steps:
+### Installation
 
-Clone the repo:
+1. Clone the repository:
+```bash
+git clone https://github.com/AnalyzeMyTeamHQ/amt-portal.git
+cd amt-portal
 
-```
-git clone https://github.com/Kiranism/next-shadcn-dashboard-starter.git
-```
+Install dependencies:
 
-- `pnpm install` ( we have legacy-peer-deps=true added in the .npmrc)
-- Create a `.env.local` file by copying the example environment file:
-  `cp env.example.txt .env.local`
-- Add the required environment variables to the `.env.local` file.
-- `pnpm run dev`
+bashpnpm install
 
-##### Environment Configuration Setup
+Set up environment variables:
 
-To configure the environment for this project, refer to the `env.example.txt` file. This file contains the necessary environment variables required for authentication and error tracking.
+bashcp .env.local.example .env.local
+Edit .env.local with your credentials:
+envNEXT_PUBLIC_API_URL=https://api.analyzemyteam.com
+NEXT_PUBLIC_GRAPHQL_URL=https://graphql.analyzemyteam.com/graphql
+JWT_SECRET=your-super-secret-jwt-key
+ANTHROPIC_API_KEY=your-anthropic-api-key
 
-You should now be able to access the application at http://localhost:3000.
+Run development server:
 
-> [!WARNING]
-> After cloning or forking the repository, be cautious when pulling or syncing with the latest changes, as this may result in breaking conflicts.
+bashpnpm dev
+Open http://localhost:3000 in your browser.
+Demo Credentials
+Email: denauld@analyzemyteam.com
+Password: demo
 
-Cheers! 🥂
+Other admin users:
+- courtney@analyzemyteam.com / demo
+- mel@analyzemyteam.com / demo
+- alexandra@analyzemyteam.com / demo
+🔐 Authentication
+JWT-based authentication with role-based access control (RBAC):
+User Tiers
+
+Founder Authority - Denauld Brown
+AI Core - M.E.L.
+Executive Command - Courtney Sellars, Alexandra Martinez
+Strategic Leadership - Tony Rivera, Derek Thompson
+Advisory Council - Dr. Marcus Johnson, Amanda Thompson, Roberto Gutierrez
+Innovation Division - Sam Williams, Alex Chen, Marcus Lewis
+Football Operations - Michael Rodriguez
+
+Admin Panel Access
+Only 4 users have admin panel access:
+
+Denauld Brown (Founder)
+Courtney Sellars (CEO/Chief Legal Officer)
+M.E.L. (AI Core)
+Alexandra Martinez (Chief Administrative Officer)
+
+🎨 Triangle Defense System
+The portal implements the complete Triangle Defense methodology:
+Formation Classifications
+
+LARRY (MO Left + Male) - #4ECDC4
+LINDA (MO Left + Female) - #FF6B6B
+RICKY (MO Right + Male) - #FFD93D
+RITA (MO Right + Female) - #9B59B6
+MALE_MID (MO Middle + Male) - #3498DB
+FEMALE_MID (MO Middle + Female) - #E74C3C
+
+Triangle Types
+
+EDGE, BRACKET, SEAL, FUNNEL, WALL, SWARM, TRAP
+
+Defensive Positions
+
+Metro, Apex, Mike, Mac, Star, Solo
+
+📊 GraphQL Integration
+The portal connects to AMT's GraphQL Federation:
+Data Sources
+
+Hive Analytics (ClickHouse) - Performance metrics
+Supabase - Operational database
+Neo4j - Graph relationships
+
+Example Query
+graphqlquery GetFormations {
+  formations(filter: { classification: "LARRY" }) {
+    id
+    name
+    successRate
+    triangleRelationships {
+      type
+      positions
+    }
+  }
+}
+🎯 Key Features
+M.E.L. Command Interface
+Natural language navigation with Triangle Defense awareness:
+
+"Analyze formation Larry vs Cover 3"
+"Generate practice plan"
+"Create scouting report"
+
+Module Grid
+12-module dashboard with status indicators:
+
+Active modules (green)
+Beta modules (yellow)
+Coming soon modules (gray)
+
+Executive Dashboard
+Strategic command center with:
+
+Financial performance metrics
+Team efficiency tracking
+Module performance overview
+Strategic initiatives monitoring
+
+Admin Panel
+Restricted control panel for:
+
+User management
+Module configuration
+System oversight
+Activity monitoring
+
+🔧 Development
+Build Commands
+bash# Development
+pnpm dev
+
+# Production build
+pnpm build
+
+# Start production server
+pnpm start
+
+# Lint
+pnpm lint
+
+# Type check
+pnpm type-check
+Code Quality
+
+ESLint configuration for Next.js
+Prettier for code formatting
+TypeScript strict mode
+Husky pre-commit hooks
+
+🚢 Deployment
+Netlify (Recommended for Quick Deploy)
+
+Connect GitHub repository
+Configure build settings:
+
+Build command: pnpm build
+Publish directory: .next
+
+
+Add environment variables
+Deploy
+
+AWS/Kubernetes (Production)
+Use existing AMT infrastructure:
+
+Docker containers
+Kubernetes orchestration
+Terraform IaC
+CI/CD pipelines
+
+🎨 Branding
+AMT Color Palette
+css--amt-red: #e2021a
+--amt-accent: #d4db69
+--amt-dark: #1b151a
+--amt-blue-gray: #4e5064
+--amt-very-dark: #1a181a
+Typography
+
+Font: Inter (headings and body)
+Monospace: JetBrains Mono (code)
+
+📝 Documentation
+API Documentation
+
+GraphQL Schema
+Authentication Guide
+Triangle Defense API
+
+Component Documentation
+
+Component Library
+Module Development
+State Management
+
+🤝 Contributing
+This is a private repository for AnalyzeMyTeam staff only.
+Development Workflow
+
+Create feature branch from main
+Make changes with descriptive commits
+Run tests and linting
+Submit pull request for review
+Merge after approval
+
+📄 License
+Proprietary - AnalyzeMyTeam Platform © 2025
+👥 Team
+Created by: Denauld Brown - AnalyzeMyTeam
+Development Team:
+
+Tier 1-7: 25 Championship Professionals
+
+🆘 Support
+For technical support:
+
+Email: support@analyzemyteam.com
+Internal Slack: #amt-portal-support
+
+🔄 Changelog
+v1.0.0 (Current)
+
+✅ JWT Authentication system
+✅ 12 Module pages (2 active, 10 coming soon)
+✅ M.E.L. AI command interface
+✅ Admin panel (4-user access)
+✅ Triangle Defense integration
+✅ Executive dashboard
+✅ GraphQL federation connectivity
+
+Roadmap
+
+Q2 2025: Dynamic Fabricator launch
+Q2 2025: Pro Scout activation
+Q3 2025: Full module suite completion
