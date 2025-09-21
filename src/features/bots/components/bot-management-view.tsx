@@ -546,7 +546,7 @@ export function BotManagementView({ projectId }: BotManagementViewProps) {
               ) : (
                 <Settings className='mr-2 h-4 w-4' />
               )}
-              Проверить
+              {checking ? 'Проверяем...' : 'Проверить'}
             </Button>
           </div>
         </div>

@@ -3,10 +3,25 @@ import { verifyJwt } from '@/lib/jwt';
 
 const PROTECTED_MATCHERS = ['/dashboard', '/api/admin', '/api/projects'];
 
+// Публичные API, доступные без авторизации (для внешних интеграций)
+// 1) Баланс пользователя для Tilda:
+//    GET /api/projects/:id/users/balance?email=...&phone=...
+// 2) Вебхуки проектов
+const PUBLIC_API_PATTERNS: RegExp[] = [
+  /^\/api\/projects\/[^/]+\/users\/balance(?:\/?|$)/i,
+  /^\/api\/webhook\//i
+];
+
 export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   const requiresAuth = PROTECTED_MATCHERS.some((p) => pathname.startsWith(p));
+
+  // allowlist публичных маршрутов внутри защищённого префикса
+  if (pathname.startsWith('/api/')) {
+    const isPublicApi = PUBLIC_API_PATTERNS.some((re) => re.test(pathname));
+    if (isPublicApi) return NextResponse.next();
+  }
   if (!requiresAuth) return NextResponse.next();
 
   // Dev bypass for API with header x-dev-auth: 1

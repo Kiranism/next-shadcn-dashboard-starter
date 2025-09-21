@@ -6,7 +6,7 @@
  * @author: AI Assistant + User
  */
 
-(function() {
+(function () {
   'use strict';
 
   // Глобальный объект для виджета
@@ -17,7 +17,8 @@
       apiUrl: 'https://bonus.example.com',
       bonusToRuble: 1,
       minOrderAmount: 100,
-      debug: false
+      debug: false,
+      debounceMs: 400
     },
 
     // Состояние
@@ -26,11 +27,13 @@
       userPhone: null,
       bonusBalance: 0,
       appliedBonuses: 0,
-      initialized: false
+      initialized: false,
+      balanceDebounceTimer: null,
+      activeFetchController: null
     },
 
     // Инициализация виджета
-    init: function(userConfig) {
+    init: function (userConfig) {
       // Объединяем конфигурацию
       this.config = Object.assign({}, this.config, userConfig);
 
@@ -42,10 +45,10 @@
 
       // Инициализируем UI
       this.initUI();
-      
+
       // Отслеживаем изменения в корзине
       this.observeCart();
-      
+
       // Отслеживаем ввод email/телефона
       this.observeUserInput();
 
@@ -54,14 +57,14 @@
     },
 
     // Логирование (только в debug режиме)
-    log: function() {
+    log: function () {
       if (this.config.debug) {
         console.log('[TildaBonusWidget]', ...arguments);
       }
     },
 
     // Создание UI элементов
-    initUI: function() {
+    initUI: function () {
       // Стили для виджета
       const style = document.createElement('style');
       style.textContent = `
@@ -169,7 +172,7 @@
     },
 
     // Создание виджета
-    createWidget: function() {
+    createWidget: function () {
       const container = document.createElement('div');
       container.className = 'bonus-widget-container';
       container.innerHTML = `
@@ -205,7 +208,7 @@
     },
 
     // Поиск места для вставки виджета
-    findInsertPoint: function() {
+    findInsertPoint: function () {
       // Ищем блок с итоговой суммой или кнопку оформления
       const selectors = [
         '.t706__cartwin-totalamount',
@@ -225,7 +228,7 @@
     },
 
     // Наблюдение за корзиной
-    observeCart: function() {
+    observeCart: function () {
       // Отслеживаем открытие корзины
       const observer = new MutationObserver((mutations) => {
         const cartWindow = document.querySelector('.t706__cartwin');
@@ -243,9 +246,9 @@
     },
 
     // Обработка открытия корзины
-    onCartOpen: function() {
+    onCartOpen: function () {
       this.log('Корзина открыта');
-      
+
       // Получаем email/телефон пользователя
       const userContact = this.getUserContact();
       if (userContact) {
@@ -254,18 +257,22 @@
     },
 
     // Наблюдение за вводом пользователя
-    observeUserInput: function() {
+    observeUserInput: function () {
       // Отслеживаем изменения в полях email и телефона
       document.addEventListener('input', (e) => {
-        if (e.target.type === 'email' || e.target.name === 'email' ||
-            e.target.type === 'tel' || e.target.name === 'phone') {
+        if (
+          e.target.type === 'email' ||
+          e.target.name === 'email' ||
+          e.target.type === 'tel' ||
+          e.target.name === 'phone'
+        ) {
           this.onUserInputChange(e.target);
         }
       });
     },
 
     // Обработка изменения данных пользователя
-    onUserInputChange: function(input) {
+    onUserInputChange: function (input) {
       const value = input.value.trim();
       if (!value) return;
 
@@ -277,27 +284,34 @@
         localStorage.setItem('tilda_user_phone', value);
       }
 
-      // Загружаем баланс
-      this.loadUserBalance({ email: this.state.userEmail, phone: this.state.userPhone });
+      // Загружаем баланс с дебаунсом
+      this.loadUserBalanceDebounced({
+        email: this.state.userEmail,
+        phone: this.state.userPhone
+      });
     },
 
     // Получение контактов пользователя
-    getUserContact: function() {
+    getUserContact: function () {
       // Из localStorage
       const savedEmail = localStorage.getItem('tilda_user_email');
       const savedPhone = localStorage.getItem('tilda_user_phone');
-      
+
       if (savedEmail || savedPhone) {
         return { email: savedEmail, phone: savedPhone };
       }
 
       // Из полей формы
-      const emailField = document.querySelector('input[name="email"], input[type="email"]');
-      const phoneField = document.querySelector('input[name="phone"], input[type="tel"]');
-      
+      const emailField = document.querySelector(
+        'input[name="email"], input[type="email"]'
+      );
+      const phoneField = document.querySelector(
+        'input[name="phone"], input[type="tel"]'
+      );
+
       const email = emailField ? emailField.value : null;
       const phone = phoneField ? phoneField.value : null;
-      
+
       if (email || phone) {
         return { email, phone };
       }
@@ -305,13 +319,31 @@
       return null;
     },
 
+    // Дебаунс-обёртка для загрузки баланса
+    loadUserBalanceDebounced: function (contact) {
+      if (this.state.balanceDebounceTimer) {
+        clearTimeout(this.state.balanceDebounceTimer);
+      }
+      this.state.balanceDebounceTimer = setTimeout(() => {
+        this.loadUserBalance(contact);
+      }, this.config.debounceMs);
+    },
+
     // Загрузка баланса пользователя
-    loadUserBalance: async function(contact) {
+    loadUserBalance: async function (contact) {
       if (!contact || (!contact.email && !contact.phone)) return;
 
       try {
         this.showLoading(true);
-        
+        // Отменяем предыдущий запрос, если он ещё активен
+        if (this.state.activeFetchController) {
+          try {
+            this.state.activeFetchController.abort();
+          } catch (_) {}
+        }
+        const controller = new AbortController();
+        this.state.activeFetchController = controller;
+
         const params = new URLSearchParams();
         if (contact.email) params.append('email', contact.email);
         if (contact.phone) params.append('phone', contact.phone);
@@ -320,26 +352,30 @@
           `${this.config.apiUrl}/api/projects/${this.config.projectId}/users/balance?${params}`,
           {
             method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
+            signal: controller.signal
           }
         );
 
         const data = await response.json();
-        
+
         if (data.success) {
           this.state.bonusBalance = data.balance || 0;
           this.updateBalanceDisplay();
           this.log('Баланс загружен:', this.state.bonusBalance);
         }
       } catch (error) {
-        this.log('Ошибка загрузки баланса:', error);
+        if (error && error.name === 'AbortError') {
+          this.log('Запрос баланса отменён (новый ввод)');
+        } else {
+          this.log('Ошибка загрузки баланса:', error);
+        }
       } finally {
         this.showLoading(false);
       }
     },
 
     // Обновление отображения баланса
-    updateBalanceDisplay: function() {
+    updateBalanceDisplay: function () {
       const balanceElement = document.querySelector('.bonus-balance');
       const balanceAmount = document.querySelector('.bonus-balance-amount');
       const amountInput = document.getElementById('bonus-amount-input');
@@ -350,7 +386,7 @@
         balanceAmount.textContent = this.state.bonusBalance;
         amountInput.style.display = 'block';
         applyButton.style.display = 'block';
-        
+
         // Устанавливаем максимум для input
         const cartTotal = this.getCartTotal();
         const maxBonuses = Math.min(this.state.bonusBalance, cartTotal);
@@ -364,19 +400,23 @@
     },
 
     // Получение суммы корзины
-    getCartTotal: function() {
+    getCartTotal: function () {
       // Ищем элемент с общей суммой
-      const totalElement = document.querySelector('.t706__cartwin-totalamount-withoutdelivery, .t706__cartwin-totalamount');
+      const totalElement = document.querySelector(
+        '.t706__cartwin-totalamount-withoutdelivery, .t706__cartwin-totalamount'
+      );
       if (totalElement) {
         const totalText = totalElement.textContent || '';
-        const total = parseFloat(totalText.replace(/[^\d.,]/g, '').replace(',', '.'));
+        const total = parseFloat(
+          totalText.replace(/[^\d.,]/g, '').replace(',', '.')
+        );
         return isNaN(total) ? 0 : total;
       }
       return 0;
     },
 
     // Применение бонусов
-    applyBonuses: async function() {
+    applyBonuses: async function () {
       const amountInput = document.getElementById('bonus-amount-input');
       const amount = parseInt(amountInput.value) || 0;
 
@@ -398,20 +438,19 @@
 
       try {
         this.showLoading(true);
-        
+
         // Сохраняем примененные бонусы
         this.state.appliedBonuses = amount;
         localStorage.setItem('tilda_applied_bonuses', amount);
-        
+
         // Обновляем отображение
         this.showSuccess(`Применено ${amount} бонусов (-${amount} ₽)`);
-        
+
         // Добавляем скрытое поле с бонусами для отправки в webhook
         this.addHiddenBonusField(amount);
-        
+
         // Обновляем визуальное отображение суммы
         this.updateCartVisualTotal(cartTotal - amount);
-        
       } catch (error) {
         this.showError('Ошибка применения бонусов');
         this.log('Ошибка:', error);
@@ -421,7 +460,7 @@
     },
 
     // Добавление скрытого поля с бонусами
-    addHiddenBonusField: function(amount) {
+    addHiddenBonusField: function (amount) {
       // Удаляем старое поле если есть
       const oldField = document.getElementById('applied_bonuses_field');
       if (oldField) oldField.remove();
@@ -441,14 +480,16 @@
     },
 
     // Обновление визуального отображения суммы
-    updateCartVisualTotal: function(newTotal) {
-      const totalElement = document.querySelector('.t706__cartwin-totalamount-withoutdelivery, .t706__cartwin-totalamount');
+    updateCartVisualTotal: function (newTotal) {
+      const totalElement = document.querySelector(
+        '.t706__cartwin-totalamount-withoutdelivery, .t706__cartwin-totalamount'
+      );
       if (totalElement) {
         // Сохраняем оригинальную сумму
         if (!totalElement.dataset.originalAmount) {
           totalElement.dataset.originalAmount = totalElement.textContent;
         }
-        
+
         // Обновляем отображение
         totalElement.innerHTML = `
           <s style="color: #999; font-size: 0.9em;">${totalElement.dataset.originalAmount}</s>
@@ -459,25 +500,27 @@
     },
 
     // Отображение загрузки
-    showLoading: function(show) {
+    showLoading: function (show) {
       const button = document.getElementById('apply-bonus-button');
       if (button) {
         button.disabled = show;
-        button.innerHTML = show ? 'Применение...<span class="bonus-loading"></span>' : 'Применить бонусы';
+        button.innerHTML = show
+          ? 'Применение...<span class="bonus-loading"></span>'
+          : 'Применить бонусы';
       }
     },
 
     // Отображение успеха
-    showSuccess: function(message) {
+    showSuccess: function (message) {
       const status = document.getElementById('bonus-status');
       status.innerHTML = `<div class="bonus-applied">✓ ${message}</div>`;
     },
 
     // Отображение ошибки
-    showError: function(message) {
+    showError: function (message) {
       const status = document.getElementById('bonus-status');
       status.innerHTML = `<div class="bonus-error">✗ ${message}</div>`;
-      
+
       // Убираем через 3 секунды
       setTimeout(() => {
         status.innerHTML = '';
@@ -485,15 +528,17 @@
     },
 
     // Сброс примененных бонусов
-    resetAppliedBonuses: function() {
+    resetAppliedBonuses: function () {
       this.state.appliedBonuses = 0;
       localStorage.removeItem('tilda_applied_bonuses');
-      
-      const totalElement = document.querySelector('.t706__cartwin-totalamount-withoutdelivery, .t706__cartwin-totalamount');
+
+      const totalElement = document.querySelector(
+        '.t706__cartwin-totalamount-withoutdelivery, .t706__cartwin-totalamount'
+      );
       if (totalElement && totalElement.dataset.originalAmount) {
         totalElement.textContent = totalElement.dataset.originalAmount;
       }
-      
+
       const status = document.getElementById('bonus-status');
       if (status) status.innerHTML = '';
     }
@@ -501,9 +546,8 @@
 
   // Автоматическая инициализация при загрузке
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       // Виджет будет инициализирован вручную через TildaBonusWidget.init()
     });
   }
-
 })();
