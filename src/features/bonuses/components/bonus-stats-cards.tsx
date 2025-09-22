@@ -64,7 +64,7 @@ export const BonusStatsCards = memo<BonusStatsCardsProps>(
 
     const averageBonusPerUser =
       stats.totalUsers > 0
-        ? Math.round(stats.totalBonuses / stats.totalUsers)
+        ? Number((stats.totalBonuses / stats.totalUsers).toFixed(2))
         : 0;
 
     const expiringSoonPercentage =
@@ -96,10 +96,10 @@ export const BonusStatsCards = memo<BonusStatsCardsProps>(
       },
       {
         title: 'Общий баланс бонусов',
-        value: `${stats.totalBonuses.toLocaleString('ru-RU')}₽`,
+        value: `${Number(stats.totalBonuses).toFixed(2)}₽`,
         subtitle:
           averageBonusPerUser > 0
-            ? `${averageBonusPerUser}₽ на пользователя`
+            ? `${averageBonusPerUser.toFixed(2)}₽ на пользователя`
             : undefined,
         icon: Coins,
         variant: 'success'

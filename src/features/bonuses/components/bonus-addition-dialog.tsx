@@ -10,7 +10,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
+  DialogTitle
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -19,7 +19,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
+  FormMessage
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -31,20 +31,30 @@ import { Plus, User, Calendar } from 'lucide-react';
 import { useBonusStore } from '../stores/bonus-store';
 import type { User as UserType } from '../types';
 
-const additionSchema = z.object({
-  amount: z.number().min(1, 'Сумма должна быть больше 0'),
-  description: z.string().min(3, 'Описание должно содержать минимум 3 символа'),
-  hasExpiration: z.boolean(),
-  expirationDays: z.number().optional(),
-}).refine((data) => {
-  if (data.hasExpiration && (!data.expirationDays || data.expirationDays < 1)) {
-    return false;
-  }
-  return true;
-}, {
-  message: 'Укажите количество дней до истечения',
-  path: ['expirationDays'],
-});
+const additionSchema = z
+  .object({
+    amount: z.number().min(1, 'Сумма должна быть больше 0'),
+    description: z
+      .string()
+      .min(3, 'Описание должно содержать минимум 3 символа'),
+    hasExpiration: z.boolean(),
+    expirationDays: z.number().optional()
+  })
+  .refine(
+    (data) => {
+      if (
+        data.hasExpiration &&
+        (!data.expirationDays || data.expirationDays < 1)
+      ) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: 'Укажите количество дней до истечения',
+      path: ['expirationDays']
+    }
+  );
 
 type AdditionFormValues = z.infer<typeof additionSchema>;
 
@@ -57,7 +67,7 @@ interface BonusAdditionDialogProps {
 export function BonusAdditionDialog({
   open,
   onOpenChange,
-  user,
+  user
 }: BonusAdditionDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { addBonusToUser } = useBonusStore();
@@ -68,8 +78,8 @@ export function BonusAdditionDialog({
       amount: 0,
       description: '',
       hasExpiration: false,
-      expirationDays: 30,
-    },
+      expirationDays: 30
+    }
   });
 
   const watchedAmount = form.watch('amount');
@@ -79,7 +89,9 @@ export function BonusAdditionDialog({
   const onSubmit = async (data: AdditionFormValues) => {
     setIsSubmitting(true);
     try {
-      const expirationDays = data.hasExpiration ? data.expirationDays : undefined;
+      const expirationDays = data.hasExpiration
+        ? data.expirationDays
+        : undefined;
       addBonusToUser(user.id, data.amount, data.description, expirationDays);
       form.reset();
       onOpenChange(false);
@@ -97,10 +109,10 @@ export function BonusAdditionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className='sm:max-w-[500px]'>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Plus className="h-5 w-5 text-green-500" />
+          <DialogTitle className='flex items-center gap-2'>
+            <Plus className='h-5 w-5 text-green-500' />
             Начисление бонусов
           </DialogTitle>
           <DialogDescription>
@@ -109,40 +121,40 @@ export function BonusAdditionDialog({
         </DialogHeader>
 
         {/* Информация о пользователе */}
-        <div className="rounded-lg border p-4 bg-muted/50">
-          <div className="flex items-center gap-3 mb-3">
-            <Avatar className="h-10 w-10">
+        <div className='bg-muted/50 rounded-lg border p-4'>
+          <div className='mb-3 flex items-center gap-3'>
+            <Avatar className='h-10 w-10'>
               <AvatarImage src={user.avatar} alt={user.name} />
               <AvatarFallback>
-                <User className="h-4 w-4" />
+                <User className='h-4 w-4' />
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1">
-              <h4 className="font-medium">{user.name}</h4>
-              <p className="text-sm text-muted-foreground">{user.email}</p>
+            <div className='flex-1'>
+              <h4 className='font-medium'>{user.name}</h4>
+              <p className='text-muted-foreground text-sm'>{user.email}</p>
             </div>
           </div>
-          
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Текущий баланс:</span>
-            <Badge variant="secondary" className="text-lg font-bold">
-              {user.bonusBalance.toLocaleString()} бонусов
+
+          <div className='flex items-center justify-between'>
+            <span className='text-sm font-medium'>Текущий баланс:</span>
+            <Badge variant='secondary' className='text-lg font-bold'>
+              {Number(user.bonusBalance).toFixed(2)} бонусов
             </Badge>
           </div>
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
             <FormField
               control={form.control}
-              name="amount"
+              name='amount'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Сумма начисления</FormLabel>
                   <FormControl>
                     <Input
-                      type="number"
-                      placeholder="Введите количество бонусов"
+                      type='number'
+                      placeholder='Введите количество бонусов'
                       {...field}
                       onChange={(e) => field.onChange(Number(e.target.value))}
                     />
@@ -157,27 +169,25 @@ export function BonusAdditionDialog({
 
             {/* Предварительный расчет */}
             {watchedAmount > 0 && (
-              <div className="p-3 rounded-lg bg-green-50 border border-green-200">
-                <div className="flex justify-between items-center text-sm">
+              <div className='rounded-lg border border-green-200 bg-green-50 p-3'>
+                <div className='flex items-center justify-between text-sm'>
                   <span>Баланс после начисления:</span>
-                  <span className="font-bold text-green-700">
-                    {newBalance.toLocaleString()} бонусов
+                  <span className='font-bold text-green-700'>
+                    {Number(newBalance).toFixed(2)} бонусов
                   </span>
                 </div>
               </div>
             )}
 
             {/* Настройка срока действия */}
-            <div className="space-y-3">
+            <div className='space-y-3'>
               <FormField
                 control={form.control}
-                name="hasExpiration"
+                name='hasExpiration'
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                    <div className="space-y-0.5">
-                      <FormLabel className="text-base">
-                        Срок действия
-                      </FormLabel>
+                  <FormItem className='flex flex-row items-center justify-between rounded-lg border p-3'>
+                    <div className='space-y-0.5'>
+                      <FormLabel className='text-base'>Срок действия</FormLabel>
                       <FormDescription>
                         Установить срок истечения бонусов
                       </FormDescription>
@@ -195,19 +205,21 @@ export function BonusAdditionDialog({
               {watchedHasExpiration && (
                 <FormField
                   control={form.control}
-                  name="expirationDays"
+                  name='expirationDays'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
+                      <FormLabel className='flex items-center gap-2'>
+                        <Calendar className='h-4 w-4' />
                         Дней до истечения
                       </FormLabel>
                       <FormControl>
                         <Input
-                          type="number"
-                          placeholder="Количество дней"
+                          type='number'
+                          placeholder='Количество дней'
                           {...field}
-                          onChange={(e) => field.onChange(Number(e.target.value))}
+                          onChange={(e) =>
+                            field.onChange(Number(e.target.value))
+                          }
                         />
                       </FormControl>
                       <FormDescription>
@@ -222,13 +234,13 @@ export function BonusAdditionDialog({
 
             <FormField
               control={form.control}
-              name="description"
+              name='description'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Причина начисления</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Укажите причину начисления бонусов..."
+                      placeholder='Укажите причину начисления бонусов...'
                       {...field}
                     />
                   </FormControl>
@@ -240,19 +252,19 @@ export function BonusAdditionDialog({
               )}
             />
 
-            <DialogFooter className="gap-2">
-              <Button 
-                type="button" 
-                variant="outline" 
+            <DialogFooter className='gap-2'>
+              <Button
+                type='button'
+                variant='outline'
                 onClick={handleCancel}
                 disabled={isSubmitting}
               >
                 Отмена
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type='submit'
                 disabled={isSubmitting || watchedAmount <= 0}
-                className="min-w-[100px]"
+                className='min-w-[100px]'
               >
                 {isSubmitting ? 'Начисление...' : 'Начислить'}
               </Button>

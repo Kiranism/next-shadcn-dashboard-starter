@@ -54,6 +54,7 @@ async function getHandler(
     const formattedUsers = enrichedUsers.map((user, index) => {
       const currentBalance =
         Number(user.totalEarned || 0) - Number(user.totalSpent || 0);
+      const roundedBalance = Number(currentBalance.toFixed(2));
       const botIsActive =
         (user as any).project?.botStatus === 'ACTIVE' ||
         (user as any).project?.botStatus === 'active';
@@ -68,8 +69,8 @@ async function getHandler(
           'Без имени',
         email: user.email,
         phone: user.phone,
-        bonusBalance: currentBalance,
-        totalEarned: Number(user.totalEarned || 0),
+        bonusBalance: roundedBalance,
+        totalEarned: Number(Number(user.totalEarned || 0).toFixed(2)),
         createdAt: user.registeredAt,
         updatedAt: user.updatedAt,
         avatar: `https://api.slingacademy.com/public/sample-users/${(index % 10) + 1}.png`,
@@ -79,8 +80,8 @@ async function getHandler(
         lastName: user.lastName,
         birthDate: user.birthDate,
         registeredAt: user.registeredAt,
-        totalBonuses: Number(user.totalEarned || 0),
-        activeBonuses: currentBalance,
+        totalBonuses: Number(Number(user.totalEarned || 0).toFixed(2)),
+        activeBonuses: roundedBalance,
         lastActivity: user.updatedAt,
         currentLevel: user.currentLevel || user.level?.name || undefined
       };
@@ -184,6 +185,51 @@ async function postHandler(
         birthDate: validated.birthDate ? new Date(validated.birthDate) : null
       }
     });
+
+    // Приветственный бонус (фиксированная сумма), срок действия — как у проекта
+    try {
+      const settings = await db.botSettings.findUnique({
+        where: { projectId: id }
+      });
+      const meta = (settings?.functionalSettings as any) || {};
+      const welcomeAmount = Number(meta.welcomeBonusAmount || 0);
+      if (welcomeAmount > 0) {
+        const expiresAt = new Date();
+        expiresAt.setDate(
+          expiresAt.getDate() +
+            Number(
+              (await db.project.findUnique({ where: { id } }))
+                ?.bonusExpiryDays || 365
+            )
+        );
+
+        const bonus = await db.bonus.create({
+          data: {
+            userId: newUser.id,
+            amount: welcomeAmount,
+            type: 'MANUAL',
+            description: 'Приветственный бонус при регистрации',
+            expiresAt
+          }
+        });
+
+        await db.transaction.create({
+          data: {
+            userId: newUser.id,
+            bonusId: bonus.id,
+            amount: welcomeAmount,
+            type: 'EARN',
+            description: 'Приветственный бонус при регистрации'
+          }
+        });
+      }
+    } catch (e) {
+      logger.warn('Не удалось начислить приветственный бонус', {
+        projectId: id,
+        userId: newUser.id,
+        error: e instanceof Error ? e.message : String(e)
+      });
+    }
 
     // Форматируем пользователя для UI
     const formattedUser = {

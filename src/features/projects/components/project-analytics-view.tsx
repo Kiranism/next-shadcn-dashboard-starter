@@ -215,10 +215,13 @@ export function ProjectAnalyticsView({ projectId }: ProjectAnalyticsViewProps) {
           </CardHeader>
           <CardContent>
             <div className='text-2xl font-bold'>
-              {formatNumber(overview.totalBonuses)}₽
+              {formatNumber(Number(overview.totalBonuses), { decimals: 2 })}₽
             </div>
             <div className='text-muted-foreground flex items-center space-x-2 text-xs'>
-              <span>Активных: {formatNumber(overview.activeBonuses)}₽</span>
+              <span>
+                Активных:{' '}
+                {formatNumber(Number(overview.activeBonuses), { decimals: 2 })}₽
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -264,8 +267,11 @@ export function ProjectAnalyticsView({ projectId }: ProjectAnalyticsViewProps) {
               {analytics.referralStats?.totalReferrals || 0}
             </div>
             <div className='text-muted-foreground text-xs'>
-              {formatNumber(analytics.referralStats?.totalBonusPaid || 0)}₽
-              выплачено
+              {formatNumber(
+                Number(analytics.referralStats?.totalBonusPaid || 0),
+                { decimals: 2 }
+              )}
+              ₽ выплачено
             </div>
           </CardContent>
         </Card>
@@ -279,7 +285,10 @@ export function ProjectAnalyticsView({ projectId }: ProjectAnalyticsViewProps) {
           </CardHeader>
           <CardContent>
             <div className='text-warning text-2xl font-bold'>
-              {formatNumber(overview.expiringBonuses.amount)}₽
+              {formatNumber(Number(overview.expiringBonuses.amount), {
+                decimals: 2
+              })}
+              ₽
             </div>
             <div className='text-muted-foreground text-xs'>
               {overview.expiringBonuses.count} бонусов

@@ -44,7 +44,9 @@ export function useProjectUsers({
   // Производные состояния
   const totalUsers = users.length;
   const activeUsers = users.filter((user) => user.bonusBalance > 0).length;
-  const totalBonuses = users.reduce((sum, user) => sum + user.bonusBalance, 0);
+  const totalBonuses = Number(
+    users.reduce((sum, user) => sum + user.bonusBalance, 0).toFixed(2)
+  );
 
   /**
    * Загрузка пользователей проекта
@@ -96,8 +98,8 @@ export function useProjectUsers({
         avatar:
           user.avatar ||
           `https://api.slingacademy.com/public/sample-users/${(index % 10) + 1}.png`,
-        bonusBalance: Number(user.bonusBalance) || 0,
-        totalEarned: Number(user.totalEarned) || 0,
+        bonusBalance: Number(Number(user.bonusBalance).toFixed(2)) || 0,
+        totalEarned: Number(Number(user.totalEarned).toFixed(2)) || 0,
         createdAt: new Date(user.registeredAt || user.createdAt || Date.now()),
         updatedAt: new Date(user.updatedAt || Date.now()),
         firstName: user.firstName,

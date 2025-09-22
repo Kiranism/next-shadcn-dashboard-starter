@@ -621,10 +621,10 @@ const UserCard = memo<UserCardProps>(
 
             <div className='text-right'>
               <div className='text-lg font-semibold'>
-                {user.bonusBalance.toLocaleString('ru-RU')}₽
+                {Number(user.bonusBalance).toFixed(2)}₽
               </div>
               <div className='text-muted-foreground text-sm'>
-                Заработано: {user.totalEarned.toLocaleString('ru-RU')}₽
+                Заработано: {Number(user.totalEarned).toFixed(2)}₽
               </div>
             </div>
           </div>

@@ -155,10 +155,13 @@ export async function POST(
     const newLevel = await BonusLevelService.createBonusLevel({
       projectId,
       name,
-      minAmount,
-      maxAmount: body.maxAmount === null ? undefined : body.maxAmount,
-      bonusPercent,
-      paymentPercent,
+      minAmount: Number(minAmount),
+      maxAmount:
+        body.maxAmount === null || body.maxAmount === undefined
+          ? undefined
+          : Number(body.maxAmount),
+      bonusPercent: Math.round(Number(bonusPercent)),
+      paymentPercent: Math.round(Number(paymentPercent)),
       order: body.order,
       isActive: body.isActive !== false // По умолчанию активный
     });
@@ -193,7 +196,15 @@ export async function POST(
     }
 
     return NextResponse.json(
-      { error: 'Внутренняя ошибка сервера' },
+      {
+        error: 'Внутренняя ошибка сервера',
+        details:
+          error instanceof Error
+            ? error.message
+            : typeof error === 'string'
+              ? error
+              : 'Unknown'
+      },
       { status: 500 }
     );
   }

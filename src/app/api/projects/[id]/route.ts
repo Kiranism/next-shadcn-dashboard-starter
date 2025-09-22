@@ -69,6 +69,38 @@ export async function PUT(
         domain: body.domain,
         bonusPercentage: body.bonusPercentage,
         bonusExpiryDays: body.bonusExpiryDays,
+        // Новые настройки приветственного бонуса
+        // Храним в description referralProgram либо в отдельной таблице — здесь кладём в botSettings.functionalSettings
+        botSettings:
+          body.welcomeBonusAmount !== undefined
+            ? {
+                upsert: {
+                  create: {
+                    projectId: id,
+                    botToken: '',
+                    botUsername: '',
+                    functionalSettings: {
+                      set: {
+                        ...(typeof body.functionalSettings === 'object'
+                          ? body.functionalSettings
+                          : {}),
+                        welcomeBonusAmount: Number(body.welcomeBonusAmount)
+                      }
+                    }
+                  },
+                  update: {
+                    functionalSettings: {
+                      set: {
+                        ...(typeof body.functionalSettings === 'object'
+                          ? body.functionalSettings
+                          : {}),
+                        welcomeBonusAmount: Number(body.welcomeBonusAmount)
+                      }
+                    }
+                  }
+                }
+              }
+            : undefined,
         isActive: body.isActive
       }
     });

@@ -483,8 +483,8 @@
         // Устанавливаем максимум для input
         const cartTotal = this.getCartTotal();
         const maxBonuses = Math.min(this.state.bonusBalance, cartTotal);
-        amountInput.max = maxBonuses;
-        amountInput.placeholder = `Макс: ${maxBonuses} бонусов`;
+        amountInput.max = maxBonuses.toFixed(2);
+        amountInput.placeholder = `Макс: ${maxBonuses.toFixed(2)} бонусов`;
       } else {
         balanceElement.style.display = 'none';
         amountInput.style.display = 'none';
@@ -503,7 +503,7 @@
         const total = parseFloat(
           totalText.replace(/[^\d.,]/g, '').replace(',', '.')
         );
-        return isNaN(total) ? 0 : total;
+        return isNaN(total) ? 0 : Number(total.toFixed(2));
       }
       return 0;
     },
@@ -617,7 +617,7 @@
 
         // Если промокод не сработал — мягко корректируем визуальную сумму
         if (!appliedViaTilda) {
-          this.updateCartVisualTotal(cartTotal - amount);
+          this.updateCartVisualTotal(Number((cartTotal - amount).toFixed(2)));
         }
       } catch (error) {
         this.showError('Ошибка применения бонусов');

@@ -433,7 +433,10 @@ export function ProjectUsersView({ projectId }: ProjectUsersViewProps) {
           </CardHeader>
           <CardContent>
             <div className='text-2xl font-bold'>
-              {users.reduce((sum, user) => sum + (user.totalBonuses || 0), 0)}₽
+              {Number(
+                users.reduce((sum, user) => sum + (user.totalBonuses || 0), 0)
+              ).toFixed(2)}
+              ₽
             </div>
           </CardContent>
         </Card>
@@ -446,7 +449,10 @@ export function ProjectUsersView({ projectId }: ProjectUsersViewProps) {
           </CardHeader>
           <CardContent>
             <div className='text-2xl font-bold'>
-              {users.reduce((sum, user) => sum + (user.activeBonuses || 0), 0)}₽
+              {Number(
+                users.reduce((sum, user) => sum + (user.activeBonuses || 0), 0)
+              ).toFixed(2)}
+              ₽
             </div>
           </CardContent>
         </Card>
