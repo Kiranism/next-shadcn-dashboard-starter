@@ -26,16 +26,21 @@ export async function GET(
 
     const project = await ProjectService.getProjectById(projectId);
     const allowedHost = String(project?.domain || '')
+      .trim()
       .replace(/^https?:\/\//i, '')
       .replace(/^www\./i, '')
-      .trim();
+      .replace(/\/.*/, '')
+      .toLowerCase();
 
     const isAllowed = (() => {
       if (!allowedHost) return true; // fallback: no domain configured → allow
       if (!originToCheck) return false;
       try {
-        const h = new URL(originToCheck).hostname.replace(/^www\./i, '');
-        return h === allowedHost;
+        const h = new URL(originToCheck).hostname
+          .replace(/^www\./i, '')
+          .toLowerCase();
+        // allow exact host or any subdomain of the allowed host
+        return h === allowedHost || h.endsWith('.' + allowedHost);
       } catch {
         return false;
       }
@@ -148,15 +153,19 @@ export async function OPTIONS(
       originHeader || (refererHeader ? new URL(refererHeader).origin : '');
     const project = await ProjectService.getProjectById(projectId);
     const allowedHost = String(project?.domain || '')
+      .trim()
       .replace(/^https?:\/\//i, '')
       .replace(/^www\./i, '')
-      .trim();
+      .replace(/\/.*/, '')
+      .toLowerCase();
     let allow = false;
     try {
       const h = originToCheck
-        ? new URL(originToCheck).hostname.replace(/^www\./i, '')
+        ? new URL(originToCheck).hostname.replace(/^www\./i, '').toLowerCase()
         : '';
-      allow = !allowedHost || (h !== '' && h === allowedHost);
+      allow =
+        !allowedHost ||
+        (h !== '' && (h === allowedHost || h.endsWith('.' + allowedHost)));
     } catch {
       allow = false;
     }
