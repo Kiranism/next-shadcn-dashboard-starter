@@ -8,7 +8,12 @@
  */
 
 import BonusManagementPage from '@/features/bonuses/components/bonus-management-page';
+import { PageContainer } from '@/components/page-container';
 
 export default function BonusesPage() {
-  return <BonusManagementPage />;
+  return (
+    <PageContainer scrollable>
+      <BonusManagementPage />
+    </PageContainer>
+  );
 }

@@ -343,9 +343,7 @@ export function BonusManagementPageRefactored({
   }
 
   return (
-    <div
-      className={`container mx-auto max-w-[1200px] space-y-6 px-4 py-6 ${className ?? ''}`}
-    >
+    <div className={`w-full space-y-6 ${className ?? ''}`}>
       {/* Header */}
       <div className='flex items-center justify-between'>
         <div>
