@@ -224,7 +224,20 @@ async function handleTildaOrder(projectId: string, orderData: TildaOrder) {
         totalEarned: Number(userBalance.totalEarned)
       },
       levelInfo: result.levelInfo,
-      referralInfo: result.referralInfo
+      referralInfo: result.referralInfo,
+      debug: {
+        promo: (payment as any)?.promocode || (orderData as any)?.promocode,
+        appliedBonuses:
+          (orderData as any).appliedBonuses ??
+          (orderData as any).applied_bonuses,
+        isGupilPromo:
+          typeof (
+            (payment as any)?.promocode || (orderData as any)?.promocode
+          ) === 'string' &&
+          ((payment as any)?.promocode || (orderData as any)?.promocode)
+            .trim()
+            .toUpperCase() === 'GUPIL'
+      }
     };
   } catch (error) {
     logger.error('Ошибка обработки заказа Tilda', {
