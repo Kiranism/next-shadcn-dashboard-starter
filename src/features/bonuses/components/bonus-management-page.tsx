@@ -22,6 +22,20 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@/components/ui/table';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Search,
@@ -68,6 +82,11 @@ export function BonusManagementPageRefactored({
   const [showFilters, setShowFilters] = useState(false);
   const [showRichNotificationDialog, setShowRichNotificationDialog] =
     useState(false);
+  const [historyUserId, setHistoryUserId] = useState<string | null>(null);
+  const [historyItems, setHistoryItems] = useState<any[]>([]);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   // Custom hooks
   const {
@@ -148,6 +167,27 @@ export function BonusManagementPageRefactored({
       });
     },
     []
+  );
+
+  const openHistory = useCallback(
+    async (userId: string, page = 1) => {
+      if (!currentProjectId) return;
+      setHistoryLoading(true);
+      setHistoryUserId(userId);
+      try {
+        const res = await fetch(
+          `/api/projects/${currentProjectId}/users/${userId}/bonuses?page=${page}&limit=20`,
+          { cache: 'no-store' }
+        );
+        const data = await res.json();
+        setHistoryItems(data?.transactions || []);
+        setHistoryTotal(data?.pagination?.total || 0);
+        setHistoryPage(page);
+      } finally {
+        setHistoryLoading(false);
+      }
+    },
+    [currentProjectId]
   );
 
   const handleSelectAll = useCallback(
@@ -459,6 +499,7 @@ export function BonusManagementPageRefactored({
             isLoading={isLoading}
             onUserSelection={handleUserSelection}
             onSelectAll={handleSelectAll}
+            onOpenHistory={openHistory}
           />
         </CardContent>
       </Card>
@@ -486,6 +527,81 @@ export function BonusManagementPageRefactored({
         selectedUserIds={Array.from(selectedUsers)}
         projectId={currentProjectId || ''}
       />
+
+      {/* История операций пользователя */}
+      <Dialog
+        open={!!historyUserId}
+        onOpenChange={(o) => !o && setHistoryUserId(null)}
+      >
+        <DialogContent className='max-w-3xl'>
+          <DialogHeader>
+            <DialogTitle>История операций</DialogTitle>
+          </DialogHeader>
+          {historyLoading ? (
+            <div className='text-muted-foreground p-6 text-sm'>Загрузка…</div>
+          ) : historyItems.length === 0 ? (
+            <div className='text-muted-foreground p-6 text-sm'>
+              Нет операций
+            </div>
+          ) : (
+            <div className='space-y-3'>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Дата</TableHead>
+                    <TableHead>Тип</TableHead>
+                    <TableHead>Сумма</TableHead>
+                    <TableHead>Описание</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {historyItems.map((t) => (
+                    <TableRow key={t.id}>
+                      <TableCell>
+                        {new Date(t.createdAt).toLocaleString('ru-RU')}
+                      </TableCell>
+                      <TableCell>
+                        {t.type === 'EARN' ? 'Начисление' : 'Списание'}
+                      </TableCell>
+                      <TableCell>{Number(t.amount).toFixed(2)}₽</TableCell>
+                      <TableCell
+                        className='max-w-[420px] truncate'
+                        title={t.description || ''}
+                      >
+                        {t.description || '-'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <div className='flex items-center justify-between text-sm'>
+                <span>
+                  Показано {(historyPage - 1) * 20 + 1}–
+                  {Math.min(historyPage * 20, historyTotal)} из {historyTotal}
+                </span>
+                <div className='space-x-2'>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    disabled={historyPage <= 1}
+                    onClick={() => openHistory(historyUserId!, historyPage - 1)}
+                  >
+                    Назад
+                  </Button>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    disabled={historyPage * 20 >= historyTotal}
+                    onClick={() => openHistory(historyUserId!, historyPage + 1)}
+                  >
+                    Вперёд
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -499,10 +615,18 @@ interface UsersDisplayAreaProps {
   isLoading: boolean;
   onUserSelection: (userId: string, selected: boolean) => void;
   onSelectAll: (selected: boolean) => void;
+  onOpenHistory: (userId: string) => void;
 }
 
 const UsersDisplayArea = memo<UsersDisplayAreaProps>(
-  ({ users, selectedUsers, isLoading, onUserSelection, onSelectAll }) => {
+  ({
+    users,
+    selectedUsers,
+    isLoading,
+    onUserSelection,
+    onSelectAll,
+    onOpenHistory
+  }) => {
     if (isLoading) {
       return (
         <div className='space-y-4'>
@@ -561,6 +685,7 @@ const UsersDisplayArea = memo<UsersDisplayAreaProps>(
               onSelectionChange={(selected) =>
                 onUserSelection(user.id, selected)
               }
+              onOpenHistory={() => onOpenHistory(user.id)}
             />
           ))}
         </div>
@@ -578,10 +703,11 @@ interface UserCardProps {
   user: User;
   selected: boolean;
   onSelectionChange: (selected: boolean) => void;
+  onOpenHistory: () => void;
 }
 
 const UserCard = memo<UserCardProps>(
-  ({ user, selected, onSelectionChange }) => {
+  ({ user, selected, onSelectionChange, onOpenHistory }) => {
     const isActive = user.bonusBalance > 0;
 
     return (
@@ -625,6 +751,11 @@ const UserCard = memo<UserCardProps>(
               </div>
               <div className='text-muted-foreground text-sm'>
                 Заработано: {Number(user.totalEarned).toFixed(2)}₽
+              </div>
+              <div className='mt-2'>
+                <Button variant='outline' size='sm' onClick={onOpenHistory}>
+                  История
+                </Button>
               </div>
             </div>
           </div>
