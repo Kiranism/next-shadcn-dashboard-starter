@@ -69,41 +69,45 @@ export async function PUT(
         domain: body.domain,
         bonusPercentage: body.bonusPercentage,
         bonusExpiryDays: body.bonusExpiryDays,
-        // Новые настройки приветственного бонуса
-        // Храним в description referralProgram либо в отдельной таблице — здесь кладём в botSettings.functionalSettings
-        botSettings:
-          body.welcomeBonusAmount !== undefined
-            ? {
-                upsert: {
-                  create: {
-                    projectId: id,
-                    botToken: '',
-                    botUsername: '',
-                    functionalSettings: {
-                      set: {
-                        ...(typeof body.functionalSettings === 'object'
-                          ? body.functionalSettings
-                          : {}),
-                        welcomeBonusAmount: Number(body.welcomeBonusAmount)
-                      }
-                    }
-                  },
-                  update: {
-                    functionalSettings: {
-                      set: {
-                        ...(typeof body.functionalSettings === 'object'
-                          ? body.functionalSettings
-                          : {}),
-                        welcomeBonusAmount: Number(body.welcomeBonusAmount)
-                      }
-                    }
-                  }
-                }
-              }
-            : undefined,
+        // Убираем попытку upsert в BotSettings (конфликт типов Prisma)
         isActive: body.isActive
       }
     });
+
+    // Синхронизируем welcomeBonus с ReferralProgram.description, если передан
+    if (body.welcomeBonusAmount !== undefined) {
+      const amount = Number(body.welcomeBonusAmount);
+      try {
+        const existing = await db.referralProgram.findUnique({
+          where: { projectId: id }
+        });
+        if (!existing) {
+          await db.referralProgram.create({
+            data: {
+              projectId: id,
+              isActive: true,
+              referrerBonus: 0,
+              description: JSON.stringify({ welcomeBonus: amount })
+            }
+          });
+        } else {
+          let meta: any = {};
+          try {
+            meta = existing.description ? JSON.parse(existing.description) : {};
+          } catch {}
+          meta.welcomeBonus = amount;
+          await db.referralProgram.update({
+            where: { id: existing.id },
+            data: { description: JSON.stringify(meta) }
+          });
+        }
+      } catch (e) {
+        logger.warn('Не удалось синхронизировать welcomeBonus', {
+          projectId: id,
+          error: e instanceof Error ? e.message : String(e)
+        });
+      }
+    }
 
     return NextResponse.json(updatedProject);
   } catch (error) {
