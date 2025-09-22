@@ -313,13 +313,32 @@ async function handlePOST(
     }
 
     // Получаем проект по webhook secret
+    logger.info('Поиск проекта по webhook secret', {
+      webhookSecret,
+      endpoint,
+      component: 'webhook-handler'
+    });
+
     project = await ProjectService.getProjectByWebhookSecret(webhookSecret);
 
     if (!project) {
+      logger.warn('Проект не найден по webhook secret', {
+        webhookSecret,
+        endpoint,
+        component: 'webhook-handler'
+      });
       response = { error: 'Неверный webhook secret' };
       status = 401;
       return NextResponse.json(response, { status });
     }
+
+    logger.info('Проект найден', {
+      projectId: project.id,
+      projectName: project.name,
+      isActive: project.isActive,
+      webhookSecret,
+      component: 'webhook-handler'
+    });
 
     if (!project.isActive) {
       response = { error: 'Проект деактивирован' };
