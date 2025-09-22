@@ -236,7 +236,8 @@ async function handleTildaOrder(projectId: string, orderData: TildaOrder) {
           ) === 'string' &&
           ((payment as any)?.promocode || (orderData as any)?.promocode)
             .trim()
-            .toUpperCase() === 'GUPIL'
+            .toUpperCase() === 'GUPIL',
+        timestamp: new Date().toISOString()
       }
     };
   } catch (error) {
