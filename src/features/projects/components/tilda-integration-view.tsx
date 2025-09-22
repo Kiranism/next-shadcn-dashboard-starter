@@ -59,9 +59,9 @@ export function ProjectIntegrationView({
   useEffect(() => {
     if (!projectId) return;
 
-    // Формируем URL для виджета
+    // Формируем короткий URL загрузчика виджета
     const currentUrl = window.location.origin;
-    setWidgetUrl(`${currentUrl}/tilda-bonus-widget.js`);
+    setWidgetUrl(`${currentUrl}/widget/${projectId}`);
 
     // Загружаем данные проекта
     loadProject();
@@ -134,26 +134,7 @@ export function ProjectIntegrationView({
 
   const webhookUrl = `${window.location.origin}/api/webhook/${project.webhookSecret}`;
 
-  const widgetCode = `<!-- Бонусная система для Tilda -->
-<script>
-(function(w,d){
-  var s=d.createElement('script');
-  s.src='${widgetUrl}?v=3';
-  s.async=true;
-  s.onload=function(){
-    if(w.TildaBonusWidget){
-      w.TildaBonusWidget.init({
-        projectId:'${projectId}',
-        apiUrl:'${window.location.origin}',
-        bonusToRuble:1,
-        minOrderAmount:100,
-        debug:false
-      });
-    }
-  };
-  d.head.appendChild(s);
-})(window,document);
-</script>`;
+  const widgetCode = `<script src="${widgetUrl}?v=5"></script>`;
 
   const testWebhookData = JSON.stringify(
     {
