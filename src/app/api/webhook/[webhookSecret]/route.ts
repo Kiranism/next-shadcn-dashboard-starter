@@ -121,6 +121,21 @@ async function handleTildaOrder(projectId: string, orderData: TildaOrder) {
       description
     );
 
+    // Если на форме передано скрытое поле appliedBonuses — фиксируем списание в транзакциях
+    try {
+      const appliedRaw =
+        (orderData as any).appliedBonuses ?? (orderData as any).applied_bonuses;
+      const applied = Number(appliedRaw);
+      if (Number.isFinite(applied) && applied > 0) {
+        await BonusService.spendBonuses(
+          user.id,
+          applied,
+          `Списание бонусов при заказе ${orderId}`,
+          { orderId, source: 'tilda_order' }
+        );
+      }
+    } catch {}
+
     // Получаем баланс пользователя для ответа
     const userBalance = await UserService.getUserBalance(user.id);
 
