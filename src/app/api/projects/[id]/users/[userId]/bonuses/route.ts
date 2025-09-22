@@ -138,6 +138,9 @@ async function getHandler(
 ) {
   try {
     const { id: projectId, userId } = await params;
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
 
     // Проверяем существование пользователя в проекте
     const user = await db.user.findFirst({
@@ -154,7 +157,48 @@ async function getHandler(
       );
     }
 
-    // Получаем баланс пользователя
+    // Если есть параметры пагинации - возвращаем историю транзакций
+    if (searchParams.has('page') || searchParams.has('limit')) {
+      const { transactions, total } = await UserService.getUserTransactions(
+        userId,
+        page,
+        limit
+      );
+
+      // Сериализуем BigInt поля в транзакциях
+      const serializedTransactions = transactions.map((t) => ({
+        ...t,
+        amount: t.amount.toString(),
+        // Дополнительная сериализация вложенных объектов, если они содержат BigInt
+        user: t.user
+          ? {
+              ...t.user,
+              totalPurchases: t.user.totalPurchases
+                ? t.user.totalPurchases.toString()
+                : '0',
+              telegramId: t.user.telegramId
+                ? t.user.telegramId.toString()
+                : null
+            }
+          : undefined,
+        bonus: t.bonus
+          ? {
+              ...t.bonus,
+              amount: t.bonus.amount.toString()
+            }
+          : undefined
+      }));
+
+      return NextResponse.json({
+        transactions: serializedTransactions,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      });
+    }
+
+    // Иначе возвращаем только баланс (для обратной совместимости)
     const balance = await UserService.getUserBalance(userId);
 
     // Сериализуем BigInt поля в балансе
@@ -168,7 +212,7 @@ async function getHandler(
 
     return NextResponse.json(serializedBalance);
   } catch (error) {
-    console.error('Ошибка получения баланса:', error);
+    console.error('Ошибка получения данных пользователя:', error);
     return NextResponse.json(
       { error: 'Внутренняя ошибка сервера' },
       { status: 500 }

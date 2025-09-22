@@ -470,6 +470,35 @@ export class UserService {
         : undefined
     } as any;
   }
+
+  // Получение истории транзакций пользователя
+  static async getUserTransactions(
+    userId: string,
+    page = 1,
+    limit = 10
+  ): Promise<{ transactions: Transaction[]; total: number }> {
+    const skip = (page - 1) * limit;
+
+    const [transactions, total] = await Promise.all([
+      db.transaction.findMany({
+        where: { userId },
+        skip,
+        take: limit,
+        include: {
+          user: true,
+          bonus: true
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      }),
+      db.transaction.count({
+        where: { userId }
+      })
+    ]);
+
+    return { transactions: transactions as any, total };
+  }
 }
 
 export class BonusService {
@@ -755,34 +784,5 @@ export class BonusService {
       type: 'BIRTHDAY',
       description: `Бонус ко дню рождения`
     });
-  }
-
-  // Получение истории транзакций пользователя
-  static async getUserTransactions(
-    userId: string,
-    page = 1,
-    limit = 10
-  ): Promise<{ transactions: Transaction[]; total: number }> {
-    const skip = (page - 1) * limit;
-
-    const [transactions, total] = await Promise.all([
-      db.transaction.findMany({
-        where: { userId },
-        skip,
-        take: limit,
-        include: {
-          user: true,
-          bonus: true
-        },
-        orderBy: {
-          createdAt: 'desc'
-        }
-      }),
-      db.transaction.count({
-        where: { userId }
-      })
-    ]);
-
-    return { transactions: transactions as any, total };
   }
 }
