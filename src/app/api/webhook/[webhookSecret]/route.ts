@@ -134,6 +134,17 @@ async function handleTildaOrder(projectId: string, orderData: TildaOrder) {
           ? appliedRaw.replace(/[^0-9.\-]/g, '')
           : appliedRaw
       );
+
+      logger.info('🔍 Проверка условий списания бонусов', {
+        projectId,
+        orderId,
+        promo,
+        isGupilPromo,
+        appliedRaw,
+        appliedRequested,
+        component: 'tilda-webhook'
+      });
+
       if (
         isGupilPromo &&
         Number.isFinite(appliedRequested) &&
@@ -154,12 +165,30 @@ async function handleTildaOrder(projectId: string, orderData: TildaOrder) {
             component: 'tilda-webhook'
           });
         }
+        logger.info('💰 Выполняем списание бонусов', {
+          projectId,
+          orderId,
+          userId: user.id,
+          applied,
+          requested: appliedRequested,
+          currentBalance: balance.currentBalance,
+          component: 'tilda-webhook'
+        });
+
         await BonusService.spendBonuses(
           user.id,
           applied,
           `Списание бонусов при заказе ${orderId} (промокод GUPIL)`,
           { orderId, source: 'tilda_order', promocode: 'GUPIL' }
         );
+
+        logger.info('✅ Списание бонусов выполнено успешно', {
+          projectId,
+          orderId,
+          userId: user.id,
+          applied,
+          component: 'tilda-webhook'
+        });
       }
     } catch (e) {
       logger.error('Ошибка списания бонусов (GUPIL) из webhook', {

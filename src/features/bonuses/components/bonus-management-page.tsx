@@ -543,39 +543,60 @@ export function BonusManagementPageRefactored({
             </div>
           ) : (
             <div className='space-y-3'>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Дата</TableHead>
-                    <TableHead>Тип</TableHead>
-                    <TableHead>Сумма</TableHead>
-                    <TableHead>Описание</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {historyItems.map((t) => (
-                    <TableRow key={t.id}>
-                      <TableCell>
-                        {new Date(t.createdAt).toLocaleString('ru-RU')}
-                      </TableCell>
-                      <TableCell>
-                        {t.type === 'EARN' ? 'Начисление' : 'Списание'}
-                      </TableCell>
-                      <TableCell>{Number(t.amount).toFixed(2)}₽</TableCell>
-                      <TableCell
-                        className='max-w-[420px] truncate'
-                        title={t.description || ''}
-                      >
-                        {t.description || '-'}
-                      </TableCell>
+              <div className='overflow-x-auto'>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className='w-[140px]'>Дата</TableHead>
+                      <TableHead className='w-[100px] text-center'>
+                        Тип
+                      </TableHead>
+                      <TableHead className='w-[100px] text-right'>
+                        Сумма
+                      </TableHead>
+                      <TableHead className='min-w-[200px]'>Описание</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <div className='flex items-center justify-between text-sm'>
-                <span>
-                  Показано {(historyPage - 1) * 20 + 1}–
-                  {Math.min(historyPage * 20, historyTotal)} из {historyTotal}
+                  </TableHeader>
+                  <TableBody>
+                    {historyItems.map((t) => (
+                      <TableRow key={t.id}>
+                        <TableCell className='text-sm'>
+                          {new Date(t.createdAt).toLocaleString('ru-RU')}
+                        </TableCell>
+                        <TableCell className='text-center'>
+                          <span
+                            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                              t.type === 'EARN'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}
+                          >
+                            {t.type === 'EARN' ? 'Начисление' : 'Списание'}
+                          </span>
+                        </TableCell>
+                        <TableCell className='text-right font-medium'>
+                          {t.type === 'EARN' ? '+' : '-'}
+                          {Number(t.amount).toFixed(2)}₽
+                        </TableCell>
+                        <TableCell
+                          className='max-w-[300px] truncate text-sm'
+                          title={t.description || ''}
+                        >
+                          {t.description || '-'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className='flex items-center justify-between border-t pt-4 text-sm'>
+                <span className='text-muted-foreground'>
+                  Показано{' '}
+                  {historyItems.length > 0 ? (historyPage - 1) * 20 + 1 : 0}–
+                  {historyItems.length > 0
+                    ? Math.min(historyPage * 20, historyTotal)
+                    : 0}{' '}
+                  из {historyTotal}
                 </span>
                 <div className='space-x-2'>
                   <Button

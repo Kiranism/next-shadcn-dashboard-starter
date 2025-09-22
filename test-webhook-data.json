@@ -1,0 +1,31 @@
+{
+  "Name": "Михаил Иванович Сагалаев",
+  "Email": "sagalaev.mikhail@yandex.ru",
+  "Phone": "+7 (962) 002-41-88",
+  "ma_id": 34602609,
+  "formid": "form788630355",
+  "payment": {
+    "amount": "5490",
+    "orderid": "1404863401",
+    "delivery": "СДЭК (пвз) бесплатно от 1000 р. в заказе",
+    "discount": "1480",
+    "products": [
+      {
+        "sku": "foundation01_30",
+        "name": "Тональная основа минеральная",
+        "price": "1790",
+        "amount": 1790,
+        "quantity": 1
+      }
+    ],
+    "subtotal": "6970",
+    "promocode": "GUPIL",
+    "delivery_price": 0
+  },
+  "Checkbox": "yes",
+  "formname": "Cart",
+  "ma_email": "sagalaev.mikhail@yandex.ru",
+  "paymentsystem": "cash",
+  "appliedBonuses": "1480",
+  "Комментарий_к_заказу": "Тестовая заявка. Не отправлять!!!"
+}
