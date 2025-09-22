@@ -205,6 +205,7 @@ async function handleTildaOrder(projectId: string, orderData: TildaOrder) {
     return {
       success: true,
       message: 'Заказ обработан, бонусы начислены',
+      debug_test: 'DEBUG_WORKING',
       order: {
         id: orderId,
         amount: totalAmount,
