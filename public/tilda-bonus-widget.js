@@ -169,9 +169,7 @@
         }
       `;
       document.head.appendChild(style);
-
-      // Создаем контейнер для виджета
-      this.createWidget();
+      // Контейнер создаём лениво — только когда пользователь найден
     },
 
     // Создание виджета
@@ -212,6 +210,23 @@
         this.log('Виджет добавлен на страницу');
       } else {
         this.log('Не удалось найти место для виджета');
+      }
+    },
+
+    // Гарантированно вставить виджет, если его ещё нет
+    ensureWidgetMounted: function () {
+      if (!document.querySelector('.bonus-widget-container')) {
+        this.createWidget();
+      }
+      return !!document.querySelector('.bonus-widget-container');
+    },
+
+    // Полностью скрыть/удалить виджет, если пользователь не найден/не авторизован
+    removeWidget: function () {
+      const container = document.querySelector('.bonus-widget-container');
+      if (container && container.parentNode) {
+        container.parentNode.removeChild(container);
+        this.log('Виджет удалён (пользователь не найден)');
       }
     },
 
@@ -393,10 +408,16 @@
 
         const data = await response.json();
 
-        if (data.success) {
-          this.state.bonusBalance = data.balance || 0;
-          this.updateBalanceDisplay();
-          this.log('Баланс загружен:', this.state.bonusBalance);
+        if (data && data.success && data.user) {
+          // Пользователь найден — монтируем виджет при необходимости и обновляем
+          if (this.ensureWidgetMounted()) {
+            this.state.bonusBalance = data.balance || 0;
+            this.updateBalanceDisplay();
+            this.log('Баланс загружен:', this.state.bonusBalance);
+          }
+        } else {
+          // Пользователь не найден/не авторизован — виджет не показываем вовсе
+          this.removeWidget();
         }
       } catch (error) {
         if (error && error.name === 'AbortError') {
