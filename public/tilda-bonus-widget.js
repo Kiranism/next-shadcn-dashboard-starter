@@ -47,6 +47,24 @@
         return;
       }
 
+      // Если apiUrl не указан, определяем по src текущего скрипта
+      try {
+        if (!this.config.apiUrl) {
+          var cur = document.currentScript;
+          var el =
+            cur ||
+            document.querySelector('script[src*="tilda-bonus-widget.js"]');
+          if (el && el.getAttribute('src')) {
+            var u = new URL(el.getAttribute('src'), window.location.href);
+            this.config.apiUrl = u.origin;
+          } else {
+            this.config.apiUrl = window.location.origin;
+          }
+        }
+      } catch (_) {
+        this.config.apiUrl = this.config.apiUrl || window.location.origin;
+      }
+
       // Инициализируем UI
       this.initUI();
 
@@ -554,7 +572,26 @@
         // Добавляем скрытое поле с бонусами для отправки в webhook
         this.addHiddenBonusField(amount);
 
-        // Никакой автоприменения промокода. Мы только сохраняем сумму.
+        // Применяем скидку через нативный механизм Тильды как промокод с фиксированным дискаунтом
+        try {
+          if (typeof window.t_input_promocode__addPromocode === 'function') {
+            window.t_input_promocode__addPromocode({
+              promocode: 'GUPIL',
+              discountsum: amount
+            });
+            if (typeof window.tcart__calcPromocode === 'function') {
+              try {
+                window.tcart__calcPromocode();
+              } catch (_) {}
+            }
+            if (typeof window.tcart__reDraw === 'function') {
+              try {
+                window.tcart__reDraw();
+              } catch (_) {}
+            }
+          }
+        } catch (_) {}
+
         this.showSuccess(`Применено ${amount.toFixed(2)} бонусов.`);
       } catch (error) {
         this.showError('Ошибка применения бонусов');
