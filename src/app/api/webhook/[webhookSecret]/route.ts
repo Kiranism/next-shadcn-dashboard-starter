@@ -280,6 +280,16 @@ async function handlePOST(
   const start = Date.now();
 
   try {
+    // Логируем КАЖДЫЙ входящий webhook запрос для отладки
+    logger.info('Входящий webhook запрос', {
+      webhookSecret,
+      method,
+      endpoint,
+      contentType: request.headers.get('content-type'),
+      userAgent: request.headers.get('user-agent'),
+      component: 'webhook-handler'
+    });
+
     // Парсим тело запроса (поддержка JSON, form-urlencoded и multipart из Tilda)
     const contentType = request.headers.get('content-type') || '';
     if (contentType.includes('application/json')) {

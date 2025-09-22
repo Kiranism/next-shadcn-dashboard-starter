@@ -1,6 +1,7 @@
 // Типизация восстановлена для обеспечения безопасности типов
 
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import type {
   CreateProjectInput,
   UpdateProjectInput,
@@ -51,19 +52,89 @@ export class ProjectService {
   static async getProjectByWebhookSecret(
     webhookSecret: string
   ): Promise<Project | null> {
-    const project = await db.project.findUnique({
-      where: { webhookSecret },
-      include: {
-        botSettings: true,
-        _count: {
-          select: {
-            users: true
+    try {
+      logger.info('ProjectService: поиск проекта по webhook secret', {
+        webhookSecret,
+        component: 'project-service'
+      });
+
+      // Сначала проверим подключение к БД
+      await db.$queryRaw`SELECT 1`;
+
+      let project = await db.project.findUnique({
+        where: { webhookSecret },
+        include: {
+          botSettings: true,
+          _count: {
+            select: {
+              users: true
+            }
           }
         }
-      }
-    });
+      });
 
-    return project as any;
+      // Fallback: если findUnique не нашел, попробуем findFirst
+      if (!project) {
+        logger.warn('ProjectService: findUnique не нашел, пробуем findFirst', {
+          webhookSecret,
+          component: 'project-service'
+        });
+
+        project = await db.project.findFirst({
+          where: { webhookSecret },
+          include: {
+            botSettings: true,
+            _count: {
+              select: {
+                users: true
+              }
+            }
+          }
+        });
+      }
+
+      if (project) {
+        logger.info('ProjectService: проект найден', {
+          projectId: project.id,
+          projectName: project.name,
+          webhookSecret,
+          component: 'project-service'
+        });
+      } else {
+        logger.warn('ProjectService: проект не найден', {
+          webhookSecret,
+          component: 'project-service'
+        });
+
+        // Попробуем найти любые проекты для отладки
+        const allProjects = await db.project.findMany({
+          select: {
+            id: true,
+            name: true,
+            webhookSecret: true
+          },
+          take: 5
+        });
+
+        logger.info('ProjectService: существующие проекты (первые 5)', {
+          projects: allProjects.map((p) => ({
+            id: p.id,
+            name: p.name,
+            webhookSecret: p.webhookSecret
+          })),
+          component: 'project-service'
+        });
+      }
+
+      return project as any;
+    } catch (error) {
+      logger.error('ProjectService: ошибка при поиске проекта', {
+        webhookSecret,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        component: 'project-service'
+      });
+      throw error;
+    }
   }
 
   // Получение проекта по домену
