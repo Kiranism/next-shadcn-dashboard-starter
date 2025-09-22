@@ -87,6 +87,9 @@
           color: #212529;
           margin-bottom: 12px;
         }
+        .bonus-toggle{display:flex;gap:8px;margin-bottom:12px}
+        .bonus-toggle-btn{flex:1;padding:8px 12px;border:1px solid #ced4da;background:#fff;border-radius:4px;cursor:pointer}
+        .bonus-toggle-btn.active{background:#e9ecef;border-color:#adb5bd;font-weight:600}
         
         .bonus-balance {
           font-size: 16px;
@@ -341,6 +344,8 @@
         promoSection.style.display = 'none';
         bonusSection.style.display = 'flex';
       }
+      // Переключение режима всегда сбрасывает ранее применённые бонусы/визуальные изменения
+      this.resetAppliedBonuses();
     },
 
     // Наблюдение за вводом пользователя
@@ -508,30 +513,8 @@
       return 0;
     },
 
-    // Применение скидки через внутренний механизм Тильды (промокод)
-    applyDiscountViaTilda: function (amountRubles) {
-      try {
-        if (typeof window.t_input_promocode__addPromocode === 'function') {
-          var promo = {
-            promocode: 'BONUS',
-            discountsum: Number(amountRubles) || 0
-          };
-          window.t_input_promocode__addPromocode(promo);
-          if (typeof window.tcart__calcPromocode === 'function') {
-            try {
-              window.tcart__calcPromocode();
-            } catch (_) {}
-          }
-          if (typeof window.tcart__reDraw === 'function') {
-            try {
-              window.tcart__reDraw();
-            } catch (_) {}
-          }
-          return true;
-        }
-      } catch (e) {
-        this.log('Ошибка применения Tilda промокода:', e);
-      }
+    // Применение скидки через Tilda отключено в режиме бонусов — используйте вкладку «Промокод» для стандартного поведения
+    applyDiscountViaTilda: function (_amountRubles) {
       return false;
     },
 
@@ -577,7 +560,7 @@
     // Применение бонусов
     applyBonuses: async function () {
       const amountInput = document.getElementById('bonus-amount-input');
-      const amount = parseInt(amountInput.value) || 0;
+      const amount = parseFloat(amountInput.value) || 0;
 
       if (amount <= 0) {
         this.showError('Укажите количество бонусов');
@@ -598,27 +581,19 @@
       try {
         this.showLoading(true);
 
-        // Пытаемся применить скидку через промокод Tilda, если доступно
-        var appliedViaTilda = this.applyDiscountViaTilda(amount);
-
-        // Сохраняем примененные бонусы
+        // Сохраняем примененные бонусы (без автоматического оформления и без промокодов)
         this.state.appliedBonuses = amount;
         localStorage.setItem('tilda_applied_bonuses', amount);
 
         // Обновляем отображение
         this.showSuccess(
-          appliedViaTilda
-            ? `Применено ${amount} бонусов (скидка через промокод)`
-            : `Применено ${amount} бонусов (-${amount} ₽)`
+          `Применено ${amount.toFixed(2)} бонусов. Скидка будет учтена при оформлении заказа.`
         );
 
         // Добавляем скрытое поле с бонусами для отправки в webhook
         this.addHiddenBonusField(amount);
 
-        // Если промокод не сработал — мягко корректируем визуальную сумму
-        if (!appliedViaTilda) {
-          this.updateCartVisualTotal(Number((cartTotal - amount).toFixed(2)));
-        }
+        // Никаких визуальных изменений суммы заказа и промокодов в режиме бонусов
       } catch (error) {
         this.showError('Ошибка применения бонусов');
         this.log('Ошибка:', error);
