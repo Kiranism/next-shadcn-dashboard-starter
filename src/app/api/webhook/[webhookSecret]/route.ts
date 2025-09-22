@@ -541,6 +541,46 @@ async function handleRegisterUser(
     // Реферальная система
     referralCode
   });
+  try {
+    // Приветственный бонус: читаем из ReferralProgram.description
+    const program = await db.referralProgram.findUnique({
+      where: { projectId }
+    });
+    const meta = program?.description
+      ? JSON.parse(program.description as any)
+      : {};
+    const welcome = Number(meta?.welcomeBonus || 0);
+    if (welcome > 0) {
+      const project = await db.project.findUnique({ where: { id: projectId } });
+      const expiresAt = new Date();
+      expiresAt.setDate(
+        expiresAt.getDate() + Number(project?.bonusExpiryDays || 365)
+      );
+      const bonus = await db.bonus.create({
+        data: {
+          userId: user.id,
+          amount: welcome,
+          type: 'MANUAL',
+          description: 'Приветственный бонус при регистрации',
+          expiresAt
+        }
+      });
+      await db.transaction.create({
+        data: {
+          userId: user.id,
+          bonusId: bonus.id,
+          amount: welcome,
+          type: 'EARN',
+          description: 'Приветственный бонус при регистрации'
+        }
+      });
+    }
+  } catch (e) {
+    logger.warn('Не удалось начислить приветственный бонус (webhook)', {
+      projectId,
+      error: e instanceof Error ? e.message : String(e)
+    });
+  }
 
   return {
     success: true,
