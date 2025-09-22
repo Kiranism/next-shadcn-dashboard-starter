@@ -160,7 +160,7 @@ export async function OPTIONS(
     } catch {
       allow = false;
     }
-    const headers =
+    const headers: Record<string, string> =
       allow && originToCheck
         ? {
             'Access-Control-Allow-Origin': originToCheck,
