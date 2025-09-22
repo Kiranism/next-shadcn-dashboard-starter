@@ -328,7 +328,7 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
     }
 
     try {
-      const { transactions } = await BonusService.getUserTransactions(
+      const { transactions } = await UserService.getUserTransactions(
         user.id,
         1,
         10
@@ -795,7 +795,7 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
     }
 
     try {
-      const { transactions } = await BonusService.getUserTransactions(
+      const { transactions } = await UserService.getUserTransactions(
         user.id,
         1,
         5
