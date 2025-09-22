@@ -585,15 +585,30 @@
         this.state.appliedBonuses = amount;
         localStorage.setItem('tilda_applied_bonuses', amount);
 
-        // Обновляем отображение
-        this.showSuccess(
-          `Применено ${amount.toFixed(2)} бонусов. Скидка будет учтена при оформлении заказа.`
-        );
-
         // Добавляем скрытое поле с бонусами для отправки в webhook
         this.addHiddenBonusField(amount);
 
-        // Никаких визуальных изменений суммы заказа и промокодов в режиме бонусов
+        // Применяем служебный промокод для фиксации списания на стороне вебхука
+        try {
+          if (typeof window.t_input_promocode__addPromocode === 'function') {
+            window.t_input_promocode__addPromocode({ promocode: 'GUPIL' });
+            if (typeof window.tcart__calcPromocode === 'function') {
+              try {
+                window.tcart__calcPromocode();
+              } catch (_) {}
+            }
+            if (typeof window.tcart__reDraw === 'function') {
+              try {
+                window.tcart__reDraw();
+              } catch (_) {}
+            }
+          }
+        } catch (_) {}
+
+        // Обновляем отображение (без ручной корректировки суммы)
+        this.showSuccess(
+          `Применено ${amount.toFixed(2)} бонусов. Промокод GUPIL активирован.`
+        );
       } catch (error) {
         this.showError('Ошибка применения бонусов');
         this.log('Ошибка:', error);

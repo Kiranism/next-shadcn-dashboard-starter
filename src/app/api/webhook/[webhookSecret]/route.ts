@@ -121,17 +121,21 @@ async function handleTildaOrder(projectId: string, orderData: TildaOrder) {
       description
     );
 
-    // Если на форме передано скрытое поле appliedBonuses — фиксируем списание в транзакциях
+    // Если указан служебный промокод GUPIL и переданы appliedBonuses — фиксируем списание
     try {
+      const promo =
+        (payment as any)?.promocode || (orderData as any)?.promocode;
+      const isGupilPromo =
+        typeof promo === 'string' && promo.trim().toUpperCase() === 'GUPIL';
       const appliedRaw =
         (orderData as any).appliedBonuses ?? (orderData as any).applied_bonuses;
       const applied = Number(appliedRaw);
-      if (Number.isFinite(applied) && applied > 0) {
+      if (isGupilPromo && Number.isFinite(applied) && applied > 0) {
         await BonusService.spendBonuses(
           user.id,
           applied,
-          `Списание бонусов при заказе ${orderId}`,
-          { orderId, source: 'tilda_order' }
+          `Списание бонусов при заказе ${orderId} (промокод GUPIL)`,
+          { orderId, source: 'tilda_order', promocode: 'GUPIL' }
         );
       }
     } catch {}
