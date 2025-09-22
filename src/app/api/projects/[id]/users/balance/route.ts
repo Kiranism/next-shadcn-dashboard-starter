@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { UserService } from '@/lib/services/user.service';
+import { ProjectService } from '@/lib/services/project.service';
 import { logger } from '@/lib/logger';
 
 export async function GET(
@@ -17,6 +18,44 @@ export async function GET(
 ) {
   try {
     const { id: projectId } = await context.params;
+    // Domain allow-list based on project.domain
+    const originHeader = request.headers.get('origin') || '';
+    const refererHeader = request.headers.get('referer') || '';
+    const originToCheck =
+      originHeader || (refererHeader ? new URL(refererHeader).origin : '');
+
+    const project = await ProjectService.getProjectById(projectId);
+    const allowedHost = String(project?.domain || '')
+      .replace(/^https?:\/\//i, '')
+      .replace(/^www\./i, '')
+      .trim();
+
+    const isAllowed = (() => {
+      if (!allowedHost) return true; // fallback: no domain configured → allow
+      if (!originToCheck) return false;
+      try {
+        const h = new URL(originToCheck).hostname.replace(/^www\./i, '');
+        return h === allowedHost;
+      } catch {
+        return false;
+      }
+    })();
+
+    const corsHeaders =
+      isAllowed && originToCheck
+        ? {
+            'Access-Control-Allow-Origin': originToCheck,
+            'Access-Control-Allow-Credentials': 'true',
+            Vary: 'Origin'
+          }
+        : undefined;
+
+    if (!isAllowed) {
+      return NextResponse.json(
+        { success: false, error: 'Origin not allowed' },
+        { status: 403 }
+      );
+    }
     const url = new URL(request.url);
     const email = url.searchParams.get('email');
     const phone = url.searchParams.get('phone');
@@ -24,7 +63,7 @@ export async function GET(
     if (!email && !phone) {
       return NextResponse.json(
         { error: 'Требуется email или phone параметр' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -43,7 +82,7 @@ export async function GET(
           balance: 0,
           user: null
         },
-        { status: 404 }
+        { status: 404, headers: corsHeaders }
       );
     }
 
@@ -58,24 +97,27 @@ export async function GET(
       balance: userBalance.currentBalance
     });
 
-    return NextResponse.json({
-      success: true,
-      balance: Number(userBalance.currentBalance),
-      user: {
-        id: user.id,
-        email: user.email,
-        phone: user.phone,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        currentLevel: user.currentLevel
+    return NextResponse.json(
+      {
+        success: true,
+        balance: Number(userBalance.currentBalance),
+        user: {
+          id: user.id,
+          email: user.email,
+          phone: user.phone,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          currentLevel: user.currentLevel
+        },
+        balanceDetails: {
+          currentBalance: Number(userBalance.currentBalance),
+          totalEarned: Number(userBalance.totalEarned),
+          totalSpent: Number(userBalance.totalSpent),
+          expiringSoon: Number(userBalance.expiringSoon)
+        }
       },
-      balanceDetails: {
-        currentBalance: Number(userBalance.currentBalance),
-        totalEarned: Number(userBalance.totalEarned),
-        totalSpent: Number(userBalance.totalSpent),
-        expiringSoon: Number(userBalance.expiringSoon)
-      }
-    });
+      { headers: corsHeaders }
+    );
   } catch (error) {
     const { id: projectId } = await context.params;
     logger.error('Error retrieving user balance', {
@@ -91,5 +133,45 @@ export async function GET(
       },
       { status: 500 }
     );
+  }
+}
+
+export async function OPTIONS(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: projectId } = await context.params;
+    const originHeader = request.headers.get('origin') || '';
+    const refererHeader = request.headers.get('referer') || '';
+    const originToCheck =
+      originHeader || (refererHeader ? new URL(refererHeader).origin : '');
+    const project = await ProjectService.getProjectById(projectId);
+    const allowedHost = String(project?.domain || '')
+      .replace(/^https?:\/\//i, '')
+      .replace(/^www\./i, '')
+      .trim();
+    let allow = false;
+    try {
+      const h = originToCheck
+        ? new URL(originToCheck).hostname.replace(/^www\./i, '')
+        : '';
+      allow = !allowedHost || (h && h === allowedHost);
+    } catch {
+      allow = false;
+    }
+    const headers =
+      allow && originToCheck
+        ? {
+            'Access-Control-Allow-Origin': originToCheck,
+            'Access-Control-Allow-Credentials': 'true',
+            'Access-Control-Allow-Methods': 'GET,OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+            Vary: 'Origin'
+          }
+        : { 'Access-Control-Allow-Origin': 'null' };
+    return new NextResponse(null, { status: 204, headers });
+  } catch {
+    return new NextResponse(null, { status: 204 });
   }
 }
