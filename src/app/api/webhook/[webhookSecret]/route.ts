@@ -129,8 +129,31 @@ async function handleTildaOrder(projectId: string, orderData: TildaOrder) {
         typeof promo === 'string' && promo.trim().toUpperCase() === 'GUPIL';
       const appliedRaw =
         (orderData as any).appliedBonuses ?? (orderData as any).applied_bonuses;
-      const applied = Number(appliedRaw);
-      if (isGupilPromo && Number.isFinite(applied) && applied > 0) {
+      const appliedRequested = Number(
+        typeof appliedRaw === 'string'
+          ? appliedRaw.replace(/[^0-9.\-]/g, '')
+          : appliedRaw
+      );
+      if (
+        isGupilPromo &&
+        Number.isFinite(appliedRequested) &&
+        appliedRequested > 0
+      ) {
+        // Ограничиваем суммой доступных бонусов, чтобы не падать при нехватке
+        const balance = await UserService.getUserBalance(user.id);
+        const applied = Math.min(
+          appliedRequested,
+          Number(balance.currentBalance)
+        );
+        if (applied <= 0) {
+          logger.warn('Запрошено списание, но баланс равен нулю', {
+            projectId,
+            orderId,
+            requested: appliedRequested,
+            currentBalance: balance.currentBalance,
+            component: 'tilda-webhook'
+          });
+        }
         await BonusService.spendBonuses(
           user.id,
           applied,
@@ -138,7 +161,14 @@ async function handleTildaOrder(projectId: string, orderData: TildaOrder) {
           { orderId, source: 'tilda_order', promocode: 'GUPIL' }
         );
       }
-    } catch {}
+    } catch (e) {
+      logger.error('Ошибка списания бонусов (GUPIL) из webhook', {
+        projectId,
+        orderId,
+        error: e instanceof Error ? e.message : String(e),
+        component: 'tilda-webhook'
+      });
+    }
 
     // Получаем баланс пользователя для ответа
     const userBalance = await UserService.getUserBalance(user.id);
