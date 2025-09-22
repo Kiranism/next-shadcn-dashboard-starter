@@ -135,16 +135,24 @@ export function ProjectIntegrationView({
   const webhookUrl = `${window.location.origin}/api/webhook/${project.webhookSecret}`;
 
   const widgetCode = `<!-- Бонусная система для Tilda -->
-<script src="${widgetUrl}"></script>
 <script>
-  // Инициализация виджета бонусной системы
-  TildaBonusWidget.init({
-    projectId: '${projectId}',
-    apiUrl: '${window.location.origin}',
-    bonusToRuble: 1, // 1 бонус = 1 рубль
-    minOrderAmount: 100, // Минимальная сумма заказа
-    debug: false // Включить отладку в консоли
-  });
+(function(w,d){
+  var s=d.createElement('script');
+  s.src='${widgetUrl}?v=3';
+  s.async=true;
+  s.onload=function(){
+    if(w.TildaBonusWidget){
+      w.TildaBonusWidget.init({
+        projectId:'${projectId}',
+        apiUrl:'${window.location.origin}',
+        bonusToRuble:1,
+        minOrderAmount:100,
+        debug:false
+      });
+    }
+  };
+  d.head.appendChild(s);
+})(window,document);
 </script>`;
 
   const testWebhookData = JSON.stringify(
@@ -406,9 +414,14 @@ export function ProjectIntegrationView({
             </Card>
           </TabsContent>
 
-          {/* Логи: полноценный интерфейс */}
+          {/* Логи: полноценный интерфейс (embedded для фиксированной ширины) */}
           <TabsContent value='logs' className='mt-0 space-y-4'>
-            <ProjectLogsView params={Promise.resolve({ id: projectId })} />
+            <div className='w-full'>
+              <ProjectLogsView
+                embedded
+                params={Promise.resolve({ id: projectId })}
+              />
+            </div>
           </TabsContent>
         </Tabs>
 
