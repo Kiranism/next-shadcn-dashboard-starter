@@ -156,7 +156,7 @@ export async function OPTIONS(
       const h = originToCheck
         ? new URL(originToCheck).hostname.replace(/^www\./i, '')
         : '';
-      allow = !allowedHost || (h && h === allowedHost);
+      allow = !allowedHost || (h !== '' && h === allowedHost);
     } catch {
       allow = false;
     }
