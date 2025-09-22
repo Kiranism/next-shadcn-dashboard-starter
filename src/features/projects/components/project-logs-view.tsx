@@ -166,7 +166,7 @@ export function ProjectLogsView({
     const skeleton = (
       <div className='animate-pulse'>
         <div className='mb-4 h-8 w-1/4 rounded bg-gray-200'></div>
-        <div className='h-64 rounded bg-gray-200'></div>
+        <div className='h-[560px] rounded bg-gray-200'></div>
       </div>
     );
     return embedded ? skeleton : <PageContainer>{skeleton}</PageContainer>;

@@ -214,7 +214,7 @@ export function ProjectIntegrationView({
           </TabsList>
 
           {/* Виджет */}
-          <TabsContent value='widget' className='mt-0 space-y-4'>
+          <TabsContent value='widget' className='mt-0 min-h-[640px] space-y-4'>
             <Card className='overflow-hidden'>
               <CardHeader>
                 <CardTitle>Шаг 1: Установка виджета</CardTitle>
@@ -271,7 +271,7 @@ export function ProjectIntegrationView({
           </TabsContent>
 
           {/* Webhook */}
-          <TabsContent value='webhook' className='mt-0 space-y-4'>
+          <TabsContent value='webhook' className='mt-0 min-h-[640px] space-y-4'>
             <Card className='overflow-hidden'>
               <CardHeader>
                 <CardTitle>Шаг 2: Настройка Webhook</CardTitle>
@@ -344,7 +344,10 @@ export function ProjectIntegrationView({
           </TabsContent>
 
           {/* Настройки */}
-          <TabsContent value='settings' className='mt-0 space-y-4'>
+          <TabsContent
+            value='settings'
+            className='mt-0 min-h-[640px] space-y-4'
+          >
             <Card className='overflow-hidden'>
               <CardHeader>
                 <CardTitle>Настройки интеграции</CardTitle>
@@ -415,7 +418,7 @@ export function ProjectIntegrationView({
           </TabsContent>
 
           {/* Логи: полноценный интерфейс (embedded для фиксированной ширины) */}
-          <TabsContent value='logs' className='mt-0 space-y-4'>
+          <TabsContent value='logs' className='mt-0 min-h-[640px] space-y-4'>
             <div className='w-full'>
               <ProjectLogsView
                 embedded
