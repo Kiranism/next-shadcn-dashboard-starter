@@ -1,0 +1,48 @@
+{
+  "Name": "Михаил Иванович Сагалаев",
+  "Email": "sagalaev.mikhail@yandex.ru",
+  "Phone": "+7 (962) 002-41-88",
+  "ma_id": 34602609,
+  "formid": "form788630355",
+  "COOKIES": "_userGUID=0:mbxqv9do:SzW6Jn7_n_gtxQVTMOJxWnQVcDdJ18ND; _userGUID=0:mbxqv9do:SzW6Jn7_n_gtxQVTMOJxWnQVcDdJ18ND; _ym_uid=1749996732777359842; _ym_d=1749996732; tildauid=1749996733850.692314; digi_uc=|; _ym_isad=1; mytimercookie=t367cookie; _dvs=0:mfvegi1z:meuFqYwGIJPjiOjYUC9rjFGoMn7vOVZ2; tildasid=1758562083530.588980; _ym_visorc=w; previousUrl=maoka.ru%2Fpage53754071.html; __ddg8_=gSkee9ItK9oUDvRv; __ddg10_=1758562094; DIGI_CARTID=45033733904",
+  "ma_name": "Михаил Иванович Сагалаев",
+  "payment": {
+    "amount": "4280",
+    "orderid": "1564748188",
+    "delivery": "СДЭК (пвз) бесплатно от 1000 р. в заказе",
+    "discount": "1200",
+    "products": [
+      {
+        "name": "Набор в тубусе 7 тон.основа, румяна, скульптор",
+        "price": "3990",
+        "amount": 3990,
+        "quantity": 1,
+        "externalid": "I3UQboK8jjNCfOqn-YSzf2"
+      },
+      {
+        "sku": "sample_set02",
+        "name": "Набор семплов минеральной косметики",
+        "price": "1490",
+        "amount": 1490,
+        "quantity": 1,
+        "externalid": "t8M2s00zTk8Upja03MvU"
+      }
+    ],
+    "subtotal": "5480",
+    "promocode": "GUPIL",
+    "delivery_fio": "",
+    "delivery_zip": "119619",
+    "delivery_city": "Москва",
+    "discountvalue": "1",
+    "delivery_price": 0,
+    "delivery_address": "RU: Пункт выдачи заказа: ул. Производственная , 10к1 (MSK2326, Москва, ул. Производственная )119619",
+    "delivery_comment": "",
+    "delivery_pickup_id": "MSK2326"
+  },
+  "Checkbox": "yes",
+  "formname": "Cart",
+  "ma_email": "sagalaev.mikhail@yandex.ru",
+  "paymentsystem": "cash",
+  "appliedBonuses": "1200",
+  "Комментарий_к_заказу": "Тестовая заявка. Не отправлять!!!"
+}
