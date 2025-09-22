@@ -268,6 +268,20 @@ Authorization: Bearer <jwt_token>
 
 ## 👨‍💼 Admin API
 
+## 🌐 Публичные интеграции
+
+### GET /widget/{projectId}
+
+Короткая ссылка, отдающая мини‑скрипт для загрузки виджета.
+
+Пример вставки в Tilda:
+```html
+<script src="https://gupil.ru/widget/PROJECT_ID?v=5"></script>
+```
+
+Скрипт автоматически подгрузит `/tilda-bonus-widget.js?v=5` и вызовет `TildaBonusWidget.init({ projectId, apiUrl })`.
+Отдаётся с заголовками `Cache-Control: public, max-age=86400, immutable` и `X-Content-Type-Options: nosniff`.
+
 ### Проекты
 
 #### GET /api/projects
