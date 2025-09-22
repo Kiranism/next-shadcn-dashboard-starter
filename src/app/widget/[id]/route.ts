@@ -14,7 +14,7 @@ import { withApiRateLimit } from '@/lib';
 
 // Генерируем компактный JS-лоадер с подстановкой projectId
 function generateBootloaderJs(projectId: string, widgetVersion = 'v=5') {
-  const js = `(()=>{try{var s=document.createElement('script');s.src='${process.env.NEXT_PUBLIC_APP_URL || ''}/tilda-bonus-widget.js?${widgetVersion}';if(!/^https?:\/\//.test(s.src)){s.src='/tilda-bonus-widget.js?${widgetVersion}';}s.async=true;s.onload=function(){try{if(window.TildaBonusWidget){var origin;(function(){try{var cur=document.currentScript;if(cur&&cur.src){origin=new URL(cur.src,window.location.href).origin;}else{origin=window.location.origin;}}catch(_){origin=window.location.origin;}})();window.TildaBonusWidget.init({projectId:'${projectId}',apiUrl:origin,bonusToRuble:1,minOrderAmount:100,debug:false});}}catch(_){}};document.head.appendChild(s);}catch(_){}})();`;
+  const js = `(()=>{try{var origin;(function(){try{var cur=document.currentScript;if(cur&&cur.src){origin=new URL(cur.src,window.location.href).origin;}else{origin=window.location.origin;}}catch(_){origin=window.location.origin;}})();var s=document.createElement('script');s.src=origin+'/tilda-bonus-widget.js?${widgetVersion}';s.async=true;s.onload=function(){try{if(window.TildaBonusWidget){window.TildaBonusWidget.init({projectId:'${projectId}',apiUrl:origin,bonusToRuble:1,minOrderAmount:100,debug:false});}}catch(_){}};document.head.appendChild(s);}catch(_){}})();`;
   return js;
 }
 
