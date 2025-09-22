@@ -450,6 +450,33 @@
       return 0;
     },
 
+    // Применение скидки через внутренний механизм Тильды (промокод)
+    applyDiscountViaTilda: function (amountRubles) {
+      try {
+        if (typeof window.t_input_promocode__addPromocode === 'function') {
+          var promo = {
+            promocode: 'BONUS',
+            discountsum: Number(amountRubles) || 0
+          };
+          window.t_input_promocode__addPromocode(promo);
+          if (typeof window.tcart__calcPromocode === 'function') {
+            try {
+              window.tcart__calcPromocode();
+            } catch (_) {}
+          }
+          if (typeof window.tcart__reDraw === 'function') {
+            try {
+              window.tcart__reDraw();
+            } catch (_) {}
+          }
+          return true;
+        }
+      } catch (e) {
+        this.log('Ошибка применения Tilda промокода:', e);
+      }
+      return false;
+    },
+
     // Применение бонусов
     applyBonuses: async function () {
       const amountInput = document.getElementById('bonus-amount-input');
@@ -474,18 +501,27 @@
       try {
         this.showLoading(true);
 
+        // Пытаемся применить скидку через промокод Tilda, если доступно
+        var appliedViaTilda = this.applyDiscountViaTilda(amount);
+
         // Сохраняем примененные бонусы
         this.state.appliedBonuses = amount;
         localStorage.setItem('tilda_applied_bonuses', amount);
 
         // Обновляем отображение
-        this.showSuccess(`Применено ${amount} бонусов (-${amount} ₽)`);
+        this.showSuccess(
+          appliedViaTilda
+            ? `Применено ${amount} бонусов (скидка через промокод)`
+            : `Применено ${amount} бонусов (-${amount} ₽)`
+        );
 
         // Добавляем скрытое поле с бонусами для отправки в webhook
         this.addHiddenBonusField(amount);
 
-        // Обновляем визуальное отображение суммы
-        this.updateCartVisualTotal(cartTotal - amount);
+        // Если промокод не сработал — мягко корректируем визуальную сумму
+        if (!appliedViaTilda) {
+          this.updateCartVisualTotal(cartTotal - amount);
+        }
       } catch (error) {
         this.showError('Ошибка применения бонусов');
         this.log('Ошибка:', error);
