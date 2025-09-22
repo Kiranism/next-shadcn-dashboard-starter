@@ -276,28 +276,32 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
     }
   });
 
-  // Команда проверки баланса
-  bot.command('balance', async (ctx) => {
+  // Кнопочное действие проверки баланса (предпочтительно для UX)
+  bot.callbackQuery('nav_balance', async (ctx) => {
+    await ctx.answerCallbackQuery();
     const telegramId = BigInt(ctx.from!.id);
     const user = await UserService.getUserByTelegramId(projectId, telegramId);
 
     if (!user) {
-      await ctx.reply(
-        '❌ Ваш аккаунт не привязан.\n\n' +
-          'Используйте команду /start для привязки аккаунта.'
-      );
+      await ctx.editMessageText('❌ Ваш аккаунт не привязан.');
       return;
     }
 
     try {
       const balance = await UserService.getUserBalance(user.id);
 
-      await ctx.reply(
+      const keyboard = new InlineKeyboard()
+        .text('📝 История', 'view_history')
+        .text('🔙 Назад', 'back_to_main')
+        .row();
+
+      await ctx.editMessageText(
         `💰 Ваш баланс бонусов\n\n` +
           `🏦 Текущий баланс: ${balance.currentBalance}₽\n` +
           `🏆 Всего заработано: ${balance.totalEarned}₽\n` +
           `💸 Потрачено: ${balance.totalSpent}₽\n` +
-          `⏰ Истекает в ближайшие 30 дней: ${balance.expiringSoon}₽`
+          `⏰ Истекает в ближайшие 30 дней: ${balance.expiringSoon}₽`,
+        { reply_markup: keyboard }
       );
     } catch (error) {
       logger.error('Ошибка при получении баланса пользователя', {
@@ -306,9 +310,7 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
         fromId: ctx.from?.id,
         component: 'telegram-bot'
       });
-      await ctx.reply(
-        '❌ Произошла ошибка при получении баланса. Попробуйте позже.'
-      );
+      await ctx.editMessageText('❌ Произошла ошибка при получении баланса.');
     }
   });
 

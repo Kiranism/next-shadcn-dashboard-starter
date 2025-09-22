@@ -32,7 +32,8 @@
       activeFetchController: null,
       cartOpenDebounceTimer: null,
       _bodyObserver: null,
-      _cartObserver: null
+      _cartObserver: null,
+      mode: 'bonus'
     },
 
     // Инициализация виджета
@@ -111,6 +112,8 @@
           border-radius: 4px;
           font-size: 14px;
         }
+        .promo-input-group { display: flex; gap: 8px; margin-bottom: 12px; }
+        .promo-input { flex: 1; padding: 8px 12px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px; }
         
         .bonus-button {
           padding: 8px 16px;
@@ -183,10 +186,14 @@
       container.className = 'bonus-widget-container';
       container.innerHTML = `
         <div class="bonus-widget-title">💰 Бонусная программа</div>
+        <div class="bonus-toggle">
+          <button id="bonus-tab" class="bonus-toggle-btn active" onclick="TildaBonusWidget.switchMode('bonus')">Списать бонусы</button>
+          <button id="promo-tab" class="bonus-toggle-btn" onclick="TildaBonusWidget.switchMode('promo')">Промокод</button>
+        </div>
         <div class="bonus-balance" style="display: none;">
           Ваш баланс: <span class="bonus-balance-amount">0</span> бонусов
         </div>
-        <div class="bonus-input-group">
+        <div id="bonus-section" class="bonus-input-group">
           <input type="number" 
                  class="bonus-input" 
                  id="bonus-amount-input" 
@@ -199,6 +206,13 @@
                   style="display: none;">
             Применить бонусы
           </button>
+        </div>
+        <div id="promo-section" style="display:none;">
+          <div class="promo-input-group">
+            <input type="text" id="promo-code-input" class="promo-input" placeholder="Введите промокод" />
+            <button class="bonus-button" onclick="TildaBonusWidget.applyPromocode()">Применить</button>
+          </div>
+          <div class="bonus-error" id="promo-status" style="display:none;"></div>
         </div>
         <div id="bonus-status"></div>
       `;
@@ -234,6 +248,8 @@
     findInsertPoint: function () {
       // Ищем блок с итоговой суммой или кнопку оформления
       const selectors = [
+        '.t706__cartwin-promocode',
+        '.t706__promocode',
         '.t706__cartwin-totalamount',
         '.t706__cartwin-bottom',
         '.t-form__submit',
@@ -303,6 +319,27 @@
       const userContact = this.getUserContact();
       if (userContact) {
         this.loadUserBalance(userContact);
+      }
+    },
+
+    // Переключение режима: бонусы | промокод
+    switchMode: function (mode) {
+      this.state.mode = mode === 'promo' ? 'promo' : 'bonus';
+      var bonusTab = document.getElementById('bonus-tab');
+      var promoTab = document.getElementById('promo-tab');
+      var bonusSection = document.getElementById('bonus-section');
+      var promoSection = document.getElementById('promo-section');
+      if (!bonusTab || !promoTab || !bonusSection || !promoSection) return;
+      if (this.state.mode === 'promo') {
+        bonusTab.classList.remove('active');
+        promoTab.classList.add('active');
+        bonusSection.style.display = 'none';
+        promoSection.style.display = 'block';
+      } else {
+        promoTab.classList.remove('active');
+        bonusTab.classList.add('active');
+        promoSection.style.display = 'none';
+        bonusSection.style.display = 'flex';
       }
     },
 
@@ -496,6 +533,45 @@
         this.log('Ошибка применения Tilda промокода:', e);
       }
       return false;
+    },
+
+    // Применение промокода из поля ввода
+    applyPromocode: function () {
+      try {
+        var input = document.getElementById('promo-code-input');
+        if (!input) return;
+        var code = (input.value || '').trim();
+        if (!code) {
+          var ps = document.getElementById('promo-status');
+          if (ps) {
+            ps.style.display = 'block';
+            ps.innerHTML = 'Укажите промокод';
+            setTimeout(function () {
+              ps.style.display = 'none';
+            }, 2000);
+          }
+          return;
+        }
+        if (typeof window.t_input_promocode__addPromocode === 'function') {
+          window.t_input_promocode__addPromocode({ promocode: code });
+          if (typeof window.tcart__calcPromocode === 'function') {
+            try {
+              window.tcart__calcPromocode();
+            } catch (_) {}
+          }
+          if (typeof window.tcart__reDraw === 'function') {
+            try {
+              window.tcart__reDraw();
+            } catch (_) {}
+          }
+          this.showSuccess('Промокод применён');
+        } else {
+          this.showError('Промокоды не поддерживаются в этой корзине');
+        }
+      } catch (e) {
+        this.showError('Ошибка применения промокода');
+        this.log('applyPromocode error', e);
+      }
     },
 
     // Применение бонусов
