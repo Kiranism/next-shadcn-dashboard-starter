@@ -116,7 +116,7 @@ export function ProjectAnalyticsView({ projectId }: ProjectAnalyticsViewProps) {
     if (num >= 1000) {
       return (num / 1000).toFixed(1) + 'K';
     }
-    return num.toString();
+    return Number(num).toFixed(2);
   };
 
   // Данные для pie chart транзакций
@@ -215,12 +215,11 @@ export function ProjectAnalyticsView({ projectId }: ProjectAnalyticsViewProps) {
           </CardHeader>
           <CardContent>
             <div className='text-2xl font-bold'>
-              {formatNumber(Number(overview.totalBonuses), { decimals: 2 })}₽
+              {formatNumber(Number(overview.totalBonuses))}₽
             </div>
             <div className='text-muted-foreground flex items-center space-x-2 text-xs'>
               <span>
-                Активных:{' '}
-                {formatNumber(Number(overview.activeBonuses), { decimals: 2 })}₽
+                Активных: {formatNumber(Number(overview.activeBonuses))}₽
               </span>
             </div>
           </CardContent>
@@ -268,8 +267,7 @@ export function ProjectAnalyticsView({ projectId }: ProjectAnalyticsViewProps) {
             </div>
             <div className='text-muted-foreground text-xs'>
               {formatNumber(
-                Number(analytics.referralStats?.totalBonusPaid || 0),
-                { decimals: 2 }
+                Number(analytics.referralStats?.totalBonusPaid || 0)
               )}
               ₽ выплачено
             </div>
@@ -285,10 +283,7 @@ export function ProjectAnalyticsView({ projectId }: ProjectAnalyticsViewProps) {
           </CardHeader>
           <CardContent>
             <div className='text-warning text-2xl font-bold'>
-              {formatNumber(Number(overview.expiringBonuses.amount), {
-                decimals: 2
-              })}
-              ₽
+              {formatNumber(Number(overview.expiringBonuses.amount))}₽
             </div>
             <div className='text-muted-foreground text-xs'>
               {overview.expiringBonuses.count} бонусов
