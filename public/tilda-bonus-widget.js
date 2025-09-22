@@ -73,34 +73,28 @@
       const style = document.createElement('style');
       style.textContent = `
         .bonus-widget-container {
-          background: #f8f9fa;
-          border: 1px solid #dee2e6;
-          border-radius: 8px;
-          padding: 16px;
-          margin: 16px 0;
+          background: #fff;
+          border: 1px solid #000;
+          border-radius: 10px;
+          padding: 12px;
+          margin: 8px 0;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          color: #000;
         }
         
         .bonus-widget-title {
-          font-size: 18px;
-          font-weight: 600;
-          color: #212529;
-          margin-bottom: 12px;
-        }
-        .bonus-toggle{display:flex;gap:8px;margin-bottom:12px}
-        .bonus-toggle-btn{flex:1;padding:8px 12px;border:1px solid #ced4da;background:#fff;border-radius:4px;cursor:pointer}
-        .bonus-toggle-btn.active{background:#e9ecef;border-color:#adb5bd;font-weight:600}
-        
-        .bonus-balance {
           font-size: 16px;
-          color: #495057;
-          margin-bottom: 16px;
-        }
-        
-        .bonus-balance-amount {
           font-weight: 600;
-          color: #28a745;
+          color: #000;
+          margin-bottom: 8px;
         }
+        .bonus-toggle{display:flex;gap:8px;margin-bottom:8px}
+        .bonus-toggle-btn{flex:1;padding:8px 12px;border:1px solid #000;background:#fff;border-radius:8px;cursor:pointer;color:#000}
+        .bonus-toggle-btn.active{background:#000;color:#fff}
+        
+        .bonus-balance { font-size: 13px; color: #000; margin-bottom: 8px; }
+        
+        .bonus-balance-amount { font-weight: 600; }
         
         .bonus-input-group {
           display: flex;
@@ -108,55 +102,14 @@
           margin-bottom: 12px;
         }
         
-        .bonus-input {
-          flex: 1;
-          padding: 8px 12px;
-          border: 1px solid #ced4da;
-          border-radius: 4px;
-          font-size: 14px;
-        }
-        .promo-input-group { display: flex; gap: 8px; margin-bottom: 12px; }
-        .promo-input { flex: 1; padding: 8px 12px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px; }
+        .bonus-input { flex: 1; padding: 10px 12px; border: 1px solid #000; border-radius: 8px; font-size: 14px; color:#000 }
         
-        .bonus-button {
-          padding: 8px 16px;
-          background: #007bff;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 14px;
-          font-weight: 500;
-          transition: background 0.2s;
-        }
+        .bonus-button { padding: 10px 16px; background:#000; color:#fff; border:1px solid #000; border-radius:8px; cursor:pointer; font-size:14px; font-weight:500; transition: background .2s }
+        .bonus-button:hover { background:#222 }
+        .bonus-button:disabled { opacity:.6; cursor:not-allowed }
         
-        .bonus-button:hover {
-          background: #0056b3;
-        }
-        
-        .bonus-button:disabled {
-          background: #6c757d;
-          cursor: not-allowed;
-        }
-        
-        .bonus-applied {
-          padding: 8px 12px;
-          background: #d4edda;
-          border: 1px solid #c3e6cb;
-          border-radius: 4px;
-          color: #155724;
-          font-size: 14px;
-        }
-        
-        .bonus-error {
-          padding: 8px 12px;
-          background: #f8d7da;
-          border: 1px solid #f5c6cb;
-          border-radius: 4px;
-          color: #721c24;
-          font-size: 14px;
-          margin-top: 8px;
-        }
+        .bonus-applied { padding:8px 12px; border:1px solid #000; border-radius:8px; color:#000; background:#fff; font-size:13px }
+        .bonus-error { padding:8px 12px; border:1px solid #000; border-radius:8px; color:#000; background:#fff; font-size:13px; margin-top:8px }
         
         .bonus-loading {
           display: inline-block;
@@ -188,10 +141,10 @@
       const container = document.createElement('div');
       container.className = 'bonus-widget-container';
       container.innerHTML = `
-        <div class="bonus-widget-title">💰 Бонусная программа</div>
+        <div class="bonus-widget-title">Бонусная программа</div>
         <div class="bonus-toggle">
-          <button id="bonus-tab" class="bonus-toggle-btn active" onclick="TildaBonusWidget.switchMode('bonus')">Списать бонусы</button>
-          <button id="promo-tab" class="bonus-toggle-btn" onclick="TildaBonusWidget.switchMode('promo')">Промокод</button>
+          <button id="bonus-tab" type="button" class="bonus-toggle-btn active" onclick="TildaBonusWidget.switchMode('bonus')">Списать бонусы</button>
+          <button id="promo-tab" type="button" class="bonus-toggle-btn" onclick="TildaBonusWidget.switchMode('promo')">Промокод</button>
         </div>
         <div class="bonus-balance" style="display: none;">
           Ваш баланс: <span class="bonus-balance-amount">0</span> бонусов
@@ -203,31 +156,35 @@
                  placeholder="Количество бонусов" 
                  min="0"
                  style="display: none;">
-          <button class="bonus-button" 
+          <button class="bonus-button" type="button"
                   id="apply-bonus-button" 
                   onclick="TildaBonusWidget.applyBonuses()"
                   style="display: none;">
             Применить бонусы
           </button>
         </div>
-        <div id="promo-section" style="display:none;">
-          <div class="promo-input-group">
-            <input type="text" id="promo-code-input" class="promo-input" placeholder="Введите промокод" />
-            <button class="bonus-button" onclick="TildaBonusWidget.applyPromocode()">Применить</button>
-          </div>
-          <div class="bonus-error" id="promo-status" style="display:none;"></div>
-        </div>
+        <!-- Стандартный блок промокода Тильды будет показан/скрыт переключателем -->
         <div id="bonus-status"></div>
       `;
 
-      // Находим место для вставки (перед кнопкой оформления заказа)
-      const insertPoint = this.findInsertPoint();
+      // Вставляем рядом со стандартным инпутом промокода, если он есть
+      const insertPoint = (function () {
+        var w = document.querySelector('.t-inputpromocode__wrapper');
+        if (w) return w;
+        return TildaBonusWidget.findInsertPoint();
+      })();
       if (insertPoint) {
         insertPoint.parentNode.insertBefore(container, insertPoint);
         this.log('Виджет добавлен на страницу');
       } else {
         this.log('Не удалось найти место для виджета');
       }
+
+      try {
+        this.state.promoWrapper = document.querySelector(
+          '.t-inputpromocode__wrapper'
+        );
+      } catch (_) {}
     },
 
     // Гарантированно вставить виджет, если его ещё нет
@@ -331,17 +288,22 @@
       var bonusTab = document.getElementById('bonus-tab');
       var promoTab = document.getElementById('promo-tab');
       var bonusSection = document.getElementById('bonus-section');
-      var promoSection = document.getElementById('promo-section');
-      if (!bonusTab || !promoTab || !bonusSection || !promoSection) return;
+      if (!bonusTab || !promoTab || !bonusSection) return;
       if (this.state.mode === 'promo') {
         bonusTab.classList.remove('active');
         promoTab.classList.add('active');
         bonusSection.style.display = 'none';
-        promoSection.style.display = 'block';
+        var w =
+          this.state.promoWrapper ||
+          document.querySelector('.t-inputpromocode__wrapper');
+        if (w) w.style.display = 'table';
       } else {
         promoTab.classList.remove('active');
         bonusTab.classList.add('active');
-        promoSection.style.display = 'none';
+        var w2 =
+          this.state.promoWrapper ||
+          document.querySelector('.t-inputpromocode__wrapper');
+        if (w2) w2.style.display = 'none';
         bonusSection.style.display = 'flex';
       }
       // Переключение режима всегда сбрасывает ранее применённые бонусы/визуальные изменения
