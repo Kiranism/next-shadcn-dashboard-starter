@@ -184,6 +184,10 @@
         this.state.promoWrapper = document.querySelector(
           '.t-inputpromocode__wrapper'
         );
+        // При старте виджета режим bonus → скрываем нативный промокод
+        if (this.state.mode !== 'promo' && this.state.promoWrapper) {
+          this.state.promoWrapper.style.display = 'none';
+        }
       } catch (_) {}
     },
 
@@ -550,27 +554,8 @@
         // Добавляем скрытое поле с бонусами для отправки в webhook
         this.addHiddenBonusField(amount);
 
-        // Применяем служебный промокод для фиксации списания на стороне вебхука
-        try {
-          if (typeof window.t_input_promocode__addPromocode === 'function') {
-            window.t_input_promocode__addPromocode({ promocode: 'GUPIL' });
-            if (typeof window.tcart__calcPromocode === 'function') {
-              try {
-                window.tcart__calcPromocode();
-              } catch (_) {}
-            }
-            if (typeof window.tcart__reDraw === 'function') {
-              try {
-                window.tcart__reDraw();
-              } catch (_) {}
-            }
-          }
-        } catch (_) {}
-
-        // Обновляем отображение (без ручной корректировки суммы)
-        this.showSuccess(
-          `Применено ${amount.toFixed(2)} бонусов. Промокод GUPIL активирован.`
-        );
+        // Никакой автоприменения промокода. Мы только сохраняем сумму.
+        this.showSuccess(`Применено ${amount.toFixed(2)} бонусов.`);
       } catch (error) {
         this.showError('Ошибка применения бонусов');
         this.log('Ошибка:', error);
