@@ -531,94 +531,96 @@ export function BonusManagementPageRefactored({
         open={!!historyUserId}
         onOpenChange={(o) => !o && setHistoryUserId(null)}
       >
-        <DialogContent className='max-w-3xl'>
+        <DialogContent className='max-w-4xl max-h-[80vh] flex flex-col'>
           <DialogHeader>
             <DialogTitle>История операций</DialogTitle>
           </DialogHeader>
-          {historyLoading ? (
-            <div className='text-muted-foreground p-6 text-sm'>Загрузка…</div>
-          ) : historyItems.length === 0 ? (
-            <div className='text-muted-foreground p-6 text-sm'>
-              Нет операций
-            </div>
-          ) : (
-            <div className='space-y-3'>
-              <div className='overflow-x-auto'>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className='w-[140px]'>Дата</TableHead>
-                      <TableHead className='w-[100px] text-center'>
-                        Тип
-                      </TableHead>
-                      <TableHead className='w-[100px] text-right'>
-                        Сумма
-                      </TableHead>
-                      <TableHead className='min-w-[200px]'>Описание</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {historyItems.map((t) => (
-                      <TableRow key={t.id}>
-                        <TableCell className='text-sm'>
-                          {new Date(t.createdAt).toLocaleString('ru-RU')}
-                        </TableCell>
-                        <TableCell className='text-center'>
-                          <span
-                            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                              t.type === 'EARN'
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}
-                          >
-                            {t.type === 'EARN' ? 'Начисление' : 'Списание'}
-                          </span>
-                        </TableCell>
-                        <TableCell className='text-right font-medium'>
-                          {t.type === 'EARN' ? '+' : '-'}
-                          {Number(t.amount).toFixed(2)}₽
-                        </TableCell>
-                        <TableCell
-                          className='max-w-[300px] truncate text-sm'
-                          title={t.description || ''}
-                        >
-                          {t.description || '-'}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+          <div className='flex-1 overflow-hidden'>
+            {historyLoading ? (
+              <div className='text-muted-foreground p-6 text-sm'>Загрузка…</div>
+            ) : historyItems.length === 0 ? (
+              <div className='text-muted-foreground p-6 text-sm'>
+                Нет операций
               </div>
-              <div className='flex items-center justify-between border-t pt-4 text-sm'>
-                <span className='text-muted-foreground'>
-                  Показано{' '}
-                  {historyItems.length > 0 ? (historyPage - 1) * 20 + 1 : 0}–
-                  {historyItems.length > 0
-                    ? Math.min(historyPage * 20, historyTotal)
-                    : 0}{' '}
-                  из {historyTotal}
-                </span>
-                <div className='space-x-2'>
-                  <Button
-                    variant='outline'
-                    size='sm'
-                    disabled={historyPage <= 1}
-                    onClick={() => openHistory(historyUserId!, historyPage - 1)}
-                  >
-                    Назад
-                  </Button>
-                  <Button
-                    variant='outline'
-                    size='sm'
-                    disabled={historyPage * 20 >= historyTotal}
-                    onClick={() => openHistory(historyUserId!, historyPage + 1)}
-                  >
-                    Вперёд
-                  </Button>
+            ) : (
+              <div className='space-y-3 h-full flex flex-col'>
+                <div className='flex-1 overflow-auto border rounded-lg'>
+                  <Table>
+                    <TableHeader className='sticky top-0 bg-background z-10'>
+                      <TableRow>
+                        <TableHead className='w-[160px]'>Дата</TableHead>
+                        <TableHead className='w-[120px] text-center'>
+                          Тип
+                        </TableHead>
+                        <TableHead className='w-[120px] text-right'>
+                          Сумма
+                        </TableHead>
+                        <TableHead className='min-w-[250px]'>Описание</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {historyItems.map((t) => (
+                        <TableRow key={t.id}>
+                          <TableCell className='text-sm'>
+                            {new Date(t.createdAt).toLocaleString('ru-RU')}
+                          </TableCell>
+                          <TableCell className='text-center'>
+                            <span
+                              className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                                t.type === 'EARN'
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}
+                            >
+                              {t.type === 'EARN' ? 'Начисление' : 'Списание'}
+                            </span>
+                          </TableCell>
+                          <TableCell className='text-right font-medium'>
+                            {t.type === 'EARN' ? '+' : '-'}
+                            {Number(t.amount).toFixed(2)}₽
+                          </TableCell>
+                          <TableCell
+                            className='text-sm break-words'
+                            title={t.description || ''}
+                          >
+                            {t.description || '-'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div className='flex items-center justify-between border-t pt-4 text-sm'>
+                  <span className='text-muted-foreground'>
+                    Показано{' '}
+                    {historyItems.length > 0 ? (historyPage - 1) * 20 + 1 : 0}–
+                    {historyItems.length > 0
+                      ? Math.min(historyPage * 20, historyTotal)
+                      : 0}{' '}
+                    из {historyTotal}
+                  </span>
+                  <div className='space-x-2'>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      disabled={historyPage <= 1}
+                      onClick={() => openHistory(historyUserId!, historyPage - 1)}
+                    >
+                      Назад
+                    </Button>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      disabled={historyPage * 20 >= historyTotal}
+                      onClick={() => openHistory(historyUserId!, historyPage + 1)}
+                    >
+                      Вперёд
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

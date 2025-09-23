@@ -208,24 +208,63 @@ export class NotificationService {
       throw new Error('User not found or not linked to Telegram');
     }
 
-    // Создаем временный объект бонуса для совместимости с существующей функцией
-    const mockBonus = {
-      id: 'notification',
-      amount: 0,
-      type: 'manual' as any,
-      description: payload.message,
-      createdAt: new Date(),
-      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-    };
+    // Для системных объявлений используем расширенную рассылку
+    if (payload.type === NotificationType.SYSTEM_ANNOUNCEMENT) {
+      const { sendRichBroadcastMessage } = await import(
+        '@/lib/telegram/notifications'
+      );
 
-    const { sendBonusNotification } = await import(
-      '@/lib/telegram/notifications'
-    );
+      await sendRichBroadcastMessage(
+        payload.projectId,
+        {
+          message: payload.message,
+          imageUrl: payload.metadata?.imageUrl,
+          buttons: payload.metadata?.buttons,
+          parseMode: payload.metadata?.parseMode || 'Markdown'
+        },
+        [payload.userId]
+      );
+      return;
+    }
 
-    await sendBonusNotification(
-      user as any,
-      mockBonus as any,
-      payload.projectId
+    // Для бонусных уведомлений используем специальную функцию
+    if (payload.type === NotificationType.BONUS_EARNED) {
+      // Создаем временный объект бонуса для совместимости с существующей функцией
+      const mockBonus = {
+        id: 'notification',
+        amount: payload.metadata?.bonusAmount || 0,
+        type: payload.metadata?.bonusType || 'manual',
+        description: payload.message,
+        createdAt: new Date(),
+        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+      };
+
+      const { sendBonusNotification } = await import(
+        '@/lib/telegram/notifications'
+      );
+
+      await sendBonusNotification(
+        user as any,
+        mockBonus as any,
+        payload.projectId
+      );
+      return;
+    }
+
+    // Для остальных типов уведомлений используем простую отправку
+    const { botManager } = await import('@/lib/telegram/bot-manager');
+    const botInstance = botManager.getBot(payload.projectId);
+    
+    if (!botInstance || !botInstance.isActive) {
+      throw new Error('Bot not active for this project');
+    }
+
+    await botInstance.bot.api.sendMessage(
+      Number(user.telegramId),
+      `*${payload.title}*\n\n${payload.message}`,
+      {
+        parse_mode: 'Markdown'
+      }
     );
   }
 

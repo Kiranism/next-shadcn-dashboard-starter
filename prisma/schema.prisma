@@ -14,6 +14,7 @@ model Project {
   webhookSecret   String           @unique @default(cuid()) @map("webhook_secret")
   bonusPercentage Decimal          @default(1.0) @map("bonus_percentage") @db.Decimal(5, 2)
   bonusExpiryDays Int              @default(365) @map("bonus_expiry_days")
+  bonusBehavior   BonusBehavior    @default(SPEND_AND_EARN) @map("bonus_behavior")
   isActive        Boolean          @default(true) @map("is_active")
   createdAt       DateTime         @default(now()) @map("created_at")
   updatedAt       DateTime         @updatedAt @map("updated_at")
@@ -189,6 +190,12 @@ model Notification {
   user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
+}
+
+enum BonusBehavior {
+  SPEND_AND_EARN    @map("spend_and_earn")
+  SPEND_ONLY        @map("spend_only")
+  EARN_ONLY         @map("earn_only")
 }
 
 enum BotStatus {
