@@ -34,6 +34,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Heading } from '@/components/ui/heading';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
@@ -62,6 +63,7 @@ export function ProjectSettingsView({ projectId }: ProjectSettingsViewProps) {
     domain: '',
     bonusPercentage: 1.0,
     bonusExpiryDays: 365,
+    bonusBehavior: 'SPEND_AND_EARN' as 'SPEND_AND_EARN' | 'SPEND_ONLY' | 'EARN_ONLY',
     isActive: true,
     welcomeBonusAmount: 0
   });
@@ -79,6 +81,7 @@ export function ProjectSettingsView({ projectId }: ProjectSettingsViewProps) {
           domain: projectData.domain || '',
           bonusPercentage: Number(projectData.bonusPercentage) || 1.0,
           bonusExpiryDays: projectData.bonusExpiryDays || 365,
+          bonusBehavior: projectData.bonusBehavior || 'SPEND_AND_EARN',
           isActive: projectData.isActive ?? true,
           welcomeBonusAmount: (() => {
             const metaStr = projectData?.referralProgram?.description || null;
@@ -287,6 +290,34 @@ export function ProjectSettingsView({ projectId }: ProjectSettingsViewProps) {
                   />
                 </div>
 
+                <div className='space-y-2'>
+                  <Label htmlFor='bonusBehavior'>Поведение бонусов</Label>
+                  <Select
+                    value={formData.bonusBehavior}
+                    onValueChange={(value: 'SPEND_AND_EARN' | 'SPEND_ONLY' | 'EARN_ONLY') =>
+                      setFormData({ ...formData, bonusBehavior: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder='Выберите поведение бонусов' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='SPEND_AND_EARN'>
+                        Списывать и начислять бонусы
+                      </SelectItem>
+                      <SelectItem value='SPEND_ONLY'>
+                        Только списывать бонусы
+                      </SelectItem>
+                      <SelectItem value='EARN_ONLY'>
+                        Только начислять бонусы
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className='text-muted-foreground text-xs'>
+                    Определяет, что происходит с бонусами при покупке
+                  </p>
+                </div>
+
                 <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
                   <div className='space-y-2'>
                     <Label htmlFor='bonusPercentage'>Процент бонусов (%)</Label>
@@ -350,7 +381,7 @@ export function ProjectSettingsView({ projectId }: ProjectSettingsViewProps) {
           {/* Actions */}
           <div className='flex justify-end'>
             <div className='flex items-center gap-2'>
-              <Button type='submit' disabled={saving}>
+              <Button onClick={handleSave} disabled={saving}>
                 {saving ? 'Сохранение...' : 'Сохранить изменения'}
               </Button>
               <Button

@@ -69,6 +69,7 @@ export async function PUT(
         domain: body.domain,
         bonusPercentage: body.bonusPercentage,
         bonusExpiryDays: body.bonusExpiryDays,
+        bonusBehavior: body.bonusBehavior,
         // Убираем попытку upsert в BotSettings (конфликт типов Prisma)
         isActive: body.isActive
       }

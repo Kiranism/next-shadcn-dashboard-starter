@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { ProjectService } from '@/lib/services/project.service';
 import { UserService, BonusService } from '@/lib/services/user.service';
+import { BonusLevelService } from '@/lib/services/bonus-level.service';
 import { logger } from '@/lib/logger';
 import { withWebhookRateLimit } from '@/lib';
 import {
@@ -146,22 +147,50 @@ async function handleTildaOrder(projectId: string, orderData: TildaOrder) {
       // Проверяем условия для списания бонусов
       const shouldSpendBonuses = 
         (isGupilPromo && Number.isFinite(appliedRequested) && appliedRequested > 0) ||
-        (bonusBehavior === 'SPEND_ONLY' && Number.isFinite(appliedRequested) && appliedRequested > 0);
+        (bonusBehavior === 'SPEND_ONLY' && Number.isFinite(appliedRequested) && appliedRequested > 0) ||
+        (bonusBehavior === 'SPEND_AND_EARN' && Number.isFinite(appliedRequested) && appliedRequested > 0);
 
       if (shouldSpendBonuses) {
+        // Получаем текущий уровень пользователя для проверки лимитов оплаты
+        const currentLevel = await BonusLevelService.calculateUserLevel(
+          projectId,
+          Number(user.totalPurchases)
+        );
+        
         // Ограничиваем суммой доступных бонусов, чтобы не падать при нехватке
         const balance = await UserService.getUserBalance(user.id);
-        const applied = Math.min(
+        let applied = Math.min(
           appliedRequested,
           Number(balance.currentBalance)
         );
         
+        // Применяем ограничение по проценту оплаты из уровня пользователя
+        if (currentLevel && currentLevel.paymentPercent < 100) {
+          const maxPaymentByLevel = (totalAmount * currentLevel.paymentPercent) / 100;
+          applied = Math.min(applied, maxPaymentByLevel);
+          
+          logger.info('🔒 Применено ограничение по уровню пользователя', {
+            projectId,
+            orderId,
+            userId: user.id,
+            userLevel: currentLevel.name,
+            paymentPercent: currentLevel.paymentPercent,
+            totalAmount,
+            maxPaymentByLevel,
+            appliedBeforeLimit: Math.min(appliedRequested, Number(balance.currentBalance)),
+            appliedAfterLimit: applied,
+            component: 'tilda-webhook'
+          });
+        }
+        
         if (applied <= 0) {
-          logger.warn('Запрошено списание, но баланс равен нулю', {
+          logger.warn('Запрошено списание, но баланс равен нулю или превышен лимит уровня', {
             projectId,
             orderId,
             requested: appliedRequested,
             currentBalance: balance.currentBalance,
+            userLevel: currentLevel?.name,
+            paymentPercent: currentLevel?.paymentPercent,
             component: 'tilda-webhook'
           });
         } else {
@@ -172,6 +201,8 @@ async function handleTildaOrder(projectId: string, orderData: TildaOrder) {
             applied,
             requested: appliedRequested,
             currentBalance: balance.currentBalance,
+            userLevel: currentLevel?.name,
+            paymentPercent: currentLevel?.paymentPercent,
             bonusBehavior,
             component: 'tilda-webhook'
           });
@@ -180,7 +211,13 @@ async function handleTildaOrder(projectId: string, orderData: TildaOrder) {
             user.id,
             applied,
             `Списание бонусов при заказе ${orderId}${isGupilPromo ? ' (промокод GUPIL)' : ''}`,
-            { orderId, source: 'tilda_order', promocode: isGupilPromo ? 'GUPIL' : undefined }
+            { 
+              orderId, 
+              source: 'tilda_order', 
+              promocode: isGupilPromo ? 'GUPIL' : undefined,
+              userLevel: currentLevel?.name,
+              paymentPercent: currentLevel?.paymentPercent
+            }
           );
 
           logger.info('✅ Списание бонусов выполнено успешно', {
@@ -188,6 +225,7 @@ async function handleTildaOrder(projectId: string, orderData: TildaOrder) {
             orderId,
             userId: user.id,
             applied,
+            userLevel: currentLevel?.name,
             bonusBehavior,
             component: 'tilda-webhook'
           });

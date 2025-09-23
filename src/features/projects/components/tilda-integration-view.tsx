@@ -337,6 +337,16 @@ export function ProjectIntegrationView({
                 </CardDescription>
               </CardHeader>
               <CardContent className='space-y-4'>
+                <Alert variant='destructive'>
+                  <AlertCircle className='h-4 w-4' />
+                  <AlertTitle>Внимание!</AlertTitle>
+                  <AlertDescription>
+                    Эти настройки интеграции не работают и не применяются в системе. 
+                    Все настройки бонусов управляются через раздел "Уровни бонусов" и 
+                    "Настройки проекта". Данная вкладка будет удалена в следующем обновлении.
+                  </AlertDescription>
+                </Alert>
+
                 <div className='space-y-4'>
                   <div className='space-y-2'>
                     <Label htmlFor='bonus-rate'>Курс бонусов</Label>
@@ -346,9 +356,10 @@ export function ProjectIntegrationView({
                       defaultValue='1'
                       min='0.1'
                       step='0.1'
+                      disabled
                     />
                     <p className='text-muted-foreground text-sm'>
-                      Сколько рублей равен 1 бонус
+                      Сколько рублей равен 1 бонус (НЕ РАБОТАЕТ)
                     </p>
                   </div>
 
@@ -359,9 +370,10 @@ export function ProjectIntegrationView({
                       type='number'
                       defaultValue='100'
                       min='0'
+                      disabled
                     />
                     <p className='text-muted-foreground text-sm'>
-                      Минимальная сумма для применения бонусов
+                      Минимальная сумма для применения бонусов (НЕ РАБОТАЕТ)
                     </p>
                   </div>
 
@@ -375,24 +387,28 @@ export function ProjectIntegrationView({
                       defaultValue='50'
                       min='1'
                       max='100'
+                      disabled
                     />
                     <p className='text-muted-foreground text-sm'>
-                      Какую часть заказа можно оплатить бонусами (в %)
+                      Какую часть заказа можно оплатить бонусами (НЕ РАБОТАЕТ)
                     </p>
                   </div>
                 </div>
 
                 <Alert>
                   <AlertCircle className='h-4 w-4' />
-                  <AlertTitle>Примечание</AlertTitle>
+                  <AlertTitle>Как настроить бонусы правильно:</AlertTitle>
                   <AlertDescription>
-                    Эти настройки применяются только к новым заказам. Изменения
-                    вступят в силу после обновления кода виджета на сайте.
+                    <ul className='mt-2 list-inside list-disc space-y-1'>
+                      <li>Перейдите в раздел "Уровни бонусов" для настройки процентов начисления и оплаты</li>
+                      <li>Используйте "Настройки проекта" для изменения поведения бонусов</li>
+                      <li>Процент оплаты бонусами настраивается в каждом уровне отдельно</li>
+                    </ul>
                   </AlertDescription>
                 </Alert>
 
                 <div className='flex justify-end'>
-                  <Button>Сохранить настройки</Button>
+                  <Button disabled>Сохранить настройки (НЕ РАБОТАЕТ)</Button>
                 </div>
               </CardContent>
             </Card>
