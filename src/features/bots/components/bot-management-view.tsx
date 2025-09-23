@@ -29,7 +29,11 @@ import {
   Save,
   Edit,
   RefreshCw,
-  Target
+  Target,
+  Plus,
+  Trash2,
+  Image,
+  Link
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -47,8 +51,8 @@ import { Heading } from '@/components/ui/heading';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Switch } from '@/components/ui/switch';
-import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/hooks/use-toast';
 import type { Project, BotSettings } from '@/types/bonus';
 import { BotTestDialog } from './bot-test-dialog';
 
@@ -98,6 +102,16 @@ export function BotManagementView({ projectId }: BotManagementViewProps) {
     balanceMessage:
       '💰 Ваш баланс: {balance}₽\n🏆 Всего заработано: {totalEarned}₽',
     errorMessage: '❌ Произошла ошибка. Попробуйте позже.'
+  });
+
+  // Дополнительные настройки для расширенных сообщений
+  const [advancedSettings, setAdvancedSettings] = useState({
+    welcomeImageUrl: '',
+    welcomeButtons: [] as Array<{text: string, url?: string, callback_data?: string}>,
+    helpImageUrl: '',
+    helpButtons: [] as Array<{text: string, url?: string, callback_data?: string}>,
+    balanceImageUrl: '',
+    balanceButtons: [] as Array<{text: string, url?: string, callback_data?: string}>
   });
 
   // Form state для функционала (соответствует схеме БД)
@@ -340,7 +354,8 @@ export function BotManagementView({ projectId }: BotManagementViewProps) {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messageSettings: messages
+          messageSettings: messages,
+          advancedSettings: advancedSettings
         })
       });
 
@@ -367,6 +382,33 @@ export function BotManagementView({ projectId }: BotManagementViewProps) {
     } finally {
       setSaving(false);
     }
+  };
+
+  // Функции для работы с кнопками
+  const addButton = (messageType: 'welcome' | 'help' | 'balance') => {
+    const buttonKey = `${messageType}Buttons` as keyof typeof advancedSettings;
+    setAdvancedSettings(prev => ({
+      ...prev,
+      [buttonKey]: [...(prev[buttonKey] as any[]), { text: '', url: '' }]
+    }));
+  };
+
+  const removeButton = (messageType: 'welcome' | 'help' | 'balance', index: number) => {
+    const buttonKey = `${messageType}Buttons` as keyof typeof advancedSettings;
+    setAdvancedSettings(prev => ({
+      ...prev,
+      [buttonKey]: (prev[buttonKey] as any[]).filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateButton = (messageType: 'welcome' | 'help' | 'balance', index: number, field: 'text' | 'url' | 'callback_data', value: string) => {
+    const buttonKey = `${messageType}Buttons` as keyof typeof advancedSettings;
+    setAdvancedSettings(prev => ({
+      ...prev,
+      [buttonKey]: (prev[buttonKey] as any[]).map((btn, i) => 
+        i === index ? { ...btn, [field]: value } : btn
+      )
+    }));
   };
 
   const handleSaveFeatures = async () => {
@@ -440,14 +482,6 @@ export function BotManagementView({ projectId }: BotManagementViewProps) {
         <div className='flex items-center space-x-2'>
           {botSettings?.botToken && (
             <>
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={() => setShowTestDialog(true)}
-              >
-                <TestTube className='mr-2 h-4 w-4' />
-                Тестировать
-              </Button>
               <Button size='sm' onClick={handleStartBot} disabled={starting}>
                 {starting ? (
                   <Loader2 className='mr-2 h-4 w-4 animate-spin' />
@@ -499,8 +533,8 @@ export function BotManagementView({ projectId }: BotManagementViewProps) {
               : 'border-yellow-200 bg-yellow-50'
         }
       >
-        <div className='flex items-center justify-between'>
-          <div className='flex items-center space-x-2'>
+        <div className='flex items-center justify-between w-full'>
+          <div className='flex items-center space-x-2 flex-1'>
             {botStatus?.status === 'ACTIVE' ? (
               <Check className='h-4 w-4 text-green-600' />
             ) : botStatus?.status === 'ERROR' ? (
@@ -678,17 +712,20 @@ export function BotManagementView({ projectId }: BotManagementViewProps) {
 
         {/* Messages Tab */}
         <TabsContent value='messages' className='space-y-6'>
+          {/* Приветственное сообщение */}
           <Card>
             <CardHeader>
-              <CardTitle>Настройка сообщений бота</CardTitle>
+              <CardTitle className='flex items-center space-x-2'>
+                <MessageCircle className='h-5 w-5' />
+                <span>Приветственное сообщение</span>
+              </CardTitle>
               <CardDescription>
-                Настройте текст сообщений, которые будет отправлять бот
-                пользователям
+                Сообщение, которое отправляется при команде /start
               </CardDescription>
             </CardHeader>
             <CardContent className='space-y-4'>
               <div className='space-y-2'>
-                <Label htmlFor='welcomeMessage'>Приветственное сообщение</Label>
+                <Label htmlFor='welcomeMessage'>Текст сообщения</Label>
                 <Textarea
                   id='welcomeMessage'
                   value={messages.welcomeMessage}
@@ -696,12 +733,95 @@ export function BotManagementView({ projectId }: BotManagementViewProps) {
                     setMessages({ ...messages, welcomeMessage: e.target.value })
                   }
                   placeholder='Добро пожаловать в бонусную программу!'
-                  rows={3}
+                  rows={4}
                 />
               </div>
 
               <div className='space-y-2'>
-                <Label htmlFor='helpMessage'>Сообщение помощи</Label>
+                <Label htmlFor='welcomeImageUrl'>URL изображения (опционально)</Label>
+                <div className='flex space-x-2'>
+                  <Input
+                    id='welcomeImageUrl'
+                    value={advancedSettings.welcomeImageUrl}
+                    onChange={(e) =>
+                      setAdvancedSettings(prev => ({
+                        ...prev,
+                        welcomeImageUrl: e.target.value
+                      }))
+                    }
+                    placeholder='https://example.com/image.jpg'
+                  />
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    onClick={() => setAdvancedSettings(prev => ({
+                      ...prev,
+                      welcomeImageUrl: ''
+                    }))}
+                  >
+                    <Trash2 className='h-4 w-4' />
+                  </Button>
+                </div>
+              </div>
+
+              <div className='space-y-2'>
+                <div className='flex items-center justify-between'>
+                  <Label>Кнопки (опционально)</Label>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    onClick={() => addButton('welcome')}
+                  >
+                    <Plus className='mr-2 h-4 w-4' />
+                    Добавить кнопку
+                  </Button>
+                </div>
+                {advancedSettings.welcomeButtons.map((button, index) => (
+                  <div key={index} className='flex space-x-2 p-3 border rounded-lg'>
+                    <Input
+                      placeholder='Текст кнопки'
+                      value={button.text}
+                      onChange={(e) => updateButton('welcome', index, 'text', e.target.value)}
+                    />
+                    <Input
+                      placeholder='URL или callback_data'
+                      value={button.url || button.callback_data || ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value.startsWith('http')) {
+                          updateButton('welcome', index, 'url', value);
+                        } else {
+                          updateButton('welcome', index, 'callback_data', value);
+                        }
+                      }}
+                    />
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => removeButton('welcome', index)}
+                    >
+                      <Trash2 className='h-4 w-4' />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Сообщение помощи */}
+          <Card>
+            <CardHeader>
+              <CardTitle className='flex items-center space-x-2'>
+                <MessageSquare className='h-5 w-5' />
+                <span>Сообщение помощи</span>
+              </CardTitle>
+              <CardDescription>
+                Сообщение, которое отправляется при команде /help
+              </CardDescription>
+            </CardHeader>
+            <CardContent className='space-y-4'>
+              <div className='space-y-2'>
+                <Label htmlFor='helpMessage'>Текст сообщения</Label>
                 <Textarea
                   id='helpMessage'
                   value={messages.helpMessage}
@@ -714,7 +834,90 @@ export function BotManagementView({ projectId }: BotManagementViewProps) {
               </div>
 
               <div className='space-y-2'>
-                <Label htmlFor='balanceMessage'>Шаблон сообщения баланса</Label>
+                <Label htmlFor='helpImageUrl'>URL изображения (опционально)</Label>
+                <div className='flex space-x-2'>
+                  <Input
+                    id='helpImageUrl'
+                    value={advancedSettings.helpImageUrl}
+                    onChange={(e) =>
+                      setAdvancedSettings(prev => ({
+                        ...prev,
+                        helpImageUrl: e.target.value
+                      }))
+                    }
+                    placeholder='https://example.com/image.jpg'
+                  />
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    onClick={() => setAdvancedSettings(prev => ({
+                      ...prev,
+                      helpImageUrl: ''
+                    }))}
+                  >
+                    <Trash2 className='h-4 w-4' />
+                  </Button>
+                </div>
+              </div>
+
+              <div className='space-y-2'>
+                <div className='flex items-center justify-between'>
+                  <Label>Кнопки (опционально)</Label>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    onClick={() => addButton('help')}
+                  >
+                    <Plus className='mr-2 h-4 w-4' />
+                    Добавить кнопку
+                  </Button>
+                </div>
+                {advancedSettings.helpButtons.map((button, index) => (
+                  <div key={index} className='flex space-x-2 p-3 border rounded-lg'>
+                    <Input
+                      placeholder='Текст кнопки'
+                      value={button.text}
+                      onChange={(e) => updateButton('help', index, 'text', e.target.value)}
+                    />
+                    <Input
+                      placeholder='URL или callback_data'
+                      value={button.url || button.callback_data || ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value.startsWith('http')) {
+                          updateButton('help', index, 'url', value);
+                        } else {
+                          updateButton('help', index, 'callback_data', value);
+                        }
+                      }}
+                    />
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => removeButton('help', index)}
+                    >
+                      <Trash2 className='h-4 w-4' />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Сообщение баланса */}
+          <Card>
+            <CardHeader>
+              <CardTitle className='flex items-center space-x-2'>
+                <Gift className='h-5 w-5' />
+                <span>Сообщение баланса</span>
+              </CardTitle>
+              <CardDescription>
+                Шаблон сообщения с балансом пользователя
+              </CardDescription>
+            </CardHeader>
+            <CardContent className='space-y-4'>
+              <div className='space-y-2'>
+                <Label htmlFor='balanceMessage'>Шаблон сообщения</Label>
                 <Textarea
                   id='balanceMessage'
                   value={messages.balanceMessage}
@@ -724,8 +927,91 @@ export function BotManagementView({ projectId }: BotManagementViewProps) {
                   placeholder='Используйте {balance}, {totalEarned} для подстановки значений'
                   rows={3}
                 />
+                <p className='text-sm text-muted-foreground'>
+                  Доступные переменные: {'{balance}'}, {'{totalEarned}'}, {'{level}'}
+                </p>
               </div>
 
+              <div className='space-y-2'>
+                <Label htmlFor='balanceImageUrl'>URL изображения (опционально)</Label>
+                <div className='flex space-x-2'>
+                  <Input
+                    id='balanceImageUrl'
+                    value={advancedSettings.balanceImageUrl}
+                    onChange={(e) =>
+                      setAdvancedSettings(prev => ({
+                        ...prev,
+                        balanceImageUrl: e.target.value
+                      }))
+                    }
+                    placeholder='https://example.com/image.jpg'
+                  />
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    onClick={() => setAdvancedSettings(prev => ({
+                      ...prev,
+                      balanceImageUrl: ''
+                    }))}
+                  >
+                    <Trash2 className='h-4 w-4' />
+                  </Button>
+                </div>
+              </div>
+
+              <div className='space-y-2'>
+                <div className='flex items-center justify-between'>
+                  <Label>Кнопки (опционально)</Label>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    onClick={() => addButton('balance')}
+                  >
+                    <Plus className='mr-2 h-4 w-4' />
+                    Добавить кнопку
+                  </Button>
+                </div>
+                {advancedSettings.balanceButtons.map((button, index) => (
+                  <div key={index} className='flex space-x-2 p-3 border rounded-lg'>
+                    <Input
+                      placeholder='Текст кнопки'
+                      value={button.text}
+                      onChange={(e) => updateButton('balance', index, 'text', e.target.value)}
+                    />
+                    <Input
+                      placeholder='URL или callback_data'
+                      value={button.url || button.callback_data || ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value.startsWith('http')) {
+                          updateButton('balance', index, 'url', value);
+                        } else {
+                          updateButton('balance', index, 'callback_data', value);
+                        }
+                      }}
+                    />
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => removeButton('balance', index)}
+                    >
+                      <Trash2 className='h-4 w-4' />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Простые сообщения */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Прочие сообщения</CardTitle>
+              <CardDescription>
+                Системные сообщения бота
+              </CardDescription>
+            </CardHeader>
+            <CardContent className='space-y-4'>
               <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
                 <div className='space-y-2'>
                   <Label htmlFor='linkSuccessMessage'>Успешная привязка</Label>
@@ -769,22 +1055,25 @@ export function BotManagementView({ projectId }: BotManagementViewProps) {
                   placeholder='Произошла ошибка...'
                 />
               </div>
-
-              <Button onClick={handleSaveMessages} disabled={saving}>
-                {saving ? (
-                  <>
-                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                    Сохранение...
-                  </>
-                ) : (
-                  <>
-                    <Save className='mr-2 h-4 w-4' />
-                    Сохранить сообщения
-                  </>
-                )}
-              </Button>
             </CardContent>
           </Card>
+
+          {/* Кнопка сохранения */}
+          <div className='flex justify-end'>
+            <Button onClick={handleSaveMessages} disabled={saving} size='lg'>
+              {saving ? (
+                <>
+                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                  Сохранение...
+                </>
+              ) : (
+                <>
+                  <Save className='mr-2 h-4 w-4' />
+                  Сохранить все настройки
+                </>
+              )}
+            </Button>
+          </div>
         </TabsContent>
 
         {/* Features Tab */}

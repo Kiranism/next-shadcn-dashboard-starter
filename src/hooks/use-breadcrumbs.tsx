@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 
 type BreadcrumbItem = {
   title: string;
@@ -58,6 +58,28 @@ const routeMapping: Record<string, BreadcrumbItem[]> = {
 
 export function useBreadcrumbs() {
   const pathname = usePathname();
+  const [projectNames, setProjectNames] = useState<Record<string, string>>({});
+
+  // Получаем название проекта по ID
+  const getProjectName = async (projectId: string): Promise<string> => {
+    if (projectNames[projectId]) {
+      return projectNames[projectId];
+    }
+
+    try {
+      const response = await fetch(`/api/projects/${projectId}`);
+      if (response.ok) {
+        const project = await response.json();
+        const name = project.name || `Проект ${projectId}`;
+        setProjectNames(prev => ({ ...prev, [projectId]: name }));
+        return name;
+      }
+    } catch (error) {
+      console.error('Ошибка получения названия проекта:', error);
+    }
+
+    return `Проект ${projectId}`;
+  };
 
   const breadcrumbs = useMemo(() => {
     // Check if we have a custom mapping for this exact path
@@ -69,6 +91,24 @@ export function useBreadcrumbs() {
     const segments = pathname.split('/').filter(Boolean);
     return segments.map((segment, index) => {
       const path = `/${segments.slice(0, index + 1).join('/')}`;
+      
+      // Специальная обработка для ID проекта
+      if (segment === 'projects' && index + 1 < segments.length) {
+        const projectId = segments[index + 1];
+        return {
+          title: 'Проекты',
+          link: '/dashboard/projects'
+        };
+      }
+      
+      // Если это ID проекта (UUID или cuid), получаем название
+      if (index > 0 && segments[index - 1] === 'projects' && segment.length > 10) {
+        return {
+          title: projectNames[segment] || `Проект ${segment}`,
+          link: path
+        };
+      }
+      
       // Используем перевод если есть, иначе делаем первую букву заглавной
       const title =
         segmentTranslations[segment] ||
@@ -78,7 +118,20 @@ export function useBreadcrumbs() {
         link: path
       };
     });
-  }, [pathname]);
+  }, [pathname, projectNames]);
+
+  // Загружаем названия проектов при изменении pathname
+  useEffect(() => {
+    const segments = pathname.split('/').filter(Boolean);
+    const projectsIndex = segments.indexOf('projects');
+    
+    if (projectsIndex !== -1 && projectsIndex + 1 < segments.length) {
+      const projectId = segments[projectsIndex + 1];
+      if (projectId.length > 10 && !projectNames[projectId]) {
+        getProjectName(projectId);
+      }
+    }
+  }, [pathname, projectNames]);
 
   return breadcrumbs;
 }

@@ -37,7 +37,7 @@ import { Loader2 } from 'lucide-react';
 // Схема валидации
 const projectSchema = z.object({
   name: z.string().min(1, 'Название проекта обязательно').max(100, 'Слишком длинное название'),
-  domain: z.string().optional().or(z.literal('')),
+  domain: z.string().min(1, 'Домен обязателен').max(255, 'Слишком длинный домен'),
   bonusPercentage: z.number().min(0, 'Процент не может быть отрицательным').max(100, 'Максимум 100%').default(1.0),
   bonusExpiryDays: z.number().min(1, 'Минимум 1 день').max(3650, 'Максимум 10 лет').default(365),
 });
@@ -71,18 +71,12 @@ export function ProjectCreateDialog({
     try {
       setIsLoading(true);
 
-      // Преобразуем пустую строку домена в undefined
-      const payload = {
-        ...data,
-        domain: data.domain === '' ? undefined : data.domain,
-      };
-
       const response = await fetch('/api/projects', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(data),
       });
 
       if (!response.ok) {
@@ -144,12 +138,12 @@ export function ProjectCreateDialog({
               name="domain"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Домен сайта</FormLabel>
+                  <FormLabel>Домен сайта *</FormLabel>
                   <FormControl>
                     <Input placeholder="myshop.com" {...field} />
                   </FormControl>
                   <FormDescription>
-                    Опционально. Домен вашего сайта для удобства
+                    Домен вашего сайта для интеграции
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

@@ -1,7 +1,8 @@
 {
-  "name": "saas-bonus-system",
+  "name": "gupil",
   "version": "1.0.0",
   "private": true,
+  "description": "Gupil - SaaS платформа бонусных программ с Telegram ботами",
   "author": {
     "name": "Kiran",
     "url": "https://github.com/Kiranism"

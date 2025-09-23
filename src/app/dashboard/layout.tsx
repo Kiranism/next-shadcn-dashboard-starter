@@ -6,8 +6,8 @@ import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 
 export const metadata: Metadata = {
-  title: 'SaaS Bonus System - Панель управления',
-  description: 'Система управления бонусными программами'
+  title: 'Gupil - Панель управления',
+  description: 'Gupil - система управления бонусными программами'
 };
 
 export default async function DashboardLayout({

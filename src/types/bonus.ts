@@ -6,6 +6,7 @@ export interface Project {
   webhookSecret: string;
   bonusPercentage: number;
   bonusExpiryDays: number;
+  bonusBehavior: 'SPEND_AND_EARN' | 'SPEND_ONLY' | 'EARN_ONLY';
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
