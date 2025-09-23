@@ -117,6 +117,15 @@ export function ProjectSettingsView({ projectId }: ProjectSettingsViewProps) {
       return;
     }
 
+    if (!formData.domain.trim()) {
+      toast({
+        title: 'Ошибка',
+        description: 'Домен сайта обязателен',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     try {
       setSaving(true);
 
@@ -246,7 +255,7 @@ export function ProjectSettingsView({ projectId }: ProjectSettingsViewProps) {
                     />
                   </div>
                   <div className='space-y-2'>
-                    <Label htmlFor='domain'>Домен (необязательно)</Label>
+                    <Label htmlFor='domain'>Домен сайта *</Label>
                     <Input
                       id='domain'
                       value={formData.domain}
@@ -254,6 +263,7 @@ export function ProjectSettingsView({ projectId }: ProjectSettingsViewProps) {
                         setFormData({ ...formData, domain: e.target.value })
                       }
                       placeholder='example.com'
+                      required
                     />
                   </div>
                 </div>
@@ -275,9 +285,6 @@ export function ProjectSettingsView({ projectId }: ProjectSettingsViewProps) {
                     }
                     placeholder='0.00'
                   />
-                  <p className='text-muted-foreground text-xs'>
-                    Срок действия как в поле выше «Срок действия бонусов»
-                  </p>
                 </div>
 
                 <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>

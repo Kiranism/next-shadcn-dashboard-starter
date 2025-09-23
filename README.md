@@ -1,11 +1,11 @@
-# 🎯 SaaS Bonus System
+# 🎯 Gupil
 
 [![Next.js](https://img.shields.io/badge/Next.js-15.x-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
 [![Prisma](https://img.shields.io/badge/Prisma-6.x-green)](https://www.prisma.io/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Мультитенантная SaaS платформа для управления бонусными программами с интеграцией Telegram ботов и webhook API для внешних систем.
+Gupil - мультитенантная SaaS платформа для управления бонусными программами с интеграцией Telegram ботов и webhook API для внешних систем.
 
 ## 🚀 Возможности
 
