@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState } from 'react';
 
 import { FormInput } from './form-input';
 import { FormTextarea } from './form-textarea';
@@ -111,9 +112,12 @@ export default function DemoForm() {
     }
   });
 
-  const onSubmit = (data: DemoFormData) => {
-    console.log('Form submitted:', data);
-    alert('Form submitted successfully! Check console for data.');
+  const [submitted, setSubmitted] = useState(false);
+
+  const onSubmit = () => {
+    // Store submitted state for UI feedback instead of logging to console
+    setSubmitted(true);
+    setTimeout(() => setSubmitted(false), 3000);
   };
 
   return (
@@ -284,6 +288,10 @@ export default function DemoForm() {
               </Button>
             </div>
           </form>
+
+          {submitted && (
+            <div className='text-green-600'>Form submitted successfully.</div>
+          )}
         </CardContent>
       </Card>
 

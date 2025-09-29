@@ -13,7 +13,14 @@ export default function GithubSignInButton() {
       className='w-full'
       variant='outline'
       type='button'
-      onClick={() => console.log('continue with github clicked')}
+      onClick={() => {
+        // Navigate to the social sign-in route, preserving any callbackUrl.
+        const base = '/auth/social/github';
+        const href = callbackUrl
+          ? `${base}?callbackUrl=${encodeURIComponent(callbackUrl)}`
+          : base;
+        window.location.href = href;
+      }}
     >
       <Icons.github className='mr-2 h-4 w-4' />
       Continue with Github

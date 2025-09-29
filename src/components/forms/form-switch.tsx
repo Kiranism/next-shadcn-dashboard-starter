@@ -6,11 +6,10 @@ import {
   FormDescription,
   FormField,
   FormItem,
-  FormLabel,
-  FormMessage
+  FormLabel
 } from '@/components/ui/form';
 import { Switch } from '@/components/ui/switch';
-import { BaseFormFieldProps } from '@/types/base-form';
+import type { BaseFormFieldProps } from '@/types/base-form';
 
 interface FormSwitchProps<
   TFieldValues extends FieldValues = FieldValues,

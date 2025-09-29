@@ -1,58 +1,55 @@
 'use client';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger
-} from '@/components/ui/collapsible';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
+
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Sidebar,
+  SidebarHeader,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
-  SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuButton,
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarRail
 } from '@/components/ui/sidebar';
-import { UserAvatarProfile } from '@/components/user-avatar-profile';
-import { navItems } from '@/constants/data';
-import { useMediaQuery } from '@/hooks/use-media-query';
-import { useUser } from '@clerk/nextjs';
 import {
-  IconBell,
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent
+} from '@/components/ui/collapsible';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel
+} from '@/components/ui/dropdown-menu';
+import { Icons } from '../icons';
+import { navItems } from '@/constants/data';
+import { UserAvatarProfile } from '@/components/user-avatar-profile';
+import { OrgSwitcher } from '../org-switcher';
+import { getAuth } from '../../lib/better-auth.config';
+import {
   IconChevronRight,
   IconChevronsDown,
+  IconUserCircle,
   IconCreditCard,
+  IconBell,
   IconLogout,
-  IconPhotoUp,
-  IconUserCircle
+  IconPhotoUp
 } from '@tabler/icons-react';
-import { SignOutButton } from '@clerk/nextjs';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import * as React from 'react';
-import { Icons } from '../icons';
-import { OrgSwitcher } from '../org-switcher';
+
 export const company = {
   name: 'Acme Inc',
   logo: IconPhotoUp,
   plan: 'Enterprise'
 };
-
 const tenants = [
   { id: '1', name: 'Acme Inc' },
   { id: '2', name: 'Beta Corp' },
@@ -61,71 +58,76 @@ const tenants = [
 
 export default function AppSidebar() {
   const pathname = usePathname();
-  const { isOpen } = useMediaQuery();
-  const { user } = useUser();
   const router = useRouter();
+  const auth = getAuth();
+  const { data: session } = auth.client.useSession();
+  const user = session?.user;
+
   const handleSwitchTenant = (_tenantId: string) => {
-    // Tenant switching functionality would be implemented here
+    // Placeholder for tenant switching logic; keep the argument used to satisfy linters
+    void _tenantId;
   };
-
-  const activeTenant = tenants[0];
-
-  React.useEffect(() => {
-    // Side effects based on sidebar state changes
-  }, [isOpen]);
 
   return (
     <Sidebar collapsible='icon'>
       <SidebarHeader>
         <OrgSwitcher
           tenants={tenants}
-          defaultTenant={activeTenant}
+          defaultTenant={tenants[0]}
           onTenantSwitch={handleSwitchTenant}
         />
       </SidebarHeader>
+
       <SidebarContent className='overflow-x-hidden'>
         <SidebarGroup>
           <SidebarGroupLabel>Overview</SidebarGroupLabel>
+
           <SidebarMenu>
             {navItems.map((item) => {
               const Icon = item.icon ? Icons[item.icon] : Icons.logo;
-              return item?.items && item?.items?.length > 0 ? (
-                <Collapsible
-                  key={item.title}
-                  asChild
-                  defaultOpen={item.isActive}
-                  className='group/collapsible'
-                >
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton
-                        tooltip={item.title}
-                        isActive={pathname === item.url}
-                      >
-                        {item.icon && <Icon />}
-                        <span>{item.title}</span>
-                        <IconChevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        {item.items?.map((subItem) => (
-                          <SidebarMenuSubItem key={subItem.title}>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={pathname === subItem.url}
-                            >
-                              <Link href={subItem.url}>
-                                <span>{subItem.title}</span>
-                              </Link>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </SidebarMenuItem>
-                </Collapsible>
-              ) : (
+
+              if (item.items && item.items.length > 0) {
+                return (
+                  <Collapsible
+                    key={item.title}
+                    asChild
+                    defaultOpen={item.isActive}
+                    className='group/collapsible'
+                  >
+                    <SidebarMenuItem>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton
+                          tooltip={item.title}
+                          isActive={pathname === item.url}
+                        >
+                          {item.icon && <Icon />}
+                          <span>{item.title}</span>
+                          <IconChevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {item.items.map((subItem) => (
+                            <SidebarMenuSubItem key={subItem.title}>
+                              <SidebarMenuSubButton
+                                asChild
+                                isActive={pathname === subItem.url}
+                              >
+                                <Link href={subItem.url}>
+                                  <span>{subItem.title}</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </SidebarMenuItem>
+                  </Collapsible>
+                );
+              }
+
+              return (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
@@ -143,6 +145,7 @@ export default function AppSidebar() {
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
+
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -162,11 +165,12 @@ export default function AppSidebar() {
                   <IconChevronsDown className='ml-auto size-4' />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
+
               <DropdownMenuContent
-                className='w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg'
                 side='bottom'
                 align='end'
                 sideOffset={4}
+                className='w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg'
               >
                 <DropdownMenuLabel className='p-0 font-normal'>
                   <div className='px-1 py-1.5'>
@@ -179,34 +183,32 @@ export default function AppSidebar() {
                     )}
                   </div>
                 </DropdownMenuLabel>
+
                 <DropdownMenuSeparator />
 
-                <DropdownMenuGroup>
-                  <DropdownMenuItem
-                    onClick={() => router.push('/dashboard/profile')}
-                  >
-                    <IconUserCircle className='mr-2 h-4 w-4' />
-                    Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <IconCreditCard className='mr-2 h-4 w-4' />
-                    Billing
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <IconBell className='mr-2 h-4 w-4' />
-                    Notifications
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => router.push('/dashboard/profile')}
+                >
+                  <IconUserCircle className='mr-2 h-4 w-4' /> Profile
+                </DropdownMenuItem>
                 <DropdownMenuItem>
-                  <IconLogout className='mr-2 h-4 w-4' />
-                  <SignOutButton redirectUrl='/auth/sign-in' />
+                  <IconCreditCard className='mr-2 h-4 w-4' /> Billing
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <IconBell className='mr-2 h-4 w-4' /> Notifications
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem onClick={() => auth.client.signOut()}>
+                  <IconLogout className='mr-2 h-4 w-4' /> Sign Out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+
       <SidebarRail />
     </Sidebar>
   );
