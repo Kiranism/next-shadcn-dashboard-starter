@@ -44,7 +44,7 @@ export default function OrdersPage({}: TUserListingPage) {
     setFilteredOrders(filtered);
   }, [search, orders]);
 
-  console.log(filteredOrders);
+  console.log('Orders:', filteredOrders);
 
   useEffect(() => {
     if (user?.token && user.role === 'store') {

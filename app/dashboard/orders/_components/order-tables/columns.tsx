@@ -75,6 +75,27 @@ export const columns: ColumnDef<Orders>[] = [
       );
     }
   },
+  {
+    accessorKey: 'fulfilled',
+    header: 'SHIPPED',
+    cell: ({ row }) => {
+      const fulfilledArray = row.getValue<Fulfilled[]>('fulfilled');
+      const fulfilled = fulfilledArray?.[0]; // take the first element
+      return (
+        <div>
+          {fulfilled?.fulfilled === true ? (
+            <span className="me-2 rounded bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900 dark:text-green-300">
+              Shipped
+            </span>
+          ) : (
+            <span className="me-2 rounded bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900 dark:text-red-300">
+              Not Shipped
+            </span>
+          )}
+        </div>
+      );
+    }
+  },
   ...(user?.role === 'store'
     ? [
         {

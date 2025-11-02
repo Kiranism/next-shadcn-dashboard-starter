@@ -270,10 +270,10 @@ export default function AppSidebar() {
                     <CreditCard />
                     Billing
                   </DropdownMenuItem> */}
-                  <DropdownMenuItem>
+                  {/* <DropdownMenuItem>
                     <Bell />
                     Notifications
-                  </DropdownMenuItem>
+                  </DropdownMenuItem> */}
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>

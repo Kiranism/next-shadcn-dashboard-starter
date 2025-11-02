@@ -5,6 +5,7 @@ import { Breadcrumbs } from '../breadcrumbs';
 import SearchInput from '../search-input';
 import { UserNav } from './user-nav';
 import ThemeToggle from './ThemeToggle/theme-toggle';
+import { Notifications } from '../notifications';
 
 export default function Header() {
   return (
@@ -14,11 +15,11 @@ export default function Header() {
         <Separator orientation="vertical" className="mr-2 h-4" />
         <Breadcrumbs />
       </div>
-
       <div className="flex items-center gap-2 px-4">
         <div className="hidden md:flex">
           <SearchInput />
         </div>
+        <Notifications />
         <UserNav />
         <ThemeToggle />
       </div>

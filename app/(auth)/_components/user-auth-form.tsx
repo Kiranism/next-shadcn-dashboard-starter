@@ -36,8 +36,9 @@ export default function UserAuthForm() {
   const cookies = new Cookies();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl');
-  const [loading, startTransition] = useTransition();
-  const [error, setError] = useState<String>('');
+  // const [loading, startTransition] = useTransition();
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
   const defaultValues = {
     email: 'demo@gmail.com',
     password: ''
@@ -48,8 +49,8 @@ export default function UserAuthForm() {
   });
 
   const onSubmit = async (data: UserFormValue) => {
+    setLoading(true);
     login(data.email, data.password).then((res: any) => {
-      console.log(res.status);
       if (res.status === 200) {
         cookies.set('mechchant_admin_user', JSON.stringify(res.data), {
           path: '/'
@@ -65,9 +66,11 @@ export default function UserAuthForm() {
           storeName: res?.data?.storeName
         };
         setUser(userData);
+        setLoading(false);
         toast.success('Signed In Successfully!');
         router.push('/dashboard/overview');
       } else {
+        setLoading(false);
         setError('Invalid Email address or Password');
       }
     });
@@ -79,7 +82,6 @@ export default function UserAuthForm() {
     //   toast.success('Signed In Successfully!');
     // });
   };
-
   function handleGoogleLogin(token: string | undefined) {
     googleLogin(token)
       .then((res: any) => {
@@ -155,8 +157,12 @@ export default function UserAuthForm() {
             )}
           />
           {error && <p className="text-sm text-destructive">{error}</p>}
-          <Button disabled={loading} className="ml-auto w-full" type="submit">
-            Login
+          <Button
+            disabled={loading}
+            className={`ml-auto w-full ${loading && 'bg-purple-400'}`}
+            type="submit"
+          >
+            {loading ? 'Login in.....' : 'Login'}
           </Button>
         </form>
       </Form>

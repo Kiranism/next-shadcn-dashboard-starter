@@ -138,7 +138,7 @@ export default function CompleteOrderForm() {
                 name={`shipDate`}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Start date</FormLabel>
+                    <FormLabel>Delivery date</FormLabel>
                     <FormControl>
                       <Input
                         type="date"
