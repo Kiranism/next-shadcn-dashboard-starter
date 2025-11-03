@@ -115,7 +115,7 @@ export function Notifications() {
   useEffect(() => {
     if (!user?.storeId) return;
 
-    const socket = io('http://localhost:9000', {
+    const socket = io('https://server.mehchant.com', {
       transports: ['websocket']
     });
 
