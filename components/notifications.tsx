@@ -1,5 +1,7 @@
 'use client';
 
+import { io } from 'socket.io-client';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -109,6 +111,35 @@ export function Notifications() {
       setIsLoading(false);
     }
   }, [user?.token, user?.storeId, refresh]);
+
+  useEffect(() => {
+    if (!user?.storeId) return;
+
+    const socket = io('http://localhost:9000', {
+      transports: ['websocket']
+    });
+
+    socket.on('connect', () => console.log('✅ Connected to socket.io'));
+    socket.on('connect_error', (err) => console.error('❌ Socket error:', err));
+
+    socket.emit('register', user.storeId);
+
+    socket.on(`notification:${user.storeId}`, (notification) => {
+      console.log('🔔 New notification:', notification);
+
+      setNotifications((prev) => [notification, ...prev]);
+      toast.success(notification.title || 'New notification', {
+        description: notification.message,
+        duration: 8000
+      });
+    });
+
+    const cleanup = () => {
+      socket.disconnect();
+    };
+    return cleanup;
+  }, [user?.storeId]);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -134,7 +165,7 @@ export function Notifications() {
             <div className="divide-y">
               {notifications.map((notification, index) => (
                 <div
-                  key={`${notification._id}+${notification.createdAt}`}
+                  key={notification._id || `${notification.title}-${index}`}
                   onClick={() => markAsRead(notification._id)}
                   className={`cursor-pointer px-4 py-3 transition-colors ${
                     notification.read
