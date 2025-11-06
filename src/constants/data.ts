@@ -111,3 +111,34 @@ export const recentSalesData: SaleUser[] = [
     initials: 'SD'
   }
 ];
+
+// Landing / Hero static data
+export const landingHero = {
+  eyebrow: 'Trusted • Best Medical Service in 1 place',
+  title: 'Personalized Medical Services for Better Health',
+  subtitle:
+    'Connect with top specialists, schedule appointments, and manage your health records in one modern, secure platform.',
+  primaryCta: 'Schedule an appointment',
+  secondaryCta: 'Learn more',
+  image:
+    'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=900&q=80',
+  smallCard: {
+    title: 'Mitochondrial Test',
+    by: 'Test Lab',
+    time: '10:30',
+    avatar: 'https://api.slingacademy.com/public/sample-users/1.png'
+  }
+};
+
+// Partners / Trust strip data (second section under hero)
+export const partnersStrip = {
+  heading: 'Join our community of 120,000+ businesses',
+  logos: [
+    { name: 'Sentry', url: '/assets/sentry.svg' },
+    { name: 'Invert', url: '' },
+    { name: 'Orbit', url: '' },
+    { name: 'Hues', url: '' },
+    { name: 'Sun', url: '' },
+    { name: 'Hues 2', url: '' }
+  ]
+};
