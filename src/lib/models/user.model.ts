@@ -1,11 +1,6 @@
 import { getModelForClass, prop } from '@typegoose/typegoose';
 import { BaseModel } from './base.model';
-
-export enum Role {
-  ADMIN = 'admin',
-  TEACHER = 'teacher',
-  STUDENT = 'student'
-}
+import { Role } from '../enums';
 
 export class User extends BaseModel {
   @prop({ required: true, unique: true })

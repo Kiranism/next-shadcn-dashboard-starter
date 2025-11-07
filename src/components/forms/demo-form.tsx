@@ -111,8 +111,7 @@ export default function DemoForm() {
     }
   });
 
-  const onSubmit = (data: DemoFormData) => {
-    console.log('Form submitted:', data);
+  const onSubmit = () => {
     alert('Form submitted successfully! Check console for data.');
   };
 
