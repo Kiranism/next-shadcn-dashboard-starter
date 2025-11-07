@@ -98,6 +98,7 @@
     "sonner": "^1.7.1",
     "sort-by": "^1.2.0",
     "streamdown": "^1.4.0",
+    "svix": "^1.81.0",
     "tailwind-merge": "^3.0.2",
     "tailwindcss": "^4.0.0",
     "tailwindcss-animate": "^1.0.7",

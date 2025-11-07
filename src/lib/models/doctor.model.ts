@@ -1,82 +1,50 @@
-import { getModelForClass, prop } from '@typegoose/typegoose';
-import type { Ref } from '@typegoose/typegoose';
-import { Types } from 'mongoose';
-import { BaseModel } from './base.model';
-import type { Hospital } from './hospital.model';
+import { Schema, model, models } from 'mongoose';
 import { DayOfWeek, Gender } from '../enums';
 
-class DoctorContact {
-  @prop()
-  public area?: string;
+const DoctorContactSchema = new Schema(
+  {
+    area: String,
+    city: String,
+    state: String,
+    primaryNumber: String,
+    secondaryNumber: String
+  },
+  { _id: false }
+);
 
-  @prop()
-  public city?: string;
+const TimeSlotSchema = new Schema(
+  {
+    start: String,
+    end: String
+  },
+  { _id: false }
+);
 
-  @prop()
-  public state?: string;
+const AvailabilitySchema = new Schema(
+  {
+    days: [{ type: String, enum: Object.values(DayOfWeek) }],
+    timeSlots: [TimeSlotSchema]
+  },
+  { _id: false }
+);
 
-  @prop()
-  public primaryNumber?: string;
+const DoctorSchema = new Schema(
+  {
+    name: { type: String, required: true },
+    gender: { type: String, enum: Object.values(Gender) },
+    dateOfBirth: Date,
+    cnic: { type: String, required: true },
+    cnicIV: { type: String, required: true },
+    specialization: String,
+    experienceYears: Number,
+    subSpecialization: [String],
+    qualifications: [String],
+    licenseNumber: { type: String, required: true },
+    contact: DoctorContactSchema,
+    hospitalIds: [{ type: Schema.Types.ObjectId, ref: 'Hospital' }],
+    availability: AvailabilitySchema
+  },
+  { timestamps: true }
+);
 
-  @prop()
-  public secondaryNumber?: string;
-}
-
-class TimeSlot {
-  @prop()
-  public start?: string;
-
-  @prop()
-  public end?: string;
-}
-
-class Availability {
-  @prop({ type: () => [String], enum: DayOfWeek })
-  public days?: DayOfWeek[];
-
-  @prop({ type: () => [TimeSlot] })
-  public timeSlots?: TimeSlot[];
-}
-
-export class Doctor extends BaseModel {
-  @prop({ required: true })
-  public name!: string;
-
-  @prop({ enum: Gender })
-  public gender?: Gender;
-
-  @prop()
-  public dateOfBirth?: Date;
-
-  @prop({ required: true })
-  public cnic!: string;
-
-  @prop({ required: true })
-  public cnicIV!: string;
-
-  @prop()
-  public specialization?: string;
-
-  @prop()
-  public experienceYears?: number;
-
-  @prop({ type: () => [String] })
-  public subSpecialization?: string[];
-
-  @prop({ type: () => [String] })
-  public qualifications?: string[];
-
-  @prop({ required: true })
-  public licenseNumber!: string;
-
-  @prop()
-  public contact?: DoctorContact;
-
-  @prop({ type: () => [Types.ObjectId], ref: 'Hospital' })
-  public hospitalIds?: Ref<Hospital>[];
-
-  @prop()
-  public availability?: Availability;
-}
-
-export const DoctorModel = getModelForClass(Doctor);
+export const DoctorModel = models.Doctor || model('Doctor', DoctorSchema);

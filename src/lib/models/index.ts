@@ -1,5 +1,4 @@
-// Export all models and their enums
-export * from './base.model';
+// Export all models
 export * from './user.model';
 export * from './hospital.model';
 export * from './patient.model';

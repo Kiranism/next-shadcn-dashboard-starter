@@ -1,100 +1,60 @@
-import { getModelForClass, prop } from '@typegoose/typegoose';
-import type { Ref } from '@typegoose/typegoose';
-import { Types } from 'mongoose';
-import { BaseModel } from './base.model';
-import type { Hospital } from './hospital.model';
+import { Schema, model, models } from 'mongoose';
 import { Department, Designation, ShiftType, WorkerGender } from '../enums';
 
-class WorkerContact {
-  @prop()
-  public primaryNumber?: string;
+const WorkerContactSchema = new Schema(
+  {
+    primaryNumber: String,
+    secondaryNumber: String,
+    area: String,
+    city: String,
+    state: String
+  },
+  { _id: false }
+);
 
-  @prop()
-  public secondaryNumber?: string;
+const ShiftSchema = new Schema(
+  {
+    type: { type: String, enum: Object.values(ShiftType) },
+    startTime: String,
+    endTime: String
+  },
+  { _id: false }
+);
 
-  @prop()
-  public area?: string;
+const SchemeSchema = new Schema(
+  {
+    name: String,
+    organization: String,
+    role: String,
+    startDate: Date,
+    endDate: Date,
+    remarks: String
+  },
+  { _id: false }
+);
 
-  @prop()
-  public city?: string;
+const WorkerSchema = new Schema(
+  {
+    name: { type: String, required: true },
+    gender: { type: String, enum: Object.values(WorkerGender) },
+    dateOfBirth: Date,
+    cnic: { type: String, required: true },
+    cnicIV: { type: String, required: true },
+    designation: {
+      type: String,
+      required: true,
+      enum: Object.values(Designation)
+    },
+    department: { type: String, enum: Object.values(Department) },
+    experienceYears: Number,
+    qualifications: [String],
+    shift: ShiftSchema,
+    contact: WorkerContactSchema,
+    hospitalIds: [{ type: Schema.Types.ObjectId, ref: 'Hospital' }],
+    licenseNumber: String,
+    schemes: [SchemeSchema]
+  },
+  { timestamps: true }
+);
 
-  @prop()
-  public state?: string;
-}
-
-class Shift {
-  @prop({ enum: ShiftType })
-  public type?: ShiftType;
-
-  @prop()
-  public startTime?: string;
-
-  @prop()
-  public endTime?: string;
-}
-
-class Scheme {
-  @prop()
-  public name?: string;
-
-  @prop()
-  public organization?: string;
-
-  @prop()
-  public role?: string;
-
-  @prop()
-  public startDate?: Date;
-
-  @prop()
-  public endDate?: Date;
-
-  @prop()
-  public remarks?: string;
-}
-
-export class Worker extends BaseModel {
-  @prop({ required: true })
-  public name!: string;
-
-  @prop({ enum: WorkerGender })
-  public gender?: WorkerGender;
-
-  @prop()
-  public dateOfBirth?: Date;
-
-  @prop({ required: true })
-  public cnic!: string;
-
-  @prop({ required: true })
-  public cnicIV!: string;
-
-  @prop({ required: true, enum: Designation })
-  public designation!: Designation;
-
-  @prop({ enum: Department })
-  public department?: Department;
-
-  @prop()
-  public experienceYears?: number;
-
-  @prop({ type: () => [String] })
-  public qualifications?: string[];
-
-  @prop()
-  public shift?: Shift;
-
-  @prop()
-  public contact?: WorkerContact;
-
-  @prop({ type: () => [Types.ObjectId], ref: 'Hospital' })
-  public hospitalIds?: Ref<Hospital>[];
-
-  @prop()
-  public licenseNumber?: string;
-
-  @prop({ type: () => [Scheme] })
-  public schemes?: Scheme[];
-}
-
-export const WorkerModel = getModelForClass(Worker);
+export const WorkerModel = models.Worker || model('Worker', WorkerSchema);

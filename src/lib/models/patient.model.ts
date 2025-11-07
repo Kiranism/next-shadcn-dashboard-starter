@@ -1,73 +1,48 @@
-import { getModelForClass, prop } from '@typegoose/typegoose';
-import { BaseModel } from './base.model';
+import { Schema, model, models } from 'mongoose';
 import { BloodGroup, Gender, MedicalConditionStatus } from '../enums';
 
-class PatientContact {
-  @prop()
-  public primaryNumber?: string;
+const PatientContactSchema = new Schema(
+  {
+    primaryNumber: String,
+    secondaryNumber: String,
+    address: String,
+    city: String,
+    state: String
+  },
+  { _id: false }
+);
 
-  @prop()
-  public secondaryNumber?: string;
+const EmergencyContactSchema = new Schema(
+  {
+    name: String,
+    relation: String,
+    phoneNo: String
+  },
+  { _id: false }
+);
 
-  @prop()
-  public address?: string;
+const MedicalHistoryItemSchema = new Schema(
+  {
+    condition: String,
+    diagnosedAt: Date,
+    status: { type: String, enum: Object.values(MedicalConditionStatus) }
+  },
+  { _id: false }
+);
 
-  @prop()
-  public city?: string;
+const PatientSchema = new Schema(
+  {
+    name: { type: String, required: true },
+    gender: { type: String, required: true, enum: Object.values(Gender) },
+    dateOfBirth: { type: Date, required: true },
+    cnic: { type: String, required: true },
+    cnicIV: { type: String, required: true },
+    bloodGroup: { type: String, enum: Object.values(BloodGroup) },
+    contact: PatientContactSchema,
+    emergencyContact: EmergencyContactSchema,
+    medicalHistory: [MedicalHistoryItemSchema]
+  },
+  { timestamps: true }
+);
 
-  @prop()
-  public state?: string;
-}
-
-class EmergencyContact {
-  @prop()
-  public name?: string;
-
-  @prop()
-  public relation?: string;
-
-  @prop()
-  public phoneNo?: string;
-}
-
-class MedicalHistoryItem {
-  @prop()
-  public condition?: string;
-
-  @prop()
-  public diagnosedAt?: Date;
-
-  @prop({ enum: MedicalConditionStatus })
-  public status?: MedicalConditionStatus;
-}
-
-export class Patient extends BaseModel {
-  @prop({ required: true })
-  public name!: string;
-
-  @prop({ required: true, enum: Gender })
-  public gender!: Gender;
-
-  @prop({ required: true })
-  public dateOfBirth!: Date;
-
-  @prop({ required: true })
-  public cnic!: string;
-
-  @prop({ required: true })
-  public cnicIV!: string;
-
-  @prop({ enum: BloodGroup })
-  public bloodGroup?: BloodGroup;
-
-  @prop()
-  public contact?: PatientContact;
-
-  @prop()
-  public emergencyContact?: EmergencyContact;
-
-  @prop({ type: () => [MedicalHistoryItem] })
-  public medicalHistory?: MedicalHistoryItem[];
-}
-
-export const PatientModel = getModelForClass(Patient);
+export const PatientModel = models.Patient || model('Patient', PatientSchema);

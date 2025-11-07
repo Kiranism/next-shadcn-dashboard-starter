@@ -1,32 +1,22 @@
-import { getModelForClass, prop } from '@typegoose/typegoose';
-import type { Ref } from '@typegoose/typegoose';
-import { Types } from 'mongoose';
-import { BaseModel } from './base.model';
-import type { Hospital } from './hospital.model';
-import type { Facility } from './facility.model';
+import { Schema, model, models } from 'mongoose';
 import { WardType } from '../enums';
 
-export class Capacity extends BaseModel {
-  @prop({ required: true, ref: 'Hospital' })
-  public hospitalId!: Ref<Hospital>;
+const CapacitySchema = new Schema(
+  {
+    hospitalId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Hospital',
+      required: true
+    },
+    wardType: { type: String, required: true, enum: Object.values(WardType) },
+    totalBeds: { type: Number, required: true },
+    occupiedBeds: { type: Number, required: true },
+    availableBeds: Number,
+    equipmentIds: [{ type: Schema.Types.ObjectId, ref: 'Facility' }],
+    notes: String
+  },
+  { timestamps: true }
+);
 
-  @prop({ required: true, enum: WardType })
-  public wardType!: WardType;
-
-  @prop({ required: true })
-  public totalBeds!: number;
-
-  @prop({ required: true })
-  public occupiedBeds!: number;
-
-  @prop()
-  public availableBeds?: number;
-
-  @prop({ type: () => [Types.ObjectId], ref: 'Facility' })
-  public equipmentIds?: Ref<Facility>[];
-
-  @prop()
-  public notes?: string;
-}
-
-export const CapacityModel = getModelForClass(Capacity);
+export const CapacityModel =
+  models.Capacity || model('Capacity', CapacitySchema);

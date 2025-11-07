@@ -1,32 +1,26 @@
-import { getModelForClass, prop } from '@typegoose/typegoose';
-import type { Ref } from '@typegoose/typegoose';
-import { BaseModel } from './base.model';
-import type { Patient } from './patient.model';
-import type { Doctor } from './doctor.model';
-import type { Hospital } from './hospital.model';
+import { Schema, model, models } from 'mongoose';
 import { AppointmentStatus, Priority } from '../enums';
 
-export class Appointment extends BaseModel {
-  @prop({ required: true, ref: 'Patient' })
-  public patientId!: Ref<Patient>;
+const AppointmentSchema = new Schema(
+  {
+    patientId: { type: Schema.Types.ObjectId, ref: 'Patient', required: true },
+    doctorId: { type: Schema.Types.ObjectId, ref: 'Doctor', required: true },
+    hospitalId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Hospital',
+      required: true
+    },
+    appointmentDate: { type: Date, required: true },
+    status: {
+      type: String,
+      required: true,
+      enum: Object.values(AppointmentStatus)
+    },
+    reason: String,
+    priority: { type: String, enum: Object.values(Priority) }
+  },
+  { timestamps: true }
+);
 
-  @prop({ required: true, ref: 'Doctor' })
-  public doctorId!: Ref<Doctor>;
-
-  @prop({ required: true, ref: 'Hospital' })
-  public hospitalId!: Ref<Hospital>;
-
-  @prop({ required: true })
-  public appointmentDate!: Date;
-
-  @prop({ required: true, enum: AppointmentStatus })
-  public status!: AppointmentStatus;
-
-  @prop()
-  public reason?: string;
-
-  @prop({ enum: Priority })
-  public priority?: Priority;
-}
-
-export const AppointmentModel = getModelForClass(Appointment);
+export const AppointmentModel =
+  models.Appointment || model('Appointment', AppointmentSchema);

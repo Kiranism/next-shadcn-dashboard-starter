@@ -1,88 +1,56 @@
-import { getModelForClass, prop } from '@typegoose/typegoose';
-import type { Ref } from '@typegoose/typegoose';
-import { BaseModel } from './base.model';
-import type { Patient } from './patient.model';
-import type { Doctor } from './doctor.model';
-import type { Hospital } from './hospital.model';
+import { Schema, model, models } from 'mongoose';
 
-class Prescription {
-  @prop()
-  public medicineName?: string;
+const PrescriptionSchema = new Schema(
+  {
+    medicineName: String,
+    dosage: String,
+    frequency: String,
+    duration: String,
+    notes: String
+  },
+  { _id: false }
+);
 
-  @prop()
-  public dosage?: string;
+const TestOrderedSchema = new Schema(
+  {
+    testName: String,
+    results: String,
+    testDate: Date
+  },
+  { _id: false }
+);
 
-  @prop()
-  public frequency?: string;
+const AttachmentSchema = new Schema(
+  {
+    fileName: String,
+    fileUrl: String,
+    fileType: String
+  },
+  { _id: false }
+);
 
-  @prop()
-  public duration?: string;
+const MedicalRecordSchema = new Schema(
+  {
+    patientId: { type: Schema.Types.ObjectId, ref: 'Patient', required: true },
+    doctorId: { type: Schema.Types.ObjectId, ref: 'Doctor', required: true },
+    hospitalId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Hospital',
+      required: true
+    },
+    visitDate: Date,
+    diagnosis: String,
+    symptoms: [String],
+    prescriptions: [PrescriptionSchema],
+    testsOrdered: [TestOrderedSchema],
+    allergies: [String],
+    treatmentPlan: String,
+    followUpDate: Date,
+    notes: String,
+    attachments: [AttachmentSchema]
+  },
+  { timestamps: true }
+);
 
-  @prop()
-  public notes?: string;
-}
-
-class TestOrdered {
-  @prop()
-  public testName?: string;
-
-  @prop()
-  public results?: string;
-
-  @prop()
-  public testDate?: Date;
-}
-
-class Attachment {
-  @prop()
-  public fileName?: string;
-
-  @prop()
-  public fileUrl?: string;
-
-  @prop()
-  public fileType?: string;
-}
-
-export class MedicalRecord extends BaseModel {
-  @prop({ required: true, ref: 'Patient' })
-  public patientId!: Ref<Patient>;
-
-  @prop({ required: true, ref: 'Doctor' })
-  public doctorId!: Ref<Doctor>;
-
-  @prop({ required: true, ref: 'Hospital' })
-  public hospitalId!: Ref<Hospital>;
-
-  @prop()
-  public visitDate?: Date;
-
-  @prop()
-  public diagnosis?: string;
-
-  @prop({ type: () => [String] })
-  public symptoms?: string[];
-
-  @prop({ type: () => [Prescription] })
-  public prescriptions?: Prescription[];
-
-  @prop({ type: () => [TestOrdered] })
-  public testsOrdered?: TestOrdered[];
-
-  @prop({ type: () => [String] })
-  public allergies?: string[];
-
-  @prop()
-  public treatmentPlan?: string;
-
-  @prop()
-  public followUpDate?: Date;
-
-  @prop()
-  public notes?: string;
-
-  @prop({ type: () => [Attachment] })
-  public attachments?: Attachment[];
-}
-
-export const MedicalRecordModel = getModelForClass(MedicalRecord);
+export const MedicalRecordModel =
+  models.MedicalRecord || model('MedicalRecord', MedicalRecordSchema);

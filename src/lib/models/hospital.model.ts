@@ -1,50 +1,40 @@
-import { getModelForClass, prop } from '@typegoose/typegoose';
-import { BaseModel } from './base.model';
+import { Schema, model, models } from 'mongoose';
 import { HospitalType, OwnershipType } from '../enums';
 
-class Location {
-  @prop()
-  public area?: string;
+const LocationSchema = new Schema(
+  {
+    area: String,
+    city: String,
+    country: String,
+    latitude: Number,
+    longitude: Number
+  },
+  { _id: false }
+);
 
-  @prop()
-  public city?: string;
+const ContactSchema = new Schema(
+  {
+    primaryNumber: String,
+    secondaryNumber: String
+  },
+  { _id: false }
+);
 
-  @prop()
-  public country?: string;
+const HospitalSchema = new Schema(
+  {
+    name: { type: String, required: true },
+    location: LocationSchema,
+    contact: ContactSchema,
+    type: { type: String, required: true, enum: Object.values(HospitalType) },
+    ownershipType: {
+      type: String,
+      required: true,
+      enum: Object.values(OwnershipType)
+    },
+    registrationNumber: { type: String, required: true }
+  },
+  { timestamps: true }
+);
 
-  @prop()
-  public latitude?: number;
-
-  @prop()
-  public longitude?: number;
-}
-
-class Contact {
-  @prop()
-  public primaryNumber?: string;
-
-  @prop()
-  public secondaryNumber?: string;
-}
-
-export class Hospital extends BaseModel {
-  @prop({ required: true })
-  public name!: string;
-
-  @prop()
-  public location?: Location;
-
-  @prop()
-  public contact?: Contact;
-
-  @prop({ required: true, enum: HospitalType })
-  public type!: HospitalType;
-
-  @prop({ required: true, enum: OwnershipType })
-  public ownershipType!: OwnershipType;
-
-  @prop({ required: true })
-  public registrationNumber!: string;
-}
-
-export const HospitalModel = getModelForClass(Hospital);
+export const HospitalModel =
+  models.Hospital || model('Hospital', HospitalSchema);
