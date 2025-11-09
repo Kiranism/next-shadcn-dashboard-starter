@@ -307,7 +307,6 @@ const Example = () => {
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
     null
   );
-
   const streamResponse = useCallback(
     async (messageId: string, content: string) => {
       setStatus('streaming');
@@ -341,7 +340,7 @@ const Example = () => {
       setStatus('ready');
       setStreamingMessageId(null);
     },
-    []
+    [streamingMessageId]
   );
 
   const addUserMessage = useCallback(
@@ -406,10 +405,10 @@ const Example = () => {
     setText('');
   };
 
-  const handleSuggestionClick = (suggestion: string) => {
-    setStatus('submitted');
-    addUserMessage(suggestion);
-  };
+  // const handleSuggestionClick = (suggestion: string) => {
+  //   setStatus('submitted');
+  //   addUserMessage(suggestion);
+  // };
 
   return (
     <div className='relative flex size-full h-[91vh] flex-col divide-y overflow-hidden'>

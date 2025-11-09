@@ -47,6 +47,7 @@ import {
   XIcon
 } from 'lucide-react';
 import { nanoid } from 'nanoid';
+import Image from 'next/image';
 import {
   type ChangeEvent,
   type ChangeEventHandler,
@@ -286,7 +287,7 @@ export function PromptInputAttachment({
           <div className='relative size-5 shrink-0'>
             <div className='bg-background absolute inset-0 flex size-5 items-center justify-center overflow-hidden rounded transition-opacity group-hover:opacity-0'>
               {isImage ? (
-                <img
+                <Image
                   alt={filename || 'attachment'}
                   className='size-5 object-cover'
                   height={20}
@@ -321,7 +322,7 @@ export function PromptInputAttachment({
         <div className='w-auto space-y-3'>
           {isImage && (
             <div className='flex max-h-96 w-96 items-center justify-center overflow-hidden rounded-md border'>
-              <img
+              <Image
                 alt={filename || 'attachment preview'}
                 className='max-h-full max-w-full object-contain'
                 height={384}
@@ -525,36 +526,44 @@ export const PromptInput = ({
     [matchesAccept, maxFiles, maxFileSize, onError]
   );
 
-  const add = usingProvider
-    ? (files: File[] | FileList) => controller.attachments.add(files)
-    : addLocal;
+  const add = useMemo(
+    () =>
+      usingProvider
+        ? (files: File[] | FileList) => controller.attachments.add(files)
+        : addLocal,
+    [usingProvider, controller?.attachments, addLocal]
+  );
 
-  const remove = usingProvider
-    ? (id: string) => controller.attachments.remove(id)
-    : (id: string) =>
-        setItems((prev) => {
-          const found = prev.find((file) => file.id === id);
-          if (found?.url) {
-            URL.revokeObjectURL(found.url);
-          }
-          return prev.filter((file) => file.id !== id);
-        });
+  const remove = useMemo(
+    () =>
+      usingProvider
+        ? (id: string) => controller.attachments.remove(id)
+        : (id: string) =>
+            setItems((prev) => {
+              const found = prev.find((file) => file.id === id);
+              if (found?.url) {
+                URL.revokeObjectURL(found.url);
+              }
+              return prev.filter((file) => file.id !== id);
+            }),
+    [usingProvider, controller?.attachments, setItems]
+  );
 
-  const clear = usingProvider
-    ? () => controller.attachments.clear()
-    : () =>
-        setItems((prev) => {
-          for (const file of prev) {
-            if (file.url) {
-              URL.revokeObjectURL(file.url);
-            }
-          }
-          return [];
-        });
-
-  const openFileDialog = usingProvider
-    ? () => controller.attachments.openFileDialog()
-    : openFileDialogLocal;
+  const clear = useMemo(
+    () =>
+      usingProvider
+        ? () => controller.attachments.clear()
+        : () =>
+            setItems((prev) => {
+              for (const file of prev) {
+                if (file.url) {
+                  URL.revokeObjectURL(file.url);
+                }
+              }
+              return [];
+            }),
+    [usingProvider, controller?.attachments, setItems]
+  );
 
   // Let provider know about our hidden file input so external menus can call openFileDialog()
   useEffect(() => {
@@ -648,17 +657,28 @@ export const PromptInput = ({
     });
   };
 
-  const ctx = useMemo<AttachmentsContext>(
-    () => ({
+  const ctx = useMemo<AttachmentsContext>(() => {
+    const openFileDialog = usingProvider
+      ? () => controller!.attachments.openFileDialog()
+      : openFileDialogLocal;
+
+    return {
       files: files.map((item) => ({ ...item, id: item.id })),
       add,
       remove,
       clear,
       openFileDialog,
       fileInputRef: inputRef
-    }),
-    [files, add, remove, clear, openFileDialog]
-  );
+    };
+  }, [
+    files,
+    add,
+    remove,
+    clear,
+    usingProvider,
+    controller,
+    openFileDialogLocal
+  ]);
 
   const handleSubmit: FormEventHandler<HTMLFormElement> = (event) => {
     event.preventDefault();
@@ -679,7 +699,7 @@ export const PromptInput = ({
 
     // Convert blob URLs to data URLs asynchronously
     Promise.all(
-      files.map(async ({ id, ...item }) => {
+      files.map(async ({ ...item }) => {
         if (item.url && item.url.startsWith('blob:')) {
           return {
             ...item,
