@@ -56,8 +56,7 @@ export function OrgSwitcher({
                 <GalleryVerticalEnd className='size-4' />
               </div>
               <div className='flex flex-col gap-0.5 leading-none'>
-                <span className='font-semibold'>Next Starter</span>
-                <span className=''>{selectedTenant.name}</span>
+                <span className='font-semibold'>SehetYarr</span>
               </div>
               <ChevronsUpDown className='ml-auto' />
             </SidebarMenuButton>

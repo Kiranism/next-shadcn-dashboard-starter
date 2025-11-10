@@ -1,16 +1,7 @@
 'use client';
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+import { Form } from '@/components/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useSearchParams } from 'next/navigation';
 import { useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -25,8 +16,6 @@ const formSchema = z.object({
 type UserFormValue = z.infer<typeof formSchema>;
 
 export default function UserAuthForm() {
-  const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl');
   const [loading, startTransition] = useTransition();
   const defaultValues = {
     email: 'demo@gmail.com'
@@ -36,9 +25,8 @@ export default function UserAuthForm() {
     defaultValues
   });
 
-  const onSubmit = async (data: UserFormValue) => {
+  const onSubmit = async () => {
     startTransition(() => {
-      // console.log('continue with email clicked');
       toast.success('Signed In Successfully!');
     });
   };

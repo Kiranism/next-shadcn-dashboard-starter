@@ -66,6 +66,7 @@ export default function AppSidebar() {
   const router = useRouter();
   const handleSwitchTenant = (_tenantId: string) => {
     // Tenant switching functionality would be implemented here
+    console.log(`tenant_id`, _tenantId);
   };
 
   const activeTenant = tenants[0];
