@@ -20,9 +20,9 @@ export default async function Page() {
 
   // Not authenticated: render the landing page (server component)
   return (
-    <main className="w-full bg-white">
+    <main className='w-full bg-white'>
       <Header />
-      <div className="pt-16">
+      <div className='pt-14 sm:pt-16'>
         <Hero />
         <CTA />
         <Services />

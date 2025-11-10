@@ -1,64 +1,74 @@
-"use client"
+'use client';
 
-import { Users, Link2, CheckSquare, Target, BarChart3 } from "lucide-react"
+import { Users, Link2, CheckSquare, Target, BarChart3 } from 'lucide-react';
 
 export default function CTA() {
   return (
-    <section className="w-full bg-white py-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className='w-full bg-white py-12 sm:py-16 lg:py-20'>
+      <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
         {/* Heading */}
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+        <div className='mb-8 text-center sm:mb-12 lg:mb-16'>
+          <h2 className='mb-2 px-4 text-2xl font-bold text-gray-900 sm:mb-3 sm:text-3xl md:text-4xl'>
             Join our community of 120,000+ businesses
           </h2>
-          <p className="text-gray-500 text-sm">
+          <p className='px-4 text-xs text-gray-500 sm:text-sm'>
             Trusted by healthcare providers worldwide
           </p>
         </div>
- 
+
         {/* Icons Grid */}
-        <div className="flex flex-wrap items-center justify-center gap-16 md:gap-20">
+        <div className='flex flex-wrap items-center justify-center gap-8 sm:gap-12 md:gap-16 lg:gap-20'>
           {/* Expert */}
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center">
-              <Users className="w-7 h-7 text-purple-600" />
+          <div className='flex flex-col items-center gap-2 sm:gap-3'>
+            <div className='flex h-12 w-12 items-center justify-center rounded-xl bg-purple-100 sm:h-14 sm:w-14'>
+              <Users className='h-6 w-6 text-purple-600 sm:h-7 sm:w-7' />
             </div>
-            <span className="text-sm font-medium text-gray-600">Expert</span>
+            <span className='text-xs font-medium text-gray-600 sm:text-sm'>
+              Expert
+            </span>
           </div>
 
           {/* Verified */}
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center">
-              <Link2 className="w-7 h-7 text-gray-500" />
+          <div className='flex flex-col items-center gap-2 sm:gap-3'>
+            <div className='flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100 sm:h-14 sm:w-14'>
+              <Link2 className='h-6 w-6 text-gray-500 sm:h-7 sm:w-7' />
             </div>
-            <span className="text-sm font-medium text-gray-600">Verified</span>
+            <span className='text-xs font-medium text-gray-600 sm:text-sm'>
+              Verified
+            </span>
           </div>
 
           {/* Businesses */}
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center">
-              <CheckSquare className="w-7 h-7 text-green-600" />
+          <div className='flex flex-col items-center gap-2 sm:gap-3'>
+            <div className='flex h-12 w-12 items-center justify-center rounded-xl bg-green-100 sm:h-14 sm:w-14'>
+              <CheckSquare className='h-6 w-6 text-green-600 sm:h-7 sm:w-7' />
             </div>
-            <span className="text-sm font-medium text-gray-600">Businesses</span>
+            <span className='text-xs font-medium text-gray-600 sm:text-sm'>
+              Businesses
+            </span>
           </div>
 
           {/* Growth */}
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center">
-              <Target className="w-7 h-7 text-red-600" />
+          <div className='flex flex-col items-center gap-2 sm:gap-3'>
+            <div className='flex h-12 w-12 items-center justify-center rounded-xl bg-red-100 sm:h-14 sm:w-14'>
+              <Target className='h-6 w-6 text-red-600 sm:h-7 sm:w-7' />
             </div>
-            <span className="text-sm font-medium text-gray-600">Growth</span>
+            <span className='text-xs font-medium text-gray-600 sm:text-sm'>
+              Growth
+            </span>
           </div>
 
           {/* Results */}
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center">
-              <BarChart3 className="w-7 h-7 text-blue-600" />
+          <div className='flex flex-col items-center gap-2 sm:gap-3'>
+            <div className='flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 sm:h-14 sm:w-14'>
+              <BarChart3 className='h-6 w-6 text-blue-600 sm:h-7 sm:w-7' />
             </div>
-            <span className="text-sm font-medium text-gray-600">Results</span>
+            <span className='text-xs font-medium text-gray-600 sm:text-sm'>
+              Results
+            </span>
           </div>
         </div>
       </div>
     </section>
-  )
+  );
 }
