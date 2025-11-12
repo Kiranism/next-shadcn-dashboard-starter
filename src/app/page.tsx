@@ -15,7 +15,7 @@ export default async function Page() {
 
   // If the user is authenticated, go to dashboard.
   if (userId) {
-    redirect('/dashboard/overview');
+    redirect('/dashboard/healthstake');
   }
 
   // Not authenticated: render the landing page (server component)
