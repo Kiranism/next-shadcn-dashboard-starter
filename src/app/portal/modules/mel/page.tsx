@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Brain, Target, FileText, TrendingUp, Play, Shield } from 'lucide-react';
+import { MELChat } from '@/components/portal/mel-chat';
 
 export const metadata = {
   title: 'M.E.L. AI',
@@ -59,36 +60,8 @@ export default function MELPage() {
         </Card>
       </div>
 
-      {/* Main AI Interface */}
-      <Card>
-        <CardHeader>
-          <CardTitle>AI Coaching Assistant</CardTitle>
-          <CardDescription>
-            Ask M.E.L. for Triangle Defense analysis, game planning, and strategic insights
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center h-[400px] bg-muted/20 rounded-lg border-2 border-dashed border-muted-foreground/20">
-            <div className="text-center space-y-4 p-8">
-              <Brain className="h-16 w-16 mx-auto text-amt-accent" />
-              <div>
-                <h3 className="text-lg font-semibold">M.E.L. AI Chat Interface</h3>
-                <p className="text-sm text-muted-foreground max-w-md mx-auto mt-2">
-                  Interactive AI coaching powered by Claude Sonnet 4. Analyze formations, get game strategies, and receive personalized coaching recommendations.
-                </p>
-              </div>
-              <div className="pt-4">
-                <code className="text-xs bg-muted px-3 py-1 rounded">
-                  ANTHROPIC_API_KEY required
-                </code>
-              </div>
-              <Button className="bg-amt-red hover:bg-amt-red/90">
-                Start Coaching Session
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Main AI Interface - M.E.L. Chat */}
+      <MELChat />
 
       {/* Triangle Defense Analysis */}
       <div className="grid gap-4 md:grid-cols-2">

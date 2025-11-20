@@ -244,10 +244,37 @@ jobs:
     environment:
       name: production
       url: https://portal.analyzemyteam.com
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set Azure environment variables
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            az webapp config appsettings set \
+              --name amt-portal \
+              --resource-group amt-production \
+              --settings \
+                NODE_ENV=production \
+                NEXT_PUBLIC_GRAPHQL_URL=${{ secrets.NEXT_PUBLIC_GRAPHQL_URL }} \
+                NEXT_PUBLIC_APP_URL=https://portal.analyzemyteam.com \
+                JWT_SECRET=${{ secrets.JWT_SECRET }} \
+                ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }} \
+                MEL_MODEL=claude-sonnet-4-20250514 \
+                NEXT_PUBLIC_SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+                NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} \
+                SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }} \
+                NEO4J_URI=${{ secrets.NEO4J_URI }} \
+                NEO4J_USER=${{ secrets.NEO4J_USER }} \
+                NEO4J_PASSWORD=${{ secrets.NEO4J_PASSWORD }} \
+                HIVE_ANALYTICS_URL=${{ secrets.HIVE_ANALYTICS_URL }}
 
       - name: Deploy to Kubernetes
         uses: azure/k8s-deploy@v4
@@ -260,8 +287,22 @@ jobs:
           images: |
             ${{ secrets.AWS_ECR_REGISTRY }}/amt-portal:${{ github.sha }}
 
+      - name: Wait for deployment rollout
+        run: |
+          kubectl rollout status deployment/amt-portal -n amt-portal-production --timeout=5m
+
+      - name: Health check
+        run: |
+          sleep 30
+          curl --fail --retry 5 --retry-delay 10 https://portal.analyzemyteam.com/api/health || exit 1
+
+      - name: Verify deployment
+        run: |
+          curl https://portal.analyzemyteam.com/api/health | jq '.status' | grep -q "healthy" || exit 1
+
       - name: Notify Slack
         uses: slackapi/slack-github-action@v1
+        if: always()
         with:
           webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
           payload: |
@@ -272,7 +313,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*AMT Portal Production Deployment*\n✅ Successfully deployed to production\n*Commit:* ${{ github.sha }}\n*Branch:* ${{ github.ref_name }}\n*Author:* ${{ github.actor }}"
+                    "text": "*AMT Portal Production Deployment*\n✅ Successfully deployed to production\n*Commit:* ${{ github.sha }}\n*Branch:* ${{ github.ref_name }}\n*Author:* ${{ github.actor }}\n*Status:* ${{ job.status }}"
                   }
                 }
               ]

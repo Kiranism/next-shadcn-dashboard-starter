@@ -48,36 +48,71 @@ amt-portal/
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18+ 
+- Node.js 18+
 - pnpm (recommended) or npm
+- Docker (for containerized deployment)
+- Azure CLI (for Azure deployment)
+- Anthropic API key (for M.E.L. AI features)
 
 ### Installation
 
-1. Clone the repository:
+1. **Clone the repository:**
 ```bash
 git clone https://github.com/AnalyzeMyTeamHQ/amt-portal.git
 cd amt-portal
+```
 
-Install dependencies:
+2. **Install dependencies:**
+```bash
+pnpm install
+```
 
-bashpnpm install
+3. **Set up environment variables:**
+```bash
+cp .env.example .env.local
+```
 
-Set up environment variables:
+4. **Configure your .env.local file:**
+```env
+# Authentication
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+JWT_EXPIRES_IN=7d
 
-bashcp .env.local.example .env.local
-Edit .env.local with your credentials:
-envNEXT_PUBLIC_API_URL=https://api.analyzemyteam.com
+# AI Integration (M.E.L. AI)
+ANTHROPIC_API_KEY=sk-ant-your-anthropic-api-key-here
+MEL_MODEL=claude-sonnet-4-20250514
+
+# Database
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+
+# Graph Database
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=your-neo4j-password
+
+# GraphQL Federation
 NEXT_PUBLIC_GRAPHQL_URL=https://graphql.analyzemyteam.com/graphql
-JWT_SECRET=your-super-secret-jwt-key
-ANTHROPIC_API_KEY=your-anthropic-api-key
+HIVE_ANALYTICS_URL=https://hive.analyzemyteam.com
 
-Run development server:
+# Application
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NODE_ENV=development
+```
 
-bashpnpm dev
-Open http://localhost:3000 in your browser.
-Demo Credentials
+5. **Run development server:**
+```bash
+pnpm dev
+```
+
+6. **Open http://localhost:3000 in your browser**
+
+### Demo Credentials
+```
 Email: denauld@analyzemyteam.com
 Password: demo
+```
 
 Other admin users:
 - courtney@analyzemyteam.com / demo
@@ -173,9 +208,11 @@ Module configuration
 System oversight
 Activity monitoring
 
-🔧 Development
-Build Commands
-bash# Development
+## 🔧 Development
+
+### Build Commands
+```bash
+# Development server with hot reload
 pnpm dev
 
 # Production build
@@ -184,38 +221,163 @@ pnpm build
 # Start production server
 pnpm start
 
-# Lint
+# Lint code
 pnpm lint
 
-# Type check
-pnpm type-check
-Code Quality
+# Fix linting issues
+pnpm lint:fix
 
-ESLint configuration for Next.js
-Prettier for code formatting
-TypeScript strict mode
-Husky pre-commit hooks
+# Format code
+pnpm format
 
-🚢 Deployment
-Netlify (Recommended for Quick Deploy)
+# Check formatting
+pnpm format:check
+```
 
-Connect GitHub repository
-Configure build settings:
+### Testing
+```bash
+# Run all tests
+pnpm test
 
-Build command: pnpm build
-Publish directory: .next
+# Run tests in watch mode
+pnpm test:watch
 
+# Run tests with coverage
+pnpm test:coverage
 
-Add environment variables
-Deploy
+# Run integration tests
+pnpm test:integration
 
-AWS/Kubernetes (Production)
-Use existing AMT infrastructure:
+# Run E2E tests (requires running server)
+pnpm test:e2e
+```
 
-Docker containers
-Kubernetes orchestration
-Terraform IaC
-CI/CD pipelines
+### API Testing
+Test the health check endpoint:
+```bash
+curl http://localhost:3000/api/health
+```
+
+Test M.E.L. AI endpoint:
+```bash
+curl -X POST http://localhost:3000/api/mel \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Analyze a LARRY formation"}'
+```
+
+Test formations endpoint:
+```bash
+curl http://localhost:3000/api/formations
+```
+
+### Code Quality
+
+- ESLint configuration for Next.js
+- Prettier for code formatting
+- TypeScript strict mode
+- Husky pre-commit hooks
+- Automated testing with Jest
+- Integration tests for API routes
+- Component tests with React Testing Library
+
+## 🚢 Deployment
+
+### Docker Deployment
+
+1. **Build Docker image:**
+```bash
+docker build -t amt-portal:latest .
+```
+
+2. **Run container:**
+```bash
+docker run -p 3000:3000 \
+  -e JWT_SECRET=your-secret \
+  -e ANTHROPIC_API_KEY=your-key \
+  -e NEXT_PUBLIC_GRAPHQL_URL=https://graphql.analyzemyteam.com/graphql \
+  amt-portal:latest
+```
+
+3. **Verify deployment:**
+```bash
+curl http://localhost:3000/api/health
+```
+
+### Azure Deployment
+
+1. **Login to Azure:**
+```bash
+az login
+```
+
+2. **Run deployment script:**
+```bash
+./scripts/deploy-azure.sh
+```
+
+3. **Configure environment variables:**
+```bash
+az webapp config appsettings set \
+  --name amt-portal \
+  --resource-group amt-production \
+  --settings @azure-env.json
+```
+
+4. **Verify deployment:**
+```bash
+curl https://portal.analyzemyteam.com/api/health
+```
+
+### Kubernetes Deployment
+
+1. **Apply manifests:**
+```bash
+kubectl apply -f k8s/production/
+```
+
+2. **Check deployment status:**
+```bash
+kubectl rollout status deployment/amt-portal -n amt-portal-production
+```
+
+3. **View logs:**
+```bash
+kubectl logs -f deployment/amt-portal -n amt-portal-production
+```
+
+### CI/CD Pipeline
+
+The project includes automated CI/CD workflows:
+
+- **CI Pipeline** (.github/workflows/ci.yml):
+  - Linting and type checking
+  - Build verification
+  - Automated testing
+  - Docker build test
+  - Security scanning
+
+- **Deployment Pipeline** (.github/workflows/deploy.yml):
+  - Automated deployments to staging/production
+  - Environment variable management
+  - Health checks and verification
+  - Slack notifications
+
+### Environment Variables Setup
+
+For production deployment, ensure all required environment variables are configured:
+
+**Required:**
+- `JWT_SECRET` - JWT signing key
+- `ANTHROPIC_API_KEY` - M.E.L. AI API key
+- `NEXT_PUBLIC_GRAPHQL_URL` - GraphQL endpoint
+- `NEXT_PUBLIC_APP_URL` - Application URL
+
+**Optional but Recommended:**
+- `NEXT_PUBLIC_SUPABASE_URL` - Supabase database URL
+- `NEO4J_URI` - Neo4j graph database connection
+- `HIVE_ANALYTICS_URL` - Hive analytics endpoint
+
+See `.env.example` for complete list of environment variables.
 
 🎨 Branding
 AMT Color Palette

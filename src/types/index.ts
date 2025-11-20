@@ -273,17 +273,4 @@ export interface UserSettings {
   };
 }
 
-// Export all types
-export type {
-  User,
-  Module,
-  Formation,
-  Play,
-  Playbook,
-  MELInsight,
-  StaffMember,
-  DashboardStats,
-  ActivityItem,
-  APIResponse,
-  PaginatedResponse,
-};
+// All types are exported above via their individual declarations
