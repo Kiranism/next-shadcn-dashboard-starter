@@ -19,7 +19,7 @@ import GithubSignInButton from './github-auth-button';
 import { FormInput } from '@/components/forms/form-input';
 
 const formSchema = z.object({
-  email: z.string().email({ message: 'Enter a valid email address' })
+  email: z.email({ message: 'Enter a valid email address' })
 });
 
 type UserFormValue = z.infer<typeof formSchema>;
