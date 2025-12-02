@@ -1,5 +1,5 @@
 'use client';
-import { navItems } from '@/constants/data';
+import { navItems } from '@/config/nav-config';
 import {
   KBarAnimator,
   KBarPortal,
@@ -11,9 +11,11 @@ import { useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 import RenderResults from './render-result';
 import useThemeSwitching from './use-theme-switching';
+import { useFilteredNavItems } from '@/hooks/use-nav';
 
 export default function KBar({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const filteredItems = useFilteredNavItems(navItems);
 
   // These action are for the navigation
   const actions = useMemo(() => {
@@ -22,7 +24,7 @@ export default function KBar({ children }: { children: React.ReactNode }) {
       router.push(url);
     };
 
-    return navItems.flatMap((navItem) => {
+    return filteredItems.flatMap((navItem) => {
       // Only include base action if the navItem has a real URL and is not just a container
       const baseAction =
         navItem.url !== '#'
@@ -52,7 +54,7 @@ export default function KBar({ children }: { children: React.ReactNode }) {
       // Return only valid actions (ignoring null base actions for containers)
       return baseAction ? [baseAction, ...childActions] : childActions;
     });
-  }, [router]);
+  }, [router, filteredItems]);
 
   return (
     <KBarProvider actions={actions}>

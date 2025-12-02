@@ -5,6 +5,7 @@ import { GitHubLogoIcon } from '@radix-ui/react-icons';
 import { IconStar } from '@tabler/icons-react';
 import { Metadata } from 'next';
 import Link from 'next/link';
+import { InteractiveGridPattern } from './interactive-grid';
 
 export const metadata: Metadata = {
   title: 'Authentication',
@@ -40,6 +41,12 @@ export default function SignInViewPage({ stars }: { stars: number }) {
           </svg>
           Logo
         </div>
+        <InteractiveGridPattern
+          className={cn(
+            'mask-[radial-gradient(400px_circle_at_center,white,transparent)]',
+            'inset-x-0 inset-y-[0%] h-full skew-y-12'
+          )}
+        />
         <div className='relative z-20 mt-auto'>
           <blockquote className='space-y-2'>
             <p className='text-lg'>
