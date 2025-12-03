@@ -1,5 +1,17 @@
 import { NavItem } from '@/types';
 
+// Legacy Product type for backward compatibility
+export type Product = {
+  photo_url: string;
+  name: string;
+  description: string;
+  created_at: string;
+  price: number;
+  id: number;
+  category: string;
+  updated_at: string;
+};
+
 // Real data types for the consignment system
 export type Cliente = {
   cpf: string;
@@ -37,7 +49,7 @@ export const navItems: NavItem[] = [
   {
     title: 'Clientes',
     url: '/dashboard/clientes',
-    icon: 'users',
+    icon: 'user',
     shortcut: ['c', 'c'],
     isActive: false,
     items: []
@@ -45,7 +57,7 @@ export const navItems: NavItem[] = [
   {
     title: 'Propostas',
     url: '/dashboard/propostas',
-    icon: 'fileText',
+    icon: 'post',
     shortcut: ['p', 'p'],
     isActive: false,
     items: []
