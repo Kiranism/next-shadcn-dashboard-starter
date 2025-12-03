@@ -1,13 +1,26 @@
 import { NavItem } from '@/types';
 
-export type Product = {
-  photo_url: string;
-  name: string;
-  description: string;
+// Real data types for the consignment system
+export type Cliente = {
+  cpf: string;
+  nomeCompleto: string;
+  telefone?: string;
+  email?: string;
   created_at: string;
-  price: number;
+  updated_at: string;
+};
+
+export type Proposta = {
   id: number;
-  category: string;
+  clienteCpf: string;
+  clienteNomeCompleto: string;
+  status: string;
+  banco?: string;
+  orgao?: string;
+  valorParcela?: number;
+  valorLiquido?: number;
+  dataProposta: string;
+  created_at: string;
   updated_at: string;
 };
 
@@ -19,36 +32,23 @@ export const navItems: NavItem[] = [
     icon: 'dashboard',
     isActive: false,
     shortcut: ['d', 'd'],
-    items: [] // Empty array as there are no child items for Dashboard
+    items: []
   },
   {
-    title: 'Product',
-    url: '/dashboard/product',
-    icon: 'product',
+    title: 'Clientes',
+    url: '/dashboard/clientes',
+    icon: 'users',
+    shortcut: ['c', 'c'],
+    isActive: false,
+    items: []
+  },
+  {
+    title: 'Propostas',
+    url: '/dashboard/propostas',
+    icon: 'fileText',
     shortcut: ['p', 'p'],
     isActive: false,
-    items: [] // No child items
-  },
-  {
-    title: 'Account',
-    url: '#', // Placeholder as there is no direct link for the parent
-    icon: 'billing',
-    isActive: true,
-
-    items: [
-      {
-        title: 'Profile',
-        url: '/dashboard/profile',
-        icon: 'userPen',
-        shortcut: ['m', 'm']
-      },
-      {
-        title: 'Login',
-        shortcut: ['l', 'l'],
-        url: '/',
-        icon: 'login'
-      }
-    ]
+    items: []
   },
   {
     title: 'Kanban',
@@ -56,58 +56,44 @@ export const navItems: NavItem[] = [
     icon: 'kanban',
     shortcut: ['k', 'k'],
     isActive: false,
-    items: [] // No child items
+    items: []
+  },
+  {
+    title: 'Conta',
+    url: '#',
+    icon: 'billing',
+    isActive: true,
+    items: [
+      {
+        title: 'Perfil',
+        url: '/dashboard/profile',
+        icon: 'userPen',
+        shortcut: ['m', 'm']
+      },
+      {
+        title: 'Sair',
+        shortcut: ['l', 'l'],
+        url: '/auth/logout',
+        icon: 'login'
+      }
+    ]
   }
 ];
 
-export interface SaleUser {
-  id: number;
-  name: string;
-  email: string;
-  amount: string;
-  image: string;
-  initials: string;
-}
-
-export const recentSalesData: SaleUser[] = [
-  {
-    id: 1,
-    name: 'Olivia Martin',
-    email: 'olivia.martin@email.com',
-    amount: '+$1,999.00',
-    image: 'https://api.slingacademy.com/public/sample-users/1.png',
-    initials: 'OM'
-  },
-  {
-    id: 2,
-    name: 'Jackson Lee',
-    email: 'jackson.lee@email.com',
-    amount: '+$39.00',
-    image: 'https://api.slingacademy.com/public/sample-users/2.png',
-    initials: 'JL'
-  },
-  {
-    id: 3,
-    name: 'Isabella Nguyen',
-    email: 'isabella.nguyen@email.com',
-    amount: '+$299.00',
-    image: 'https://api.slingacademy.com/public/sample-users/3.png',
-    initials: 'IN'
-  },
-  {
-    id: 4,
-    name: 'William Kim',
-    email: 'will@email.com',
-    amount: '+$99.00',
-    image: 'https://api.slingacademy.com/public/sample-users/4.png',
-    initials: 'WK'
-  },
-  {
-    id: 5,
-    name: 'Sofia Davis',
-    email: 'sofia.davis@email.com',
-    amount: '+$39.00',
-    image: 'https://api.slingacademy.com/public/sample-users/5.png',
-    initials: 'SD'
-  }
-];
+// Status configuration for proposals
+export const PropostaStatus = {
+  AGUARD_DIGITACAO: { label: 'Aguard. Digitação', color: 'warning' },
+  AGUARD_LIB_MARGEM: { label: 'Aguard. Lib. Margem', color: 'info' },
+  SALDO_PAGO: { label: 'Saldo Pago', color: 'success' },
+  AGUARD_CIP: { label: 'Aguard. CIP', color: 'info' },
+  CANCELADA: { label: 'Cancelada', color: 'danger' },
+  DIGITADO_BANCO: { label: 'Digitado no Banco', color: 'warning' },
+  AVERBADO: { label: 'Averbado', color: 'success' },
+  PAGO_BANCO: { label: 'Pago pelo Banco', color: 'primary' },
+  COMISSAO_PAGA: { label: 'Comissão Paga', color: 'success' },
+  PENDENTE: { label: 'Pendente', color: 'warning' },
+  INTENCAO_CEF: { label: 'Intenção CEF', color: 'info' },
+  AGUARD_ANAL_CEF: { label: 'Aguard. Anal. CEF', color: 'info' },
+  CTT_CEF_GERADO: { label: 'CTT CEF Gerado', color: 'info' },
+  AVERB_PARCIAL: { label: 'Averb. Parcial', color: 'warning' }
+} as const;

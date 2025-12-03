@@ -1,0 +1,443 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================================
+// AUTHENTICATION & USERS
+// ============================================================================
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique @db.VarChar(60)
+  email     String?  @unique @db.VarChar(120)
+  password  String   @db.VarChar(255)
+  nome      String   @db.VarChar(150)
+  
+  isActive  Boolean  @default(true) @map("is_active")
+  isAdmin   Boolean  @default(false) @map("is_admin")
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  
+  groups    UserGroupMember[]
+  propostas Proposta[]
+  
+  @@map("users")
+}
+
+model UserGroup {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique @db.VarChar(64)
+  description String?  @db.VarChar(255)
+  isActive    Boolean  @default(true) @map("is_active")
+  isSystem    Boolean  @default(false) @map("is_system")
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  
+  members     UserGroupMember[]
+  permissions GroupPermission[]
+  
+  @@map("user_groups")
+}
+
+model Permission {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique @db.VarChar(100)
+  name        String   @db.VarChar(100)
+  description String?  @db.VarChar(255)
+  module      String   @db.VarChar(50)
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  groups      GroupPermission[]
+  
+  @@index([module])
+  @@map("permissions")
+}
+
+model UserGroupMember {
+  userId      Int
+  groupId     Int
+  joinedAt    DateTime @default(now()) @map("joined_at")
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group       UserGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  
+  @@id([userId, groupId])
+  @@map("user_group_members")
+}
+
+model GroupPermission {
+  groupId      Int
+  permissionId Int
+  createdAt    DateTime @default(now()) @map("created_at")
+  
+  group        UserGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  
+  @@id([groupId, permissionId])
+  @@map("group_permissions")
+}
+
+// ============================================================================
+// CLIENTS (CLIENTES)
+// ============================================================================
+
+model Cliente {
+  cpf            String   @id @db.VarChar(11)
+  nomeCompleto   String   @map("nome_completo") @db.VarChar(150)
+  
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+  
+  telefones      Telefone[]
+  enderecos      Endereco[]
+  emails         Email[]
+  identidades    Identidade[]
+  dadosBancarios DadosBancarios[]
+  matriculas     Matricula[]
+  dataNasc       DataNascimento?
+  propostas      Proposta[]
+  
+  @@map("clientes")
+}
+
+model Telefone {
+  id       Int     @id @default(autoincrement())
+  cpf      String  @db.VarChar(11)
+  telefone String? @db.VarChar(20)
+  tipo     String? @db.VarChar(20)
+  status   String? @db.VarChar(30)
+  ranking  Int?    @default(0)
+  score    Int?    @default(0)
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  
+  cliente   Cliente  @relation(fields: [cpf], references: [cpf], onDelete: Cascade)
+  
+  @@index([cpf])
+  @@map("telefones")
+}
+
+model Endereco {
+  id          Int     @id @default(autoincrement())
+  cpf         String  @db.VarChar(11)
+  logradouro  String? @db.VarChar(150)
+  numero      String? @db.VarChar(20)
+  complemento String? @db.VarChar(50)
+  bairro      String? @db.VarChar(100)
+  cidade      String? @db.VarChar(100)
+  uf          String? @db.VarChar(2)
+  cep         String? @db.VarChar(20)
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  
+  cliente     Cliente  @relation(fields: [cpf], references: [cpf], onDelete: Cascade)
+  
+  @@index([cpf])
+  @@map("enderecos")
+}
+
+model Email {
+  id     Int     @id @default(autoincrement())
+  cpf    String  @db.VarChar(11)
+  email  String? @db.VarChar(255)
+  status String? @db.VarChar(30)
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  
+  cliente   Cliente  @relation(fields: [cpf], references: [cpf], onDelete: Cascade)
+  
+  @@index([cpf])
+  @@map("emails")
+}
+
+model Identidade {
+  id           Int     @id @default(autoincrement())
+  cpf          String  @db.VarChar(11)
+  rg           String? @db.VarChar(30)
+  orgaoEmissor String? @map("orgao_emissor") @db.VarChar(50)
+  dataEmissao  String? @map("data_emissao") @db.VarChar(20)
+  nacionalidade String? @db.VarChar(50)
+  naturalidade  String? @db.VarChar(50)
+  profissao     String? @db.VarChar(50)
+  estadoCivil   String? @map("estado_civil") @db.VarChar(30)
+  sexo          String? @db.VarChar(10)
+  nomePai       String? @map("nome_pai") @db.VarChar(150)
+  nomeMae       String? @map("nome_mae") @db.VarChar(150)
+  
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+  
+  cliente       Cliente  @relation(fields: [cpf], references: [cpf], onDelete: Cascade)
+  
+  @@index([cpf])
+  @@map("identidades")
+}
+
+model DadosBancarios {
+  id           Int     @id @default(autoincrement())
+  cpf          String  @db.VarChar(11)
+  numeroBanco  String? @map("numero_banco") @db.VarChar(10)
+  banco        String? @db.VarChar(150)
+  agencia      String? @db.VarChar(20)
+  conta        String? @db.VarChar(30)
+  dataAbertura String? @map("data_abertura") @db.VarChar(20)
+  chavePix     String? @map("chave_pix") @db.VarChar(100)
+  
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+  
+  cliente      Cliente  @relation(fields: [cpf], references: [cpf], onDelete: Cascade)
+  
+  @@index([cpf])
+  @@map("dados_bancarios")
+}
+
+model Matricula {
+  id           Int     @id @default(autoincrement())
+  cpf          String  @db.VarChar(11)
+  orgao        String? @db.VarChar(50)
+  matricula    String? @db.VarChar(50)
+  codCategoria String? @map("cod_categoria") @db.VarChar(10)
+  categoria    String? @db.VarChar(80)
+  indicativo   String? @db.VarChar(20)
+  patente      String? @db.VarChar(50)
+  
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+  
+  cliente      Cliente  @relation(fields: [cpf], references: [cpf], onDelete: Cascade)
+  
+  @@index([cpf])
+  @@map("matriculas")
+}
+
+model DataNascimento {
+  cpf      String   @id @db.VarChar(11)
+  dataNasc String?  @map("data_nasc") @db.VarChar(20)
+  idade    Int?
+  obito    String?  @db.VarChar(10)
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  
+  cliente   Cliente  @relation(fields: [cpf], references: [cpf], onDelete: Cascade)
+  
+  @@map("datas_nasc")
+}
+
+// ============================================================================
+// PROPOSALS (PROPOSTAS)
+// ============================================================================
+
+model Tabela {
+  id                  Int      @id @default(autoincrement())
+  nome                String   @unique @db.VarChar(100)
+  tipo                String   @default("novo") @db.VarChar(20)
+  orgao               String?  @db.VarChar(50)
+  banco               String?  @db.VarChar(50)
+  numParcelas         Int?     @map("num_parcelas")
+  fator               Float?
+  fatorTipo           String   @default("unico") @map("fator_tipo") @db.VarChar(10)
+  idadeMax            Int?     @map("idade_max")
+  comissaoTotal       Float?   @default(0) @map("comissao_total")
+  comissaoEmpresa     Float?   @default(0) @map("comissao_empresa")
+  comissaoExternos    Float?   @default(0) @map("comissao_externos")
+  comissaoBonus       Float?   @default(0) @map("comissao_bonus")
+  comissaoIncidencia  String   @default("bruto") @map("comissao_incidencia") @db.VarChar(10)
+  ativa               Boolean  @default(true)
+  externos            Boolean  @default(false)
+  observacoes         String?  @db.Text
+  
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+  deletedAt           DateTime? @map("deleted_at")
+  
+  fatoresDiarios      FatoresDiariosTabela[]
+  propostas           Proposta[]
+  
+  @@index([tipo])
+  @@index([orgao])
+  @@index([banco])
+  @@index([ativa])
+  @@map("tabelas")
+}
+
+model FatoresDiariosTabela {
+  id       Int    @id @default(autoincrement())
+  tabelaId Int    @map("tabela_id")
+  
+  dia01    Float? @map("dia_01")
+  dia02    Float? @map("dia_02")
+  dia03    Float? @map("dia_03")
+  dia04    Float? @map("dia_04")
+  dia05    Float? @map("dia_05")
+  dia06    Float? @map("dia_06")
+  dia07    Float? @map("dia_07")
+  dia08    Float? @map("dia_08")
+  dia09    Float? @map("dia_09")
+  dia10    Float? @map("dia_10")
+  dia11    Float? @map("dia_11")
+  dia12    Float? @map("dia_12")
+  dia13    Float? @map("dia_13")
+  dia14    Float? @map("dia_14")
+  dia15    Float? @map("dia_15")
+  dia16    Float? @map("dia_16")
+  dia17    Float? @map("dia_17")
+  dia18    Float? @map("dia_18")
+  dia19    Float? @map("dia_19")
+  dia20    Float? @map("dia_20")
+  dia21    Float? @map("dia_21")
+  dia22    Float? @map("dia_22")
+  dia23    Float? @map("dia_23")
+  dia24    Float? @map("dia_24")
+  dia25    Float? @map("dia_25")
+  dia26    Float? @map("dia_26")
+  dia27    Float? @map("dia_27")
+  dia28    Float? @map("dia_28")
+  dia29    Float? @map("dia_29")
+  dia30    Float? @map("dia_30")
+  dia31    Float? @map("dia_31")
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  
+  tabela    Tabela   @relation(fields: [tabelaId], references: [id], onDelete: Cascade)
+  
+  @@index([tabelaId])
+  @@map("fatores_diarios_tabelas")
+}
+
+model Proposta {
+  id                    Int       @id @default(autoincrement())
+  clienteCpf            String    @map("cliente_cpf") @db.VarChar(11)
+  clienteNomeCompleto   String    @map("cliente_nome_completo") @db.VarChar(200)
+  telefone              String?   @db.VarChar(20)
+  email                 String?   @db.VarChar(200)
+  responsavelUsuario    String?   @map("responsavel_usuario") @db.VarChar(60)
+  responsavelPonto      String?   @map("responsavel_ponto") @db.VarChar(50)
+  tabelaId              Int?      @map("tabela_id")
+  orgao                 String?   @db.VarChar(50)
+  matricula             String?   @db.VarChar(50)
+  senha                 String?   @db.VarChar(50)
+  tipo                  String    @default("novo") @db.VarChar(20)
+  quitacao              Boolean   @default(false)
+  dataProposta          DateTime? @default(now()) @map("data_proposta")
+  banco                 String?   @db.VarChar(50)
+  prazo                 Int?
+  margem                Float?
+  valorParcela          Float?    @map("valor_parcela")
+  valorAf               Float?    @map("valor_af")
+  valorLiquido          Float?    @map("valor_liquido")
+  saldo                 Float?
+  taxa                  Float?
+  codigoUnico           String?   @unique @map("codigo_unico") @db.VarChar(100)
+  origem                String?   @db.VarChar(50)
+  status                String    @default("AGUARD_DIGITACAO") @db.VarChar(50)
+  docsOk                Boolean   @default(false) @map("docs_ok")
+  averbado              Boolean   @default(false)
+  dataAverbacao         DateTime? @map("data_averbacao")
+  usuarioAverbacao      String?   @map("usuario_averbacao") @db.VarChar(50)
+  motivoCancelamento    String?   @map("motivo_cancelamento") @db.VarChar(200)
+  dataCancelamento      DateTime? @map("data_cancelamento")
+  usuarioCancelamento   String?   @map("usuario_cancelamento") @db.VarChar(50)
+  obs                   String?   @db.Text
+  
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  deletedAt             DateTime? @map("deleted_at")
+  
+  cliente               Cliente   @relation(fields: [clienteCpf], references: [cpf])
+  tabela                Tabela?   @relation(fields: [tabelaId], references: [id], onDelete: SetNull)
+  usuario               User?     @relation(fields: [responsavelUsuario], references: [username])
+  boletos               BoletoProposta[]
+  rpcs                  RPCProposta[]
+  
+  @@index([clienteCpf])
+  @@index([responsavelUsuario])
+  @@index([tabelaId])
+  @@index([orgao])
+  @@index([banco])
+  @@index([tipo])
+  @@index([status])
+  @@map("propostas")
+}
+
+model RPCProposta {
+  id               Int       @id @default(autoincrement())
+  propostaId       Int       @map("proposta_id")
+  tipo             String?   @db.VarChar(20)
+  banco            String?   @db.VarChar(50)
+  valorParcela     Float?    @map("valor_parcela")
+  restantes        Int?
+  saldoDevedor     Float?    @map("saldo_devedor")
+  codigoUnico      String?   @map("codigo_unico") @db.VarChar(100)
+  status           String    @default("pendente") @db.VarChar(50)
+  boletoImg        String?   @map("boleto_img") @db.VarChar(255)
+  boletoVencimento DateTime? @map("boleto_vencimento")
+  obs              String?   @db.Text
+  
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  deletedAt        DateTime? @map("deleted_at")
+  
+  proposta         Proposta  @relation(fields: [propostaId], references: [id], onDelete: Cascade)
+  
+  @@index([propostaId])
+  @@map("propostas_rpc")
+}
+
+model BoletoProposta {
+  id                      Int       @id @default(autoincrement())
+  propostaId              Int       @map("proposta_id")
+  data                    DateTime?
+  banco                   String?   @db.VarChar(50)
+  valor                   Float?
+  comprovante             String?   @db.VarChar(255)
+  comissaoEmpresa         Float?    @default(0) @map("comissao_empresa")
+  comissaoBonus           Float?    @default(0) @map("comissao_bonus")
+  comissaoCorretor        Float?    @default(0) @map("comissao_corretor")
+  comissaoGerEquipe       Float?    @default(0) @map("comissao_ger_equipe")
+  comissaoGerGeral1       Float?    @default(0) @map("comissao_ger_geral1")
+  comissaoGerGeral2       Float?    @default(0) @map("comissao_ger_geral2")
+  comissaoGerAdm          Float?    @default(0) @map("comissao_ger_adm")
+  comissaoAdm1            Float?    @default(0) @map("comissao_adm1")
+  comissaoAdm2            Float?    @default(0) @map("comissao_adm2")
+  comissaoLider1          Float?    @default(0) @map("comissao_lider1")
+  comissaoLider2          Float?    @default(0) @map("comissao_lider2")
+  depositoConfirmado      Boolean   @default(false) @map("deposito_confirmado")
+  depositoComissaoPaga    Boolean   @default(false) @map("deposito_comissao_paga")
+  
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+  deletedAt               DateTime? @map("deleted_at")
+  
+  proposta                Proposta  @relation(fields: [propostaId], references: [id], onDelete: Cascade)
+  
+  @@index([propostaId])
+  @@map("propostas_boletos")
+}
