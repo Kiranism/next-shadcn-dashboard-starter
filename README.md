@@ -1,53 +1,51 @@
 <p align="center">
-<h1 align="center">Admin Dashboard Starter Template with Next.js &amp; Shadcn UI</h1>
+<h1 align="center">Sistema Webconsig - Gestão de Consignações</h1>
 
-<div align="center">Built with the Next.js 16 App Router, Tailwind CSS &amp; Shadcn UI components</div>
+<div align="center">Sistema completo de gestão de empréstimos consignados - Built with Next.js 16, Prisma & Shadcn UI</div>
 
 <br />
 
-<div align="center">
-  <a href="https://dub.sh/shadcn-dashboard"><strong>View Demo</strong></a>
-</div>
-<br />
-<div align="center">
-  <img src="/public/shadcn-dashboard.png" alt="Shadcn Dashboard Cover" style="max-width: 100%; border-radius: 8px;" />
-</div>
+## 📋 Overview
 
-## Overview
+Este projeto migrou o backend Flask do [webconsig_v2](https://github.com/josecarlosdvf/webconsig_v2) para uma aplicação **Next.js full-stack**, mantendo todo o frontend moderno com **Shadcn UI**.
 
-This is an **admin dashboard starter template** built with **Next.js 16, Shadcn UI, and Tailwind CSS**.
+Sistema completo para gestão de:
+- 👥 **Clientes** - Cadastro completo com CPF, telefones, endereços, dados bancários
+- 📄 **Propostas** - Workflow de empréstimos consignados com 18 status diferentes
+- 📊 **Kanban** - Quadro visual para acompanhamento de propostas
+- 🔐 **Autenticação** - Sistema robusto com JWT e controle de permissões (RBAC)
 
-It gives you a production-ready **dashboard UI** with authentication, charts, tables, forms, and a feature-based folder structure, perfect for **SaaS apps, internal tools, and admin panels**.
+### 🚀 Tech Stack
 
-### Tech Stack
-
-This template uses the following stack:
-
-- Framework - [Next.js 16](https://nextjs.org/16)
+**Backend:**
+- Framework - [Next.js 16 API Routes](https://nextjs.org/16)
+- Database - [Prisma ORM](https://www.prisma.io) + PostgreSQL (ou SQL Server)
+- Auth - JWT com bcrypt
 - Language - [TypeScript](https://www.typescriptlang.org)
-- Auth - [Clerk](https://go.clerk.com/ILdYhn7)
-- Error tracking - [Sentry](https://sentry.io/for/nextjs/?utm_source=github&utm_medium=paid-community&utm_campaign=general-fy26q2-nextjs&utm_content=github-banner-project-tryfree)
+
+**Frontend:**
+- Framework - [Next.js 16](https://nextjs.org/16) App Router
 - Styling - [Tailwind CSS v4](https://tailwindcss.com)
 - Components - [Shadcn-ui](https://ui.shadcn.com)
-- Schema Validations - [Zod](https://zod.dev)
 - State Management - [Zustand](https://zustand-demo.pmnd.rs)
-- Search params state manager - [Nuqs](https://nuqs.47ng.com/)
-- Tables - [Tanstack Data Tables](https://ui.shadcn.com/docs/components/data-table) • [Dice table](https://www.diceui.com/docs/components/data-table)
-- Forms - [React Hook Form](https://ui.shadcn.com/docs/components/form)
-- Command+k interface - [kbar](https://kbar.vercel.app/)
+- Forms - [React Hook Form](https://ui.shadcn.com/docs/components/form) + [Zod](https://zod.dev)
+- Tables - [Tanstack Data Tables](https://ui.shadcn.com/docs/components/data-table)
+- Drag & Drop - [@dnd-kit](https://dndkit.com/)
+
+**DevTools:**
 - Linting - [ESLint](https://eslint.org)
-- Pre-commit Hooks - [Husky](https://typicode.github.io/husky/)
 - Formatting - [Prettier](https://prettier.io)
+- Pre-commit - [Husky](https://typicode.github.io/husky/)
 
-_If you are looking for a Tanstack start dashboard template, here is the [repo](https://git.new/tanstack-start-dashboard)._
+## ✨ Features
 
-## Features
-
-- 🧱 Pre-built **admin dashboard layout** (sidebar, header, content area)
-
-- 📊 **Analytics overview** page with cards and charts
-
-- 📋 **Data tables** with server-side search, filter & pagination
+- 👥 **Gestão Completa de Clientes** - Cadastro com CPF, telefones, endereços, identidade, dados bancários
+- 📄 **Workflow de Propostas** - 18 status diferentes para empréstimos consignados
+- 📊 **Kanban Board** - Drag & Drop para visualização e organização de propostas
+- 🔐 **Autenticação JWT** - Sistema seguro com cookies HTTP-only
+- 🛡️ **RBAC** - Controle de acesso baseado em roles e permissões
+- 📋 **API RESTful** - Endpoints para todos os recursos
+- 🎨 **UI Moderna** - Interface responsiva e acessível
 
 - 🔐 **Authentication** & user management via Clerk
 
