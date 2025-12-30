@@ -1,6 +1,7 @@
 import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Heading } from '../ui/heading';
+import type { SidebarContent } from '@/components/ui/infobar';
 
 function PageSkeleton() {
   return (
@@ -25,6 +26,7 @@ export default function PageContainer({
   accessFallback,
   pageTitle,
   pageDescription,
+  infoContent,
   pageHeaderAction
 }: {
   children: React.ReactNode;
@@ -34,6 +36,7 @@ export default function PageContainer({
   accessFallback?: React.ReactNode;
   pageTitle?: string;
   pageDescription?: string;
+  infoContent?: SidebarContent;
   pageHeaderAction?: React.ReactNode;
 }) {
   if (!access) {
@@ -54,13 +57,12 @@ export default function PageContainer({
     <ScrollArea className='h-[calc(100dvh-52px)]'>
       <div className='flex flex-1 flex-col p-4 md:px-6'>
         <div className='mb-4 flex items-start justify-between'>
-          <div>
-            <Heading
-              title={pageTitle ?? ''}
-              description={pageDescription ?? ''}
-            />
-          </div>
-          {pageHeaderAction ? <div>{pageHeaderAction}</div> : null}
+          <Heading
+            title={pageTitle ?? ''}
+            description={pageDescription ?? ''}
+            infoContent={infoContent}
+          />
+          {pageHeaderAction && <div>{pageHeaderAction}</div>}
         </div>
         {content}
       </div>
@@ -68,13 +70,12 @@ export default function PageContainer({
   ) : (
     <div className='flex flex-1 flex-col p-4 md:px-6'>
       <div className='mb-4 flex items-start justify-between'>
-        <div>
-          <Heading
-            title={pageTitle ?? ''}
-            description={pageDescription ?? ''}
-          />
-        </div>
-        {pageHeaderAction ? <div>{pageHeaderAction}</div> : null}
+        <Heading
+          title={pageTitle ?? ''}
+          description={pageDescription ?? ''}
+          infoContent={infoContent}
+        />
+        {pageHeaderAction && <div>{pageHeaderAction}</div>}
       </div>
       {content}
     </div>
