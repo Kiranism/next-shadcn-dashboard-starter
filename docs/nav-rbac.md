@@ -66,7 +66,7 @@ This document explains the fully client-side RBAC (Role-Based Access Control) sy
 ### In Components
 
 ```typescript
-import { useFilteredNavItems } from '@/hooks/use-nav-filter';
+import { useFilteredNavItems } from '@/hooks/use-nav';
 
 function MyComponent() {
   const filteredItems = useFilteredNavItems(navItems);
