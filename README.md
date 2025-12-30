@@ -57,6 +57,8 @@ _If you are looking for a Tanstack start dashboard template, here is the [repo](
 
 - 🔒 **RBAC navigation system** - Fully client-side navigation filtering based on organization, permissions, and roles
 
+- ℹ️ **Infobar component** to show helpful tips, status messages, or contextual info on any page
+
 - 🧩 **Shadcn UI components** with Tailwind CSS styling
 
 - 🧠 Feature-based folder structure for scalable projects
