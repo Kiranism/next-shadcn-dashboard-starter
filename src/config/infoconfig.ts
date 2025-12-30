@@ -1,6 +1,6 @@
-import type { SidebarContent } from '@/components/ui/infobar';
+import type { InfobarContent } from '@/components/ui/infobar';
 
-export const workspacesInfoContent: SidebarContent = {
+export const workspacesInfoContent: InfobarContent = {
   title: 'Workspaces Management',
   sections: [
     {
@@ -51,7 +51,7 @@ export const workspacesInfoContent: SidebarContent = {
   ]
 };
 
-export const teamInfoContent: SidebarContent = {
+export const teamInfoContent: InfobarContent = {
   title: 'Team Management',
   sections: [
     {
@@ -103,7 +103,7 @@ export const teamInfoContent: SidebarContent = {
   ]
 };
 
-export const billingInfoContent: SidebarContent = {
+export const billingInfoContent: InfobarContent = {
   title: 'Billing & Plans',
   sections: [
     {
@@ -166,7 +166,7 @@ export const billingInfoContent: SidebarContent = {
   ]
 };
 
-export const productInfoContent: SidebarContent = {
+export const productInfoContent: InfobarContent = {
   title: 'Product Management',
   sections: [
     {

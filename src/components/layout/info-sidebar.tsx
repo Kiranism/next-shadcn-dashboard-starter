@@ -3,16 +3,15 @@
 import * as React from 'react';
 import { IconChevronRight } from '@tabler/icons-react';
 import Link from 'next/link';
-
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarHeader,
-  SidebarRail,
-  SidebarTrigger,
-  useSidebar
+  Infobar,
+  InfobarContent,
+  InfobarGroup,
+  InfobarGroupContent,
+  InfobarHeader,
+  InfobarRail,
+  InfobarTrigger,
+  useInfobar
 } from '@/components/ui/infobar';
 
 // Default/fallback data when no content is set
@@ -34,25 +33,25 @@ const defaultData = {
 
 export function InfoSidebar({
   ...props
-}: React.ComponentProps<typeof Sidebar>) {
-  const { content } = useSidebar();
+}: React.ComponentProps<typeof Infobar>) {
+  const { content } = useInfobar();
   const data = content || defaultData;
 
   return (
-    <Sidebar {...props}>
-      <SidebarHeader className='flex flex-row items-start justify-between gap-2 border-b px-3 py-3'>
+    <Infobar {...props}>
+      <InfobarHeader className='flex flex-row items-start justify-between gap-2 border-b px-3 py-3'>
         <div className='min-w-0 flex-1'>
           <h2 className='text-lg font-semibold wrap-break-word'>
             {data.title}
           </h2>
         </div>
         <div className='shrink-0'>
-          <SidebarTrigger className='-mr-1' />
+          <InfobarTrigger className='-mr-1' />
         </div>
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
+      </InfobarHeader>
+      <InfobarContent>
+        <InfobarGroup>
+          <InfobarGroupContent>
             <div className='flex flex-col gap-6 px-4 py-4'>
               {data.sections && data.sections.length > 0 ? (
                 data.sections.map((section, index) => (
@@ -96,10 +95,10 @@ export function InfoSidebar({
                 </div>
               )}
             </div>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-      <SidebarRail />
-    </Sidebar>
+          </InfobarGroupContent>
+        </InfobarGroup>
+      </InfobarContent>
+      <InfobarRail />
+    </Infobar>
   );
 }

@@ -1,11 +1,11 @@
 import React from 'react';
 import { InfoButton } from '@/components/ui/info-button';
-import type { SidebarContent } from '@/components/ui/infobar';
+import type { InfobarContent } from '@/components/ui/infobar';
 
 interface HeadingProps {
   title: string;
   description: string;
-  infoContent?: SidebarContent;
+  infoContent?: InfobarContent;
 }
 
 export const Heading: React.FC<HeadingProps> = ({

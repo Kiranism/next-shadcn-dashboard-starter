@@ -3,12 +3,12 @@
 import * as React from 'react';
 import { Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useSidebar, type SidebarContent } from '@/components/ui/infobar';
+import { useInfobar, type InfobarContent } from '@/components/ui/infobar';
 import { cn } from '@/lib/utils';
 
 interface InfoButtonProps
   extends Omit<React.ComponentProps<typeof Button>, 'content'> {
-  content: SidebarContent;
+  content: InfobarContent;
   variant?:
     | 'default'
     | 'ghost'
@@ -26,7 +26,7 @@ export function InfoButton({
   size = 'icon',
   ...props
 }: InfoButtonProps) {
-  const { setContent, setOpen } = useSidebar();
+  const { setContent, setOpen } = useInfobar();
 
   // Automatically set content when component mounts (e.g., on page load/refresh)
   React.useEffect(() => {

@@ -25,7 +25,7 @@ import { CircleXIcon } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import * as React from 'react';
 
-const SIDEBAR_COOKIE_NAME = 'sidebar_state';
+const SIDEBAR_COOKIE_NAME = 'infobar_state';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 const SIDEBAR_WIDTH = '16rem';
 const SIDEBAR_WIDTH_MOBILE = '18rem';
@@ -43,7 +43,7 @@ export type DescriptiveSection = {
   links?: HelpfulLink[];
 };
 
-export type SidebarContent = {
+export type InfobarContent = {
   title: string;
   sections: DescriptiveSection[];
 };
@@ -56,8 +56,8 @@ type SidebarContextProps = {
   setOpenMobile: (open: boolean) => void;
   isMobile: boolean;
   toggleSidebar: () => void;
-  content: SidebarContent | null;
-  setContent: (content: SidebarContent | null) => void;
+  content: InfobarContent | null;
+  setContent: (content: InfobarContent | null) => void;
   isPathnameChanging: boolean;
 };
 
@@ -87,7 +87,7 @@ function SidebarProvider({
 }) {
   const isMobile = useIsMobile();
   const [openMobile, setOpenMobile] = React.useState(false);
-  const [content, setContent] = React.useState<SidebarContent | null>(null);
+  const [content, setContent] = React.useState<InfobarContent | null>(null);
   const [contentPathname, setContentPathname] = React.useState<string | null>(
     null
   );
@@ -152,7 +152,7 @@ function SidebarProvider({
 
   // Update setContent to also track pathname
   const handleSetContent = React.useCallback(
-    (newContent: SidebarContent | null) => {
+    (newContent: InfobarContent | null) => {
       setContent(newContent);
       setContentPathname(newContent ? pathname : null);
     },
@@ -771,28 +771,28 @@ function SidebarMenuSubButton({
 }
 
 export {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupAction,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarInput,
-  SidebarInset,
-  SidebarMenu,
-  SidebarMenuAction,
-  SidebarMenuBadge,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSkeleton,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
-  SidebarProvider,
-  SidebarRail,
-  SidebarSeparator,
-  SidebarTrigger,
-  useSidebar
+  Sidebar as Infobar,
+  SidebarContent as InfobarContent,
+  SidebarFooter as InfobarFooter,
+  SidebarGroup as InfobarGroup,
+  SidebarGroupAction as InfobarGroupAction,
+  SidebarGroupContent as InfobarGroupContent,
+  SidebarGroupLabel as InfobarGroupLabel,
+  SidebarHeader as InfobarHeader,
+  SidebarInput as InfobarInput,
+  SidebarInset as InfobarInset,
+  SidebarMenu as InfobarMenu,
+  SidebarMenuAction as InfobarMenuAction,
+  SidebarMenuBadge as InfobarMenuBadge,
+  SidebarMenuButton as InfobarMenuButton,
+  SidebarMenuItem as InfobarMenuItem,
+  SidebarMenuSkeleton as InfobarMenuSkeleton,
+  SidebarMenuSub as InfobarMenuSub,
+  SidebarMenuSubButton as InfobarMenuSubButton,
+  SidebarMenuSubItem as InfobarMenuSubItem,
+  SidebarProvider as InfobarProvider,
+  SidebarRail as InfobarRail,
+  SidebarSeparator as InfobarSeparator,
+  SidebarTrigger as InfobarTrigger,
+  useSidebar as useInfobar
 };
