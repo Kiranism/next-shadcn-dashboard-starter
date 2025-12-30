@@ -4,6 +4,7 @@ import PageContainer from '@/components/layout/page-container';
 import { OrganizationList } from '@clerk/nextjs';
 import { dark } from '@clerk/themes';
 import { useTheme } from 'next-themes';
+import { workspacesInfoContent } from '@/config/infoconfig';
 
 export default function WorkspacesPage() {
   const { theme } = useTheme();
@@ -13,6 +14,7 @@ export default function WorkspacesPage() {
     <PageContainer
       pageTitle='Workspaces'
       pageDescription='Manage your workspaces and switch between them'
+      infoContent={workspacesInfoContent}
     >
       <OrganizationList
         appearance={{
