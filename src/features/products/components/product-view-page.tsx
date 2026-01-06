@@ -11,6 +11,7 @@ export default async function ProductViewPage({
 }: TProductViewPageProps) {
   let product = null;
   let pageTitle = 'Create New Product';
+  let submitTitle = 'Add Product';
 
   if (productId !== 'new') {
     const data = await fakeProducts.getProductById(Number(productId));
@@ -19,7 +20,14 @@ export default async function ProductViewPage({
       notFound();
     }
     pageTitle = `Edit Product`;
+    submitTitle = 'Edit Product';
   }
 
-  return <ProductForm initialData={product} pageTitle={pageTitle} />;
+  return (
+    <ProductForm
+      initialData={product}
+      pageTitle={pageTitle}
+      submitTitle={submitTitle}
+    />
+  );
 }
