@@ -1,1 +1,1 @@
-pnpm run build
+bun run build

@@ -9,7 +9,7 @@ import {
 } from 'react';
 
 const COOKIE_NAME = 'active_theme';
-const DEFAULT_THEME = 'default';
+const DEFAULT_THEME = 'vercel';
 
 function setThemeCookie(theme: string) {
   if (typeof window === 'undefined') return;
@@ -38,14 +38,19 @@ export function ActiveThemeProvider({
   useEffect(() => {
     setThemeCookie(activeTheme);
 
+    // Remove existing data-theme attribute
+    document.documentElement.removeAttribute('data-theme');
+
+    // Remove any theme classes from body (cleanup)
     Array.from(document.body.classList)
       .filter((className) => className.startsWith('theme-'))
       .forEach((className) => {
         document.body.classList.remove(className);
       });
-    document.body.classList.add(`theme-${activeTheme}`);
-    if (activeTheme.endsWith('-scaled')) {
-      document.body.classList.add('theme-scaled');
+
+    // Set data-theme on html element
+    if (activeTheme) {
+      document.documentElement.setAttribute('data-theme', activeTheme);
     }
   }, [activeTheme]);
 

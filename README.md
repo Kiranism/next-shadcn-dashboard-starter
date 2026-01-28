@@ -38,6 +38,7 @@ This template uses the following stack:
 - Linting - [ESLint](https://eslint.org)
 - Pre-commit Hooks - [Husky](https://typicode.github.io/husky/)
 - Formatting - [Prettier](https://prettier.io)
+- Themes - [tweakcn](https://tweakcn.com/) - Beautiful themes for shadcn/ui
 
 _If you are looking for a Tanstack start dashboard template, here is the [repo](https://git.new/tanstack-start-dashboard)._
 
@@ -60,6 +61,8 @@ _If you are looking for a Tanstack start dashboard template, here is the [repo](
 - ℹ️ **Infobar component** to show helpful tips, status messages, or contextual info on any page
 
 - 🧩 **Shadcn UI components** with Tailwind CSS styling
+
+- 🎨 **Multi-theme support** with 6+ beautiful themes and easy theme switching
 
 - 🧠 Feature-based folder structure for scalable projects
 
