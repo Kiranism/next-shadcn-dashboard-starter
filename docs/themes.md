@@ -332,13 +332,22 @@ export const fontVariables = cn(
 
 If you want your theme to be the default theme that loads when users first visit the application (without needing the theme switcher), update the default theme constant:
 
-**File:** `src/components/themes/active-theme.tsx`
+**File:** `src/components/themes/theme.config.ts`
 
 ```typescript
-const DEFAULT_THEME = 'your-theme-name'; // Change from 'vercel' to your theme name
+/**
+ * Default theme that loads when no user preference is set
+ * Change this value to set a different default theme
+ */
+export const DEFAULT_THEME = 'your-theme-name'; // Change from 'vercel' to your theme name
 ```
 
-**Note:** This will make your theme the default for all new users. Existing users who have already selected a theme will still see their saved preference (stored in cookies).
+**Note:**
+
+- This is the **single source of truth** for the default theme - it's automatically used in both server-side rendering and client-side code
+- This will make your theme the default for all new users
+- Existing users who have already selected a theme will still see their saved preference (stored in cookies)
+- The default theme is applied immediately on page load (no flash of unstyled content)
 
 ### Step 7: Test Your Theme
 
@@ -468,30 +477,33 @@ All themes automatically support scaled variants. When a user selects "Theme Nam
 
 By default, the application uses the `vercel` theme. To change the default theme that loads for new users:
 
-### Method 1: Change Default Constant
+### Change Default Theme Constant
 
-Edit `src/components/themes/active-theme.tsx` and update the `DEFAULT_THEME` constant:
-
-```typescript
-const DEFAULT_THEME = 'your-theme-name'; // Change this value
-```
-
-This will:
-
-- Set your theme as the default for all new users
-- Apply when no cookie preference exists
-- Still respect user preferences if they've already selected a theme
-
-### Method 2: Server-Side Default (Advanced)
-
-If you want to set a default theme at the server level, you can modify `src/app/layout.tsx` to provide a default value when the cookie doesn't exist:
+Edit `src/components/themes/theme.config.ts` and update the `DEFAULT_THEME` constant:
 
 ```typescript
-const activeThemeValue =
-  cookieStore.get('active_theme')?.value || 'your-theme-name';
+/**
+ * Default theme that loads when no user preference is set
+ * Change this value to set a different default theme
+ */
+export const DEFAULT_THEME = 'your-theme-name'; // Change this value
 ```
 
-**Note:** Method 1 is recommended as it's simpler and more maintainable.
+**How it works:**
+
+- **Single source of truth**: `DEFAULT_THEME` is defined in `theme.config.ts` and imported everywhere it's needed
+- **Server-side**: Applied immediately in the HTML `data-theme` attribute (no flash)
+- **Client-side**: Used as fallback when no cookie preference exists
+- **User preferences**: Still respects saved user preferences (stored in cookies)
+- **Automatic**: No need to update multiple files - change it once and it works everywhere
+
+**Benefits of this approach:**
+
+✅ No code duplication - defined once, used everywhere  
+✅ Type-safe - TypeScript ensures consistency  
+✅ Easy to change - update one line in one file  
+✅ Well-documented - clear comments explain its purpose  
+✅ Immediate application - no flash of unstyled content
 
 ## Using Google Fonts in Themes
 
@@ -584,5 +596,5 @@ export const fontVariables = cn(
 - **Theme aggregator**: `src/styles/theme.css`
 - **Theme selector component**: `src/components/themes/theme-selector.tsx`
 - **Theme provider**: `src/components/themes/active-theme.tsx`
+- **Theme configuration** (includes default theme): `src/components/themes/theme.config.ts`
 - **Font configuration**: `src/components/themes/font.config.ts`
-- **Default theme constant**: `src/components/themes/active-theme.tsx` (line 12)
