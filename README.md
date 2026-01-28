@@ -38,7 +38,7 @@ This template uses the following stack:
 - Linting - [ESLint](https://eslint.org)
 - Pre-commit Hooks - [Husky](https://typicode.github.io/husky/)
 - Formatting - [Prettier](https://prettier.io)
-- Themes - [tweakcn](https://tweakcn.com/) - Beautiful themes for shadcn/ui
+- Themes - [tweakcn](https://tweakcn.com/) 
 
 _If you are looking for a Tanstack start dashboard template, here is the [repo](https://git.new/tanstack-start-dashboard)._
 
