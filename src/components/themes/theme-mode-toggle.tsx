@@ -6,7 +6,7 @@ import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
 
-export function ModeToggle() {
+export function ThemeModeToggle() {
   const { setTheme, resolvedTheme } = useTheme();
 
   const handleThemeToggle = React.useCallback(

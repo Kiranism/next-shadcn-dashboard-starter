@@ -1,0 +1,29 @@
+/* Import individual theme files */
+@import './themes/claude.css';
+@import './themes/neobrutualism.css';
+@import './themes/supabase.css';
+@import './themes/vercel.css';
+@import './themes/mono.css';
+@import './themes/notebook.css';
+
+body {
+  @apply overscroll-none;
+}
+
+:root {
+  --header-height: calc(var(--spacing, 0.25rem) * 12 + 1px);
+}
+
+/* Apply theme fonts to body for all themes */
+/* This ensures theme-specific fonts override Next.js font variables */
+/* Font variables are defined on [data-theme] (html element) */
+/* We need to override Next.js font variables on body to use html's values */
+/* Using initial removes the property, allowing parent (html) values to cascade */
+[data-theme] body {
+  /* Remove Next.js font variables to allow theme variables from html to cascade */
+  --font-sans: initial;
+  --font-mono: initial;
+  --font-serif: initial;
+  /* Apply font-family - will now resolve from html's [data-theme] variables */
+  font-family: var(--font-sans);
+}
