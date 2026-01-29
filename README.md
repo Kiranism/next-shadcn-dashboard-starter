@@ -1,7 +1,6 @@
-<p align="center">
 <h1 align="center">Admin Dashboard Starter Template with Next.js &amp; Shadcn UI</h1>
 
-<div align="center">Built with the Next.js 16 App Router, Tailwind CSS &amp; Shadcn UI components</div>
+<div align="center">Open source admin dashboard starter built with Next.js 16, shadcn/ui, Tailwind CSS, TypeScript</div>
 
 <br />
 
@@ -13,9 +12,17 @@
   <img src="/public/shadcn-dashboard.png" alt="Shadcn Dashboard Cover" style="max-width: 100%; border-radius: 8px;" />
 </div>
 
+<p align="center">
+  <a href="https://github.com/Kiranism/next-shadcn-dashboard-starter/stargazers"><img src="https://img.shields.io/github/stars/Kiranism/next-shadcn-dashboard-starter?style=social" alt="GitHub stars" /></a>
+  <a href="https://github.com/Kiranism/next-shadcn-dashboard-starter/network/members"><img src="https://img.shields.io/github/forks/Kiranism/next-shadcn-dashboard-starter?style=social" alt="Forks" /></a>
+  <a href="https://github.com/Kiranism/next-shadcn-dashboard-starter/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Kiranism/next-shadcn-dashboard-starter" alt="MIT License" /></a>
+  <img src="https://img.shields.io/badge/Next.js-16-black" alt="Next.js" />
+  <a href="https://go.clerk.com/ILdYhn7"><img src="https://img.shields.io/badge/Sponsored_by-Clerk-6C47FF?style=flat-square&logo=clerk" alt="Sponsored by Clerk" /></a>
+</p>
+
 ## Overview
 
-This is an **admin dashboard starter template** built with **Next.js 16, Shadcn UI, and Tailwind CSS**.
+This is an **open source admin dashboard starter** built with **Next.js 16, Shadcn UI, TypeScript, and Tailwind CSS**.
 
 It gives you a production-ready **dashboard UI** with authentication, charts, tables, forms, and a feature-based folder structure, perfect for **SaaS apps, internal tools, and admin panels**.
 
@@ -38,7 +45,7 @@ This template uses the following stack:
 - Linting - [ESLint](https://eslint.org)
 - Pre-commit Hooks - [Husky](https://typicode.github.io/husky/)
 - Formatting - [Prettier](https://prettier.io)
-- Themes - [tweakcn](https://tweakcn.com/) 
+- Themes - [tweakcn](https://tweakcn.com/)
 
 _If you are looking for a Tanstack start dashboard template, here is the [repo](https://git.new/tanstack-start-dashboard)._
 
@@ -168,19 +175,36 @@ You should now be able to access the application at http://localhost:3000.
 > [!WARNING]
 > After cloning or forking the repository, be cautious when pulling or syncing with the latest changes, as this may result in breaking conflicts.
 
+---
+
+#### Cleanup
+
+To remove demo data, boilerplate, or unwanted starter code, see the [cleanup guide](__CLEANUP__/cleanup.md). Follow the instructions there to tidy up, adapt, or personalize your app as needed for your project.
+
+### ⭐ Support
+
+If you find this template helpful, please consider giving it a star ⭐
+You can also buy me a coffee if you'd like!
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?style=flat-square&logo=buymeacoffee)](https://buymeacoffee.com/kir4n)
+
 Cheers! 🥂
 
 <!--
 
 SEO keywords:
 
-nextjs admin dashboard, nextjs dashboard template, shadcn ui dashboard,
+open source admin dashboard, nextjs admin dashboard, nextjs dashboard template,
 
-admin dashboard starter, dashboard ui template, nextjs shadcn admin panel,
+shadcn ui dashboard, admin dashboard starter, next.js 16, typescript dashboard,
 
-react admin dashboard, tailwind css admin dashboard
+dashboard ui template, nextjs shadcn admin panel, react admin dashboard,
+
+tailwind css admin dashboard
 
 -->
+
+---
 
 ## Star History
 
