@@ -38,7 +38,7 @@ This template uses the following stack:
 - Linting - [ESLint](https://eslint.org)
 - Pre-commit Hooks - [Husky](https://typicode.github.io/husky/)
 - Formatting - [Prettier](https://prettier.io)
-- Themes - [tweakcn](https://tweakcn.com/) 
+- Themes - [tweakcn](https://tweakcn.com/)
 
 _If you are looking for a Tanstack start dashboard template, here is the [repo](https://git.new/tanstack-start-dashboard)._
 
@@ -167,6 +167,12 @@ You should now be able to access the application at http://localhost:3000.
 
 > [!WARNING]
 > After cloning or forking the repository, be cautious when pulling or syncing with the latest changes, as this may result in breaking conflicts.
+
+---
+
+## Cleanup
+
+To remove demo data, boilerplate, or unwanted starter code, see the [cleanup guide](__CLEANUP__/cleanup.md). Follow the instructions there to tidy up, adapt, or personalize your app as needed for your project.
 
 Cheers! 🥂
 
