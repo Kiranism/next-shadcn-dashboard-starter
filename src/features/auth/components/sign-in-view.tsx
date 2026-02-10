@@ -83,18 +83,39 @@ export default function SignInViewPage({ stars }: { stars: number }) {
               emailAddress: 'your_mail+clerk_test@example.com'
             }}
           />
+          <div className='text-muted-foreground space-y-2 px-8 text-center text-xs'>
+            <p>
+              This is an{' '}
+              <Link
+                href='/about'
+                className='hover:text-primary underline underline-offset-4'
+              >
+                open-source project
+              </Link>{' '}
+              for demo purposes. Authentication is handled securely by Clerk.
+            </p>
+            <p>
+              <Link
+                href='https://github.com/kiranism/next-shadcn-dashboard-starter'
+                target='_blank'
+                className='hover:text-primary underline underline-offset-4'
+              >
+                View on GitHub
+              </Link>
+            </p>
+          </div>
 
           <p className='text-muted-foreground px-8 text-center text-sm'>
             By clicking continue, you agree to our{' '}
             <Link
-              href='/terms'
+              href='/terms-of-service'
               className='hover:text-primary underline underline-offset-4'
             >
               Terms of Service
             </Link>{' '}
             and{' '}
             <Link
-              href='/privacy'
+              href='/privacy-policy'
               className='hover:text-primary underline underline-offset-4'
             >
               Privacy Policy

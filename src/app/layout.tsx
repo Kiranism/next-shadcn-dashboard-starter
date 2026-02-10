@@ -51,7 +51,7 @@ export default async function RootLayout({
       </head>
       <body
         className={cn(
-          'bg-background overflow-hidden overscroll-none font-sans antialiased',
+          'bg-background overflow-x-hidden overscroll-none font-sans antialiased',
           fontVariables
         )}
       >
