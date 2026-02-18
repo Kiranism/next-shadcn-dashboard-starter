@@ -54,17 +54,34 @@ export type Actions = {
 
 export const useTaskStore = create<State & Actions>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       tasks: initialTasks,
       columns: defaultCols,
       draggedTask: null,
-      addTask: (title: string, description?: string) =>
-        set((state) => ({
+      addTask: (title: string, description?: string) => {
+        const state = get();
+
+        // If no columns exist, create a default one
+        if (state.columns.length === 0) {
+          const defaultColumn = { id: 'TODO', title: 'Todo' };
+          return set((state) => ({
+            columns: [defaultColumn],
+            tasks: [
+              ...state.tasks,
+              { id: uuid(), title, description, status: 'TODO' as Status }
+            ]
+          }));
+        }
+
+        // Ensure at least one column exists before adding task
+        const firstColumnId = state.columns[0].id;
+        return set((state) => ({
           tasks: [
             ...state.tasks,
-            { id: uuid(), title, description, status: 'TODO' }
+            { id: uuid(), title, description, status: firstColumnId as Status }
           ]
-        })),
+        }));
+      },
       updateCol: (id: UniqueIdentifier, newName: string) =>
         set((state) => ({
           columns: state.columns.map((col) =>
@@ -85,7 +102,10 @@ export const useTaskStore = create<State & Actions>()(
         })),
       removeCol: (id: UniqueIdentifier) =>
         set((state) => ({
-          columns: state.columns.filter((col) => col.id !== id)
+          // Remove the column
+          columns: state.columns.filter((col) => col.id !== id),
+          // Remove all tasks that belong to this column
+          tasks: state.tasks.filter((task) => task.status !== id)
         })),
       setTasks: (newTasks: Task[]) => set({ tasks: newTasks }),
       setCols: (newCols: Column[]) => set({ columns: newCols })
