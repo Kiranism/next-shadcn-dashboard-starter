@@ -45,10 +45,12 @@ const formSchema = z.object({
 
 export default function ProductForm({
   initialData,
-  pageTitle
+  pageTitle,
+  submitTitle = 'Add Product'
 }: {
   initialData: Product | null;
   pageTitle: string;
+  submitTitle?: string;
 }) {
   const defaultValues = {
     name: initialData?.name || '',
@@ -154,7 +156,7 @@ export default function ProductForm({
             }}
           />
 
-          <Button type='submit'>Add Product</Button>
+          <Button type='submit'>{submitTitle}</Button>
         </Form>
       </CardContent>
     </Card>
