@@ -64,6 +64,7 @@ export type Database = {
           stations: string[] | null;
           street: string;
           street_number: string;
+          relation: string | null;
           updated_at: string | null;
           zip_code: string;
         };
@@ -81,6 +82,7 @@ export type Database = {
           stations?: string[] | null;
           street: string;
           street_number: string;
+          relation?: string | null;
           updated_at?: string | null;
           zip_code: string;
         };
@@ -98,6 +100,7 @@ export type Database = {
           stations?: string[] | null;
           street?: string;
           street_number?: string;
+          relation?: string | null;
           updated_at?: string | null;
           zip_code?: string;
         };
