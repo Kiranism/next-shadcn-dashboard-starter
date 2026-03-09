@@ -21,7 +21,9 @@ export const tripsService = {
     const supabase = createClient();
     const { data, error } = await supabase
       .from('trips')
-      .select('*, billing_types(*), clients(*), payers(*)')
+      .select(
+        '*, billing_types(*), clients(*), payers(*), driver:users!trips_driver_id_fkey(name)'
+      )
       .eq('id', id)
       .single();
 

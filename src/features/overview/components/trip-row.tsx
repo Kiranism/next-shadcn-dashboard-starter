@@ -2,13 +2,15 @@
 
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import Link from 'next/link';
+import { cn } from '@/lib/utils';
+import { MapPinned } from 'lucide-react';
 
 interface TripRowProps {
   trip: any;
+  onClick: () => void;
 }
 
-export function TripRow({ trip }: TripRowProps) {
+export function TripRow({ trip, onClick }: TripRowProps) {
   const scheduledTime = trip.scheduled_at
     ? format(new Date(trip.scheduled_at), 'HH:mm')
     : '--:--';
@@ -16,10 +18,54 @@ export function TripRow({ trip }: TripRowProps) {
   const billingType = trip.billing_types;
   const rowColor = billingType?.color || 'transparent';
 
+  const additionalStopsCount =
+    (trip.additional_pickups?.length || 0) +
+    (trip.additional_dropoffs?.length || 0);
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'pending':
+      case 'open':
+        return 'Offen';
+      case 'assigned':
+        return 'Zugewiesen';
+      case 'in_progress':
+      case 'driving':
+        return 'Unterwegs';
+      case 'completed':
+        return 'Erledigt';
+      case 'cancelled':
+        return 'Storniert';
+      default:
+        return status;
+    }
+  };
+
+  const getBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'default';
+      case 'assigned':
+        return 'secondary';
+      case 'in_progress':
+      case 'driving':
+        return 'outline';
+      case 'cancelled':
+        return 'destructive';
+      default:
+        return 'outline';
+    }
+  };
+
   return (
-    <Link
-      href={`/dashboard/trips/${trip.id}`}
-      className='group mb-1 flex cursor-pointer items-start rounded-lg p-2 transition-all hover:brightness-95'
+    <div
+      onClick={onClick}
+      className={cn(
+        'group mb-0 flex cursor-pointer items-start rounded-lg p-1.5 transition-all select-none',
+        rowColor === 'transparent'
+          ? 'hover:bg-slate-100/50'
+          : 'hover:brightness-95'
+      )}
       style={{
         backgroundColor:
           rowColor !== 'transparent'
@@ -38,27 +84,33 @@ export function TripRow({ trip }: TripRowProps) {
             {billingType.name}
           </span>
         )}
+        {trip.is_wheelchair && (
+          <span className='truncate text-[10px] font-bold text-rose-600 uppercase'>
+            Rollstuhl
+          </span>
+        )}
       </div>
       <div className='ml-4 flex-1 space-y-1'>
-        <p className='group-hover:text-primary text-sm leading-none font-semibold transition-colors'>
-          {trip.client_name || 'Unbekannter Kunde'}
-        </p>
+        <div className='flex items-center gap-2'>
+          <p className='group-hover:text-primary text-sm leading-none font-semibold transition-colors'>
+            {trip.client_name || 'Unbekannter Kunde'}
+          </p>
+          {additionalStopsCount > 0 && (
+            <div className='flex items-center gap-0.5 rounded-full border border-slate-200 bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600'>
+              <MapPinned className='h-2.5 w-2.5' />+{additionalStopsCount}
+            </div>
+          )}
+        </div>
         <p className='text-muted-foreground line-clamp-1 text-xs'>
           {trip.dropoff_address || 'Keine Zieladresse'}
         </p>
       </div>
       <div className='ml-4 flex flex-col items-end gap-1'>
         <Badge
-          variant={
-            trip.status === 'completed'
-              ? 'default'
-              : trip.status === 'assigned'
-                ? 'secondary'
-                : 'outline'
-          }
-          className='h-5 px-2 py-0 text-[10px] capitalize'
+          variant={getBadgeVariant(trip.status) as any}
+          className='h-5 px-2 py-0 text-[10px] whitespace-nowrap'
         >
-          {trip.status}
+          {getStatusLabel(trip.status)}
         </Badge>
         <p className='text-muted-foreground text-[10px] font-bold tracking-wider whitespace-nowrap uppercase'>
           Fahrer:{' '}
@@ -67,6 +119,6 @@ export function TripRow({ trip }: TripRowProps) {
           </span>
         </p>
       </div>
-    </Link>
+    </div>
   );
 }

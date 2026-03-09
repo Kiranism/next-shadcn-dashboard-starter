@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
 import { tripsService } from '../api/trips.service';
+import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { startOfDay, endOfDay, addDays, endOfWeek, formatISO } from 'date-fns';
 
 export type TripFilter = 'today' | 'tomorrow' | 'week';
+export type StatusFilter = 'all' | 'completed' | 'open' | 'assigned';
 
 export function useUpcomingTrips() {
   const [trips, setTrips] = useState<any[]>([]);
   const [filter, setFilter] = useState<TripFilter>('today');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -49,10 +52,46 @@ export function useUpcomingTrips() {
     fetchUpcomingTrips();
   }, [filter]);
 
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'trips'
+        },
+        (payload) => {
+          console.log('Real-time update received:', payload);
+          fetchUpcomingTrips();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const filteredTrips = trips.filter((trip) => {
+    if (statusFilter === 'all') return true;
+    if (statusFilter === 'open') {
+      return ['pending', 'open', 'assigned', 'in_progress', 'driving'].includes(
+        trip.status
+      );
+    }
+    return trip.status === statusFilter;
+  });
+
   return {
-    trips,
+    trips: filteredTrips,
+    allTrips: trips,
     filter,
     setFilter,
+    statusFilter,
+    setStatusFilter,
     isLoading,
     error,
     refresh: fetchUpcomingTrips

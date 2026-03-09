@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { tripsService, type Trip } from '../api/trips.service';
+import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 
 export function useTrips() {
@@ -24,6 +25,29 @@ export function useTrips() {
 
   useEffect(() => {
     fetchTrips();
+  }, []);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel('trips-all-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'trips'
+        },
+        (payload) => {
+          console.log('Real-time update for all trips received:', payload);
+          fetchTrips();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return {
@@ -58,6 +82,45 @@ export function useTrip(id: string | null) {
     };
 
     fetchTrip();
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchTrip = async () => {
+      try {
+        setIsLoading(true);
+        const data = await tripsService.getTripById(id);
+        setTrip(data);
+        setError(null);
+      } catch (err) {
+        setError(err as Error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`trip-${id}-changes`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'trips',
+          filter: `id=eq.${id}`
+        },
+        (payload) => {
+          console.log(`Real-time update for trip ${id} received:`, payload);
+          fetchTrip();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [id]);
 
   return {
