@@ -148,6 +148,12 @@ export default function ClientForm({
             />
             <FormInput
               control={form.control}
+              name='relation'
+              label='Beziehung'
+              placeholder='Beziehung eingeben'
+            />
+            <FormInput
+              control={form.control}
               name='zip_code'
               label='PLZ'
               placeholder='Postleitzahl eingeben'

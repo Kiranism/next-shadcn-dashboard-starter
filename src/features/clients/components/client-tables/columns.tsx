@@ -96,6 +96,12 @@ export const columns: ColumnDef<Client>[] = [
     )
   },
   {
+    accessorKey: 'relation',
+    header: ({ column }: { column: Column<Client, unknown> }) => (
+      <DataTableColumnHeader column={column} title='Beziehung' />
+    )
+  },
+  {
     id: 'actions',
     cell: ({ row }) => <CellAction data={row.original} />
   }
