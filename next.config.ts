@@ -3,21 +3,14 @@ import { withSentryConfig } from '@sentry/nextjs';
 
 // Define the base Next.js configuration
 const baseConfig: NextConfig = {
+  turbopack: {
+    root: process.cwd()
+  },
   images: {
     remotePatterns: [
       {
         protocol: 'https',
         hostname: 'api.slingacademy.com',
-        port: ''
-      },
-      {
-        protocol: 'https',
-        hostname: 'img.clerk.com',
-        port: ''
-      },
-      {
-        protocol: 'https',
-        hostname: 'clerk.com',
         port: ''
       }
     ]
