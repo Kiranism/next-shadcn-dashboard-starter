@@ -310,137 +310,139 @@ export function CreateTripForm({
       <Separator />
 
       {/* ── Fahrgast ── */}
-      <div
-        className={cn(
-          'px-6 py-4 transition-all duration-300',
-          !isClientSectionVisible && 'pointer-events-none opacity-40'
-        )}
-      >
-        <div className='mb-3 flex items-center gap-2'>
-          <User className='text-muted-foreground h-4 w-4' />
-          <span className='text-muted-foreground text-xs font-semibold tracking-wider uppercase'>
-            Fahrgast
-          </span>
-          {!isClientSectionVisible && (
-            <Badge
-              variant='outline'
-              className='ml-auto text-[10px] font-normal'
-            >
-              Kostenträger wählen
-            </Badge>
+      {(isPickupPassengerVisible || isDropoffPassengerVisible) && (
+        <div
+          className={cn(
+            'px-6 py-4 transition-all duration-300',
+            !isClientSectionVisible && 'pointer-events-none opacity-40'
           )}
-        </div>
-        <div className='grid grid-cols-2 gap-3'>
-          {isPickupPassengerVisible && (
-            <FormField
-              control={form.control as any}
-              name='client_first_name'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className='text-xs'>Vorname</FormLabel>
-                  <FormControl>
-                    <ClientAutoSuggest
-                      value={field.value || ''}
-                      onNameChange={(name) => field.onChange(name)}
-                      onSelect={(client) => {
-                        setSelectedClient(client);
-                        onClientSelect?.(client);
-                        if (client) {
-                          form.setValue(
-                            'client_first_name',
-                            client.first_name || ''
-                          );
-                          form.setValue(
-                            'client_last_name',
-                            client.last_name || ''
-                          );
-                          form.setValue('client_phone', client.phone || '');
-                          if (!isPickupLocked) {
-                            form.setValue(
-                              'pickup_address',
-                              `${client.street} ${client.street_number}, ${client.zip_code} ${client.city}`
-                            );
-                          }
-                        }
-                      }}
-                      searchClients={searchClientsByFirstName}
-                      disabled={!isClientSectionVisible}
-                      placeholder='Vorname suchen...'
-                      getDisplayValue={(c) =>
-                        c.first_name || c.company_name || ''
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage className='text-xs' />
-                </FormItem>
-              )}
-            />
-          )}
-          {isDropoffPassengerVisible && (
-            <FormField
-              control={form.control as any}
-              name='client_last_name'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className='text-xs'>Nachname</FormLabel>
-                  <FormControl>
-                    <ClientAutoSuggest
-                      value={field.value || ''}
-                      onNameChange={(name) => field.onChange(name)}
-                      onSelect={(client) => {
-                        setSelectedClient(client);
-                        onClientSelect?.(client);
-                        if (client) {
-                          form.setValue(
-                            'client_first_name',
-                            client.first_name || ''
-                          );
-                          form.setValue(
-                            'client_last_name',
-                            client.last_name || ''
-                          );
-                          form.setValue('client_phone', client.phone || '');
-                          if (!isPickupLocked) {
-                            form.setValue(
-                              'pickup_address',
-                              `${client.street} ${client.street_number}, ${client.zip_code} ${client.city}`
-                            );
-                          }
-                        }
-                      }}
-                      searchClients={searchClientsByLastName}
-                      disabled={!isClientSectionVisible}
-                      placeholder='Nachname suchen...'
-                      getDisplayValue={(c) =>
-                        c.last_name || c.company_name || ''
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage className='text-xs' />
-                </FormItem>
-              )}
-            />
-          )}
-          <FormField
-            control={form.control as any}
-            name='client_phone'
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className='text-xs'>Telefon</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    placeholder='+49 ...'
-                    className='h-9'
-                    disabled={!isClientSectionVisible}
-                  />
-                </FormControl>
-                <FormMessage className='text-xs' />
-              </FormItem>
+        >
+          <div className='mb-3 flex items-center gap-2'>
+            <User className='text-muted-foreground h-4 w-4' />
+            <span className='text-muted-foreground text-xs font-semibold tracking-wider uppercase'>
+              Fahrgast
+            </span>
+            {!isClientSectionVisible && (
+              <Badge
+                variant='outline'
+                className='ml-auto text-[10px] font-normal'
+              >
+                Kostenträger wählen
+              </Badge>
             )}
-          />
+          </div>
+          <div className='grid grid-cols-2 gap-3'>
+            {isPickupPassengerVisible && (
+              <FormField
+                control={form.control as any}
+                name='client_first_name'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className='text-xs'>Vorname</FormLabel>
+                    <FormControl>
+                      <ClientAutoSuggest
+                        value={field.value || ''}
+                        onNameChange={(name) => field.onChange(name)}
+                        onSelect={(client) => {
+                          setSelectedClient(client);
+                          onClientSelect?.(client);
+                          if (client) {
+                            form.setValue(
+                              'client_first_name',
+                              client.first_name || ''
+                            );
+                            form.setValue(
+                              'client_last_name',
+                              client.last_name || ''
+                            );
+                            form.setValue('client_phone', client.phone || '');
+                            if (!isPickupLocked) {
+                              form.setValue(
+                                'pickup_address',
+                                `${client.street} ${client.street_number}, ${client.zip_code} ${client.city}`
+                              );
+                            }
+                          }
+                        }}
+                        searchClients={searchClientsByFirstName}
+                        disabled={!isClientSectionVisible}
+                        placeholder='Vorname suchen...'
+                        getDisplayValue={(c) =>
+                          c.first_name || c.company_name || ''
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage className='text-xs' />
+                  </FormItem>
+                )}
+              />
+            )}
+            {isDropoffPassengerVisible && (
+              <FormField
+                control={form.control as any}
+                name='client_last_name'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className='text-xs'>Nachname</FormLabel>
+                    <FormControl>
+                      <ClientAutoSuggest
+                        value={field.value || ''}
+                        onNameChange={(name) => field.onChange(name)}
+                        onSelect={(client) => {
+                          setSelectedClient(client);
+                          onClientSelect?.(client);
+                          if (client) {
+                            form.setValue(
+                              'client_first_name',
+                              client.first_name || ''
+                            );
+                            form.setValue(
+                              'client_last_name',
+                              client.last_name || ''
+                            );
+                            form.setValue('client_phone', client.phone || '');
+                            if (!isPickupLocked) {
+                              form.setValue(
+                                'pickup_address',
+                                `${client.street} ${client.street_number}, ${client.zip_code} ${client.city}`
+                              );
+                            }
+                          }
+                        }}
+                        searchClients={searchClientsByLastName}
+                        disabled={!isClientSectionVisible}
+                        placeholder='Nachname suchen...'
+                        getDisplayValue={(c) =>
+                          c.last_name || c.company_name || ''
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage className='text-xs' />
+                  </FormItem>
+                )}
+              />
+            )}
+            <FormField
+              control={form.control as any}
+              name='client_phone'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className='text-xs'>Telefon</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder='+49 ...'
+                      className='h-9'
+                      disabled={!isClientSectionVisible}
+                    />
+                  </FormControl>
+                  <FormMessage className='text-xs' />
+                </FormItem>
+              )}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       <Separator />
 
