@@ -22,6 +22,7 @@ const formSchema = z.object({
   zip_code: z.string().min(1, { message: 'PLZ ist erforderlich.' }),
   city: z.string().min(1, { message: 'Stadt ist erforderlich.' }),
   phone: z.string().optional(),
+  relation: z.string().optional(),
   notes: z.string().optional()
 });
 
@@ -44,6 +45,7 @@ export default function ClientForm({
     zip_code: initialData?.zip_code || '',
     city: initialData?.city || '',
     phone: initialData?.phone || '',
+    relation: initialData?.relation || '',
     notes: initialData?.notes || ''
   };
 
