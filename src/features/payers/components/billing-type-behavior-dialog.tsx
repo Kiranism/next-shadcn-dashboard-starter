@@ -82,16 +82,20 @@ export function BillingTypeBehaviorDialog({
   // Effect to update form values when the billing type changes
   useEffect(() => {
     if (billingType?.behavior_profile) {
-      const b = billingType.behavior_profile;
+      const b = billingType.behavior_profile as any;
       form.reset({
-        returnPolicy: b.returnPolicy || 'none',
-        lockPickup: !!b.lockPickup,
-        lockDropoff: !!b.lockDropoff,
-        prefillDropoffFromPickup: !!b.prefillDropoffFromPickup,
-        showPickupPassenger: b.showPickupPassenger !== false, // default true
-        showDropoffPassenger: b.showDropoffPassenger !== false, // default true
-        defaultPickup: b.defaultPickup || '',
-        defaultDropoff: b.defaultDropoff || ''
+        returnPolicy: b.returnPolicy || b.return_policy || 'none',
+        lockPickup: !!(b.lockPickup ?? b.lock_pickup),
+        lockDropoff: !!(b.lockDropoff ?? b.lock_dropoff),
+        prefillDropoffFromPickup: !!(
+          b.prefillDropoffFromPickup ?? b.prefill_dropoff_from_pickup
+        ),
+        showPickupPassenger:
+          b.showPickupPassenger ?? b.show_pickup_passenger ?? true,
+        showDropoffPassenger:
+          b.showDropoffPassenger ?? b.show_dropoff_passenger ?? true,
+        defaultPickup: b.defaultPickup ?? b.default_pickup ?? '',
+        defaultDropoff: b.defaultDropoff ?? b.default_dropoff ?? ''
       });
     }
   }, [billingType, form]);

@@ -13,6 +13,7 @@ export interface BillingTypeOption {
   name: string;
   color: string;
   payer_id: string;
+  behavior_profile?: any;
 }
 
 export interface ClientOption {
@@ -71,7 +72,7 @@ export function useTripFormData(payerId?: string | null) {
       const supabase = createClient();
       const { data } = await supabase
         .from('billing_types')
-        .select('id, name, color, payer_id')
+        .select('id, name, color, payer_id, behavior_profile')
         .eq('payer_id', payerId)
         .order('name');
       if (data) setBillingTypes(data);
