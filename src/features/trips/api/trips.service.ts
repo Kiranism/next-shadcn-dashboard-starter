@@ -43,6 +43,14 @@ export const tripsService = {
     return data;
   },
 
+  async bulkCreateTrips(trips: InsertTrip[]) {
+    const supabase = createClient();
+    const { data, error } = await supabase.from('trips').insert(trips).select();
+
+    if (error) throw error;
+    return data;
+  },
+
   async updateTrip(id: string, trip: UpdateTrip) {
     const supabase = createClient();
     const { data, error } = await supabase

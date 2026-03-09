@@ -592,8 +592,6 @@ export type Database = {
         Row: {
           actual_dropoff_at: string | null;
           actual_pickup_at: string | null;
-          additional_dropoffs: Json | null;
-          additional_pickups: Json | null;
           billing_type_id: string | null;
           client_id: string | null;
           client_name: string | null;
@@ -607,6 +605,7 @@ export type Database = {
           dropoff_lng: number | null;
           dropoff_location: Json | null;
           dropoff_station: string | null;
+          group_id: string | null;
           id: string;
           is_wheelchair: boolean;
           link_type: string | null;
@@ -630,8 +629,6 @@ export type Database = {
         Insert: {
           actual_dropoff_at?: string | null;
           actual_pickup_at?: string | null;
-          additional_dropoffs?: Json | null;
-          additional_pickups?: Json | null;
           billing_type_id?: string | null;
           client_id?: string | null;
           client_name?: string | null;
@@ -645,6 +642,7 @@ export type Database = {
           dropoff_lng?: number | null;
           dropoff_location?: Json | null;
           dropoff_station?: string | null;
+          group_id?: string | null;
           id?: string;
           is_wheelchair?: boolean;
           link_type?: string | null;
@@ -668,8 +666,6 @@ export type Database = {
         Update: {
           actual_dropoff_at?: string | null;
           actual_pickup_at?: string | null;
-          additional_dropoffs?: Json | null;
-          additional_pickups?: Json | null;
           billing_type_id?: string | null;
           client_id?: string | null;
           client_name?: string | null;
@@ -683,6 +679,7 @@ export type Database = {
           dropoff_lng?: number | null;
           dropoff_location?: Json | null;
           dropoff_station?: string | null;
+          group_id?: string | null;
           id?: string;
           is_wheelchair?: boolean;
           link_type?: string | null;

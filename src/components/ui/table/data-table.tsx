@@ -33,11 +33,13 @@ import { DraggableTableHeader, DragAlongCell } from './draggable-column';
 interface DataTableProps<TData> extends React.ComponentProps<'div'> {
   table: TanstackTable<TData>;
   actionBar?: React.ReactNode;
+  getRowClassName?: (row: any) => string;
 }
 
 export function DataTable<TData>({
   table,
   actionBar,
+  getRowClassName,
   children
 }: DataTableProps<TData>) {
   const sensors = useSensors(
@@ -92,6 +94,7 @@ export function DataTable<TData>({
                       <TableRow
                         key={row.id}
                         data-state={row.getIsSelected() && 'selected'}
+                        className={getRowClassName?.(row.original)}
                       >
                         {row.getVisibleCells().map((cell) => (
                           <SortableContext

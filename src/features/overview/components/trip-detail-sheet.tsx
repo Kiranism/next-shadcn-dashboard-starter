@@ -1,5 +1,7 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import {
   Sheet,
   SheetContent,
@@ -10,7 +12,15 @@ import {
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import { useTrip } from '@/features/trips/hooks/use-trips';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -40,7 +50,72 @@ export function TripDetailSheet({
   isOpen,
   onOpenChange
 }: TripDetailSheetProps) {
-  const { trip, isLoading } = useTrip(tripId);
+  const { trip, isLoading: isTripLoading } = useTrip(tripId);
+  const [groupTrips, setGroupTrips] = useState<any[]>([]);
+  const [isLoadingGroup, setIsLoadingGroup] = useState(false);
+  const [drivers, setDrivers] = useState<any[]>([]);
+  const [isUpdatingDriver, setIsUpdatingDriver] = useState(false);
+
+  useEffect(() => {
+    const fetchDrivers = async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('users')
+        .select('id, name')
+        .eq('role', 'driver')
+        .order('name');
+      setDrivers(data || []);
+    };
+    fetchDrivers();
+  }, []);
+
+  const handleDriverChange = async (driverId: string) => {
+    if (!trip) return;
+    setIsUpdatingDriver(true);
+    const supabase = createClient();
+    try {
+      if (trip.group_id) {
+        const { error } = await supabase
+          .from('trips')
+          .update({ driver_id: driverId === 'unassigned' ? null : driverId })
+          .eq('group_id', trip.group_id);
+        if (error) throw error;
+        toast.success(`Fahrer für die gesamte Gruppe aktualisiert`);
+      } else {
+        const { error } = await supabase
+          .from('trips')
+          .update({ driver_id: driverId === 'unassigned' ? null : driverId })
+          .eq('id', trip.id);
+        if (error) throw error;
+        toast.success('Fahrer aktualisiert');
+      }
+    } catch (error: any) {
+      toast.error(`Fehler beim Zuweisen des Fahrers: ${error.message}`);
+    } finally {
+      setIsUpdatingDriver(false);
+    }
+  };
+
+  useEffect(() => {
+    const fetchGroup = async () => {
+      if (trip?.group_id) {
+        setIsLoadingGroup(true);
+        const supabase = createClient();
+        const { data } = await supabase
+          .from('trips')
+          .select('*')
+          .eq('group_id', trip.group_id)
+          .order('scheduled_at', { ascending: true });
+        setGroupTrips(data || []);
+        setIsLoadingGroup(false);
+      } else {
+        setGroupTrips([]);
+      }
+    };
+    fetchGroup();
+  }, [trip?.group_id]);
+
+  const isLoading = isTripLoading || isLoadingGroup;
 
   const getStatusInfo = (status: string) => {
     switch (status) {
@@ -145,50 +220,107 @@ export function TripDetailSheet({
                     {/* Vertical Line Connector */}
                     <div className='absolute top-4 bottom-4 left-[11px] w-[2px] bg-slate-100' />
 
-                    {/* Pickup 1 (A1) */}
-                    <TimelineItem
-                      stopLabel='A1'
-                      title='Start / Abholung'
-                      address={trip.pickup_address}
-                      time={trip.actual_pickup_at}
-                      station={trip.pickup_station}
-                      isCompleted={!!trip.actual_pickup_at}
-                    />
+                    {(() => {
+                      const tripsToMap =
+                        groupTrips.length > 0 ? groupTrips : [trip];
 
-                    {/* Additional Pickups (A2, A3...) */}
-                    {(trip.additional_pickups as any[])?.map((stop, i) => (
-                      <TimelineItem
-                        key={`pickup-${i}`}
-                        stopLabel={`A${i + 2}`}
-                        title={`Abholung ${i + 2}`}
-                        address={stop.address}
-                        name={stop.name}
-                        update={trip.stop_updates?.[stop.address]}
-                      />
-                    ))}
+                      const pickups: any[] = [];
+                      const pickupAddresses = new Set<string>();
+                      tripsToMap.forEach((t) => {
+                        if (!t.pickup_address) return;
+                        const key = `${t.pickup_address}-${t.pickup_station || ''}`;
+                        if (!pickupAddresses.has(key)) {
+                          pickups.push({
+                            address: t.pickup_address,
+                            station: t.pickup_station,
+                            name: t.client_name,
+                            time: t.actual_pickup_at,
+                            update: t.stop_updates?.[t.pickup_address]
+                          });
+                          pickupAddresses.add(key);
+                        } else {
+                          const p = pickups.find(
+                            (x) => x.address === t.pickup_address
+                          );
+                          if (p && t.client_name) {
+                            if (!p.name?.includes(t.client_name)) {
+                              p.name = p.name
+                                ? `${p.name}, ${t.client_name}`
+                                : t.client_name;
+                            }
+                          }
+                        }
+                      });
 
-                    {/* Additional Dropoffs (Z1, Z2...) */}
-                    {(trip.additional_dropoffs as any[])?.map((stop, i) => (
-                      <TimelineItem
-                        key={`dropoff-${i}`}
-                        stopLabel={`Z${i + 1}`}
-                        title={`Ausstieg ${i + 1}`}
-                        address={stop.address}
-                        name={stop.name}
-                        update={trip.stop_updates?.[stop.address]}
-                      />
-                    ))}
+                      const dropoffs: any[] = [];
+                      const dropoffAddresses = new Set<string>();
+                      tripsToMap.forEach((t) => {
+                        if (!t.dropoff_address) return;
+                        const key = `${t.dropoff_address}-${t.dropoff_station || ''}`;
+                        if (!dropoffAddresses.has(key)) {
+                          dropoffs.push({
+                            address: t.dropoff_address,
+                            station: t.dropoff_station,
+                            name: t.client_name,
+                            time: t.actual_dropoff_at,
+                            update: t.stop_updates?.[t.dropoff_address]
+                          });
+                          dropoffAddresses.add(key);
+                        } else {
+                          const d = dropoffs.find(
+                            (x) => x.address === t.dropoff_address
+                          );
+                          if (d && t.client_name) {
+                            if (!d.name?.includes(t.client_name)) {
+                              d.name = d.name
+                                ? `${d.name}, ${t.client_name}`
+                                : t.client_name;
+                            }
+                          }
+                        }
+                      });
 
-                    {/* Final Dropoff (Z last) */}
-                    <TimelineItem
-                      stopLabel={`Z${(trip.additional_dropoffs?.length || 0) + 1}`}
-                      title='Ziel / Ankunft'
-                      address={trip.dropoff_address}
-                      time={trip.actual_dropoff_at}
-                      station={trip.dropoff_station}
-                      isCompleted={!!trip.actual_dropoff_at}
-                      isLast
-                    />
+                      return (
+                        <>
+                          {pickups.map((p, i) => (
+                            <TimelineItem
+                              key={`pickup-${i}`}
+                              stopLabel={`A${i + 1}`}
+                              title={
+                                i === 0
+                                  ? 'Start / Abholung'
+                                  : `Abholung ${i + 1}`
+                              }
+                              address={p.address}
+                              name={p.name}
+                              time={p.time}
+                              station={p.station}
+                              update={p.update}
+                              isCompleted={!!p.time}
+                            />
+                          ))}
+
+                          {dropoffs.map((d, i) => (
+                            <TimelineItem
+                              key={`dropoff-${i}`}
+                              stopLabel={`Z${i + 1}`}
+                              title={
+                                i === dropoffs.length - 1
+                                  ? 'Ziel / Ankunft'
+                                  : `Ausstieg ${i + 1}`
+                              }
+                              address={d.address}
+                              name={d.name}
+                              time={d.time}
+                              station={d.station}
+                              update={d.update}
+                              isCompleted={!!d.time}
+                              isLast={i === dropoffs.length - 1}
+                            />
+                          ))}
+                        </>
+                      );
+                    })()}
                   </div>
                 </section>
 
@@ -199,8 +331,34 @@ export function TripDetailSheet({
                   <DetailItem
                     icon={<User2 className='h-3.5 w-3.5' />}
                     label='Fahrer'
-                    value={trip.driver?.name || 'Nicht zugewiesen'}
-                  />
+                  >
+                    <Select
+                      value={trip.driver_id || 'unassigned'}
+                      onValueChange={handleDriverChange}
+                      disabled={isUpdatingDriver}
+                    >
+                      <SelectTrigger className='h-8 border-slate-200 text-xs font-semibold'>
+                        <SelectValue placeholder='Fahrer auswählen' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem
+                          value='unassigned'
+                          className='text-muted-foreground text-xs italic'
+                        >
+                          Nicht zugewiesen
+                        </SelectItem>
+                        {drivers.map((d) => (
+                          <SelectItem
+                            key={d.id}
+                            value={d.id}
+                            className='text-xs font-medium'
+                          >
+                            {d.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </DetailItem>
                   <DetailItem
                     icon={<Navigation className='h-3.5 w-3.5' />}
                     label='Fahrzeug'
@@ -312,14 +470,14 @@ function TimelineItem({
   );
 }
 
-function DetailItem({ icon, label, value }: any) {
+function DetailItem({ icon, label, value, children }: any) {
   return (
     <div className='space-y-1.5'>
       <div className='text-muted-foreground flex items-center gap-2 text-xs font-medium'>
         {icon}
         {label}
       </div>
-      <div className='pl-6 text-sm font-semibold'>{value}</div>
+      <div className='pl-6 text-sm font-semibold'>{children || value}</div>
     </div>
   );
 }

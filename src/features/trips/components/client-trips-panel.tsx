@@ -27,7 +27,7 @@ export function ClientTripsPanel({
       const { data } = await supabase
         .from('trips')
         .select(
-          'id, scheduled_at, pickup_address, dropoff_address, status, is_wheelchair, additional_pickups, additional_dropoffs, client_name, billing_types(name, color), driver:users!trips_driver_id_fkey(name)'
+          'id, scheduled_at, pickup_address, dropoff_address, status, is_wheelchair, group_id, client_name, billing_types(name, color), driver:users!trips_driver_id_fkey(name)'
         )
         .eq('client_id', clientId)
         .gte('scheduled_at', now)

@@ -101,9 +101,16 @@ export const columns: ColumnDef<any>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Abholung' />
     ),
-    cell: ({ cell }) => (
-      <div className='max-w-[200px] truncate' title={cell.getValue<string>()}>
-        {cell.getValue<string>()}
+    cell: ({ row }) => (
+      <div className='flex max-w-[200px] flex-col truncate'>
+        <span title={row.original.pickup_address}>
+          {row.original.pickup_address}
+        </span>
+        {row.original.pickup_station && (
+          <span className='text-muted-foreground truncate text-[10px] italic'>
+            ({row.original.pickup_station})
+          </span>
+        )}
       </div>
     )
   },
@@ -112,9 +119,16 @@ export const columns: ColumnDef<any>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Ziel' />
     ),
-    cell: ({ cell }) => (
-      <div className='max-w-[200px] truncate' title={cell.getValue<string>()}>
-        {cell.getValue<string>()}
+    cell: ({ row }) => (
+      <div className='flex max-w-[200px] flex-col truncate'>
+        <span title={row.original.dropoff_address}>
+          {row.original.dropoff_address}
+        </span>
+        {row.original.dropoff_station && (
+          <span className='text-muted-foreground truncate text-[10px] italic'>
+            ({row.original.dropoff_station})
+          </span>
+        )}
       </div>
     )
   },

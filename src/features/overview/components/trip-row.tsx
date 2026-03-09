@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { MapPinned } from 'lucide-react';
+import { MapPinned, Users } from 'lucide-react';
 
 interface TripRowProps {
   trip: any;
@@ -19,9 +19,7 @@ export function TripRow({ trip, onClick, compact = false }: TripRowProps) {
   const billingType = trip.billing_types;
   const rowColor = billingType?.color || 'transparent';
 
-  const additionalStopsCount =
-    (trip.additional_pickups?.length || 0) +
-    (trip.additional_dropoffs?.length || 0);
+  const isGrouped = !!trip.group_id;
 
   const getStatusLabel = (status: string) => {
     switch (status) {
@@ -106,9 +104,9 @@ export function TripRow({ trip, onClick, compact = false }: TripRowProps) {
           >
             {trip.client_name || 'Unbekannter Kunde'}
           </p>
-          {additionalStopsCount > 0 && (
-            <div className='flex items-center gap-0.5 rounded-full border border-slate-200 bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600'>
-              <MapPinned className='h-2.5 w-2.5' />+{additionalStopsCount}
+          {isGrouped && (
+            <div className='flex items-center gap-0.5 rounded-full border border-sky-200 bg-sky-100 px-1.5 py-0.5 text-[10px] font-bold text-sky-700'>
+              <Users className='h-2.5 w-2.5' /> Gruppe
             </div>
           )}
         </div>

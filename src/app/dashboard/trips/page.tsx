@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { SearchParams } from 'nuqs/server';
 import { Suspense } from 'react';
 import { CreateTripDialogButton } from '@/features/trips/components/create-trip-dialog-button';
+import { BulkUploadDialog } from '@/features/trips/components/bulk-upload-dialog';
 
 export const metadata = {
   title: 'Dashboard: Fahrten'
@@ -27,7 +28,12 @@ export default async function Page(props: pageProps) {
       scrollable={false}
       pageTitle='Fahrten'
       pageDescription='Alle Fahrten auf einen Blick verwalten.'
-      pageHeaderAction={<CreateTripDialogButton />}
+      pageHeaderAction={
+        <div className='flex items-center gap-2'>
+          <BulkUploadDialog />
+          <CreateTripDialogButton />
+        </div>
+      }
     >
       <Suspense
         fallback={
