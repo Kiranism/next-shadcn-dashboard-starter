@@ -140,6 +140,16 @@ src/
 └── index.ts
 ```
 
+## Project Rules & Standards
+
+Use these files as the single source of truth for implementation quality and consistency:
+
+- [AI Execution Rules](AI_RULES.md)
+- [Architecture Rules](docs/architecture.md)
+- [UI System Rules](docs/ui-system.md)
+- [Component Registry & Reuse Policy](docs/component-registry.md)
+- [Naming Conventions](docs/naming-conventions.md)
+
 ## Getting Started
 
 > [!NOTE]  
