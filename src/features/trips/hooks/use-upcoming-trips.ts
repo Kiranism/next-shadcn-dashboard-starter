@@ -55,7 +55,7 @@ export function useUpcomingTrips() {
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
-      .channel('schema-db-changes')
+      .channel(`schema-db-changes-${filter}`)
       .on(
         'postgres_changes',
         {
@@ -73,7 +73,7 @@ export function useUpcomingTrips() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [filter]);
 
   const filteredTrips = trips.filter((trip) => {
     if (statusFilter === 'all') return true;

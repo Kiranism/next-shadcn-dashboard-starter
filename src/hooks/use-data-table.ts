@@ -110,7 +110,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     React.useState<VisibilityState>(initialState?.columnVisibility ?? {});
 
   const [columnOrder, setColumnOrder] = React.useState<string[]>(() =>
-    columns.map((c) => c.id!)
+    columns.map((c: any) => c.id || c.accessorKey)
   );
 
   const [page, setPage] = useQueryState(

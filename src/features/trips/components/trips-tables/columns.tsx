@@ -47,6 +47,27 @@ export const columns: ColumnDef<any>[] = [
     enableHiding: false
   },
   {
+    id: 'date',
+    accessorKey: 'scheduled_at',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Datum' />
+    ),
+    cell: ({ cell }) => {
+      const date = new Date(cell.getValue<string>());
+      return (
+        <span className='font-medium'>
+          {format(date, 'dd.MM.yyyy', { locale: de })}
+        </span>
+      );
+    },
+    meta: {
+      label: 'Datum',
+      variant: 'dateRange'
+    },
+    enableColumnFilter: true
+  },
+  {
+    id: 'time',
     accessorKey: 'scheduled_at',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Zeit' />
@@ -56,17 +77,14 @@ export const columns: ColumnDef<any>[] = [
       return (
         <div className='flex flex-col'>
           <span className='font-medium'>{format(date, 'HH:mm')}</span>
-          <span className='text-muted-foreground text-[10px]'>
-            {format(date, 'dd.MM.yyyy', { locale: de })}
-          </span>
         </div>
       );
     },
     meta: {
-      label: 'Zeitraum',
-      variant: 'dateRange'
+      label: 'Zeit',
+      variant: 'text'
     },
-    enableColumnFilter: true
+    enableColumnFilter: false
   },
   {
     id: 'name',
@@ -133,6 +151,16 @@ export const columns: ColumnDef<any>[] = [
     )
   },
   {
+    id: 'driver_name',
+    accessorKey: 'driver.name',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Fahrer' />
+    ),
+    cell: ({ row }) => (
+      <div>{row.original.driver?.name || 'Nicht zugewiesen'}</div>
+    )
+  },
+  {
     id: 'status',
     accessorKey: 'status',
     header: ({ column }) => (
@@ -183,16 +211,6 @@ export const columns: ColumnDef<any>[] = [
         </Badge>
       );
     }
-  },
-  {
-    id: 'driver_name',
-    accessorKey: 'driver.name',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Fahrer' />
-    ),
-    cell: ({ row }) => (
-      <div>{row.original.driver?.name || 'Nicht zugewiesen'}</div>
-    )
   },
   {
     id: 'actions',

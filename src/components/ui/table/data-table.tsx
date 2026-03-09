@@ -1,5 +1,5 @@
 import { type Table as TanstackTable, flexRender } from '@tanstack/react-table';
-import type * as React from 'react';
+import * as React from 'react';
 import {
   DndContext,
   KeyboardSensor,
@@ -42,6 +42,7 @@ export function DataTable<TData>({
   getRowClassName,
   children
 }: DataTableProps<TData>) {
+  const dndId = React.useId();
   const sensors = useSensors(
     useSensor(MouseSensor),
     useSensor(TouchSensor),
@@ -65,6 +66,7 @@ export function DataTable<TData>({
         <div className='absolute inset-0 flex overflow-hidden rounded-lg border'>
           <ScrollArea className='h-full w-full'>
             <DndContext
+              id={dndId}
               collisionDetection={closestCenter}
               modifiers={[restrictToHorizontalAxis]}
               onDragEnd={handleDragEnd}

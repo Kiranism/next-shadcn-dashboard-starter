@@ -15,7 +15,12 @@ function Dialog({
 function DialogTrigger({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
-  return <DialogPrimitive.Trigger data-slot='dialog-trigger' {...props} />;
+  const defaultId = React.useId();
+  const id = props.id || defaultId;
+
+  return (
+    <DialogPrimitive.Trigger data-slot='dialog-trigger' id={id} {...props} />
+  );
 }
 
 function DialogPortal({

@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Papa from 'papaparse';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 import {
   Dialog,
   DialogContent,
@@ -37,6 +38,7 @@ interface BulkUploadDialogProps {
 }
 
 export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
+  const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [results, setResults] = React.useState<{
@@ -196,6 +198,7 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
             );
             setResults({ success: tripsToInsert.length, errors: [] });
             onSuccess?.();
+            router.refresh();
             setTimeout(() => setOpen(false), 2000);
           } catch (e: any) {
             errors.push(`Datenbankfehler: ${e.message}`);

@@ -82,6 +82,8 @@ export default async function TripsListingPage({
       const isDesc = sortRule.desc;
       if (sortRule.id === 'name') {
         query = query.order('client_name', { ascending: !isDesc });
+      } else if (sortRule.id === 'date' || sortRule.id === 'time') {
+        query = query.order('scheduled_at', { ascending: !isDesc });
       } else if (sortRule.id === 'payer_name') {
         query = query.order('name', {
           foreignTable: 'payer',

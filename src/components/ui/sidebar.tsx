@@ -507,6 +507,8 @@ function SidebarMenuButton({
 } & VariantProps<typeof sidebarMenuButtonVariants>) {
   const Comp = asChild ? Slot : 'button';
   const { isMobile, state } = useSidebar();
+  const defaultId = React.useId();
+  const id = props.id || defaultId;
 
   const button = (
     <Comp
@@ -515,6 +517,7 @@ function SidebarMenuButton({
       data-size={size}
       data-active={isActive}
       className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
+      id={id}
       {...props}
     />
   );
