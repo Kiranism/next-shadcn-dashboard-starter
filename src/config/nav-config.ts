@@ -22,6 +22,14 @@ export const navItems: NavItem[] = [
     items: []
   },
   {
+    title: 'Kostenträger',
+    url: '/dashboard/payers',
+    icon: 'billing',
+    shortcut: ['k', 'k'],
+    isActive: false,
+    items: []
+  },
+  {
     title: 'Product',
     url: '/dashboard/product',
     icon: 'product',
