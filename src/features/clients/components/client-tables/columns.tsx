@@ -66,36 +66,42 @@ export const columns: ColumnDef<Client>[] = [
     enableColumnFilter: true
   },
   {
+    id: 'street',
     accessorKey: 'street',
     header: ({ column }: { column: Column<Client, unknown> }) => (
       <DataTableColumnHeader column={column} title='Straße' />
     )
   },
   {
+    id: 'street_number',
     accessorKey: 'street_number',
     header: ({ column }: { column: Column<Client, unknown> }) => (
       <DataTableColumnHeader column={column} title='Hausnummer' />
     )
   },
   {
+    id: 'zip_code',
     accessorKey: 'zip_code',
     header: ({ column }: { column: Column<Client, unknown> }) => (
       <DataTableColumnHeader column={column} title='PLZ' />
     )
   },
   {
+    id: 'city',
     accessorKey: 'city',
     header: ({ column }: { column: Column<Client, unknown> }) => (
       <DataTableColumnHeader column={column} title='Stadt' />
     )
   },
   {
+    id: 'phone',
     accessorKey: 'phone',
     header: ({ column }: { column: Column<Client, unknown> }) => (
       <DataTableColumnHeader column={column} title='Telefonnummer' />
     )
   },
   {
+    id: 'relation',
     accessorKey: 'relation',
     header: ({ column }: { column: Column<Client, unknown> }) => (
       <DataTableColumnHeader column={column} title='Beziehung' />

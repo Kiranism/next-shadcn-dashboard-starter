@@ -109,6 +109,10 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>(initialState?.columnVisibility ?? {});
 
+  const [columnOrder, setColumnOrder] = React.useState<string[]>(() =>
+    columns.map((c) => c.id!)
+  );
+
   const [page, setPage] = useQueryState(
     PAGE_KEY,
     parseAsInteger.withOptions(queryStateOptions).withDefault(1)
@@ -274,8 +278,10 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
       sorting,
       columnVisibility,
       rowSelection,
-      columnFilters
+      columnFilters,
+      columnOrder
     },
+    onColumnOrderChange: setColumnOrder,
     defaultColumn: {
       ...tableProps.defaultColumn,
       enableColumnFilter: false
