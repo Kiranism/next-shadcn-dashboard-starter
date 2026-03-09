@@ -94,5 +94,45 @@ export function useTripFormData(payerId?: string | null) {
     return data || [];
   };
 
-  return { payers, billingTypes, drivers, isLoading, searchClients };
+  const searchClientsByFirstName = async (
+    query: string
+  ): Promise<ClientOption[]> => {
+    if (!query || query.length < 2) return [];
+    const supabase = createClient();
+    const { data } = await supabase
+      .from('clients')
+      .select(
+        'id, first_name, last_name, company_name, is_company, phone, street, street_number, zip_code, city'
+      )
+      .or(`first_name.ilike.%${query}%,company_name.ilike.%${query}%`)
+      .order('first_name')
+      .limit(8);
+    return data || [];
+  };
+
+  const searchClientsByLastName = async (
+    query: string
+  ): Promise<ClientOption[]> => {
+    if (!query || query.length < 2) return [];
+    const supabase = createClient();
+    const { data } = await supabase
+      .from('clients')
+      .select(
+        'id, first_name, last_name, company_name, is_company, phone, street, street_number, zip_code, city'
+      )
+      .or(`last_name.ilike.%${query}%,company_name.ilike.%${query}%`)
+      .order('last_name')
+      .limit(8);
+    return data || [];
+  };
+
+  return {
+    payers,
+    billingTypes,
+    drivers,
+    isLoading,
+    searchClients,
+    searchClientsByFirstName,
+    searchClientsByLastName
+  };
 }

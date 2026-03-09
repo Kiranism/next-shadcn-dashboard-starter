@@ -19,6 +19,7 @@ interface ClientAutoSuggestProps {
   value?: string;
   placeholder?: string;
   disabled?: boolean;
+  getDisplayValue?: (client: ClientOption) => string;
 }
 
 export function ClientAutoSuggest({
@@ -27,7 +28,8 @@ export function ClientAutoSuggest({
   searchClients,
   value = '',
   placeholder = 'Name eingeben...',
-  disabled = false
+  disabled = false,
+  getDisplayValue
 }: ClientAutoSuggestProps) {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState(value);
@@ -65,9 +67,11 @@ export function ClientAutoSuggest({
   };
 
   const handleSelect = (client: ClientOption) => {
-    const displayName = client.is_company
-      ? client.company_name || ''
-      : [client.first_name, client.last_name].filter(Boolean).join(' ');
+    const displayName = getDisplayValue
+      ? getDisplayValue(client)
+      : client.is_company
+        ? client.company_name || ''
+        : [client.first_name, client.last_name].filter(Boolean).join(' ');
     setQuery(displayName);
     onNameChange(displayName);
     setSelectedClient(client);

@@ -8,9 +8,10 @@ import { MapPinned } from 'lucide-react';
 interface TripRowProps {
   trip: any;
   onClick: () => void;
+  compact?: boolean;
 }
 
-export function TripRow({ trip, onClick }: TripRowProps) {
+export function TripRow({ trip, onClick, compact = false }: TripRowProps) {
   const scheduledTime = trip.scheduled_at
     ? format(new Date(trip.scheduled_at), 'HH:mm')
     : '--:--';
@@ -75,8 +76,13 @@ export function TripRow({ trip, onClick }: TripRowProps) {
           rowColor !== 'transparent' ? `4px solid ${rowColor}` : undefined
       }}
     >
-      <div className='flex min-w-[70px] flex-col'>
-        <div className='text-primary text-lg leading-tight font-bold'>
+      <div className='flex min-w-[56px] flex-col'>
+        <div
+          className={cn(
+            'text-primary leading-tight font-bold',
+            compact ? 'text-sm' : 'text-lg'
+          )}
+        >
           {scheduledTime}
         </div>
         {billingType?.name && (
@@ -92,7 +98,12 @@ export function TripRow({ trip, onClick }: TripRowProps) {
       </div>
       <div className='ml-4 flex-1 space-y-1'>
         <div className='flex items-center gap-2'>
-          <p className='group-hover:text-primary text-sm leading-none font-semibold transition-colors'>
+          <p
+            className={cn(
+              'group-hover:text-primary leading-none font-semibold transition-colors',
+              compact ? 'text-xs' : 'text-sm'
+            )}
+          >
             {trip.client_name || 'Unbekannter Kunde'}
           </p>
           {additionalStopsCount > 0 && (
@@ -108,7 +119,10 @@ export function TripRow({ trip, onClick }: TripRowProps) {
       <div className='ml-4 flex flex-col items-end gap-1'>
         <Badge
           variant={getBadgeVariant(trip.status) as any}
-          className='h-5 px-2 py-0 text-[10px] whitespace-nowrap'
+          className={cn(
+            'px-2 py-0 whitespace-nowrap',
+            compact ? 'h-4 text-[9px]' : 'h-5 text-[10px]'
+          )}
         >
           {getStatusLabel(trip.status)}
         </Badge>

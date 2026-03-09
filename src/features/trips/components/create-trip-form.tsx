@@ -47,8 +47,9 @@ import { cn } from '@/lib/utils';
 
 const tripFormSchema = z.object({
   payer_id: z.string().min(1, 'Kostenträger ist erforderlich'),
-  billing_type_id: z.string().min(1, 'Abrechnungsart ist erforderlich'),
-  client_name: z.string().min(1, 'Kundenname ist erforderlich'),
+  billing_type_id: z.string().optional(),
+  client_first_name: z.string().optional(),
+  client_last_name: z.string().optional(),
   client_phone: z.string().optional(),
   scheduled_at: z.date({ error: 'Datum und Uhrzeit sind erforderlich' }),
   pickup_address: z.string().min(1, 'Abholadresse ist erforderlich'),
@@ -63,9 +64,14 @@ type TripFormValues = z.infer<typeof tripFormSchema>;
 interface CreateTripFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
+  onClientSelect?: (client: ClientOption | null) => void;
 }
 
-export function CreateTripForm({ onSuccess, onCancel }: CreateTripFormProps) {
+export function CreateTripForm({
+  onSuccess,
+  onCancel,
+  onClientSelect
+}: CreateTripFormProps) {
   const [selectedClient, setSelectedClient] =
     React.useState<ClientOption | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -75,7 +81,8 @@ export function CreateTripForm({ onSuccess, onCancel }: CreateTripFormProps) {
     defaultValues: {
       payer_id: '',
       billing_type_id: '',
-      client_name: '',
+      client_first_name: '',
+      client_last_name: '',
       client_phone: '',
       pickup_address: '',
       dropoff_address: '',
@@ -89,13 +96,20 @@ export function CreateTripForm({ onSuccess, onCancel }: CreateTripFormProps) {
   const watchedBillingTypeId = form.watch('billing_type_id');
   const watchedIsWheelchair = form.watch('is_wheelchair');
 
-  const { payers, billingTypes, drivers, isLoading, searchClients } =
-    useTripFormData(watchedPayerId || null);
+  const {
+    payers,
+    billingTypes,
+    drivers,
+    isLoading,
+    searchClientsByFirstName,
+    searchClientsByLastName
+  } = useTripFormData(watchedPayerId || null);
 
   // Reset billing type and client fields when payer changes
   React.useEffect(() => {
     form.setValue('billing_type_id', '');
-    form.setValue('client_name', '');
+    form.setValue('client_first_name', '');
+    form.setValue('client_last_name', '');
     setSelectedClient(null);
   }, [watchedPayerId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -111,11 +125,25 @@ export function CreateTripForm({ onSuccess, onCancel }: CreateTripFormProps) {
         data: { user }
       } = await supabase.auth.getUser();
 
+      // Fetch company_id from the users table — required by RLS policy
+      let companyId: string | null = null;
+      if (user?.id) {
+        const { data: profile } = await supabase
+          .from('users')
+          .select('company_id')
+          .eq('id', user.id)
+          .single();
+        companyId = profile?.company_id ?? null;
+      }
+
       await tripsService.createTrip({
         payer_id: values.payer_id,
-        billing_type_id: values.billing_type_id,
+        billing_type_id: values.billing_type_id || null,
         client_id: selectedClient?.id || null,
-        client_name: values.client_name,
+        client_name:
+          [values.client_first_name, values.client_last_name]
+            .filter(Boolean)
+            .join(' ') || null,
         client_phone: values.client_phone || null,
         scheduled_at: values.scheduled_at.toISOString(),
         pickup_address: values.pickup_address,
@@ -126,7 +154,8 @@ export function CreateTripForm({ onSuccess, onCancel }: CreateTripFormProps) {
             : null,
         is_wheelchair: values.is_wheelchair,
         notes: values.notes || null,
-        status: 'open',
+        status: 'pending',
+        company_id: companyId,
         created_by: user?.id || null,
         stop_updates: []
       });
@@ -161,11 +190,17 @@ export function CreateTripForm({ onSuccess, onCancel }: CreateTripFormProps) {
             control={form.control as any}
             name='payer_id'
             render={({ field }) => (
-              <FormItem>
+              <FormItem
+                className={cn(
+                  watchedPayerId &&
+                    billingTypes.length === 0 &&
+                    'col-span-2 sm:col-span-1'
+                )}
+              >
                 <FormLabel className='text-xs'>Kostenträger *</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  value={field.value}
+                  defaultValue={field.value}
                   disabled={isLoading}
                 >
                   <FormControl>
@@ -185,44 +220,48 @@ export function CreateTripForm({ onSuccess, onCancel }: CreateTripFormProps) {
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control as any}
-            name='billing_type_id'
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className='text-xs'>Abrechnungsart *</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                  disabled={!watchedPayerId || billingTypes.length === 0}
-                >
-                  <FormControl>
-                    <SelectTrigger className='h-9'>
-                      <SelectValue
-                        placeholder={
-                          !watchedPayerId ? 'Kostenträger wählen' : 'Wählen...'
-                        }
-                      />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {billingTypes.map((bt) => (
-                      <SelectItem key={bt.id} value={bt.id}>
-                        <span className='flex items-center gap-2'>
-                          <span
-                            className='inline-block h-2 w-2 rounded-full'
-                            style={{ backgroundColor: bt.color }}
-                          />
-                          {bt.name}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage className='text-xs' />
-              </FormItem>
-            )}
-          />
+          {(!watchedPayerId || billingTypes.length > 0) && (
+            <FormField
+              control={form.control as any}
+              name='billing_type_id'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className='text-xs'>Abrechnungsart *</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={!watchedPayerId}
+                  >
+                    <FormControl>
+                      <SelectTrigger className='h-9'>
+                        <SelectValue
+                          placeholder={
+                            !watchedPayerId
+                              ? 'Kostenträger wählen'
+                              : 'Wählen...'
+                          }
+                        />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {billingTypes.map((bt) => (
+                        <SelectItem key={bt.id} value={bt.id}>
+                          <span className='flex items-center gap-2'>
+                            <span
+                              className='inline-block h-2 w-2 rounded-full'
+                              style={{ backgroundColor: bt.color }}
+                            />
+                            {bt.name}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage className='text-xs' />
+                </FormItem>
+              )}
+            />
+          )}
         </div>
 
         {/* Billing type color chip */}
@@ -270,17 +309,26 @@ export function CreateTripForm({ onSuccess, onCancel }: CreateTripFormProps) {
         <div className='grid grid-cols-2 gap-3'>
           <FormField
             control={form.control as any}
-            name='client_name'
+            name='client_first_name'
             render={({ field }) => (
-              <FormItem className='col-span-2 sm:col-span-1'>
-                <FormLabel className='text-xs'>Name *</FormLabel>
+              <FormItem>
+                <FormLabel className='text-xs'>Vorname</FormLabel>
                 <FormControl>
                   <ClientAutoSuggest
-                    value={field.value}
+                    value={field.value || ''}
                     onNameChange={(name) => field.onChange(name)}
                     onSelect={(client) => {
                       setSelectedClient(client);
+                      onClientSelect?.(client);
                       if (client) {
+                        form.setValue(
+                          'client_first_name',
+                          client.first_name || ''
+                        );
+                        form.setValue(
+                          'client_last_name',
+                          client.last_name || ''
+                        );
                         form.setValue('client_phone', client.phone || '');
                         form.setValue(
                           'pickup_address',
@@ -288,9 +336,51 @@ export function CreateTripForm({ onSuccess, onCancel }: CreateTripFormProps) {
                         );
                       }
                     }}
-                    searchClients={searchClients}
+                    searchClients={searchClientsByFirstName}
                     disabled={!isClientSectionVisible}
-                    placeholder='Kundenname suchen...'
+                    placeholder='Vorname suchen...'
+                    getDisplayValue={(c) =>
+                      c.first_name || c.company_name || ''
+                    }
+                  />
+                </FormControl>
+                <FormMessage className='text-xs' />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control as any}
+            name='client_last_name'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className='text-xs'>Nachname</FormLabel>
+                <FormControl>
+                  <ClientAutoSuggest
+                    value={field.value || ''}
+                    onNameChange={(name) => field.onChange(name)}
+                    onSelect={(client) => {
+                      setSelectedClient(client);
+                      onClientSelect?.(client);
+                      if (client) {
+                        form.setValue(
+                          'client_first_name',
+                          client.first_name || ''
+                        );
+                        form.setValue(
+                          'client_last_name',
+                          client.last_name || ''
+                        );
+                        form.setValue('client_phone', client.phone || '');
+                        form.setValue(
+                          'pickup_address',
+                          `${client.street} ${client.street_number}, ${client.zip_code} ${client.city}`
+                        );
+                      }
+                    }}
+                    searchClients={searchClientsByLastName}
+                    disabled={!isClientSectionVisible}
+                    placeholder='Nachname suchen...'
+                    getDisplayValue={(c) => c.last_name || c.company_name || ''}
                   />
                 </FormControl>
                 <FormMessage className='text-xs' />

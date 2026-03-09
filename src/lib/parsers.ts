@@ -25,7 +25,16 @@ export const getSortingStateParser = <TData>(
   return createParser({
     parse: (value) => {
       try {
-        const parsed = JSON.parse(value);
+        let parsed;
+        if (value.startsWith('[')) {
+          parsed = JSON.parse(value);
+        } else {
+          parsed = value.split(',').map((part) => {
+            const [id, order] = part.split('.');
+            return { id, desc: order === 'desc' };
+          });
+        }
+
         const result = z.array(sortingItemSchema).safeParse(parsed);
 
         if (!result.success) return null;
@@ -39,7 +48,8 @@ export const getSortingStateParser = <TData>(
         return null;
       }
     },
-    serialize: (value) => JSON.stringify(value),
+    serialize: (value) =>
+      value.map((v) => `${v.id}.${v.desc ? 'desc' : 'asc'}`).join(','),
     eq: (a, b) =>
       a.length === b.length &&
       a.every(

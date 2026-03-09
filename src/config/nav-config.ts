@@ -14,6 +14,14 @@ export const navItems: NavItem[] = [
     items: []
   },
   {
+    title: 'Fahrgäste',
+    url: '/dashboard/clients',
+    icon: 'teams',
+    shortcut: ['f', 'f'],
+    isActive: false,
+    items: []
+  },
+  {
     title: 'Product',
     url: '/dashboard/product',
     icon: 'product',

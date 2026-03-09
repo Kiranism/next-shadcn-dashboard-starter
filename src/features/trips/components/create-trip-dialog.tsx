@@ -9,7 +9,10 @@ import {
   DialogDescription
 } from '@/components/ui/dialog';
 import { CreateTripForm } from './create-trip-form';
+import { ClientTripsPanel } from './client-trips-panel';
+import type { ClientOption } from '@/features/trips/hooks/use-trip-form-data';
 import { PlusCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface CreateTripDialogProps {
   open: boolean;
@@ -22,14 +25,31 @@ export function CreateTripDialog({
   onOpenChange,
   onSuccess
 }: CreateTripDialogProps) {
+  const [selectedClient, setSelectedClient] =
+    React.useState<ClientOption | null>(null);
+
   const handleSuccess = () => {
     onOpenChange(false);
+    setSelectedClient(null);
     onSuccess?.();
   };
 
+  const handleOpenChange = (value: boolean) => {
+    if (!value) setSelectedClient(null);
+    onOpenChange(value);
+  };
+
+  const showPanel = !!selectedClient;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-xl'>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent
+        className={cn(
+          'flex max-h-[90vh] flex-col overflow-hidden p-0 transition-all duration-300',
+          showPanel ? 'sm:max-w-4xl' : 'sm:max-w-2xl'
+        )}
+      >
+        {/* Header */}
         <DialogHeader className='shrink-0 border-b px-6 py-4'>
           <div className='flex items-center gap-3'>
             <div className='bg-primary text-primary-foreground flex h-9 w-9 items-center justify-center rounded-lg'>
@@ -46,11 +66,37 @@ export function CreateTripDialog({
           </div>
         </DialogHeader>
 
-        <div className='flex-1 overflow-y-auto'>
-          <CreateTripForm
-            onSuccess={handleSuccess}
-            onCancel={() => onOpenChange(false)}
-          />
+        {/* Body — split when client is selected */}
+        <div className='flex flex-1 overflow-hidden'>
+          {/* Form — takes full width or 2/3 */}
+          <div
+            className={cn(
+              'overflow-y-auto',
+              showPanel ? 'w-2/3 shrink-0' : 'w-full'
+            )}
+          >
+            <CreateTripForm
+              onSuccess={handleSuccess}
+              onCancel={() => handleOpenChange(false)}
+              onClientSelect={setSelectedClient}
+            />
+          </div>
+
+          {/* Side panel — 1/3, only visible when client is selected */}
+          {showPanel && (
+            <div className='w-1/3 shrink-0 overflow-hidden'>
+              <ClientTripsPanel
+                clientId={selectedClient!.id}
+                clientName={
+                  selectedClient!.is_company
+                    ? selectedClient!.company_name || ''
+                    : [selectedClient!.first_name, selectedClient!.last_name]
+                        .filter(Boolean)
+                        .join(' ')
+                }
+              />
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
