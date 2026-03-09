@@ -59,5 +59,20 @@ export const tripsService = {
     const { error } = await supabase.from('trips').delete().eq('id', id);
 
     if (error) throw error;
+  },
+
+  async getUpcomingTrips(startDate: string, endDate: string) {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('trips')
+      .select(
+        '*, driver:users!trips_driver_id_fkey(name), billing_types(name, color)'
+      )
+      .gte('scheduled_at', startDate)
+      .lte('scheduled_at', endDate)
+      .order('scheduled_at', { ascending: true });
+
+    if (error) throw error;
+    return data;
   }
 };

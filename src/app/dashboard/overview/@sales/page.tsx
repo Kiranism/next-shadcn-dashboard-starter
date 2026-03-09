@@ -1,7 +1,7 @@
 import { delay } from '@/constants/mock-api';
-import { RecentSales } from '@/features/overview/components/recent-sales';
+import { UpcomingTrips } from '@/features/overview/components/upcoming-trips';
 
 export default async function Sales() {
-  await delay(3000);
-  return <RecentSales />;
+  await delay(1000); // Reduced delay for better UX
+  return <UpcomingTrips />;
 }
