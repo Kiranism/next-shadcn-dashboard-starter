@@ -206,11 +206,17 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     return Object.entries(filterValues).reduce<ColumnFiltersState>(
       (filters, [key, value]) => {
         if (value !== null) {
+          const col = filterableColumns.find(
+            (c: any) => (c.id ?? c.accessorKey) === key
+          );
+          const hasOptions = col?.meta?.options;
           const processedValue = Array.isArray(value)
             ? value
-            : typeof value === 'string' && /[^a-zA-Z0-9]/.test(value)
+            : typeof value === 'string' &&
+                hasOptions &&
+                /[^a-zA-Z0-9]/.test(value)
               ? value.split(/[^a-zA-Z0-9]+/).filter(Boolean)
-              : [value];
+              : value;
 
           filters.push({
             id: key,

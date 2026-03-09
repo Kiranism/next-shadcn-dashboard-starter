@@ -10,10 +10,14 @@ export const searchParams = {
   perPage: parseAsInteger.withDefault(10),
   name: parseAsString,
   gender: parseAsString,
-  category: parseAsString
-  // advanced filter
-  // filters: getFiltersStateParser().withDefault([]),
-  // joinOperator: parseAsStringEnum(['and', 'or']).withDefault('and')
+  category: parseAsString,
+  // trip filters
+  status: parseAsString,
+  driver_id: parseAsString,
+  payer_id: parseAsString,
+  billing_type_id: parseAsString,
+  scheduled_at: parseAsString, // for date filtering
+  sort: parseAsString
 };
 
 export const searchParamsCache = createSearchParamsCache(searchParams);

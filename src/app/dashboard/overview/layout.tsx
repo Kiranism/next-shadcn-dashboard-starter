@@ -27,8 +27,6 @@ export default function OverViewLayout({
   bar_stats: React.ReactNode;
   area_stats: React.ReactNode;
 }) {
-  const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
-
   return (
     <PageContainer>
       <div className='flex flex-1 flex-col space-y-2'>
@@ -36,16 +34,10 @@ export default function OverViewLayout({
           <h2 className='text-2xl font-bold tracking-tight'>
             Hi, Welcome back 👋
           </h2>
-          <Button onClick={() => setCreateDialogOpen(true)} className='gap-2'>
-            <Plus className='h-4 w-4' />
-            Fahrt erstellen
-          </Button>
+          <div className='hidden items-center space-x-2 md:flex'>
+            <Button>Download</Button>
+          </div>
         </div>
-        <CreateTripDialog
-          open={createDialogOpen}
-          onOpenChange={setCreateDialogOpen}
-        />
-
         <div className='*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs md:grid-cols-2 lg:grid-cols-4'>
           <Card className='@container/card'>
             <CardHeader>
