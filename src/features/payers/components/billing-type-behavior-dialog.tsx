@@ -48,6 +48,8 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+import { ScrollArea } from '@/components/ui/scroll-area';
+
 interface BillingTypeBehaviorDialogProps {
   payerId: string;
   billingType: BillingType | null;
@@ -121,194 +123,206 @@ export function BillingTypeBehaviorDialog({
       open={open}
       onOpenChange={(val) => !isUpdatingBehavior && onOpenChange(val)}
     >
-      <DialogContent className='max-h-[90vh] overflow-y-auto sm:max-w-[550px]'>
-        <DialogHeader>
+      <DialogContent className='flex max-h-[90vh] flex-col p-0 sm:max-w-2xl'>
+        <DialogHeader className='px-6 pt-6 pb-2'>
           <DialogTitle>Verhalten: {billingType.name}</DialogTitle>
         </DialogHeader>
+
         <Form
           {...form}
           form={form as any}
           onSubmit={form.handleSubmit(onSubmit)}
-          className='space-y-6 pt-4'
+          className='flex flex-1 flex-col overflow-hidden text-left'
         >
-          <FormField
-            control={form.control}
-            name='returnPolicy'
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Rückfahrt-Strategie</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder='Wähle eine Strategie' />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value='none'>Keine Rückfahrt</SelectItem>
-                    <SelectItem value='create_placeholder'>
-                      Rückfahrt sofort als Platzhalter
-                    </SelectItem>
-                    <SelectItem value='create_on_demand'>
-                      Rückfahrt erst bei Bedarf
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className='min-h-0 flex-1 overflow-y-auto px-6'>
+            <div className='space-y-6 pt-2 pb-6'>
+              <FormField
+                control={form.control}
+                name='returnPolicy'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Rückfahrt-Strategie</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder='Wähle eine Strategie' />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value='none'>Keine Rückfahrt</SelectItem>
+                        <SelectItem value='create_placeholder'>
+                          Rückfahrt sofort als Platzhalter
+                        </SelectItem>
+                        <SelectItem value='create_on_demand'>
+                          Rückfahrt erst bei Bedarf
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <div className='bg-muted/20 space-y-4 rounded-lg border p-4'>
-            <h4 className='mb-3 text-sm leading-none font-medium'>Abholung</h4>
-            <FormField
-              control={form.control}
-              name='lockPickup'
-              render={({ field }) => (
-                <FormItem className='bg-background flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm'>
-                  <div className='space-y-0.5'>
-                    <FormLabel>Abholadresse sperren</FormLabel>
-                    <FormDescription>
-                      Adresse ist im Trip-Formular nicht editierbar.
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+              <div className='bg-muted/20 space-y-4 rounded-lg border p-4'>
+                <h4 className='mb-3 text-sm leading-none font-medium'>
+                  Abholung
+                </h4>
+                <FormField
+                  control={form.control}
+                  name='lockPickup'
+                  render={({ field }) => (
+                    <FormItem className='bg-background flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm'>
+                      <div className='space-y-0.5'>
+                        <FormLabel>Abholadresse sperren</FormLabel>
+                        <FormDescription>
+                          Adresse ist im Trip-Formular nicht editierbar.
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
 
-            <FormField
-              control={form.control}
-              name='showPickupPassenger'
-              render={({ field }) => (
-                <FormItem className='bg-background flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm'>
-                  <div className='space-y-0.5'>
-                    <FormLabel>Fahrgastname bei Abholung</FormLabel>
-                    <FormDescription>
-                      Namenseingabefeld im Abholbereich anzeigen.
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+                <FormField
+                  control={form.control}
+                  name='defaultPickup'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Standard-Abholadresse</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder='Optional'
+                          {...field}
+                          value={field.value || ''}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-            <FormField
-              control={form.control}
-              name='defaultPickup'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Standard-Abholadresse</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder='Optional'
-                      {...field}
-                      value={field.value || ''}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <div className='bg-muted/20 space-y-4 rounded-lg border p-4'>
+                <h4 className='mb-3 text-sm leading-none font-medium'>Ziel</h4>
+                <FormField
+                  control={form.control}
+                  name='prefillDropoffFromPickup'
+                  render={({ field }) => (
+                    <FormItem className='bg-background flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm'>
+                      <div className='space-y-0.5'>
+                        <FormLabel>Ziel mit Abholung vorbefüllen</FormLabel>
+                        <FormDescription>
+                          Kopiert die Abholadresse ins Ziel (gut für Konsil).
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name='lockDropoff'
+                  render={({ field }) => (
+                    <FormItem className='bg-background flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm'>
+                      <div className='space-y-0.5'>
+                        <FormLabel>Zieladresse sperren</FormLabel>
+                        <FormDescription>
+                          Adresse ist im Trip-Formular nicht editierbar.
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name='defaultDropoff'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Standard-Zieladresse</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder='Optional'
+                          {...field}
+                          value={field.value || ''}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className='bg-muted/20 space-y-4 rounded-lg border p-4'>
+                <h4 className='mb-3 text-sm leading-none font-medium'>
+                  Fahrgast
+                </h4>
+                <FormField
+                  control={form.control}
+                  name='showPickupPassenger'
+                  render={({ field }) => (
+                    <FormItem className='bg-background flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm'>
+                      <div className='space-y-0.5'>
+                        <FormLabel>Name bei Abholung</FormLabel>
+                        <FormDescription>
+                          Namenseingabefeld im Abholbereich anzeigen.
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name='showDropoffPassenger'
+                  render={({ field }) => (
+                    <FormItem className='bg-background flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm'>
+                      <div className='space-y-0.5'>
+                        <FormLabel>Name bei Ziel</FormLabel>
+                        <FormDescription>
+                          Namenseingabefeld im Zielbereich anzeigen.
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
           </div>
 
-          <div className='bg-muted/20 space-y-4 rounded-lg border p-4'>
-            <h4 className='mb-3 text-sm leading-none font-medium'>Ziel</h4>
-            <FormField
-              control={form.control}
-              name='prefillDropoffFromPickup'
-              render={({ field }) => (
-                <FormItem className='bg-background flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm'>
-                  <div className='space-y-0.5'>
-                    <FormLabel>Ziel mit Abholung vorbefüllen</FormLabel>
-                    <FormDescription>
-                      Kopiert die Abholadresse ins Ziel (gut für Konsil).
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name='lockDropoff'
-              render={({ field }) => (
-                <FormItem className='bg-background flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm'>
-                  <div className='space-y-0.5'>
-                    <FormLabel>Zieladresse sperren</FormLabel>
-                    <FormDescription>
-                      Adresse ist im Trip-Formular nicht editierbar.
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name='showDropoffPassenger'
-              render={({ field }) => (
-                <FormItem className='bg-background flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm'>
-                  <div className='space-y-0.5'>
-                    <FormLabel>Fahrgastname bei Ziel</FormLabel>
-                    <FormDescription>
-                      Namenseingabefeld im Zielbereich anzeigen.
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name='defaultDropoff'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Standard-Zieladresse</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder='Optional'
-                      {...field}
-                      value={field.value || ''}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <DialogFooter className='bg-background sticky bottom-0 pt-4 pb-2'>
+          <DialogFooter className='bg-muted/10 border-t px-6 py-4'>
             <Button
               type='button'
               variant='outline'
