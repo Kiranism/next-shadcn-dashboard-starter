@@ -86,7 +86,7 @@ export function CreateTripForm({
       client_phone: '',
       pickup_address: '',
       dropoff_address: '',
-      driver_id: '',
+      driver_id: '__none__',
       is_wheelchair: false,
       notes: ''
     }

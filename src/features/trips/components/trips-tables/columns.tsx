@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { Accessibility, RepeatIcon } from 'lucide-react';
+import { DriverSelectCell } from './driver-select-cell';
 
 const statusMap: Record<
   string,
@@ -47,7 +48,7 @@ export const columns: ColumnDef<any>[] = [
     enableHiding: false
   },
   {
-    id: 'date',
+    id: 'scheduled_at',
     accessorKey: 'scheduled_at',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Datum' />
@@ -62,7 +63,7 @@ export const columns: ColumnDef<any>[] = [
     },
     meta: {
       label: 'Datum',
-      variant: 'dateRange'
+      variant: 'date'
     },
     enableColumnFilter: true
   },
@@ -75,10 +76,26 @@ export const columns: ColumnDef<any>[] = [
     cell: ({ cell, row }) => {
       const date = new Date(cell.getValue<string>());
       const isRecurring = !!row.original.rule_id;
+
+      const today = new Date();
+      const isSameDay =
+        date.getFullYear() === today.getFullYear() &&
+        date.getMonth() === today.getMonth() &&
+        date.getDate() === today.getDate();
+      const diffMinutes =
+        Math.abs(date.getTime() - today.getTime()) / (1000 * 60);
+      const isNowWindow = isSameDay && diffMinutes <= 30;
+
       return (
         <div className='flex items-center gap-2'>
           <span className='font-medium'>{format(date, 'HH:mm')}</span>
           {isRecurring && <RepeatIcon className='h-3 w-3 text-blue-500' />}
+          {isNowWindow && (
+            <span
+              className='h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.2)]'
+              aria-label='Aktuelle Fahrt'
+            />
+          )}
         </div>
       );
     },
@@ -153,14 +170,13 @@ export const columns: ColumnDef<any>[] = [
     )
   },
   {
-    id: 'driver_name',
+    id: 'driver_id',
     accessorKey: 'driver.name',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Fahrer' />
     ),
-    cell: ({ row }) => (
-      <div>{row.original.driver?.name || 'Nicht zugewiesen'}</div>
-    )
+    cell: ({ row }) => <DriverSelectCell trip={row.original} />,
+    enableColumnFilter: false
   },
   {
     id: 'status',

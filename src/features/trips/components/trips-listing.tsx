@@ -44,8 +44,12 @@ export default async function TripsListingPage({
       query = query.eq('status', status);
     }
   }
-  if (driverId) {
-    query = query.eq('driver_id', driverId);
+  if (driverId && driverId !== 'all') {
+    if (driverId === 'unassigned') {
+      query = query.is('driver_id', null);
+    } else {
+      query = query.eq('driver_id', driverId);
+    }
   }
   if (payerId) {
     query = query.eq('payer_id', payerId);
@@ -58,6 +62,8 @@ export default async function TripsListingPage({
   }
   if (scheduledAt) {
     const parts = scheduledAt.split(',');
+
+    // Range filter: "from,to"
     if (parts.length === 2) {
       const [from, to] = parts;
       if (from) {
@@ -67,10 +73,26 @@ export default async function TripsListingPage({
         query = query.lte('scheduled_at', new Date(Number(to)).toISOString());
       }
     } else if (parts.length === 1 && parts[0]) {
-      query = query.gte(
-        'scheduled_at',
-        new Date(Number(parts[0])).toISOString()
-      );
+      // Single-day filter: interpret the timestamp as a date and
+      // constrain results to that calendar day (local time).
+      const timestamp = Number(parts[0]);
+      if (!Number.isNaN(timestamp)) {
+        const day = new Date(timestamp);
+        const startOfDay = new Date(
+          day.getFullYear(),
+          day.getMonth(),
+          day.getDate()
+        );
+        const endOfDay = new Date(
+          day.getFullYear(),
+          day.getMonth(),
+          day.getDate() + 1
+        );
+
+        query = query
+          .gte('scheduled_at', startOfDay.toISOString())
+          .lt('scheduled_at', endOfDay.toISOString());
+      }
     }
   }
 
@@ -92,7 +114,7 @@ export default async function TripsListingPage({
           foreignTable: 'payer',
           ascending: !isDesc
         });
-      } else if (sortRule.id === 'driver_name') {
+      } else if (sortRule.id === 'driver_id' || sortRule.id === 'driver_name') {
         query = query.order('name', {
           foreignTable: 'driver',
           ascending: !isDesc
@@ -107,8 +129,8 @@ export default async function TripsListingPage({
       }
     });
   } else {
-    // Default sorting: Scheduled time descending
-    query = query.order('scheduled_at', { ascending: false });
+    // Default sorting: earliest trips first (chronological)
+    query = query.order('scheduled_at', { ascending: true });
   }
 
   if (view === 'calendar') {
@@ -127,6 +149,31 @@ export default async function TripsListingPage({
 
   const trips = data as any[]; // Use any for joined data
   const totalTrips = count || 0;
+
+  // #region agent log
+  fetch('http://127.0.0.1:7665/ingest/fea5df42-b29d-48fc-9b64-783ecb4dafb8', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Debug-Session-Id': 'ba8809'
+    },
+    body: JSON.stringify({
+      sessionId: 'ba8809',
+      runId: 'list-render',
+      hypothesisId: 'H2',
+      location: 'trips-listing.tsx:afterQuery',
+      message: 'TripsListingPage query result',
+      data: {
+        view,
+        driverId,
+        status,
+        scheduledAt,
+        totalTrips
+      },
+      timestamp: Date.now()
+    })
+  }).catch(() => {});
+  // #endregion agent log
 
   return (
     <div className='flex min-h-0 flex-1 flex-col space-y-4 overflow-hidden'>
