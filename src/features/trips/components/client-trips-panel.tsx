@@ -41,7 +41,7 @@ export function ClientTripsPanel({
       const { data } = await supabase
         .from('trips')
         .select(
-          'id, scheduled_at, pickup_address, dropoff_address, status, is_wheelchair, group_id, client_name, billing_types(name, color), driver:users!trips_driver_id_fkey(name)'
+          'id, scheduled_at, pickup_address, dropoff_address, status, is_wheelchair, group_id, client_name, rule_id, client_id, billing_types(name, color), driver:users!trips_driver_id_fkey(name)'
         )
         .eq('client_id', clientId)
         .gte('scheduled_at', now)
@@ -49,7 +49,7 @@ export function ClientTripsPanel({
         .order('scheduled_at', { ascending: true })
         .limit(10);
 
-      setTrips(data || []);
+      setTrips((data as any) || []);
       setIsLoading(false);
     };
 
