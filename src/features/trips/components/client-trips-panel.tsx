@@ -2,8 +2,19 @@
 
 import * as React from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Loader2, CalendarX } from 'lucide-react';
+import { Loader2, CalendarX, MoreHorizontal, Trash } from 'lucide-react';
 import { TripRow } from '@/features/overview/components/trip-row';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import type { Trip } from '@/features/trips/api/trips.service';
+import { useTripCancellation } from '@/features/trips/hooks/use-trip-cancellation';
+import { hasPairedLeg } from '@/features/trips/api/recurring-exceptions.actions';
+import { RecurringTripCancelDialog } from '@/features/trips/components/recurring-trip-cancel-dialog';
 
 interface ClientTripsPanelProps {
   clientId: string;
@@ -14,8 +25,11 @@ export function ClientTripsPanel({
   clientId,
   clientName
 }: ClientTripsPanelProps) {
-  const [trips, setTrips] = React.useState<any[]>([]);
+  const [trips, setTrips] = React.useState<Trip[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [selectedTrip, setSelectedTrip] = React.useState<Trip | null>(null);
+  const [hasPair, setHasPair] = React.useState(false);
+  const { cancelTrip, isLoading: isCancelling } = useTripCancellation();
 
   React.useEffect(() => {
     if (!clientId) return;
@@ -66,13 +80,120 @@ export function ClientTripsPanel({
             </p>
           </div>
         ) : (
-          <div className='flex flex-col gap-1 px-2 py-2'>
-            {trips.map((trip) => (
-              <TripRow key={trip.id} trip={trip} onClick={() => {}} compact />
-            ))}
-          </div>
+          <>
+            <div className='flex flex-col gap-1 px-2 py-2'>
+              {trips.map((trip) => (
+                <div key={trip.id} className='flex items-stretch gap-1'>
+                  <div className='flex-1'>
+                    <TripRow trip={trip} onClick={() => {}} compact />
+                  </div>
+                  <div className='flex items-center'>
+                    <ClientTripActions
+                      trip={trip}
+                      onOpenDialog={async () => {
+                        setSelectedTrip(trip);
+                        const pair = await hasPairedLeg(trip);
+                        setHasPair(pair);
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <RecurringTripCancelDialog
+              trip={selectedTrip}
+              hasPair={hasPair}
+              isOpen={!!selectedTrip}
+              isLoading={isCancelling}
+              title='Fahrt stornieren?'
+              description='Möchten Sie diese Fahrt wirklich stornieren?'
+              onOpenChange={(open) => {
+                if (!open) setSelectedTrip(null);
+              }}
+              onConfirmSingle={(reason) => {
+                if (!selectedTrip) return;
+                // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                cancelTrip(
+                  selectedTrip,
+                  selectedTrip.rule_id
+                    ? 'skip-occurrence'
+                    : 'single-nonrecurring',
+                  {
+                    source: 'Manually cancelled via Client Trips Panel',
+                    reason
+                  }
+                ).then(() => setSelectedTrip(null));
+              }}
+              onConfirmWithPair={
+                selectedTrip && hasPair
+                  ? (reason) => {
+                      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                      cancelTrip(selectedTrip, 'skip-occurrence-and-paired', {
+                        source:
+                          'Manually cancelled (Hin/Rück) via Client Trips Panel',
+                        reason
+                      }).then(() => setSelectedTrip(null));
+                    }
+                  : undefined
+              }
+              onConfirmSeries={
+                selectedTrip && selectedTrip.rule_id
+                  ? (reason) => {
+                      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                      cancelTrip(selectedTrip, 'cancel-series', {
+                        source:
+                          'Recurring series cancelled via Client Trips Panel',
+                        reason
+                      }).then(() => setSelectedTrip(null));
+                    }
+                  : undefined
+              }
+              singleLabel={
+                selectedTrip && selectedTrip.rule_id
+                  ? 'Nur diese Fahrt stornieren (Aussetzen)'
+                  : 'Fahrt stornieren'
+              }
+              pairLabel='Diese Fahrt & Rückfahrt stornieren'
+              seriesLabel='Gesamte Serie beenden'
+            />
+          </>
         )}
       </div>
     </div>
+  );
+}
+
+interface ClientTripActionsProps {
+  trip: Trip;
+  onOpenDialog: () => void | Promise<void>;
+}
+
+function ClientTripActions({ trip, onOpenDialog }: ClientTripActionsProps) {
+  const isRecurring = !!trip.rule_id;
+
+  return (
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger asChild>
+        <Button variant='ghost' size='icon' className='h-7 w-7'>
+          <span className='sr-only'>Aktionen für Fahrt öffnen</span>
+          <MoreHorizontal className='h-4 w-4' />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align='end'>
+        <DropdownMenuItem
+          className='text-destructive focus:text-destructive'
+          onClick={() => {
+            // eslint-disable-next-line @typescript-eslint/no-floating-promises
+            onOpenDialog();
+          }}
+        >
+          <Trash className='mr-2 h-4 w-4' />
+          {isRecurring
+            ? 'Fahrt stornieren / Serie beenden'
+            : 'Fahrt stornieren'}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

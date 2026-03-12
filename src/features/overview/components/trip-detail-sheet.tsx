@@ -7,7 +7,8 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetDescription
+  SheetDescription,
+  SheetFooter
 } from '@/components/ui/sheet';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +24,6 @@ import { useTrip } from '@/features/trips/hooks/use-trips';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import {
   Flag,
@@ -32,12 +32,16 @@ import {
   User2,
   Briefcase,
   History,
-  MoreVertical,
-  MapPinned,
   Clock,
   AlertCircle,
-  CreditCard
+  CreditCard,
+  Trash2
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import type { Trip } from '@/features/trips/api/trips.service';
+import { useTripCancellation } from '@/features/trips/hooks/use-trip-cancellation';
+import { hasPairedLeg } from '@/features/trips/api/recurring-exceptions.actions';
+import { RecurringTripCancelDialog } from '@/features/trips/components/recurring-trip-cancel-dialog';
 
 interface TripDetailSheetProps {
   tripId: string | null;
@@ -55,6 +59,9 @@ export function TripDetailSheet({
   const [isLoadingGroup, setIsLoadingGroup] = useState(false);
   const [drivers, setDrivers] = useState<any[]>([]);
   const [isUpdatingDriver, setIsUpdatingDriver] = useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [hasPair, setHasPair] = useState(false);
+  const { cancelTrip, isLoading: isCancelling } = useTripCancellation();
 
   useEffect(() => {
     const fetchDrivers = async () => {
@@ -117,6 +124,17 @@ export function TripDetailSheet({
 
   const isLoading = isTripLoading || isLoadingGroup;
 
+  const handleOpenCancelDialog = async () => {
+    if (!trip) return;
+    setIsCancelDialogOpen(true);
+    try {
+      const pairExists = await hasPairedLeg(trip as Trip);
+      setHasPair(pairExists);
+    } catch {
+      setHasPair(false);
+    }
+  };
+
   const getStatusInfo = (status: string) => {
     switch (status) {
       case 'completed':
@@ -150,7 +168,7 @@ export function TripDetailSheet({
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent className='flex w-full flex-col gap-0 border-l p-0 sm:max-w-xl'>
+      <SheetContent className='flex w-full flex-col border-l p-0 sm:max-w-xl'>
         {/* Accessibility: Always provide a title */}
         <VisuallyHidden.Root>
           <SheetTitle>Fahrt Details {tripId}</SheetTitle>
@@ -170,16 +188,16 @@ export function TripDetailSheet({
         ) : trip ? (
           <>
             <div
-              className='relative overflow-hidden p-6 pb-4'
+              className='relative overflow-hidden border-b p-6 pb-4'
               style={{
                 backgroundColor: trip.billing_types?.color
                   ? `color-mix(in srgb, ${trip.billing_types.color}, white 90%)`
                   : 'transparent',
-                borderBottom: `1px solid ${trip.billing_types?.color || '#e2e8f0'}`
+                borderBottomColor: trip.billing_types?.color || '#e2e8f0'
               }}
             >
               <div
-                className='absolute top-0 left-0 h-full w-1.5'
+                className='absolute inset-y-0 left-0 w-1.5'
                 style={{ backgroundColor: trip.billing_types?.color }}
               />
               <div className='mb-2 flex items-start justify-between'>
@@ -187,7 +205,7 @@ export function TripDetailSheet({
                   {getStatusInfo(trip.status).label}
                 </Badge>
               </div>
-              <SheetHeader className='space-y-1 text-left'>
+              <SheetHeader className='space-y-1 pl-3 text-left'>
                 <SheetTitle className='text-2xl font-bold tracking-tight'>
                   {trip.client_name || 'Unbekannter Kunde'}
                 </SheetTitle>
@@ -200,8 +218,8 @@ export function TripDetailSheet({
               </SheetHeader>
             </div>
 
-            <ScrollArea className='flex-1'>
-              <div className='space-y-8 p-6'>
+            <div className='min-h-0 flex-1 overflow-y-auto px-6'>
+              <div className='space-y-8 py-6 pb-20'>
                 {/* Timeline / Stops */}
                 <section>
                   <div className='mb-6 flex items-center justify-between'>
@@ -394,7 +412,100 @@ export function TripDetailSheet({
                   </section>
                 )}
               </div>
-            </ScrollArea>
+            </div>
+
+            <SheetFooter className='bg-background mt-auto flex items-center justify-between gap-3 border-t'>
+              <div className='text-muted-foreground flex flex-col text-[11px] leading-snug'>
+                <span className='font-semibold'>
+                  Fahrt-ID:{' '}
+                  <span className='font-mono'>
+                    {trip.id.slice(0, 8)}
+                    {'…'}
+                  </span>
+                </span>
+                {trip.rule_id && (
+                  <span className='font-mono text-[10px]'>
+                    Serie: {trip.rule_id.slice(0, 8)}
+                    {'…'}
+                  </span>
+                )}
+              </div>
+              <div className='flex items-center gap-2'>
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  onClick={() => onOpenChange(false)}
+                >
+                  Schließen
+                </Button>
+                <Button
+                  type='button'
+                  variant='destructive'
+                  size='sm'
+                  disabled={isCancelling}
+                  onClick={() => {
+                    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                    handleOpenCancelDialog();
+                  }}
+                >
+                  <Trash2 className='mr-1.5 h-3.5 w-3.5' />
+                  Fahrt stornieren
+                </Button>
+              </div>
+            </SheetFooter>
+
+            <RecurringTripCancelDialog
+              trip={trip as Trip}
+              hasPair={hasPair}
+              isOpen={isCancelDialogOpen}
+              isLoading={isCancelling}
+              title='Fahrt stornieren?'
+              description='Möchten Sie diese Fahrt wirklich stornieren?'
+              onOpenChange={setIsCancelDialogOpen}
+              onConfirmSingle={(reason) => {
+                // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                cancelTrip(
+                  trip as Trip,
+                  trip.rule_id ? 'skip-occurrence' : 'single-nonrecurring',
+                  {
+                    source: 'Manually cancelled via Trip Detail Sheet',
+                    reason
+                  }
+                ).then(() => setIsCancelDialogOpen(false));
+              }}
+              onConfirmWithPair={
+                trip.rule_id && hasPair
+                  ? (reason) => {
+                      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                      cancelTrip(trip as Trip, 'skip-occurrence-and-paired', {
+                        source:
+                          'Manually cancelled (Hin/Rück) via Trip Detail Sheet',
+                        reason
+                      }).then(() => setIsCancelDialogOpen(false));
+                    }
+                  : undefined
+              }
+              onConfirmSeries={
+                trip.rule_id
+                  ? (reason) => {
+                      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                      cancelTrip(trip as Trip, 'cancel-series', {
+                        source:
+                          'Recurring series cancelled via Trip Detail Sheet',
+                        reason
+                      }).then(() => setIsCancelDialogOpen(false));
+                    }
+                  : undefined
+              }
+              singleLabel={
+                trip.rule_id
+                  ? 'Nur diese Fahrt stornieren (Aussetzen)'
+                  : 'Fahrt stornieren'
+              }
+              pairLabel='Diese Fahrt & Rückfahrt stornieren'
+              seriesLabel='Gesamte Serie beenden'
+            />
           </>
         ) : (
           <div className='text-muted-foreground p-10 text-center'>

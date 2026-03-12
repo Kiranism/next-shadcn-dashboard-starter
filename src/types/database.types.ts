@@ -61,6 +61,7 @@ export type Database = {
           last_name: string | null;
           notes: string | null;
           phone: string | null;
+          requires_daily_scheduling: boolean | null;
           stations: string[] | null;
           street: string;
           street_number: string;
@@ -79,6 +80,7 @@ export type Database = {
           last_name?: string | null;
           notes?: string | null;
           phone?: string | null;
+          requires_daily_scheduling?: boolean | null;
           stations?: string[] | null;
           street: string;
           street_number: string;
@@ -97,6 +99,7 @@ export type Database = {
           last_name?: string | null;
           notes?: string | null;
           phone?: string | null;
+          requires_daily_scheduling?: boolean | null;
           stations?: string[] | null;
           street?: string;
           street_number?: string;
@@ -339,6 +342,106 @@ export type Database = {
             columns: ['company_id'];
             isOneToOne: false;
             referencedRelation: 'companies';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+      recurring_rules: {
+        Row: {
+          id: string;
+          client_id: string;
+          rrule_string: string;
+          pickup_address: string;
+          dropoff_address: string;
+          pickup_time: string;
+          return_trip: boolean;
+          return_time: string | null;
+          start_date: string;
+          end_date: string | null;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          client_id: string;
+          rrule_string: string;
+          pickup_address: string;
+          dropoff_address: string;
+          pickup_time: string;
+          return_trip?: boolean;
+          return_time?: string | null;
+          start_date: string;
+          end_date?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          client_id?: string;
+          rrule_string?: string;
+          pickup_address?: string;
+          dropoff_address?: string;
+          pickup_time?: string;
+          return_trip?: boolean;
+          return_time?: string | null;
+          start_date?: string;
+          end_date?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'recurring_rules_client_id_fkey';
+            columns: ['client_id'];
+            isOneToOne: false;
+            referencedRelation: 'clients';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+      recurring_rule_exceptions: {
+        Row: {
+          id: string;
+          rule_id: string;
+          exception_date: string;
+          original_pickup_time: string;
+          is_cancelled: boolean;
+          modified_pickup_time: string | null;
+          modified_pickup_address: string | null;
+          modified_dropoff_address: string | null;
+          reason: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          rule_id: string;
+          exception_date: string;
+          original_pickup_time: string;
+          is_cancelled?: boolean;
+          modified_pickup_time?: string | null;
+          modified_pickup_address?: string | null;
+          modified_dropoff_address?: string | null;
+          reason?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          rule_id?: string;
+          exception_date?: string;
+          original_pickup_time?: string;
+          is_cancelled?: boolean;
+          modified_pickup_time?: string | null;
+          modified_pickup_address?: string | null;
+          modified_dropoff_address?: string | null;
+          reason?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'recurring_rule_exceptions_rule_id_fkey';
+            columns: ['rule_id'];
+            isOneToOne: false;
+            referencedRelation: 'recurring_rules';
             referencedColumns: ['id'];
           }
         ];
@@ -612,6 +715,7 @@ export type Database = {
           linked_trip_id: string | null;
           note: string | null;
           notes: string | null;
+          canceled_reason_notes: string | null;
           payer_id: string | null;
           payment_method: string | null;
           pickup_address: string | null;
@@ -621,6 +725,7 @@ export type Database = {
           pickup_station: string | null;
           price: number | null;
           return_status: string | null;
+          rule_id: string | null;
           scheduled_at: string | null;
           status: string;
           stop_updates: Json;
@@ -649,6 +754,7 @@ export type Database = {
           linked_trip_id?: string | null;
           note?: string | null;
           notes?: string | null;
+          canceled_reason_notes?: string | null;
           payer_id?: string | null;
           payment_method?: string | null;
           pickup_address?: string | null;
@@ -658,6 +764,7 @@ export type Database = {
           pickup_station?: string | null;
           price?: number | null;
           return_status?: string | null;
+          rule_id?: string | null;
           scheduled_at?: string | null;
           status: string;
           stop_updates?: Json;
@@ -686,6 +793,7 @@ export type Database = {
           linked_trip_id?: string | null;
           note?: string | null;
           notes?: string | null;
+          canceled_reason_notes?: string | null;
           payer_id?: string | null;
           payment_method?: string | null;
           pickup_address?: string | null;
@@ -695,6 +803,7 @@ export type Database = {
           pickup_station?: string | null;
           price?: number | null;
           return_status?: string | null;
+          rule_id?: string | null;
           scheduled_at?: string | null;
           status?: string;
           stop_updates?: Json;

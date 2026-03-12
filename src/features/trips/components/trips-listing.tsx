@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { TripsTable, columns } from './trips-tables/index';
 import { Trip } from '../api/trips.service';
 import { getSortingStateParser } from '@/lib/parsers';
+import { TripsViewToggle } from './trips-view-toggle';
+import { TripsCalendar } from './trips-calendar';
 
 type TripsListingPageProps = {
   searchParams?: any;
@@ -11,6 +13,7 @@ type TripsListingPageProps = {
 export default async function TripsListingPage({
   searchParams
 }: TripsListingPageProps) {
+  const view = searchParamsCache.get('view') || 'list';
   const page = searchParamsCache.get('page');
   const pageLimit = searchParamsCache.get('perPage');
 
@@ -108,7 +111,12 @@ export default async function TripsListingPage({
     query = query.order('scheduled_at', { ascending: false });
   }
 
-  if (page && pageLimit) {
+  if (view === 'calendar') {
+    // For calendar view, we need all trips in a reasonably large window, not just 10.
+    // In a production app, we would pass start/end dates from the calendar to fetch exactly the month.
+    // For now, we'll just skip small pagination.
+    query = query.limit(2000);
+  } else if (page && pageLimit) {
     const from = (page - 1) * pageLimit;
     const to = from + pageLimit - 1;
     query = query.range(from, to);
@@ -120,5 +128,14 @@ export default async function TripsListingPage({
   const trips = data as any[]; // Use any for joined data
   const totalTrips = count || 0;
 
-  return <TripsTable data={trips} totalItems={totalTrips} columns={columns} />;
+  return (
+    <div className='flex min-h-0 flex-1 flex-col space-y-4 overflow-hidden'>
+      <TripsViewToggle currentView={view} />
+      {view === 'calendar' ? (
+        <TripsCalendar trips={trips as Trip[]} />
+      ) : (
+        <TripsTable data={trips} totalItems={totalTrips} columns={columns} />
+      )}
+    </div>
+  );
 }

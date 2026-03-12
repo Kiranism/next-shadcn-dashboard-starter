@@ -17,7 +17,8 @@ export const searchParams = {
   payer_id: parseAsString,
   billing_type_id: parseAsString,
   scheduled_at: parseAsString, // for date filtering
-  sort: parseAsString
+  sort: parseAsString,
+  view: parseAsString.withDefault('list')
 };
 
 export const searchParamsCache = createSearchParamsCache(searchParams);

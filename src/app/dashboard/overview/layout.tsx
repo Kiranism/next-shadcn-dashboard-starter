@@ -15,6 +15,7 @@ import {
 import { IconTrendingDown, IconTrendingUp } from '@tabler/icons-react';
 import { CreateTripDialog } from '@/features/trips/components/create-trip-dialog';
 import { Plus } from 'lucide-react';
+import { PendingToursWidget } from '@/features/dashboard/components/pending-tours-widget';
 
 export default function OverViewLayout({
   sales,
@@ -130,6 +131,9 @@ export default function OverViewLayout({
           </Card>
         </div>
         <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-7'>
+          <div className='col-span-4 md:col-span-3 lg:col-span-7'>
+            <PendingToursWidget />
+          </div>
           <div className='col-span-4'>{bar_stats}</div>
           <div className='col-span-4 md:col-span-3'>
             {/* sales arallel routes */}

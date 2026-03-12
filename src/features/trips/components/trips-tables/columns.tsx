@@ -7,7 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { Accessibility } from 'lucide-react';
+import { Accessibility, RepeatIcon } from 'lucide-react';
 
 const statusMap: Record<
   string,
@@ -72,11 +72,13 @@ export const columns: ColumnDef<any>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Zeit' />
     ),
-    cell: ({ cell }) => {
+    cell: ({ cell, row }) => {
       const date = new Date(cell.getValue<string>());
+      const isRecurring = !!row.original.rule_id;
       return (
-        <div className='flex flex-col'>
+        <div className='flex items-center gap-2'>
           <span className='font-medium'>{format(date, 'HH:mm')}</span>
+          {isRecurring && <RepeatIcon className='h-3 w-3 text-blue-500' />}
         </div>
       );
     },
