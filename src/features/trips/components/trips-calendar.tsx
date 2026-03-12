@@ -9,7 +9,7 @@ import { Trip } from '@/features/trips/api/trips.service';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, MapPin, Navigation, RepeatIcon } from 'lucide-react';
+import { RepeatIcon } from 'lucide-react';
 import { format } from 'date-fns';
 
 // Set moment to German
@@ -36,7 +36,7 @@ export function TripsCalendar({ trips }: TripsCalendarProps) {
 
         return {
           id: trip.id,
-          title: `${trip.client_name || 'Unbekannt'} - ${trip.pickup_address?.split(',')[0]}`,
+          title: trip.client_name || 'Unbekannt',
           start: startDate,
           end: endDate,
           resource: trip
@@ -58,22 +58,17 @@ export function TripsCalendar({ trips }: TripsCalendarProps) {
     const isRecurring = !!trip.rule_id;
 
     return (
-      <div className='flex h-full flex-col gap-0.5 overflow-hidden p-1 text-xs'>
-        <div className='flex items-center gap-1 font-semibold'>
-          {format(new Date(trip.scheduled_at!), 'HH:mm')}
-          {isRecurring && <RepeatIcon className='h-3 w-3 text-blue-200' />}
-        </div>
-        <div className='truncate font-medium'>{trip.client_name}</div>
-        <div className='flex items-center gap-1 truncate text-[10px] opacity-80'>
-          <MapPin className='h-2.5 w-2.5 shrink-0' />
-          <span className='truncate'>{trip.pickup_address?.split(',')[0]}</span>
-        </div>
+      <div className='flex h-full items-center gap-1 overflow-hidden p-1 text-xs font-semibold text-white'>
+        <span className='truncate'>{trip.client_name || 'Unbekannt'}</span>
+        {isRecurring && (
+          <RepeatIcon className='h-3 w-3 shrink-0 text-blue-100' />
+        )}
       </div>
     );
   };
 
   return (
-    <Card className='flex min-h-[600px] flex-1 flex-col overflow-hidden p-4'>
+    <Card className='flex min-h-[600px] flex-1 flex-col overflow-hidden'>
       <style jsx global>{`
         .rbc-calendar {
           font-family: inherit;
@@ -83,10 +78,11 @@ export function TripsCalendar({ trips }: TripsCalendarProps) {
           border: none;
           border-radius: var(--radius);
           padding: 2px;
+          color: hsl(var(--primary-foreground));
         }
         .rbc-event.recurring-event {
-          background-color: hsl(var(--blue-600) / 0.9);
-          border-left: 3px solid hsl(var(--blue-400));
+          background-color: hsl(var(--primary) / 0.9);
+          border-left: 3px solid hsl(var(--ring));
         }
         .rbc-today {
           background-color: hsl(var(--muted) / 0.3);
@@ -101,39 +97,50 @@ export function TripsCalendar({ trips }: TripsCalendarProps) {
         }
       `}</style>
 
-      <Calendar
-        localizer={localizer}
-        events={events}
-        startAccessor='start'
-        endAccessor='end'
-        style={{ flex: 1 }}
-        views={['month', 'week', 'day']}
-        defaultView='month'
-        onSelectEvent={handleSelectEvent}
-        messages={{
-          next: 'Vor',
-          previous: 'Zurück',
-          today: 'Heute',
-          month: 'Monat',
-          week: 'Woche',
-          day: 'Tag',
-          agenda: 'Agenda',
-          date: 'Datum',
-          time: 'Zeit',
-          event: 'Fahrt',
-          noEventsInRange: 'Keine Fahrten in diesem Zeitraum.',
-          showMore: (total) => `+ ${total} weitere`
-        }}
-        components={{
-          event: CustomEvent
-        }}
-        eventPropGetter={(event) => {
-          const trip = event.resource as Trip;
-          return {
-            className: trip.rule_id ? 'recurring-event' : ''
-          };
-        }}
-      />
+      <div className='flex items-center justify-between px-4 pt-4 pb-2'>
+        <div className='flex items-baseline gap-2'>
+          <span className='text-sm font-semibold'>Kalenderansicht</span>
+          <Badge variant='secondary' className='px-1.5 py-0 text-[10px]'>
+            {events.length} Fahrten
+          </Badge>
+        </div>
+      </div>
+
+      <div className='flex-1 px-2 pb-3'>
+        <Calendar
+          localizer={localizer}
+          events={events}
+          startAccessor='start'
+          endAccessor='end'
+          className='h-full'
+          views={['month', 'week', 'day']}
+          defaultView='month'
+          onSelectEvent={handleSelectEvent}
+          messages={{
+            next: 'Vor',
+            previous: 'Zurück',
+            today: 'Heute',
+            month: 'Monat',
+            week: 'Woche',
+            day: 'Tag',
+            agenda: 'Agenda',
+            date: 'Datum',
+            time: 'Zeit',
+            event: 'Fahrt',
+            noEventsInRange: 'Keine Fahrten in diesem Zeitraum.',
+            showMore: (total) => `+ ${total} weitere`
+          }}
+          components={{
+            event: CustomEvent
+          }}
+          eventPropGetter={(event) => {
+            const trip = event.resource as Trip;
+            return {
+              className: trip.rule_id ? 'recurring-event' : ''
+            };
+          }}
+        />
+      </div>
     </Card>
   );
 }
