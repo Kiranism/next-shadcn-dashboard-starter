@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Plus, User, MapPin, Navigation, X } from 'lucide-react';
+import { Plus, User, MapPin, Navigation, X, Accessibility } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +12,7 @@ import {
   PopoverTrigger
 } from '@/components/ui/popover';
 import { ClientAutoSuggest } from '@/components/ui/client-auto-suggest';
+import { cn } from '@/lib/utils';
 import type { ClientOption } from '@/features/trips/hooks/use-trip-form-data';
 import type { PassengerEntry } from '@/features/trips/types';
 
@@ -45,6 +46,7 @@ export function AddPassengerPopover({
   const [firstName, setFirstName] = React.useState('');
   const [lastName, setLastName] = React.useState('');
   const [phone, setPhone] = React.useState('');
+  const [isWheelchair, setIsWheelchair] = React.useState(false);
   const [selectedClient, setSelectedClient] =
     React.useState<ClientOption | null>(null);
   const [pendingAddress, setPendingAddress] = React.useState<string | null>(
@@ -55,6 +57,7 @@ export function AddPassengerPopover({
     setFirstName('');
     setLastName('');
     setPhone('');
+    setIsWheelchair(false);
     setSelectedClient(null);
     setPendingAddress(null);
   };
@@ -87,7 +90,8 @@ export function AddPassengerPopover({
       first_name: trimmedFirst,
       last_name: trimmedLast,
       phone: phone.trim() || undefined,
-      pickup_group_uid: pickupGroupUid
+      pickup_group_uid: pickupGroupUid,
+      is_wheelchair: isWheelchair
     });
     if (selectedClient) onClientLinked?.(selectedClient);
     reset();
@@ -202,6 +206,28 @@ export function AddPassengerPopover({
               </div>
             </>
           )}
+
+          <button
+            type='button'
+            onClick={() => setIsWheelchair((v) => !v)}
+            className={cn(
+              'flex w-full items-center gap-2 rounded-md border px-3 py-2 text-xs transition-colors',
+              isWheelchair
+                ? 'border-rose-200 bg-rose-50 text-rose-600 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-400'
+                : 'text-muted-foreground hover:bg-muted/50'
+            )}
+          >
+            <Accessibility className='h-3.5 w-3.5 shrink-0' />
+            <span className='flex-1 text-left'>Rollstuhl</span>
+            <span
+              className={cn(
+                'text-[10px] font-medium',
+                isWheelchair ? 'text-rose-500' : 'text-muted-foreground'
+              )}
+            >
+              {isWheelchair ? 'Ja' : 'Nein'}
+            </span>
+          </button>
 
           <Button
             type='button'

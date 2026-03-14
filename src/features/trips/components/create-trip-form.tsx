@@ -252,6 +252,7 @@ export function CreateTripForm({
       setPassengers((prev) => [
         ...prev,
         {
+          is_wheelchair: false,
           ...p,
           pickup_station: '',
           dropoff_group_uid: null,
@@ -275,6 +276,15 @@ export function CreateTripForm({
     ) => {
       setPassengers((prev) =>
         prev.map((p) => (p.uid === uid ? { ...p, [field]: value } : p))
+      );
+    },
+    []
+  );
+
+  const updatePassengerWheelchair = React.useCallback(
+    (uid: string, value: boolean) => {
+      setPassengers((prev) =>
+        prev.map((p) => (p.uid === uid ? { ...p, is_wheelchair: value } : p))
       );
     },
     []
@@ -494,7 +504,6 @@ export function CreateTripForm({
         payer_id: values.payer_id,
         billing_type_id: values.billing_type_id || null,
         driver_id: driverId,
-        is_wheelchair: values.is_wheelchair,
         notes: values.notes || null,
         status: 'pending' as const,
         company_id: companyId,
@@ -511,6 +520,7 @@ export function CreateTripForm({
         const dropoffAddress = dropoffGroups[0]?.address || '';
         const outbound = await tripsService.createTrip({
           ...baseTrip,
+          is_wheelchair: values.is_wheelchair,
           client_id: null,
           client_name: null,
           client_phone: null,
@@ -527,6 +537,7 @@ export function CreateTripForm({
         if (shouldCreateReturn) {
           await tripsService.createTrip({
             ...baseTrip,
+            is_wheelchair: values.is_wheelchair,
             client_id: null,
             client_name: null,
             client_phone: null,
@@ -541,7 +552,7 @@ export function CreateTripForm({
           });
         }
       } else {
-        // Passenger mode: create one trip per passenger
+        // Passenger mode: each passenger has their own is_wheelchair flag
         outboundTrips = await Promise.all(
           passengers.map((p) => {
             const pickupAddress =
@@ -550,6 +561,7 @@ export function CreateTripForm({
               dropoffGroupMap[p.dropoff_group_uid!]?.address || '';
             return tripsService.createTrip({
               ...baseTrip,
+              is_wheelchair: p.is_wheelchair,
               client_id: p.client_id || null,
               client_name:
                 [p.first_name, p.last_name].filter(Boolean).join(' ') || null,
@@ -575,6 +587,7 @@ export function CreateTripForm({
                 dropoffGroupMap[p.dropoff_group_uid!]?.address || '';
               return tripsService.createTrip({
                 ...baseTrip,
+                is_wheelchair: p.is_wheelchair,
                 client_id: p.client_id || null,
                 client_name:
                   [p.first_name, p.last_name].filter(Boolean).join(' ') || null,
@@ -799,6 +812,7 @@ export function CreateTripForm({
                 onAddPassenger={addPassenger}
                 onRemovePassenger={removePassenger}
                 onStationChange={updatePassengerStation}
+                onWheelchairChange={updatePassengerWheelchair}
                 searchClients={searchClients}
                 onClientLinked={onClientSelect}
                 onAddressChoice={handleAddressChoice}
@@ -930,6 +944,7 @@ export function CreateTripForm({
                   }
                   onRemovePassenger={unassignFromDropoff}
                   onStationChange={updatePassengerStation}
+                  onWheelchairChange={updatePassengerWheelchair}
                   onAssignPassenger={(passengerUid) =>
                     assignToDropoff(passengerUid, group.uid)
                   }
@@ -1146,50 +1161,53 @@ export function CreateTripForm({
             )}
           />
 
-          <FormField
-            control={form.control as any}
-            name='is_wheelchair'
-            render={({ field }) => (
-              <FormItem>
-                <div
-                  className={cn(
-                    'flex cursor-pointer items-center justify-between rounded-lg border px-4 py-3 transition-colors',
-                    watchedIsWheelchair
-                      ? 'border-rose-200 bg-rose-50 dark:border-rose-800 dark:bg-rose-950/30'
-                      : 'hover:bg-muted/40'
-                  )}
-                  onClick={() => field.onChange(!field.value)}
-                >
-                  <div className='flex items-center gap-3'>
-                    <Accessibility
-                      className={cn(
-                        'h-4 w-4 transition-colors',
-                        watchedIsWheelchair
-                          ? 'text-rose-600'
-                          : 'text-muted-foreground'
-                      )}
-                    />
-                    <div>
-                      <FormLabel className='cursor-pointer text-sm font-medium'>
-                        Rollstuhl
-                      </FormLabel>
-                      <p className='text-muted-foreground text-[11px]'>
-                        Fahrt erfordert Rollstuhlbeförderung
-                      </p>
+          {/* Global wheelchair only for anonymous mode — in passenger mode it lives on each badge */}
+          {!requirePassenger && (
+            <FormField
+              control={form.control as any}
+              name='is_wheelchair'
+              render={({ field }) => (
+                <FormItem>
+                  <div
+                    className={cn(
+                      'flex cursor-pointer items-center justify-between rounded-lg border px-4 py-3 transition-colors',
+                      watchedIsWheelchair
+                        ? 'border-rose-200 bg-rose-50 dark:border-rose-800 dark:bg-rose-950/30'
+                        : 'hover:bg-muted/40'
+                    )}
+                    onClick={() => field.onChange(!field.value)}
+                  >
+                    <div className='flex items-center gap-3'>
+                      <Accessibility
+                        className={cn(
+                          'h-4 w-4 transition-colors',
+                          watchedIsWheelchair
+                            ? 'text-rose-600'
+                            : 'text-muted-foreground'
+                        )}
+                      />
+                      <div>
+                        <FormLabel className='cursor-pointer text-sm font-medium'>
+                          Rollstuhl
+                        </FormLabel>
+                        <p className='text-muted-foreground text-[11px]'>
+                          Fahrt erfordert Rollstuhlbeförderung
+                        </p>
+                      </div>
                     </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </FormControl>
                   </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </FormControl>
-                </div>
-                <FormMessage className='text-xs' />
-              </FormItem>
-            )}
-          />
+                  <FormMessage className='text-xs' />
+                </FormItem>
+              )}
+            />
+          )}
 
           <FormField
             control={form.control as any}

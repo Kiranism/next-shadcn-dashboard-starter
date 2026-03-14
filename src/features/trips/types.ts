@@ -8,6 +8,7 @@ export interface PassengerEntry {
   pickup_station: string;
   dropoff_group_uid: string | null;
   dropoff_station: string;
+  is_wheelchair: boolean;
 }
 
 export interface AddressGroupEntry {

@@ -30,6 +30,7 @@ interface AddressGroupCardProps {
     field: 'pickup_station' | 'dropoff_station',
     value: string
   ) => void;
+  onWheelchairChange: (passengerUid: string, value: boolean) => void;
   onAssignPassenger?: (passengerUid: string) => void;
   searchClients?: (query: string) => Promise<ClientOption[]>;
   onClientLinked?: (client: ClientOption | null) => void;
@@ -53,6 +54,7 @@ export function AddressGroupCard({
   onAddPassenger,
   onRemovePassenger,
   onStationChange,
+  onWheelchairChange,
   onAssignPassenger,
   searchClients,
   onClientLinked,
@@ -117,6 +119,7 @@ export function AddressGroupCard({
                 onStationChange={(value) =>
                   onStationChange(p.uid, stationField, value)
                 }
+                onWheelchairChange={(value) => onWheelchairChange(p.uid, value)}
               />
             ))
           )}

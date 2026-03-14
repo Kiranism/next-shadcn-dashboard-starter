@@ -37,24 +37,53 @@ export function ClientTripsPanel({
 
     const fetchTrips = async () => {
       const supabase = createClient();
-      const now = new Date().toISOString();
-      const { data } = await supabase
+
+      // Use start of today so trips earlier today still show
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      const since = startOfToday.toISOString();
+
+      const selectFields =
+        'id, scheduled_at, pickup_address, dropoff_address, status, is_wheelchair, group_id, client_name, rule_id, client_id, billing_types(name, color), driver:users!trips_driver_id_fkey(name)';
+
+      // Primary: match by client_id (FK to clients table)
+      const { data: byId } = await supabase
         .from('trips')
-        .select(
-          'id, scheduled_at, pickup_address, dropoff_address, status, is_wheelchair, group_id, client_name, rule_id, client_id, billing_types(name, color), driver:users!trips_driver_id_fkey(name)'
-        )
+        .select(selectFields)
         .eq('client_id', clientId)
-        .gte('scheduled_at', now)
+        .gte('scheduled_at', since)
         .not('status', 'in', '(cancelled,completed)')
         .order('scheduled_at', { ascending: true })
         .limit(10);
 
-      setTrips((data as any) || []);
+      if (byId && byId.length > 0) {
+        setTrips((byId as any) || []);
+        setIsLoading(false);
+        return;
+      }
+
+      // Fallback: match by client_name for trips that have no client_id link
+      if (clientName) {
+        const { data: byName } = await supabase
+          .from('trips')
+          .select(selectFields)
+          .is('client_id', null)
+          .eq('client_name', clientName)
+          .gte('scheduled_at', since)
+          .not('status', 'in', '(cancelled,completed)')
+          .order('scheduled_at', { ascending: true })
+          .limit(10);
+
+        setTrips((byName as any) || []);
+      } else {
+        setTrips([]);
+      }
+
       setIsLoading(false);
     };
 
     fetchTrips();
-  }, [clientId]);
+  }, [clientId, clientName]);
 
   return (
     <div className='flex h-full flex-col border-l'>
