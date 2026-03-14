@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
@@ -213,6 +214,7 @@ export function CreateTripForm({
     setIsSubmitting(true);
     try {
       const supabase = createSupabaseClient();
+      const tripGroupId = crypto.randomUUID();
       const {
         data: { user }
       } = await supabase.auth.getUser();
@@ -253,7 +255,7 @@ export function CreateTripForm({
         company_id: companyId,
         created_by: user?.id || null,
         stop_updates: [],
-        group_id: null
+        group_id: tripGroupId
       });
 
       if (shouldCreateReturn) {
@@ -261,8 +263,8 @@ export function CreateTripForm({
           values.return_mode === 'time_tbd'
             ? null
             : (() => {
-                const date = values.return_date!;
-                const [hh, mm] = (values.return_time || '').split(':');
+                const date = values.return_date || values.scheduled_at;
+                const [hh, mm] = (values.return_time || '00:00').split(':');
                 const scheduled = new Date(
                   date.getFullYear(),
                   date.getMonth(),
@@ -294,9 +296,12 @@ export function CreateTripForm({
           company_id: companyId,
           created_by: user?.id || null,
           stop_updates: [],
-          group_id: null,
+          group_id: tripGroupId,
           linked_trip_id: hinTrip.id
         });
+
+        // Also update the Hin-Trip with the Return-Trip reference for full pairing
+        // (Optional, depends on if your DB schema supports late-updating linked_trip_id)
       }
 
       toast.success(
@@ -607,26 +612,23 @@ export function CreateTripForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className='text-xs'>Rückfahrt</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
+                    <Tabs
                       value={field.value}
-                      disabled={isSubmitting}
+                      onValueChange={field.onChange}
+                      className='w-full'
                     >
-                      <FormControl>
-                        <SelectTrigger className='h-9'>
-                          <SelectValue placeholder='Wählen...' />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value='none'>Keine Rückfahrt</SelectItem>
-                        <SelectItem value='time_tbd'>
+                      <TabsList className='grid w-full grid-cols-3'>
+                        <TabsTrigger value='none' className='text-xs'>
+                          Keine
+                        </TabsTrigger>
+                        <TabsTrigger value='time_tbd' className='text-xs'>
                           Rückfahrt mit Zeitabsprache
-                        </SelectItem>
-                        <SelectItem value='exact'>
+                        </TabsTrigger>
+                        <TabsTrigger value='exact' className='text-xs'>
                           Rückfahrt mit genauer Zeit
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
                     <FormMessage className='text-xs' />
                   </FormItem>
                 )}

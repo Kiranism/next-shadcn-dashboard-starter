@@ -49,11 +49,11 @@ export function useUnplannedTrips(filter: UnplannedFilter) {
 
       const rows = (unplannedRows || []) as UnplannedTrip[];
 
-      const linkedIds = [
-        ...new Set(
+      const linkedIds = Array.from(
+        new Set(
           rows.map((t) => t.linked_trip_id).filter((id): id is string => !!id)
         )
-      ];
+      );
 
       let linkedMap: Record<string, string | null> = {};
       if (linkedIds.length > 0) {
@@ -82,7 +82,7 @@ export function useUnplannedTrips(filter: UnplannedFilter) {
           ? withLinked
           : withLinked.filter((trip) => {
               const linkedAt = trip.linked_trip?.scheduled_at;
-              if (!linkedAt) return filter === 'all';
+              if (!linkedAt) return false;
               const linkedDate = new Date(linkedAt);
               if (filter === 'today') return isToday(linkedDate);
               if (filter === 'week') return isThisWeek(linkedDate);
