@@ -54,7 +54,13 @@ export const columns: ColumnDef<any>[] = [
       <DataTableColumnHeader column={column} title='Datum' />
     ),
     cell: ({ cell }) => {
-      const date = new Date(cell.getValue<string>());
+      const raw = cell.getValue<string>();
+      if (raw == null || raw === '')
+        return <span className='text-muted-foreground'>—</span>;
+      const date = new Date(raw);
+      if (Number.isNaN(date.getTime()) || date.getTime() <= 0) {
+        return <span className='text-muted-foreground'>—</span>;
+      }
       return (
         <span className='font-medium'>
           {format(date, 'dd.MM.yyyy', { locale: de })}
@@ -74,7 +80,13 @@ export const columns: ColumnDef<any>[] = [
       <DataTableColumnHeader column={column} title='Zeit' />
     ),
     cell: ({ cell, row }) => {
-      const date = new Date(cell.getValue<string>());
+      const raw = cell.getValue<string>();
+      if (raw == null || raw === '')
+        return <span className='text-muted-foreground'>—</span>;
+      const date = new Date(raw);
+      if (Number.isNaN(date.getTime()) || date.getTime() <= 0) {
+        return <span className='text-muted-foreground'>—</span>;
+      }
       const isRecurring = !!row.original.rule_id;
 
       const today = new Date();

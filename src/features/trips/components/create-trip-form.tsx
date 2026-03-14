@@ -32,6 +32,7 @@ import { useTripFormData } from '@/features/trips/hooks/use-trip-form-data';
 import { tripsService } from '@/features/trips/api/trips.service';
 import { createClient as createSupabaseClient } from '@/lib/supabase/client';
 import type { ClientOption } from '@/features/trips/hooks/use-trip-form-data';
+import { format } from 'date-fns';
 import {
   MapPin,
   Navigation,
@@ -45,19 +46,53 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const tripFormSchema = z.object({
-  payer_id: z.string().min(1, 'Kostenträger ist erforderlich'),
-  billing_type_id: z.string().optional(),
-  client_first_name: z.string().optional(),
-  client_last_name: z.string().optional(),
-  client_phone: z.string().optional(),
-  scheduled_at: z.date({ error: 'Datum und Uhrzeit sind erforderlich' }),
-  pickup_address: z.string().min(1, 'Abholadresse ist erforderlich'),
-  dropoff_address: z.string().min(1, 'Zieladresse ist erforderlich'),
-  driver_id: z.string().optional(),
-  is_wheelchair: z.boolean(),
-  notes: z.string().optional()
-});
+type ReturnMode = 'none' | 'time_tbd' | 'exact';
+
+const tripFormSchema = z
+  .object({
+    payer_id: z.string().min(1, 'Kostenträger ist erforderlich'),
+    billing_type_id: z.string().optional(),
+    client_first_name: z.string().optional(),
+    client_last_name: z.string().optional(),
+    client_phone: z.string().optional(),
+    scheduled_at: z.date({ error: 'Datum und Uhrzeit sind erforderlich' }),
+    return_mode: z.enum(['none', 'time_tbd', 'exact']).default('none'),
+    return_date: z.date().optional(),
+    return_time: z
+      .union([
+        z.literal(''),
+        z
+          .string()
+          .regex(
+            /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
+            'Bitte ein gültiges Zeitformat verwenden (HH:MM)'
+          )
+      ])
+      .optional(),
+    pickup_address: z.string().min(1, 'Abholadresse ist erforderlich'),
+    dropoff_address: z.string().min(1, 'Zieladresse ist erforderlich'),
+    driver_id: z.string().optional(),
+    is_wheelchair: z.boolean(),
+    notes: z.string().optional()
+  })
+  .superRefine((data, ctx) => {
+    if (data.return_mode === 'exact') {
+      if (!data.return_date) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Bitte Rückfahrt-Datum auswählen.',
+          path: ['return_date']
+        });
+      }
+      if (!data.return_time) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Bitte Rückfahrt-Uhrzeit auswählen.',
+          path: ['return_time']
+        });
+      }
+    }
+  });
 
 type TripFormValues = z.infer<typeof tripFormSchema>;
 
@@ -75,6 +110,7 @@ export function CreateTripForm({
   const [selectedClient, setSelectedClient] =
     React.useState<ClientOption | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const hasInitializedReturnDateRef = React.useRef(false);
 
   const form = useForm<TripFormValues>({
     resolver: zodResolver(tripFormSchema) as any,
@@ -84,6 +120,9 @@ export function CreateTripForm({
       client_first_name: '',
       client_last_name: '',
       client_phone: '',
+      return_mode: 'none',
+      return_date: undefined,
+      return_time: '',
       pickup_address: '',
       dropoff_address: '',
       driver_id: '__none__',
@@ -95,6 +134,8 @@ export function CreateTripForm({
   const watchedPayerId = form.watch('payer_id');
   const watchedBillingTypeId = form.watch('billing_type_id');
   const watchedIsWheelchair = form.watch('is_wheelchair');
+  const watchedReturnMode = form.watch('return_mode') as ReturnMode;
+  const watchedScheduledAt = form.watch('scheduled_at');
 
   const {
     payers,
@@ -133,6 +174,33 @@ export function CreateTripForm({
     }
   }, [selectedBillingType, form]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // When Rückfahrt with exact time is selected, default the return date to the Hinfahrt date (once).
+  React.useEffect(() => {
+    if (
+      watchedReturnMode !== 'exact' ||
+      !watchedScheduledAt ||
+      hasInitializedReturnDateRef.current
+    ) {
+      return;
+    }
+
+    form.setValue(
+      'return_date',
+      new Date(
+        watchedScheduledAt.getFullYear(),
+        watchedScheduledAt.getMonth(),
+        watchedScheduledAt.getDate()
+      ),
+      { shouldValidate: true }
+    );
+    hasInitializedReturnDateRef.current = true;
+  }, [
+    watchedReturnMode,
+    watchedScheduledAt,
+    form,
+    hasInitializedReturnDateRef
+  ]);
+
   const behavior = (selectedBillingType?.behavior_profile || {}) as any;
   const isPickupLocked = behavior.lockPickup ?? behavior.lock_pickup;
   const isDropoffLocked = behavior.lockDropoff ?? behavior.lock_dropoff;
@@ -160,7 +228,10 @@ export function CreateTripForm({
         companyId = profile?.company_id ?? null;
       }
 
-      await tripsService.createTrip({
+      const shouldCreateReturn =
+        values.return_mode === 'time_tbd' || values.return_mode === 'exact';
+
+      const hinTrip = await tripsService.createTrip({
         payer_id: values.payer_id,
         billing_type_id: values.billing_type_id || null,
         client_id: selectedClient?.id || null,
@@ -184,7 +255,53 @@ export function CreateTripForm({
         stop_updates: []
       });
 
-      toast.success('Fahrt erfolgreich erstellt!');
+      if (shouldCreateReturn) {
+        const returnScheduledAt =
+          values.return_mode === 'time_tbd'
+            ? null
+            : (() => {
+                const date = values.return_date!;
+                const [hh, mm] = (values.return_time || '').split(':');
+                const scheduled = new Date(
+                  date.getFullYear(),
+                  date.getMonth(),
+                  date.getDate(),
+                  parseInt(hh || '0', 10),
+                  parseInt(mm || '0', 10),
+                  0,
+                  0
+                );
+                return scheduled.toISOString();
+              })();
+
+        await tripsService.createTrip({
+          payer_id: values.payer_id,
+          billing_type_id: values.billing_type_id || null,
+          client_id: selectedClient?.id || null,
+          client_name:
+            [values.client_first_name, values.client_last_name]
+              .filter(Boolean)
+              .join(' ') || null,
+          client_phone: values.client_phone || null,
+          scheduled_at: returnScheduledAt,
+          pickup_address: values.dropoff_address,
+          dropoff_address: values.pickup_address,
+          driver_id: null,
+          is_wheelchair: values.is_wheelchair,
+          notes: values.notes || null,
+          status: 'pending',
+          company_id: companyId,
+          created_by: user?.id || null,
+          stop_updates: [],
+          linked_trip_id: hinTrip.id
+        });
+      }
+
+      toast.success(
+        shouldCreateReturn
+          ? 'Hin- und Rückfahrt erfolgreich erstellt!'
+          : 'Fahrt erfolgreich erstellt!'
+      );
       onSuccess?.();
     } catch (error: any) {
       toast.error(`Fehler beim Erstellen: ${error.message}`);
@@ -471,6 +588,101 @@ export function CreateTripForm({
               </FormItem>
             )}
           />
+
+          {/* ── Rückfahrt ── */}
+          <div className='rounded-lg border p-4'>
+            <div className='mb-3 flex items-center gap-2'>
+              <Navigation className='text-muted-foreground h-4 w-4' />
+              <span className='text-muted-foreground text-xs font-semibold tracking-wider uppercase'>
+                Rückfahrt
+              </span>
+            </div>
+
+            <div className='flex flex-col gap-3'>
+              <FormField
+                control={form.control as any}
+                name='return_mode'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className='text-xs'>Rückfahrt</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={isSubmitting}
+                    >
+                      <FormControl>
+                        <SelectTrigger className='h-9'>
+                          <SelectValue placeholder='Wählen...' />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value='none'>Keine Rückfahrt</SelectItem>
+                        <SelectItem value='time_tbd'>
+                          Rückfahrt mit Zeitabsprache
+                        </SelectItem>
+                        <SelectItem value='exact'>
+                          Rückfahrt mit genauer Zeit
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage className='text-xs' />
+                  </FormItem>
+                )}
+              />
+
+              {watchedReturnMode === 'exact' && (
+                <div className='grid grid-cols-2 gap-3'>
+                  <FormField
+                    control={form.control as any}
+                    name='return_date'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className='text-xs'>Datum</FormLabel>
+                        <FormControl>
+                          <Input
+                            type='date'
+                            value={
+                              field.value
+                                ? format(field.value, 'yyyy-MM-dd')
+                                : ''
+                            }
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              field.onChange(
+                                v ? new Date(`${v}T00:00:00`) : undefined
+                              );
+                            }}
+                            className='h-9'
+                            disabled={isSubmitting}
+                          />
+                        </FormControl>
+                        <FormMessage className='text-xs' />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control as any}
+                    name='return_time'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className='text-xs'>Uhrzeit</FormLabel>
+                        <FormControl>
+                          <Input
+                            type='time'
+                            value={field.value || ''}
+                            onChange={field.onChange}
+                            className='h-9'
+                            disabled={isSubmitting}
+                          />
+                        </FormControl>
+                        <FormMessage className='text-xs' />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
 
           <FormField
             control={form.control as any}
