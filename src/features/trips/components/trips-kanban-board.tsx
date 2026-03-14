@@ -388,24 +388,17 @@ function KanbanColumnView({
 }
 
 function TripCard({ trip, columnId }: TripCardProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging
-  } = useDraggable({
-    id: trip.id,
-    data: {
-      tripId: trip.id,
-      columnId
-    }
-  });
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({
+      id: trip.id,
+      data: {
+        tripId: trip.id,
+        columnId
+      }
+    });
 
   const dragStyle = {
     transform: CSS.Translate.toString(transform),
-    transition,
     opacity: isDragging ? 0.6 : 1
   };
 
