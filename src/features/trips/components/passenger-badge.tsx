@@ -12,6 +12,8 @@ interface PassengerBadgeProps {
   onRemove: () => void;
   onStationChange: (value: string) => void;
   onWheelchairChange: (value: boolean) => void;
+  onFirstNameChange?: (value: string) => void;
+  onLastNameChange?: (value: string) => void;
   className?: string;
 }
 
@@ -21,15 +23,16 @@ export function PassengerBadge({
   onRemove,
   onStationChange,
   onWheelchairChange,
+  onFirstNameChange,
+  onLastNameChange,
   className
 }: PassengerBadgeProps) {
-  const name =
-    [passenger.first_name, passenger.last_name].filter(Boolean).join(' ') ||
-    '—';
   const stationValue =
     stationField === 'pickup_station'
       ? passenger.pickup_station
       : passenger.dropoff_station;
+
+  const isEditable = !!(onFirstNameChange || onLastNameChange);
 
   return (
     <div
@@ -39,10 +42,32 @@ export function PassengerBadge({
         className
       )}
     >
+      {/* Name row */}
       <div className='flex items-center gap-1'>
-        <span className='min-w-0 flex-1 truncate text-xs leading-none font-medium'>
-          {name}
-        </span>
+        {isEditable ? (
+          <div className='flex min-w-0 flex-1 gap-1'>
+            <Input
+              value={passenger.first_name}
+              onChange={(e) => onFirstNameChange?.(e.target.value)}
+              placeholder='Vorname...'
+              className='bg-muted/40 h-6 min-w-0 flex-1 border-dashed px-1.5 text-[10px] focus-visible:ring-1'
+            />
+            <Input
+              value={passenger.last_name}
+              onChange={(e) => onLastNameChange?.(e.target.value)}
+              placeholder='Nachname...'
+              className='bg-muted/40 h-6 min-w-0 flex-1 border-dashed px-1.5 text-[10px] focus-visible:ring-1'
+            />
+          </div>
+        ) : (
+          <span className='min-w-0 flex-1 truncate text-xs leading-none font-medium'>
+            {[passenger.first_name, passenger.last_name]
+              .filter(Boolean)
+              .join(' ') || '—'}
+          </span>
+        )}
+
+        {/* Wheelchair toggle */}
         <button
           type='button'
           onClick={() => onWheelchairChange(!passenger.is_wheelchair)}
@@ -57,6 +82,8 @@ export function PassengerBadge({
         >
           <Accessibility className='h-3 w-3' />
         </button>
+
+        {/* Remove */}
         <button
           type='button'
           onClick={onRemove}
@@ -66,6 +93,8 @@ export function PassengerBadge({
           <X className='h-3 w-3' />
         </button>
       </div>
+
+      {/* Station input */}
       <Input
         value={stationValue}
         onChange={(e) => onStationChange(e.target.value)}
