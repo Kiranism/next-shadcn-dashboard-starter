@@ -14,7 +14,6 @@ import { CSS } from '@dnd-kit/utilities';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -149,8 +148,8 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
   const hasPendingChanges = Object.keys(pendingChanges).length > 0;
 
   return (
-    <div className='bg-background flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border'>
-      <div className='flex items-center justify-between gap-3 border-b px-4 py-2 text-sm'>
+    <div className='bg-background flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border'>
+      <div className='flex shrink-0 items-center justify-between gap-3 border-b px-4 py-2 text-sm'>
         <div className='flex flex-col'>
           <span className='font-medium'>Kanban-Ansicht</span>
           <span className='text-muted-foreground text-xs'>
@@ -204,13 +203,13 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
           </div>
         </div>
       </div>
-      <ScrollArea className='flex-1'>
+      <div className='min-h-0 min-w-0 flex-1 overflow-auto'>
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
-          <div className='flex min-h-[260px] gap-3 overflow-x-auto p-3'>
+          <div className='inline-flex min-h-[260px] min-w-max gap-3 p-3'>
             {columns.map((column) => {
               const items = itemsByColumn[column.id] ?? [];
               return (
@@ -224,7 +223,7 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
             })}
           </div>
         </DndContext>
-      </ScrollArea>
+      </div>
     </div>
   );
 }

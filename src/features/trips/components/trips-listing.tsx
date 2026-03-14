@@ -178,7 +178,7 @@ export default async function TripsListingPage({
   // #endregion agent log
 
   return (
-    <div className='flex min-h-0 flex-1 flex-col space-y-4 overflow-hidden'>
+    <div className='flex min-h-0 min-w-0 flex-1 flex-col space-y-4 overflow-hidden'>
       <TripsFiltersBar totalItems={totalTrips} />
       <TripsViewToggle currentView={view} />
       {view === 'calendar' && <TripsCalendar trips={trips as Trip[]} />}

@@ -68,8 +68,8 @@ export default function PageContainer({
       </div>
     </ScrollArea>
   ) : (
-    <div className='flex flex-1 flex-col p-4 md:px-6'>
-      <div className='mb-4 flex items-start justify-between'>
+    <div className='flex min-w-0 flex-1 flex-col overflow-hidden p-4 md:px-6'>
+      <div className='mb-4 flex shrink-0 items-start justify-between'>
         <Heading
           title={pageTitle ?? ''}
           description={pageDescription ?? ''}
@@ -77,7 +77,7 @@ export default function PageContainer({
         />
         {pageHeaderAction && <div>{pageHeaderAction}</div>}
       </div>
-      {content}
+      <div className='min-h-0 min-w-0 flex-1 overflow-hidden'>{content}</div>
     </div>
   );
 }
