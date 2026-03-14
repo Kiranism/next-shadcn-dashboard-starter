@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { CalendarDays, List } from 'lucide-react';
+import { CalendarDays, Kanban, List } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback } from 'react';
 
@@ -46,6 +46,17 @@ export function TripsViewToggle({ currentView }: TripsViewToggleProps) {
       >
         <CalendarDays className='mr-2 h-4 w-4' />
         Kalender
+      </Button>
+      <Button
+        variant={currentView === 'kanban' ? 'secondary' : 'ghost'}
+        size='sm'
+        onClick={() =>
+          router.push(pathname + '?' + createQueryString('view', 'kanban'))
+        }
+        className='h-8 shadow-none'
+      >
+        <Kanban className='mr-2 h-4 w-4' />
+        Kanban
       </Button>
     </div>
   );

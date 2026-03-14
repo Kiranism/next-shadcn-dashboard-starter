@@ -5,6 +5,8 @@ import { Trip } from '../api/trips.service';
 import { getSortingStateParser } from '@/lib/parsers';
 import { TripsViewToggle } from './trips-view-toggle';
 import { TripsCalendar } from './trips-calendar';
+import { TripsKanbanBoard } from './trips-kanban-board';
+import { TripsFiltersBar } from './trips-filters-bar';
 
 type TripsListingPageProps = {
   searchParams?: any;
@@ -177,10 +179,13 @@ export default async function TripsListingPage({
 
   return (
     <div className='flex min-h-0 flex-1 flex-col space-y-4 overflow-hidden'>
+      <TripsFiltersBar totalItems={totalTrips} />
       <TripsViewToggle currentView={view} />
-      {view === 'calendar' ? (
-        <TripsCalendar trips={trips as Trip[]} />
-      ) : (
+      {view === 'calendar' && <TripsCalendar trips={trips as Trip[]} />}
+      {view === 'kanban' && (
+        <TripsKanbanBoard trips={trips as Trip[]} totalItems={totalTrips} />
+      )}
+      {view !== 'calendar' && view !== 'kanban' && (
         <TripsTable data={trips} totalItems={totalTrips} columns={columns} />
       )}
     </div>
