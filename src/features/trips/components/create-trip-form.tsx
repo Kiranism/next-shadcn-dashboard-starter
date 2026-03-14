@@ -252,7 +252,8 @@ export function CreateTripForm({
         status: 'pending',
         company_id: companyId,
         created_by: user?.id || null,
-        stop_updates: []
+        stop_updates: [],
+        group_id: null
       });
 
       if (shouldCreateReturn) {
@@ -293,6 +294,7 @@ export function CreateTripForm({
           company_id: companyId,
           created_by: user?.id || null,
           stop_updates: [],
+          group_id: null,
           linked_trip_id: hinTrip.id
         });
       }
