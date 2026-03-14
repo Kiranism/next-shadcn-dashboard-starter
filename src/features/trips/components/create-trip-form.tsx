@@ -252,7 +252,6 @@ export function CreateTripForm({
       setPassengers((prev) => [
         ...prev,
         {
-          is_wheelchair: false,
           ...p,
           pickup_station: '',
           dropoff_group_uid: null,
