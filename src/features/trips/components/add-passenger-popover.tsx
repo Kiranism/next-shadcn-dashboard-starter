@@ -1,10 +1,11 @@
 'use client';
 
 import * as React from 'react';
-import { Plus, User } from 'lucide-react';
+import { Plus, User, MapPin, Navigation, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import {
   Popover,
   PopoverContent,
@@ -24,6 +25,11 @@ interface AddPassengerPopoverProps {
     >
   ) => void;
   onClientLinked?: (client: ClientOption | null) => void;
+  onAddressChoice?: (
+    address: string,
+    type: 'pickup' | 'dropoff',
+    pickupGroupUid: string
+  ) => void;
   disabled?: boolean;
 }
 
@@ -32,6 +38,7 @@ export function AddPassengerPopover({
   searchClients,
   onAdd,
   onClientLinked,
+  onAddressChoice,
   disabled = false
 }: AddPassengerPopoverProps) {
   const [open, setOpen] = React.useState(false);
@@ -40,12 +47,16 @@ export function AddPassengerPopover({
   const [phone, setPhone] = React.useState('');
   const [selectedClient, setSelectedClient] =
     React.useState<ClientOption | null>(null);
+  const [pendingAddress, setPendingAddress] = React.useState<string | null>(
+    null
+  );
 
   const reset = () => {
     setFirstName('');
     setLastName('');
     setPhone('');
     setSelectedClient(null);
+    setPendingAddress(null);
   };
 
   const handleClientSelect = (client: ClientOption | null) => {
@@ -54,6 +65,15 @@ export function AddPassengerPopover({
       setFirstName(client.first_name || '');
       setLastName(client.last_name || '');
       setPhone(client.phone || '');
+      const addr = [
+        `${client.street} ${client.street_number}`.trim(),
+        `${client.zip_code} ${client.city}`.trim()
+      ]
+        .filter(Boolean)
+        .join(', ');
+      setPendingAddress(addr || null);
+    } else {
+      setPendingAddress(null);
     }
   };
 
@@ -72,6 +92,13 @@ export function AddPassengerPopover({
     if (selectedClient) onClientLinked?.(selectedClient);
     reset();
     setOpen(false);
+  };
+
+  const handleAddressChoice = (type: 'pickup' | 'dropoff') => {
+    if (pendingAddress && onAddressChoice) {
+      onAddressChoice(pendingAddress, type, pickupGroupUid);
+    }
+    setPendingAddress(null);
   };
 
   const handleOpenChange = (value: boolean) => {
@@ -95,7 +122,7 @@ export function AddPassengerPopover({
           Fahrgast
         </Button>
       </PopoverTrigger>
-      <PopoverContent className='w-64 p-3' align='start' side='bottom'>
+      <PopoverContent className='w-72 p-3' align='start' side='bottom'>
         <div className='mb-3 flex items-center gap-1.5'>
           <User className='text-muted-foreground h-3.5 w-3.5' />
           <span className='text-xs font-semibold'>Fahrgast hinzufügen</span>
@@ -107,7 +134,10 @@ export function AddPassengerPopover({
             </Label>
             <ClientAutoSuggest
               value={firstName}
-              onNameChange={setFirstName}
+              onNameChange={(val) => {
+                setFirstName(val);
+                if (!val) setPendingAddress(null);
+              }}
               onSelect={handleClientSelect}
               searchClients={searchClients}
               placeholder='Vorname suchen...'
@@ -126,6 +156,53 @@ export function AddPassengerPopover({
               className='h-8 text-sm'
             />
           </div>
+
+          {/* Address choice prompt — shown only when a client with an address is selected */}
+          {pendingAddress && (
+            <>
+              <Separator />
+              <div className='bg-muted/40 rounded-md border p-2'>
+                <div className='mb-2 flex items-start justify-between gap-1'>
+                  <p className='text-muted-foreground text-[10px] font-medium'>
+                    Adresse übernehmen?
+                  </p>
+                  <button
+                    type='button'
+                    onClick={() => setPendingAddress(null)}
+                    className='text-muted-foreground hover:text-foreground shrink-0'
+                  >
+                    <X className='h-3 w-3' />
+                  </button>
+                </div>
+                <p className='text-foreground mb-2 truncate text-[10px]'>
+                  {pendingAddress}
+                </p>
+                <div className='flex gap-1.5'>
+                  <Button
+                    type='button'
+                    variant='outline'
+                    size='sm'
+                    className='h-7 flex-1 gap-1 text-[10px]'
+                    onClick={() => handleAddressChoice('pickup')}
+                  >
+                    <MapPin className='h-3 w-3 text-emerald-500' />
+                    Abholadresse
+                  </Button>
+                  <Button
+                    type='button'
+                    variant='outline'
+                    size='sm'
+                    className='h-7 flex-1 gap-1 text-[10px]'
+                    onClick={() => handleAddressChoice('dropoff')}
+                  >
+                    <Navigation className='h-3 w-3 text-rose-500' />
+                    Zieladresse
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+
           <Button
             type='button'
             size='sm'

@@ -323,6 +323,21 @@ export function CreateTripForm({
     }));
   };
 
+  // ── Address choice from client selection ──────────────────────────────────
+
+  const handleAddressChoice = React.useCallback(
+    (address: string, type: 'pickup' | 'dropoff', pickupGroupUid: string) => {
+      if (type === 'pickup') {
+        updatePickupAddress(pickupGroupUid, address);
+      } else {
+        const firstEmpty = dropoffGroups.find((g) => !g.address.trim());
+        const target = firstEmpty ?? dropoffGroups[0];
+        if (target) updateDropoffAddress(target.uid, address);
+      }
+    },
+    [dropoffGroups] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
   // ── Derived values ─────────────────────────────────────────────────────────
 
   const unassignedPassengers = passengers.filter((p) => !p.dropoff_group_uid);
@@ -669,6 +684,7 @@ export function CreateTripForm({
               onStationChange={updatePassengerStation}
               searchClients={searchClients}
               onClientLinked={onClientSelect}
+              onAddressChoice={handleAddressChoice}
               isLocked={isPickupLocked}
               groupLabel={
                 pickupGroups.length > 1 ? `Abholadresse ${idx + 1}` : undefined

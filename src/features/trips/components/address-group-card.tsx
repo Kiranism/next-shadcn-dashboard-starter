@@ -33,6 +33,11 @@ interface AddressGroupCardProps {
   onAssignPassenger?: (passengerUid: string) => void;
   searchClients?: (query: string) => Promise<ClientOption[]>;
   onClientLinked?: (client: ClientOption | null) => void;
+  onAddressChoice?: (
+    address: string,
+    type: 'pickup' | 'dropoff',
+    pickupGroupUid: string
+  ) => void;
   isLocked?: boolean;
   groupLabel?: string;
   hasError?: boolean;
@@ -51,6 +56,7 @@ export function AddressGroupCard({
   onAssignPassenger,
   searchClients,
   onClientLinked,
+  onAddressChoice,
   isLocked = false,
   groupLabel,
   hasError = false
@@ -122,6 +128,7 @@ export function AddressGroupCard({
                 searchClients={searchClients}
                 onAdd={onAddPassenger}
                 onClientLinked={onClientLinked}
+                onAddressChoice={onAddressChoice}
               />
             )}
             {!isPickup &&
