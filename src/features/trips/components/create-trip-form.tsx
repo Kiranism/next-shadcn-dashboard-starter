@@ -130,6 +130,7 @@ export function CreateTripForm({
     defaultValues: {
       payer_id: '',
       billing_type_id: '',
+      scheduled_at: new Date(),
       return_mode: 'none',
       return_date: undefined,
       return_time: '',
@@ -400,7 +401,8 @@ export function CreateTripForm({
         dropoffGroups.map((g) => [g.uid, g])
       );
 
-      const groupId = crypto.randomUUID();
+      // group_id only applies when multiple passengers are bundled together in one dispatch
+      const groupId = passengers.length > 1 ? crypto.randomUUID() : null;
       const shouldCreateReturn =
         values.return_mode === 'time_tbd' || values.return_mode === 'exact';
 
@@ -483,7 +485,7 @@ export function CreateTripForm({
               company_id: companyId,
               created_by: user?.id || null,
               stop_updates: [],
-              group_id: groupId,
+              group_id: null,
               linked_trip_id: outbound.id
             });
           })
