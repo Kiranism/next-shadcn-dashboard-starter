@@ -46,7 +46,7 @@ export function CreateTripDialog({
       <DialogContent
         className={cn(
           'flex max-h-[90vh] flex-col overflow-hidden p-0 transition-all duration-300',
-          showPanel ? 'sm:max-w-4xl' : 'sm:max-w-2xl'
+          showPanel ? 'sm:max-w-5xl' : 'sm:max-w-3xl'
         )}
       >
         {/* Header */}
