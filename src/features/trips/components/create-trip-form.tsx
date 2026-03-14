@@ -158,24 +158,34 @@ export function CreateTripForm({
     (bt) => bt.id === watchedBillingTypeId
   );
 
-  // Apply behavior profile address defaults
+  // Apply all behavior profile rules when billing type changes
   React.useEffect(() => {
-    if (selectedBillingType?.behavior_profile) {
-      const b = selectedBillingType.behavior_profile as any;
-      const defaultPickup = b.defaultPickup ?? b.default_pickup;
-      const defaultDropoff = b.defaultDropoff ?? b.default_dropoff;
-      if (defaultPickup) {
-        setPickupGroups((prev) =>
-          prev.map((g, i) => (i === 0 ? { ...g, address: defaultPickup } : g))
-        );
-      }
-      if (defaultDropoff) {
-        setDropoffGroups((prev) =>
-          prev.map((g, i) => (i === 0 ? { ...g, address: defaultDropoff } : g))
-        );
-      }
+    if (!selectedBillingType?.behavior_profile) return;
+    const b = selectedBillingType.behavior_profile as any;
+
+    // Address defaults
+    const defaultPickup = b.defaultPickup ?? b.default_pickup;
+    const defaultDropoff = b.defaultDropoff ?? b.default_dropoff;
+    if (defaultPickup) {
+      setPickupGroups((prev) =>
+        prev.map((g, i) => (i === 0 ? { ...g, address: defaultPickup } : g))
+      );
     }
-  }, [selectedBillingType]);
+    if (defaultDropoff) {
+      setDropoffGroups((prev) =>
+        prev.map((g, i) => (i === 0 ? { ...g, address: defaultDropoff } : g))
+      );
+    }
+
+    // Return mode auto-selection — normalise legacy values
+    const rawPolicy = b.returnPolicy ?? b.return_policy ?? 'none';
+    let returnMode: ReturnMode = 'none';
+    if (rawPolicy === 'time_tbd' || rawPolicy === 'create_placeholder')
+      returnMode = 'time_tbd';
+    else if (rawPolicy === 'exact') returnMode = 'exact';
+    form.setValue('return_mode', returnMode);
+    hasInitializedReturnDateRef.current = false;
+  }, [selectedBillingType]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Default return date to Hinfahrt date
   React.useEffect(() => {
@@ -197,9 +207,38 @@ export function CreateTripForm({
     hasInitializedReturnDateRef.current = true;
   }, [watchedReturnMode, watchedScheduledAt, form]);
 
-  const behavior = (selectedBillingType?.behavior_profile || {}) as any;
-  const isPickupLocked = behavior.lockPickup ?? behavior.lock_pickup;
-  const isDropoffLocked = behavior.lockDropoff ?? behavior.lock_dropoff;
+  // Normalise behavior profile with backward compat for legacy field names
+  const behavior = React.useMemo(() => {
+    const b = (selectedBillingType?.behavior_profile || {}) as any;
+    const legacyShowPickup = b.showPickupPassenger ?? b.show_pickup_passenger;
+    const legacyShowDropoff =
+      b.showDropoffPassenger ?? b.show_dropoff_passenger;
+    const rawPolicy: string | null = b.returnPolicy ?? b.return_policy ?? null;
+    return {
+      returnPolicy: rawPolicy as 'none' | 'time_tbd' | 'exact' | null,
+      lockPickup: !!(b.lockPickup ?? b.lock_pickup ?? false),
+      lockDropoff: !!(b.lockDropoff ?? b.lock_dropoff ?? false),
+      // lockReturnMode is also implicitly true when returnPolicy === 'none'
+      lockReturnMode: !!(b.lockReturnMode ?? b.lock_return_mode ?? false),
+      prefillDropoffFromPickup: !!(
+        b.prefillDropoffFromPickup ??
+        b.prefill_dropoff_from_pickup ??
+        false
+      ),
+      requirePassenger:
+        b.requirePassenger !== undefined
+          ? !!b.requirePassenger
+          : legacyShowPickup !== false && legacyShowDropoff !== false
+    };
+  }, [selectedBillingType]);
+
+  const isPickupLocked = behavior.lockPickup;
+  const isDropoffLocked = behavior.lockDropoff;
+  // Hide Rückfahrt block when explicitly locked OR when billing type mandates no return trip
+  const isReturnModeLocked =
+    behavior.lockReturnMode ||
+    (selectedBillingType != null && behavior.returnPolicy === 'none');
+  const requirePassenger = behavior.requirePassenger;
 
   // ── Passenger helpers ──────────────────────────────────────────────────────
 
@@ -292,6 +331,12 @@ export function CreateTripForm({
       ...e,
       pickupGroups: { ...e.pickupGroups, [uid]: false }
     }));
+    // Sync first dropoff group when prefillDropoffFromPickup is active
+    if (behavior.prefillDropoffFromPickup) {
+      setDropoffGroups((prev) =>
+        prev.map((g, i) => (i === 0 ? { ...g, address } : g))
+      );
+    }
   };
 
   // ── Dropoff group helpers ──────────────────────────────────────────────────
@@ -355,7 +400,7 @@ export function CreateTripForm({
     const errors: typeof formErrors = {};
     let hasCustomError = false;
 
-    if (passengers.length === 0) {
+    if (requirePassenger && passengers.length === 0) {
       errors.passengers = 'Bitte mindestens einen Fahrgast hinzufügen.';
       hasCustomError = true;
     }
@@ -380,10 +425,12 @@ export function CreateTripForm({
     if (Object.keys(dropoffGroupErrors).length > 0)
       errors.dropoffGroups = dropoffGroupErrors;
 
-    const stillUnassigned = passengers.filter((p) => !p.dropoff_group_uid);
-    if (stillUnassigned.length > 0) {
-      errors.unassigned = true;
-      hasCustomError = true;
+    if (requirePassenger) {
+      const stillUnassigned = passengers.filter((p) => !p.dropoff_group_uid);
+      if (stillUnassigned.length > 0) {
+        errors.unassigned = true;
+        hasCustomError = true;
+      }
     }
 
     if (hasCustomError) {
@@ -438,80 +485,118 @@ export function CreateTripForm({
               ).toISOString();
             })();
 
-      // Create outbound trips — one per passenger
-      const outboundTrips = await Promise.all(
-        passengers.map((p) => {
-          const pickupAddress =
-            pickupGroupMap[p.pickup_group_uid]?.address || '';
-          const dropoffAddress =
-            dropoffGroupMap[p.dropoff_group_uid!]?.address || '';
-          return tripsService.createTrip({
-            payer_id: values.payer_id,
-            billing_type_id: values.billing_type_id || null,
-            client_id: p.client_id || null,
-            client_name:
-              [p.first_name, p.last_name].filter(Boolean).join(' ') || null,
-            client_phone: p.phone || null,
-            scheduled_at: values.scheduled_at.toISOString(),
-            pickup_address: pickupAddress,
-            pickup_station: p.pickup_station || null,
-            dropoff_address: dropoffAddress,
-            dropoff_station: p.dropoff_station || null,
-            driver_id:
-              values.driver_id && values.driver_id !== '__none__'
-                ? values.driver_id
-                : null,
-            is_wheelchair: values.is_wheelchair,
-            notes: values.notes || null,
-            status: 'pending',
-            company_id: companyId,
-            created_by: user?.id || null,
-            stop_updates: [],
-            group_id: groupId
-          });
-        })
-      );
+      const driverId =
+        values.driver_id && values.driver_id !== '__none__'
+          ? values.driver_id
+          : null;
 
-      // Create return trips if requested — one per passenger, addresses swapped
-      if (shouldCreateReturn) {
-        await Promise.all(
-          outboundTrips.map((outbound, idx) => {
-            const p = passengers[idx];
+      const baseTrip = {
+        payer_id: values.payer_id,
+        billing_type_id: values.billing_type_id || null,
+        driver_id: driverId,
+        is_wheelchair: values.is_wheelchair,
+        notes: values.notes || null,
+        status: 'pending' as const,
+        company_id: companyId,
+        created_by: user?.id || null,
+        stop_updates: [] as any[]
+      };
+
+      let outboundTrips: Awaited<ReturnType<typeof tripsService.createTrip>>[];
+      let tripCount: number;
+
+      if (!requirePassenger) {
+        // Anonymous mode: create 1 trip using address group addresses directly
+        const pickupAddress = pickupGroups[0]?.address || '';
+        const dropoffAddress = dropoffGroups[0]?.address || '';
+        const outbound = await tripsService.createTrip({
+          ...baseTrip,
+          client_id: null,
+          client_name: null,
+          client_phone: null,
+          scheduled_at: values.scheduled_at.toISOString(),
+          pickup_address: pickupAddress,
+          pickup_station: null,
+          dropoff_address: dropoffAddress,
+          dropoff_station: null,
+          group_id: null
+        });
+        outboundTrips = [outbound];
+        tripCount = 1;
+
+        if (shouldCreateReturn) {
+          await tripsService.createTrip({
+            ...baseTrip,
+            client_id: null,
+            client_name: null,
+            client_phone: null,
+            driver_id: null,
+            scheduled_at: returnScheduledAt,
+            pickup_address: dropoffAddress,
+            pickup_station: null,
+            dropoff_address: pickupAddress,
+            dropoff_station: null,
+            group_id: null,
+            linked_trip_id: outbound.id
+          });
+        }
+      } else {
+        // Passenger mode: create one trip per passenger
+        outboundTrips = await Promise.all(
+          passengers.map((p) => {
             const pickupAddress =
               pickupGroupMap[p.pickup_group_uid]?.address || '';
             const dropoffAddress =
               dropoffGroupMap[p.dropoff_group_uid!]?.address || '';
             return tripsService.createTrip({
-              payer_id: values.payer_id,
-              billing_type_id: values.billing_type_id || null,
+              ...baseTrip,
               client_id: p.client_id || null,
               client_name:
                 [p.first_name, p.last_name].filter(Boolean).join(' ') || null,
               client_phone: p.phone || null,
-              scheduled_at: returnScheduledAt,
-              pickup_address: dropoffAddress,
-              pickup_station: p.dropoff_station || null,
-              dropoff_address: pickupAddress,
-              dropoff_station: p.pickup_station || null,
-              driver_id: null,
-              is_wheelchair: values.is_wheelchair,
-              notes: values.notes || null,
-              status: 'pending',
-              company_id: companyId,
-              created_by: user?.id || null,
-              stop_updates: [],
-              group_id: null,
-              linked_trip_id: outbound.id
+              scheduled_at: values.scheduled_at.toISOString(),
+              pickup_address: pickupAddress,
+              pickup_station: p.pickup_station || null,
+              dropoff_address: dropoffAddress,
+              dropoff_station: p.dropoff_station || null,
+              group_id: groupId
             });
           })
         );
+        tripCount = passengers.length;
+
+        if (shouldCreateReturn) {
+          await Promise.all(
+            outboundTrips.map((outbound, idx) => {
+              const p = passengers[idx];
+              const pickupAddress =
+                pickupGroupMap[p.pickup_group_uid]?.address || '';
+              const dropoffAddress =
+                dropoffGroupMap[p.dropoff_group_uid!]?.address || '';
+              return tripsService.createTrip({
+                ...baseTrip,
+                client_id: p.client_id || null,
+                client_name:
+                  [p.first_name, p.last_name].filter(Boolean).join(' ') || null,
+                client_phone: p.phone || null,
+                driver_id: null,
+                scheduled_at: returnScheduledAt,
+                pickup_address: dropoffAddress,
+                pickup_station: p.dropoff_station || null,
+                dropoff_address: pickupAddress,
+                dropoff_station: p.pickup_station || null,
+                group_id: null,
+                linked_trip_id: outbound.id
+              });
+            })
+          );
+        }
       }
 
-      const passengerCount = passengers.length;
       toast.success(
         shouldCreateReturn
-          ? `${passengerCount} Hin- und Rückfahrt${passengerCount > 1 ? 'en' : ''} erfolgreich erstellt!`
-          : `${passengerCount} Fahrt${passengerCount > 1 ? 'en' : ''} erfolgreich erstellt!`
+          ? `${tripCount} Hin- und Rückfahrt${tripCount > 1 ? 'en' : ''} erfolgreich erstellt!`
+          : `${tripCount} Fahrt${tripCount > 1 ? 'en' : ''} erfolgreich erstellt!`
       );
       onSuccess?.();
     } catch (error: any) {
@@ -657,54 +742,89 @@ export function CreateTripForm({
           )}
         </div>
 
-        {formErrors.passengers && (
-          <div className='border-destructive/30 bg-destructive/10 text-destructive mb-3 flex items-center gap-2 rounded-md border px-3 py-2 text-xs'>
-            <AlertCircle className='h-3.5 w-3.5 shrink-0' />
-            {formErrors.passengers}
+        {/* Anonymous mode — no passenger UI, just address input */}
+        {!requirePassenger ? (
+          <div className='flex flex-col gap-3'>
+            <div className='flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300'>
+              <AlertCircle className='h-3.5 w-3.5 shrink-0' />
+              Kein Fahrgastname erforderlich — Fahrt wird anonym erstellt.
+            </div>
+            {pickupGroups.map((group) => (
+              <div key={group.uid} className='relative'>
+                <MapPin className='pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-emerald-500' />
+                <Input
+                  value={group.address}
+                  onChange={(e) =>
+                    updatePickupAddress(group.uid, e.target.value)
+                  }
+                  placeholder='Abholadresse — Straße, PLZ Ort'
+                  className={cn(
+                    'h-9 pl-9',
+                    formErrors.pickupGroups?.[group.uid] && 'border-destructive'
+                  )}
+                  disabled={isPickupLocked}
+                />
+                {formErrors.pickupGroups?.[group.uid] && (
+                  <p className='text-destructive mt-1 text-[10px]'>
+                    Adresse ist erforderlich
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* Full passenger mode */
+          <div className='flex flex-col gap-3'>
+            {formErrors.passengers && (
+              <div className='border-destructive/30 bg-destructive/10 text-destructive mb-1 flex items-center gap-2 rounded-md border px-3 py-2 text-xs'>
+                <AlertCircle className='h-3.5 w-3.5 shrink-0' />
+                {formErrors.passengers}
+              </div>
+            )}
+
+            {pickupGroups.map((group, idx) => (
+              <AddressGroupCard
+                key={group.uid}
+                group={group}
+                mode='pickup'
+                passengers={getPickupGroupPassengers(group.uid)}
+                onAddressChange={(address) =>
+                  updatePickupAddress(group.uid, address)
+                }
+                onRemoveGroup={
+                  pickupGroups.length > 1
+                    ? () => removePickupGroup(group.uid)
+                    : undefined
+                }
+                onAddPassenger={addPassenger}
+                onRemovePassenger={removePassenger}
+                onStationChange={updatePassengerStation}
+                searchClients={searchClients}
+                onClientLinked={onClientSelect}
+                onAddressChoice={handleAddressChoice}
+                isLocked={isPickupLocked}
+                groupLabel={
+                  pickupGroups.length > 1
+                    ? `Abholadresse ${idx + 1}`
+                    : undefined
+                }
+                hasError={!!formErrors.pickupGroups?.[group.uid]}
+              />
+            ))}
+
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              className='h-8 gap-1.5 text-xs'
+              onClick={addPickupGroup}
+              disabled={!isPayerSelected}
+            >
+              <Plus className='h-3.5 w-3.5' />
+              Weitere Abholadresse
+            </Button>
           </div>
         )}
-
-        <div className='flex flex-col gap-3'>
-          {pickupGroups.map((group, idx) => (
-            <AddressGroupCard
-              key={group.uid}
-              group={group}
-              mode='pickup'
-              passengers={getPickupGroupPassengers(group.uid)}
-              onAddressChange={(address) =>
-                updatePickupAddress(group.uid, address)
-              }
-              onRemoveGroup={
-                pickupGroups.length > 1
-                  ? () => removePickupGroup(group.uid)
-                  : undefined
-              }
-              onAddPassenger={addPassenger}
-              onRemovePassenger={removePassenger}
-              onStationChange={updatePassengerStation}
-              searchClients={searchClients}
-              onClientLinked={onClientSelect}
-              onAddressChoice={handleAddressChoice}
-              isLocked={isPickupLocked}
-              groupLabel={
-                pickupGroups.length > 1 ? `Abholadresse ${idx + 1}` : undefined
-              }
-              hasError={!!formErrors.pickupGroups?.[group.uid]}
-            />
-          ))}
-
-          <Button
-            type='button'
-            variant='outline'
-            size='sm'
-            className='h-8 gap-1.5 text-xs'
-            onClick={addPickupGroup}
-            disabled={!isPayerSelected}
-          >
-            <Plus className='h-3.5 w-3.5' />
-            Weitere Abholadresse
-          </Button>
-        </div>
       </div>
 
       <Separator />
@@ -721,7 +841,7 @@ export function CreateTripForm({
           <span className='text-muted-foreground text-xs font-semibold tracking-wider uppercase'>
             Ziel
           </span>
-          {passengers.length > 0 && (
+          {requirePassenger && passengers.length > 0 && (
             <div className='ml-auto flex items-center gap-1.5'>
               <Users className='text-muted-foreground h-3.5 w-3.5' />
               <span className='text-muted-foreground text-[10px]'>
@@ -732,77 +852,111 @@ export function CreateTripForm({
           )}
         </div>
 
-        {/* Unassigned passenger pool */}
-        {unassignedPassengers.length > 0 && (
-          <div className='mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30'>
-            <div className='mb-2 flex items-center gap-1.5'>
-              <AlertCircle className='h-3.5 w-3.5 text-amber-600 dark:text-amber-400' />
-              <span className='text-[10px] font-semibold text-amber-700 dark:text-amber-300'>
-                Noch nicht zugewiesen
-              </span>
-            </div>
-            <div className='flex flex-wrap gap-1.5'>
-              {unassignedPassengers.map((p) => {
-                const name =
-                  [p.first_name, p.last_name].filter(Boolean).join(' ') || '—';
-                return (
-                  <Badge
-                    key={p.uid}
-                    variant='outline'
-                    className='border-amber-300 bg-amber-100 text-[10px] text-amber-800 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-200'
-                  >
-                    {name}
-                  </Badge>
-                );
-              })}
-            </div>
-            <p className='mt-2 text-[10px] text-amber-600 dark:text-amber-400'>
-              Bitte alle Fahrgäste einer Zieladresse zuweisen.
-            </p>
+        {/* Anonymous mode — single dropoff input */}
+        {!requirePassenger ? (
+          <div className='flex flex-col gap-3'>
+            {dropoffGroups.map((group) => (
+              <div key={group.uid} className='relative'>
+                <Navigation className='pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-rose-500' />
+                <Input
+                  value={group.address}
+                  onChange={(e) =>
+                    updateDropoffAddress(group.uid, e.target.value)
+                  }
+                  placeholder='Zieladresse — Straße, PLZ Ort'
+                  className={cn(
+                    'h-9 pl-9',
+                    formErrors.dropoffGroups?.[group.uid] &&
+                      'border-destructive'
+                  )}
+                  disabled={isDropoffLocked}
+                />
+                {formErrors.dropoffGroups?.[group.uid] && (
+                  <p className='text-destructive mt-1 text-[10px]'>
+                    Adresse ist erforderlich
+                  </p>
+                )}
+              </div>
+            ))}
           </div>
+        ) : (
+          /* Full passenger mode — unassigned pool + dropoff groups */
+          <>
+            {unassignedPassengers.length > 0 && (
+              <div className='mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30'>
+                <div className='mb-2 flex items-center gap-1.5'>
+                  <AlertCircle className='h-3.5 w-3.5 text-amber-600 dark:text-amber-400' />
+                  <span className='text-[10px] font-semibold text-amber-700 dark:text-amber-300'>
+                    Noch nicht zugewiesen
+                  </span>
+                </div>
+                <div className='flex flex-wrap gap-1.5'>
+                  {unassignedPassengers.map((p) => {
+                    const name =
+                      [p.first_name, p.last_name].filter(Boolean).join(' ') ||
+                      '—';
+                    return (
+                      <Badge
+                        key={p.uid}
+                        variant='outline'
+                        className='border-amber-300 bg-amber-100 text-[10px] text-amber-800 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-200'
+                      >
+                        {name}
+                      </Badge>
+                    );
+                  })}
+                </div>
+                <p className='mt-2 text-[10px] text-amber-600 dark:text-amber-400'>
+                  Bitte alle Fahrgäste einer Zieladresse zuweisen.
+                </p>
+              </div>
+            )}
+
+            <div className='flex flex-col gap-3'>
+              {dropoffGroups.map((group, idx) => (
+                <AddressGroupCard
+                  key={group.uid}
+                  group={group}
+                  mode='dropoff'
+                  passengers={getDropoffGroupPassengers(group.uid)}
+                  unassignedPassengers={unassignedPassengers}
+                  onAddressChange={(address) =>
+                    updateDropoffAddress(group.uid, address)
+                  }
+                  onRemoveGroup={
+                    dropoffGroups.length > 1
+                      ? () => removeDropoffGroup(group.uid)
+                      : undefined
+                  }
+                  onRemovePassenger={unassignFromDropoff}
+                  onStationChange={updatePassengerStation}
+                  onAssignPassenger={(passengerUid) =>
+                    assignToDropoff(passengerUid, group.uid)
+                  }
+                  isLocked={isDropoffLocked}
+                  groupLabel={
+                    dropoffGroups.length > 1
+                      ? `Zieladresse ${idx + 1}`
+                      : undefined
+                  }
+                  hasError={!!formErrors.dropoffGroups?.[group.uid]}
+                />
+              ))}
+
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                className='h-8 gap-1.5 text-xs'
+                onClick={addDropoffGroup}
+                disabled={!isPayerSelected}
+              >
+                <Plus className='h-3.5 w-3.5' />
+                Weitere Zieladresse
+              </Button>
+            </div>
+          </>
         )}
-
-        <div className='flex flex-col gap-3'>
-          {dropoffGroups.map((group, idx) => (
-            <AddressGroupCard
-              key={group.uid}
-              group={group}
-              mode='dropoff'
-              passengers={getDropoffGroupPassengers(group.uid)}
-              unassignedPassengers={unassignedPassengers}
-              onAddressChange={(address) =>
-                updateDropoffAddress(group.uid, address)
-              }
-              onRemoveGroup={
-                dropoffGroups.length > 1
-                  ? () => removeDropoffGroup(group.uid)
-                  : undefined
-              }
-              onRemovePassenger={unassignFromDropoff}
-              onStationChange={updatePassengerStation}
-              onAssignPassenger={(passengerUid) =>
-                assignToDropoff(passengerUid, group.uid)
-              }
-              isLocked={isDropoffLocked}
-              groupLabel={
-                dropoffGroups.length > 1 ? `Zieladresse ${idx + 1}` : undefined
-              }
-              hasError={!!formErrors.dropoffGroups?.[group.uid]}
-            />
-          ))}
-
-          <Button
-            type='button'
-            variant='outline'
-            size='sm'
-            className='h-8 gap-1.5 text-xs'
-            onClick={addDropoffGroup}
-            disabled={!isPayerSelected}
-          >
-            <Plus className='h-3.5 w-3.5' />
-            Weitere Zieladresse
-          </Button>
-        </div>
       </div>
 
       <Separator />
@@ -833,103 +987,122 @@ export function CreateTripForm({
             )}
           />
 
-          {/* Rückfahrt block */}
-          <div className='rounded-lg border p-4'>
-            <div className='mb-3 flex items-center gap-2'>
-              <Navigation className='text-muted-foreground h-4 w-4' />
-              <span className='text-muted-foreground text-xs font-semibold tracking-wider uppercase'>
-                Rückfahrt
-              </span>
-            </div>
-            <div className='flex flex-col gap-3'>
-              <FormField
-                control={form.control as any}
-                name='return_mode'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className='text-xs'>Rückfahrt</FormLabel>
-                    <Select
-                      onValueChange={(v) => {
-                        field.onChange(v);
-                        if (v !== 'exact')
-                          hasInitializedReturnDateRef.current = false;
-                      }}
-                      value={field.value}
-                      disabled={isSubmitting}
-                    >
-                      <FormControl>
-                        <SelectTrigger className='h-9'>
-                          <SelectValue placeholder='Wählen...' />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value='none'>Keine Rückfahrt</SelectItem>
-                        <SelectItem value='time_tbd'>
-                          Rückfahrt mit Zeitabsprache
-                        </SelectItem>
-                        <SelectItem value='exact'>
-                          Rückfahrt mit genauer Zeit
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage className='text-xs' />
-                  </FormItem>
-                )}
-              />
+          {/* Rückfahrt block — hidden entirely when locked (mode is set by billing behavior) */}
+          {isReturnModeLocked ? (
+            watchedReturnMode !== 'none' && (
+              <div className='bg-muted/30 flex items-center gap-2 rounded-lg border px-4 py-3'>
+                <Navigation className='text-muted-foreground h-3.5 w-3.5 shrink-0' />
+                <span className='text-muted-foreground text-xs'>
+                  {watchedReturnMode === 'time_tbd'
+                    ? 'Rückfahrt mit Zeitabsprache wird automatisch erstellt.'
+                    : 'Rückfahrt mit genauer Zeit wird automatisch erstellt.'}
+                </span>
+                <Badge
+                  variant='secondary'
+                  className='ml-auto text-[9px] font-normal'
+                >
+                  Gesperrt
+                </Badge>
+              </div>
+            )
+          ) : (
+            <div className='rounded-lg border p-4'>
+              <div className='mb-3 flex items-center gap-2'>
+                <Navigation className='text-muted-foreground h-4 w-4' />
+                <span className='text-muted-foreground text-xs font-semibold tracking-wider uppercase'>
+                  Rückfahrt
+                </span>
+              </div>
+              <div className='flex flex-col gap-3'>
+                <FormField
+                  control={form.control as any}
+                  name='return_mode'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className='text-xs'>Rückfahrt</FormLabel>
+                      <Select
+                        onValueChange={(v) => {
+                          field.onChange(v);
+                          if (v !== 'exact')
+                            hasInitializedReturnDateRef.current = false;
+                        }}
+                        value={field.value}
+                        disabled={isSubmitting}
+                      >
+                        <FormControl>
+                          <SelectTrigger className='h-9'>
+                            <SelectValue placeholder='Wählen...' />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value='none'>Keine Rückfahrt</SelectItem>
+                          <SelectItem value='time_tbd'>
+                            Rückfahrt mit Zeitabsprache
+                          </SelectItem>
+                          <SelectItem value='exact'>
+                            Rückfahrt mit genauer Zeit
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage className='text-xs' />
+                    </FormItem>
+                  )}
+                />
 
-              {watchedReturnMode === 'exact' && (
-                <div className='grid grid-cols-2 gap-3'>
-                  <FormField
-                    control={form.control as any}
-                    name='return_date'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className='text-xs'>Datum</FormLabel>
-                        <FormControl>
-                          <Input
-                            type='date'
-                            value={
-                              field.value
-                                ? format(field.value, 'yyyy-MM-dd')
-                                : ''
-                            }
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              field.onChange(
-                                v ? new Date(`${v}T00:00:00`) : undefined
-                              );
-                            }}
-                            className='h-9'
-                            disabled={isSubmitting}
-                          />
-                        </FormControl>
-                        <FormMessage className='text-xs' />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control as any}
-                    name='return_time'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className='text-xs'>Uhrzeit</FormLabel>
-                        <FormControl>
-                          <Input
-                            type='time'
-                            value={field.value || ''}
-                            onChange={field.onChange}
-                            className='h-9'
-                            disabled={isSubmitting}
-                          />
-                        </FormControl>
-                        <FormMessage className='text-xs' />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              )}
+                {watchedReturnMode === 'exact' && (
+                  <div className='grid grid-cols-2 gap-3'>
+                    <FormField
+                      control={form.control as any}
+                      name='return_date'
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className='text-xs'>Datum</FormLabel>
+                          <FormControl>
+                            <Input
+                              type='date'
+                              value={
+                                field.value
+                                  ? format(field.value, 'yyyy-MM-dd')
+                                  : ''
+                              }
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                field.onChange(
+                                  v ? new Date(`${v}T00:00:00`) : undefined
+                                );
+                              }}
+                              className='h-9'
+                              disabled={isSubmitting}
+                            />
+                          </FormControl>
+                          <FormMessage className='text-xs' />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control as any}
+                      name='return_time'
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className='text-xs'>Uhrzeit</FormLabel>
+                          <FormControl>
+                            <Input
+                              type='time'
+                              value={field.value || ''}
+                              onChange={field.onChange}
+                              className='h-9'
+                              disabled={isSubmitting}
+                            />
+                          </FormControl>
+                          <FormMessage className='text-xs' />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 

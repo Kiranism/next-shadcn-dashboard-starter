@@ -8,11 +8,11 @@ import type {
 
 export const DEFAULT_BEHAVIOR: BillingTypeBehavior = {
   returnPolicy: 'none',
+  lockReturnMode: false,
   lockPickup: false,
   lockDropoff: false,
   prefillDropoffFromPickup: false,
-  showPickupPassenger: true,
-  showDropoffPassenger: true,
+  requirePassenger: true,
   defaultPickup: null,
   defaultDropoff: null
 };

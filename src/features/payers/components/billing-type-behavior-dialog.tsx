@@ -36,19 +36,52 @@ import { useBillingTypes } from '../hooks/use-billing-types';
 import type { BillingType, BillingTypeBehavior } from '../types/payer.types';
 
 const formSchema = z.object({
-  returnPolicy: z.enum(['none', 'create_placeholder', 'create_on_demand']),
+  returnPolicy: z.enum(['none', 'time_tbd', 'exact']),
+  lockReturnMode: z.boolean(),
   lockPickup: z.boolean(),
   lockDropoff: z.boolean(),
   prefillDropoffFromPickup: z.boolean(),
-  showPickupPassenger: z.boolean(),
-  showDropoffPassenger: z.boolean(),
+  requirePassenger: z.boolean(),
   defaultPickup: z.string().optional().nullable(),
   defaultDropoff: z.string().optional().nullable()
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-import { ScrollArea } from '@/components/ui/scroll-area';
+/** Normalises legacy DB values to the current type-safe values. */
+function normaliseBehavior(b: any): FormValues {
+  let returnPolicy: 'none' | 'time_tbd' | 'exact' = 'none';
+  const raw = b.returnPolicy ?? b.return_policy ?? 'none';
+  if (raw === 'create_placeholder') returnPolicy = 'time_tbd';
+  else if (raw === 'time_tbd') returnPolicy = 'time_tbd';
+  else if (raw === 'exact') returnPolicy = 'exact';
+  else returnPolicy = 'none';
+
+  // Legacy: if either passenger flag was false, requirePassenger = false
+  const legacyPassenger =
+    b.showPickupPassenger ?? b.show_pickup_passenger ?? true;
+  const legacyDropoffPassenger =
+    b.showDropoffPassenger ?? b.show_dropoff_passenger ?? true;
+  const requirePassenger =
+    b.requirePassenger !== undefined
+      ? !!b.requirePassenger
+      : legacyPassenger && legacyDropoffPassenger;
+
+  return {
+    returnPolicy,
+    lockReturnMode: !!(b.lockReturnMode ?? b.lock_return_mode ?? false),
+    lockPickup: !!(b.lockPickup ?? b.lock_pickup ?? false),
+    lockDropoff: !!(b.lockDropoff ?? b.lock_dropoff ?? false),
+    prefillDropoffFromPickup: !!(
+      b.prefillDropoffFromPickup ??
+      b.prefill_dropoff_from_pickup ??
+      false
+    ),
+    requirePassenger,
+    defaultPickup: b.defaultPickup ?? b.default_pickup ?? '',
+    defaultDropoff: b.defaultDropoff ?? b.default_dropoff ?? ''
+  };
+}
 
 interface BillingTypeBehaviorDialogProps {
   payerId: string;
@@ -69,53 +102,36 @@ export function BillingTypeBehaviorDialog({
     resolver: zodResolver(formSchema),
     defaultValues: {
       returnPolicy: 'none',
+      lockReturnMode: false,
       lockPickup: false,
       lockDropoff: false,
       prefillDropoffFromPickup: false,
-      showPickupPassenger: true,
-      showDropoffPassenger: true,
+      requirePassenger: true,
       defaultPickup: '',
       defaultDropoff: ''
     }
   });
 
-  // Effect to update form values when the billing type changes
+  const watchedReturnPolicy = form.watch('returnPolicy');
+
   useEffect(() => {
     if (billingType?.behavior_profile) {
-      const b = billingType.behavior_profile as any;
-      form.reset({
-        returnPolicy: b.returnPolicy || b.return_policy || 'none',
-        lockPickup: !!(b.lockPickup ?? b.lock_pickup),
-        lockDropoff: !!(b.lockDropoff ?? b.lock_dropoff),
-        prefillDropoffFromPickup: !!(
-          b.prefillDropoffFromPickup ?? b.prefill_dropoff_from_pickup
-        ),
-        showPickupPassenger:
-          b.showPickupPassenger ?? b.show_pickup_passenger ?? true,
-        showDropoffPassenger:
-          b.showDropoffPassenger ?? b.show_dropoff_passenger ?? true,
-        defaultPickup: b.defaultPickup ?? b.default_pickup ?? '',
-        defaultDropoff: b.defaultDropoff ?? b.default_dropoff ?? ''
-      });
+      form.reset(normaliseBehavior(billingType.behavior_profile));
     }
   }, [billingType, form]);
 
   async function onSubmit(data: FormValues) {
     if (!billingType) return;
-
     try {
-      // Clean up empty strings to null for the DB
       const processedData: BillingTypeBehavior = {
         ...data,
         defaultPickup: data.defaultPickup?.trim() || null,
         defaultDropoff: data.defaultDropoff?.trim() || null
       };
-
       await updateBehavior({ id: billingType.id, behavior: processedData });
       toast.success('Verhalten aktualisiert');
       onOpenChange(false);
     } catch (error) {
-      console.error(error);
       toast.error('Fehler beim Aktualisieren des Verhaltens');
     }
   }
@@ -140,16 +156,14 @@ export function BillingTypeBehaviorDialog({
         >
           <div className='min-h-0 flex-1 overflow-y-auto px-6'>
             <div className='space-y-6 pt-2 pb-6'>
+              {/* ── Rückfahrt-Strategie ── */}
               <FormField
                 control={form.control}
                 name='returnPolicy'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Rückfahrt-Strategie</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder='Wähle eine Strategie' />
@@ -157,19 +171,48 @@ export function BillingTypeBehaviorDialog({
                       </FormControl>
                       <SelectContent>
                         <SelectItem value='none'>Keine Rückfahrt</SelectItem>
-                        <SelectItem value='create_placeholder'>
-                          Rückfahrt sofort als Platzhalter
+                        <SelectItem value='time_tbd'>
+                          Rückfahrt mit Zeitabsprache
                         </SelectItem>
-                        <SelectItem value='create_on_demand'>
-                          Rückfahrt erst bei Bedarf
+                        <SelectItem value='exact'>
+                          Rückfahrt mit genauer Zeit
                         </SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormDescription>
+                      Dieser Modus wird beim Erstellen einer Fahrt automatisch
+                      vorausgewählt.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
+              {watchedReturnPolicy !== 'none' && (
+                <FormField
+                  control={form.control}
+                  name='lockReturnMode'
+                  render={({ field }) => (
+                    <FormItem className='bg-background flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm'>
+                      <div className='space-y-0.5'>
+                        <FormLabel>Rückfahrtmodus sperren</FormLabel>
+                        <FormDescription>
+                          Dispatcher kann den Rückfahrtmodus im Formular nicht
+                          ändern.
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              {/* ── Abholung ── */}
               <div className='bg-muted/20 space-y-4 rounded-lg border p-4'>
                 <h4 className='mb-3 text-sm leading-none font-medium'>
                   Abholung
@@ -194,7 +237,6 @@ export function BillingTypeBehaviorDialog({
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name='defaultPickup'
@@ -214,6 +256,7 @@ export function BillingTypeBehaviorDialog({
                 />
               </div>
 
+              {/* ── Ziel ── */}
               <div className='bg-muted/20 space-y-4 rounded-lg border p-4'>
                 <h4 className='mb-3 text-sm leading-none font-medium'>Ziel</h4>
                 <FormField
@@ -222,9 +265,11 @@ export function BillingTypeBehaviorDialog({
                   render={({ field }) => (
                     <FormItem className='bg-background flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm'>
                       <div className='space-y-0.5'>
-                        <FormLabel>Ziel mit Abholung vorbefüllen</FormLabel>
+                        <FormLabel>
+                          Zieladresse aus Abholadresse übernehmen
+                        </FormLabel>
                         <FormDescription>
-                          Kopiert die Abholadresse ins Ziel (gut für Konsil).
+                          Kopiert die Abholadresse ins Ziel (z. B. für Konsil).
                         </FormDescription>
                       </div>
                       <FormControl>
@@ -236,7 +281,6 @@ export function BillingTypeBehaviorDialog({
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name='lockDropoff'
@@ -257,7 +301,6 @@ export function BillingTypeBehaviorDialog({
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name='defaultDropoff'
@@ -277,40 +320,21 @@ export function BillingTypeBehaviorDialog({
                 />
               </div>
 
+              {/* ── Fahrgast ── */}
               <div className='bg-muted/20 space-y-4 rounded-lg border p-4'>
                 <h4 className='mb-3 text-sm leading-none font-medium'>
                   Fahrgast
                 </h4>
                 <FormField
                   control={form.control}
-                  name='showPickupPassenger'
+                  name='requirePassenger'
                   render={({ field }) => (
                     <FormItem className='bg-background flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm'>
                       <div className='space-y-0.5'>
-                        <FormLabel>Name bei Abholung</FormLabel>
+                        <FormLabel>Fahrgastname erforderlich</FormLabel>
                         <FormDescription>
-                          Namenseingabefeld im Abholbereich anzeigen.
-                        </FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name='showDropoffPassenger'
-                  render={({ field }) => (
-                    <FormItem className='bg-background flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm'>
-                      <div className='space-y-0.5'>
-                        <FormLabel>Name bei Ziel</FormLabel>
-                        <FormDescription>
-                          Namenseingabefeld im Zielbereich anzeigen.
+                          Wenn deaktiviert, werden Fahrgast-Felder im Formular
+                          ausgeblendet. Die Fahrt wird ohne Namen erstellt.
                         </FormDescription>
                       </div>
                       <FormControl>

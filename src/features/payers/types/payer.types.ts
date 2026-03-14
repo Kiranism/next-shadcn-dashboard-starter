@@ -1,10 +1,10 @@
 export interface BillingTypeBehavior {
-  returnPolicy: 'none' | 'create_placeholder' | 'create_on_demand';
+  returnPolicy: 'none' | 'time_tbd' | 'exact';
+  lockReturnMode: boolean;
   lockPickup: boolean;
   lockDropoff: boolean;
   prefillDropoffFromPickup: boolean;
-  showPickupPassenger: boolean;
-  showDropoffPassenger: boolean;
+  requirePassenger: boolean;
   defaultPickup?: string | null;
   defaultDropoff?: string | null;
 }

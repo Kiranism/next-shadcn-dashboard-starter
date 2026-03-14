@@ -259,7 +259,9 @@ function BillingTypeCard({
                 Sperrt Abholung
               </span>
             )}
-            {item.behavior_profile?.returnPolicy === 'create_placeholder' && (
+            {(item.behavior_profile?.returnPolicy === 'time_tbd' ||
+              (item.behavior_profile?.returnPolicy as any) ===
+                'create_placeholder') && (
               <span className='bg-muted text-muted-foreground rounded-sm px-1.5 py-0.5 text-[10px] font-bold tracking-wider uppercase'>
                 Rückfahrt Auto
               </span>
