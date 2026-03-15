@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import {
   DndContext,
@@ -13,6 +14,7 @@ import { closestCenter } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { Maximize2, Minimize2 } from 'lucide-react';
 
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -40,6 +42,14 @@ interface TripsKanbanBoardProps {
 
 type GroupByMode = 'driver' | 'status' | 'payer';
 
+const STATUS_LABEL_DE: Record<string, string> = {
+  pending: 'Offen',
+  assigned: 'Zugewiesen',
+  in_progress: 'In Fahrt',
+  completed: 'Abgeschlossen',
+  cancelled: 'Storniert'
+};
+
 type KanbanColumn = {
   id: string;
   title: string;
@@ -57,6 +67,21 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
     >
   >({});
   const [isSaving, setIsSaving] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!isExpanded) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsExpanded(false);
+    };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isExpanded]);
 
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -155,9 +180,27 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
 
   const hasPendingChanges = Object.keys(pendingChanges).length > 0;
 
-  return (
-    <div className='bg-background flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border'>
-      <div className='flex shrink-0 items-center justify-between gap-3 border-b px-4 py-2 text-sm'>
+  const expandButton = (
+    <Button
+      type='button'
+      variant='ghost'
+      size='icon'
+      className='text-muted-foreground hover:text-foreground h-8 w-8 shrink-0'
+      onClick={() => setIsExpanded((v) => !v)}
+      aria-label={isExpanded ? 'Kanban verkleinern' : 'Kanban vergrößern'}
+    >
+      {isExpanded ? (
+        <Minimize2 className='h-4 w-4' />
+      ) : (
+        <Maximize2 className='h-4 w-4' />
+      )}
+    </Button>
+  );
+
+  const headerBar = (
+    <div className='flex shrink-0 items-center justify-between gap-3 border-b px-4 py-2 text-sm'>
+      <div className='flex items-center gap-2'>
+        {expandButton}
         <div className='flex flex-col'>
           <span className='font-medium'>Kanban-Ansicht</span>
           <span className='text-muted-foreground text-xs'>
@@ -169,69 +212,89 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
                 : 'Kostenträger'}
           </span>
         </div>
-        <div className='flex items-center gap-2'>
-          <Select
-            value={groupBy}
-            onValueChange={(value: GroupByMode) => setGroupBy(value)}
+      </div>
+      <div className='flex items-center gap-2'>
+        <Select
+          value={groupBy}
+          onValueChange={(value: GroupByMode) => setGroupBy(value)}
+        >
+          <SelectTrigger className='h-8 w-40 text-xs'>
+            <SelectValue placeholder='Gruppieren nach' />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value='driver' className='text-xs'>
+              Fahrer
+            </SelectItem>
+            <SelectItem value='status' className='text-xs'>
+              Status
+            </SelectItem>
+            <SelectItem value='payer' className='text-xs'>
+              Kostenträger
+            </SelectItem>
+          </SelectContent>
+        </Select>
+        <div className='flex items-center gap-1.5'>
+          <Button
+            variant='ghost'
+            size='sm'
+            className='text-muted-foreground hover:text-foreground h-8 px-3 text-xs'
+            disabled={!hasPendingChanges || isSaving}
+            onClick={handleReset}
           >
-            <SelectTrigger className='h-8 w-40 text-xs'>
-              <SelectValue placeholder='Gruppieren nach' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='driver' className='text-xs'>
-                Fahrer
-              </SelectItem>
-              <SelectItem value='status' className='text-xs'>
-                Status
-              </SelectItem>
-              <SelectItem value='payer' className='text-xs'>
-                Kostenträger
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          <div className='flex items-center gap-1.5'>
-            <Button
-              variant='ghost'
-              size='sm'
-              className='text-muted-foreground hover:text-foreground h-8 px-3 text-xs'
-              disabled={!hasPendingChanges || isSaving}
-              onClick={handleReset}
-            >
-              Verwerfen
-            </Button>
-            <Button
-              variant='default'
-              size='sm'
-              className='h-8 px-3 text-xs'
-              disabled={!hasPendingChanges || isSaving}
-              onClick={handleSave}
-            >
-              {isSaving ? 'Speichern…' : 'Speichern'}
-            </Button>
-          </div>
+            Verwerfen
+          </Button>
+          <Button
+            variant='default'
+            size='sm'
+            className='h-8 px-3 text-xs'
+            disabled={!hasPendingChanges || isSaving}
+            onClick={handleSave}
+          >
+            {isSaving ? 'Speichern…' : 'Speichern'}
+          </Button>
         </div>
       </div>
-      <div className='min-h-0 min-w-0 flex-1 overflow-auto'>
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <div className='inline-flex min-h-[260px] min-w-max gap-3 p-3'>
-            {columns.map((column) => {
-              const items = itemsByColumn[column.id] ?? [];
-              return (
-                <KanbanColumnView
-                  key={column.id}
-                  column={column}
-                  items={items}
-                  groupBy={groupBy}
-                />
-              );
-            })}
-          </div>
-        </DndContext>
-      </div>
+    </div>
+  );
+
+  const boardArea = (
+    <div className='min-h-0 min-w-0 flex-1 overflow-auto'>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <div className='inline-flex min-h-[260px] min-w-max gap-3 p-3'>
+          {columns.map((column) => {
+            const items = itemsByColumn[column.id] ?? [];
+            return (
+              <KanbanColumnView
+                key={column.id}
+                column={column}
+                items={items}
+                groupBy={groupBy}
+              />
+            );
+          })}
+        </div>
+      </DndContext>
+    </div>
+  );
+
+  if (isExpanded && typeof document !== 'undefined') {
+    return createPortal(
+      <div className='bg-background fixed inset-[2.5%] z-40 flex flex-col overflow-hidden rounded-lg border shadow-2xl'>
+        {headerBar}
+        {boardArea}
+      </div>,
+      document.body
+    );
+  }
+
+  return (
+    <div className='bg-background flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border'>
+      {headerBar}
+      {boardArea}
     </div>
   );
 }
@@ -440,7 +503,7 @@ function TripCard({ trip, columnId }: TripCardProps) {
         <span className='font-semibold'>{timeLabel}</span>
         {trip.status && (
           <Badge variant='outline' className='text-[10px] uppercase'>
-            {trip.status}
+            {STATUS_LABEL_DE[trip.status] ?? trip.status}
           </Badge>
         )}
       </div>
