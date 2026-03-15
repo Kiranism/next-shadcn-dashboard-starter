@@ -29,6 +29,7 @@ import { Separator } from '@/components/ui/separator';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { useTripFormData } from '@/features/trips/hooks/use-trip-form-data';
 import { tripsService } from '@/features/trips/api/trips.service';
+import { getStatusWhenDriverChanges } from '@/features/trips/lib/trip-status';
 import { createClient as createSupabaseClient } from '@/lib/supabase/client';
 import { format } from 'date-fns';
 import {
@@ -504,7 +505,8 @@ export function CreateTripForm({
         billing_type_id: values.billing_type_id || null,
         driver_id: driverId,
         notes: values.notes || null,
-        status: 'pending' as const,
+        status: (getStatusWhenDriverChanges('pending', driverId) ??
+          'pending') as 'pending' | 'assigned',
         company_id: companyId,
         created_by: user?.id || null,
         stop_updates: [] as any[]

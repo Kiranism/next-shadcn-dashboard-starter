@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/button';
 import type { Trip } from '../api/trips.service';
 import { tripsService } from '../api/trips.service';
 import { useTripFormData } from '@/features/trips/hooks/use-trip-form-data';
+import { getStatusWhenDriverChanges } from '@/features/trips/lib/trip-status';
 
 interface TripsKanbanBoardProps {
   trips: (Trip & {
@@ -129,13 +130,20 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
       if (updates.length === 0) return;
 
       await Promise.all(
-        updates.map(([id, change]) =>
-          tripsService.updateTrip(id, {
+        updates.map(([id, change]) => {
+          const trip = trips.find((t) => t.id === id);
+          const status =
+            change.status ??
+            getStatusWhenDriverChanges(
+              trip?.status ?? 'pending',
+              change.driver_id ?? null
+            );
+          return tripsService.updateTrip(id, {
             driver_id: change.driver_id,
-            status: change.status,
+            status,
             payer_id: change.payer_id
-          })
-        )
+          });
+        })
       );
 
       setPendingChanges({});

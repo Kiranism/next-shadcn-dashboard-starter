@@ -14,6 +14,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Trip } from '@/features/trips/api/trips.service';
 import { useTripFormData } from '@/features/trips/hooks/use-trip-form-data';
+import { getStatusWhenDriverChanges } from '@/features/trips/lib/trip-status';
 
 interface DriverSelectCellProps {
   trip: Trip & { group_id?: string | null };
@@ -39,29 +40,11 @@ export function DriverSelectCell({ trip }: DriverSelectCellProps) {
 
     setIsUpdating(true);
 
-    // #region agent log
-    fetch('http://127.0.0.1:7665/ingest/fea5df42-b29d-48fc-9b64-783ecb4dafb8', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Debug-Session-Id': 'ba8809'
-      },
-      body: JSON.stringify({
-        sessionId: 'ba8809',
-        runId: 'pre-refresh',
-        hypothesisId: 'H1',
-        location: 'driver-select-cell.tsx:handleChange',
-        message: 'Driver change requested from cell',
-        data: {
-          tripId: trip.id,
-          groupId: trip.group_id,
-          previousDriverId: selectedDriverId,
-          newDriverId: newDriverId
-        },
-        timestamp: Date.now()
-      })
-    }).catch(() => {});
-    // #endregion agent log
+    const payload: { driver_id: string | null; status?: string } = {
+      driver_id: newDriverId
+    };
+    const derivedStatus = getStatusWhenDriverChanges(trip.status, newDriverId);
+    if (derivedStatus) payload.status = derivedStatus;
 
     const supabase = createClient();
 
@@ -69,7 +52,7 @@ export function DriverSelectCell({ trip }: DriverSelectCellProps) {
       if (trip.group_id) {
         const { error } = await supabase
           .from('trips')
-          .update({ driver_id: newDriverId })
+          .update(payload)
           .eq('group_id', trip.group_id);
 
         if (error) throw error;
@@ -77,7 +60,7 @@ export function DriverSelectCell({ trip }: DriverSelectCellProps) {
       } else {
         const { error } = await supabase
           .from('trips')
-          .update({ driver_id: newDriverId })
+          .update(payload)
           .eq('id', trip.id);
 
         if (error) throw error;
@@ -85,33 +68,6 @@ export function DriverSelectCell({ trip }: DriverSelectCellProps) {
       }
 
       setSelectedDriverId(newDriverId);
-
-      // #region agent log
-      fetch(
-        'http://127.0.0.1:7665/ingest/fea5df42-b29d-48fc-9b64-783ecb4dafb8',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Debug-Session-Id': 'ba8809'
-          },
-          body: JSON.stringify({
-            sessionId: 'ba8809',
-            runId: 'pre-refresh',
-            hypothesisId: 'H1',
-            location: 'driver-select-cell.tsx:afterUpdate',
-            message: 'Driver updated successfully, triggering refresh',
-            data: {
-              tripId: trip.id,
-              groupId: trip.group_id,
-              appliedDriverId: newDriverId
-            },
-            timestamp: Date.now()
-          })
-        }
-      ).catch(() => {});
-      // #endregion agent log
-
       router.refresh();
     } catch (error: any) {
       toast.error(
