@@ -90,15 +90,15 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
   };
 
   return (
-    <div className='bg-muted/40 mb-1 flex flex-wrap items-center justify-between gap-2 rounded-lg px-3 py-2 text-xs'>
-      <div className='flex flex-wrap items-center gap-2'>
+    <div className='bg-muted/40 mb-1 flex min-w-0 flex-1 items-center justify-between gap-2 rounded-lg px-3 py-2 text-xs'>
+      <div className='flex min-w-0 flex-1 flex-wrap items-center gap-2 md:flex-nowrap'>
         <Input
           placeholder='Fahrgast / Adresse suchen'
-          value={name ?? ''}
+          value={name}
           onChange={(event) => {
             updateFilters({ name: event.target.value || null });
           }}
-          className='h-8 w-44 sm:w-56'
+          className='h-8 min-w-[120px] flex-1 truncate'
         />
 
         <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
@@ -106,12 +106,14 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
             <Button
               variant='outline'
               size='sm'
-              className='h-8 w-[150px] justify-start gap-2 border-dashed'
+              className='h-8 flex-shrink-0 justify-start gap-2 border-dashed'
             >
               <CalendarIcon className='h-4 w-4' />
-              {selectedDate
-                ? format(selectedDate, 'dd.MM.yyyy', { locale: de })
-                : 'Heute wählen'}
+              <span className='xs:inline hidden'>
+                {selectedDate
+                  ? format(selectedDate, 'dd.MM.yyyy', { locale: de })
+                  : 'Heute wählen'}
+              </span>
             </Button>
           </PopoverTrigger>
           <PopoverContent className='w-auto p-0' align='start'>
@@ -142,7 +144,7 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
             }
           }}
         >
-          <SelectTrigger className='h-8 w-40 text-xs'>
+          <SelectTrigger className='h-8 min-w-[110px] flex-shrink-0 text-xs'>
             <SelectValue placeholder='Fahrer' />
           </SelectTrigger>
           <SelectContent>
@@ -164,7 +166,7 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
             }
           }}
         >
-          <SelectTrigger className='h-8 w-40 text-xs'>
+          <SelectTrigger className='h-8 min-w-[110px] flex-shrink-0 text-xs'>
             <SelectValue placeholder='Status' />
           </SelectTrigger>
           <SelectContent>
@@ -187,7 +189,7 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
             }
           }}
         >
-          <SelectTrigger className='h-8 w-44 text-xs'>
+          <SelectTrigger className='h-8 min-w-[120px] flex-shrink-0 text-xs'>
             <SelectValue placeholder='Kostenträger' />
           </SelectTrigger>
           <SelectContent>
@@ -202,31 +204,32 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
           </SelectContent>
         </Select>
 
-        <Select
-          value={billingTypeId}
-          onValueChange={(val) => {
-            if (val === 'all') {
-              updateFilters({ billing_type_id: null });
-            } else {
-              updateFilters({ billing_type_id: val });
-            }
-          }}
-          disabled={!billingTypes.length}
-        >
-          <SelectTrigger className='h-8 w-44 text-xs'>
-            <SelectValue placeholder='Abrechnung' />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value='all' className='text-xs'>
-              Alle Abrechnungen
-            </SelectItem>
-            {billingTypes.map((bt) => (
-              <SelectItem key={bt.id} value={bt.id} className='text-xs'>
-                {bt.name}
+        {payerId !== 'all' && billingTypes.length > 0 && (
+          <Select
+            value={billingTypeId}
+            onValueChange={(val) => {
+              if (val === 'all') {
+                updateFilters({ billing_type_id: null });
+              } else {
+                updateFilters({ billing_type_id: val });
+              }
+            }}
+          >
+            <SelectTrigger className='h-8 min-w-[120px] flex-shrink-0 text-xs'>
+              <SelectValue placeholder='Abrechnung' />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='all' className='text-xs'>
+                Alle Abrechnungen
               </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+              {billingTypes.map((bt) => (
+                <SelectItem key={bt.id} value={bt.id} className='text-xs'>
+                  {bt.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
       <div className='flex items-center gap-3'>
         <span className='text-muted-foreground hidden text-[11px] sm:inline'>

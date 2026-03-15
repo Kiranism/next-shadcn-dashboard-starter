@@ -154,8 +154,12 @@ export default async function TripsListingPage({
 
   return (
     <div className='flex min-h-0 min-w-0 flex-1 flex-col space-y-4 overflow-hidden'>
-      <TripsFiltersBar totalItems={totalTrips} />
-      <TripsViewToggle currentView={view} />
+      <div className='flex flex-wrap items-center gap-3'>
+        <TripsViewToggle currentView={view} />
+        <div className='min-w-0 flex-1'>
+          <TripsFiltersBar totalItems={totalTrips} />
+        </div>
+      </div>
       {view === 'calendar' && <TripsCalendar trips={trips as Trip[]} />}
       {view === 'kanban' && (
         <TripsKanbanBoard trips={trips as Trip[]} totalItems={totalTrips} />
