@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -21,6 +21,7 @@ import {
   PopoverTrigger
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import type { DateRange } from 'react-day-picker';
 import { useTripFormData } from '@/features/trips/hooks/use-trip-form-data';
 
 interface TripsFiltersBarProps {
@@ -40,17 +41,49 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
   const billingTypeId = searchParams.get('billing_type_id') ?? 'all';
   const scheduledAt = searchParams.get('scheduled_at') ?? '';
 
+  const hasSetDefaultDate = useRef(false);
+
+  useEffect(() => {
+    if (hasSetDefaultDate.current) return;
+    if (scheduledAt !== '') return;
+    hasSetDefaultDate.current = true;
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('scheduled_at', String(startOfToday.getTime()));
+    params.set('page', '1');
+    const next = `${pathname}?${params.toString()}`;
+    startTransition(() => {
+      router.replace(next, { scroll: false });
+    });
+  }, [scheduledAt, pathname, searchParams, router]);
+
   const { drivers, payers, billingTypes } = useTripFormData(payerId ?? null);
 
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
 
-  const selectedDate = useMemo(() => {
+  const selectedDateRange = useMemo((): DateRange | undefined => {
     if (!scheduledAt) return undefined;
-    const ts = Number(scheduledAt.split(',')[0]);
-    if (Number.isNaN(ts)) return undefined;
-    const d = new Date(ts);
-    return Number.isNaN(d.getTime()) ? undefined : d;
+    const parts = scheduledAt.split(',');
+    const fromTs = parts[0] ? Number(parts[0]) : NaN;
+    const toTs = parts[1] ? Number(parts[1]) : fromTs;
+    if (Number.isNaN(fromTs)) return undefined;
+    const from = new Date(fromTs);
+    if (Number.isNaN(from.getTime())) return undefined;
+    const to = Number.isNaN(toTs) ? from : new Date(toTs);
+    if (Number.isNaN(to.getTime())) return { from };
+    return { from, to: from.getTime() === to.getTime() ? from : to };
   }, [scheduledAt]);
+
+  const dateButtonLabel = useMemo(() => {
+    if (!selectedDateRange?.from) return 'Heute wählen';
+    const from = selectedDateRange.from;
+    const to = selectedDateRange.to;
+    if (!to || from.getTime() === to.getTime()) {
+      return format(from, 'dd.MM.yyyy', { locale: de });
+    }
+    return `${format(from, 'dd.MM.yyyy', { locale: de })} – ${format(to, 'dd.MM.yyyy', { locale: de })}`;
+  }, [selectedDateRange]);
 
   const driverOptions = useMemo(
     () => [
@@ -109,26 +142,38 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
               className='h-8 flex-shrink-0 justify-start gap-2 border-dashed'
             >
               <CalendarIcon className='h-4 w-4' />
-              <span className='xs:inline hidden'>
-                {selectedDate
-                  ? format(selectedDate, 'dd.MM.yyyy', { locale: de })
-                  : 'Heute wählen'}
-              </span>
+              <span className='xs:inline hidden'>{dateButtonLabel}</span>
             </Button>
           </PopoverTrigger>
           <PopoverContent className='w-auto p-0' align='start'>
             <Calendar
-              mode='single'
-              selected={selectedDate}
-              onSelect={(date) => {
-                if (!date) {
+              mode='range'
+              selected={selectedDateRange}
+              onSelect={(range: DateRange | undefined) => {
+                if (!range?.from) {
                   updateFilters({ scheduled_at: null });
                   return;
                 }
-                const ts = date.getTime();
-                updateFilters({ scheduled_at: String(ts) });
-                setDatePopoverOpen(false);
+                const startOfDay = (d: Date) => {
+                  const x = new Date(d);
+                  x.setHours(0, 0, 0, 0);
+                  return x.getTime();
+                };
+                const endOfDay = (d: Date) => {
+                  const x = new Date(d);
+                  x.setHours(23, 59, 59, 999);
+                  return x.getTime();
+                };
+                const fromTs = startOfDay(range.from);
+                const toTs = range.to
+                  ? endOfDay(range.to)
+                  : startOfDay(range.from);
+                const value =
+                  fromTs === toTs ? String(fromTs) : `${fromTs},${toTs}`;
+                updateFilters({ scheduled_at: value });
+                if (range.from && range.to) setDatePopoverOpen(false);
               }}
+              numberOfMonths={1}
               initialFocus
             />
           </PopoverContent>
