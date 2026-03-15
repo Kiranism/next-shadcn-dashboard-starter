@@ -1,8 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { parseAsString, useQueryState } from 'nuqs';
+import { useMemo, useState, useTransition } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { CalendarIcon } from 'lucide-react';
@@ -30,19 +29,18 @@ interface TripsFiltersBarProps {
 
 export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
   const router = useRouter();
-  const { drivers, payers } = useTripFormData();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [, startTransition] = useTransition();
 
-  const [name, setName] = useQueryState('name', parseAsString);
-  const [driverId, setDriverId] = useQueryState(
-    'driver_id',
-    parseAsString.withDefault('all')
-  );
-  const [status, setStatus] = useQueryState('status', parseAsString);
-  const [payerId, setPayerId] = useQueryState('payer_id', parseAsString);
-  const [scheduledAt, setScheduledAt] = useQueryState(
-    'scheduled_at',
-    parseAsString
-  );
+  const name = searchParams.get('name') ?? '';
+  const driverId = searchParams.get('driver_id') ?? 'all';
+  const status = searchParams.get('status') ?? 'all';
+  const payerId = searchParams.get('payer_id') ?? 'all';
+  const billingTypeId = searchParams.get('billing_type_id') ?? 'all';
+  const scheduledAt = searchParams.get('scheduled_at') ?? '';
+
+  const { drivers, payers, billingTypes } = useTripFormData(payerId ?? null);
 
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
 
@@ -71,9 +69,24 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
     { label: 'Abgeschlossen', value: 'completed' },
     { label: 'Storniert', value: 'cancelled' }
   ];
+  const updateFilters = (updates: Record<string, string | null>) => {
+    const params = new URLSearchParams(searchParams.toString());
 
-  const triggerRefresh = () => {
-    router.refresh();
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null || value === '') {
+        params.delete(key);
+      } else {
+        params.set(key, value);
+      }
+    });
+
+    // Always reset to first page when filters change
+    params.set('page', '1');
+
+    const next = `${pathname}?${params.toString()}`;
+    startTransition(() => {
+      router.replace(next, { scroll: false });
+    });
   };
 
   return (
@@ -83,8 +96,7 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
           placeholder='Fahrgast / Adresse suchen'
           value={name ?? ''}
           onChange={(event) => {
-            void setName(event.target.value ? event.target.value : null);
-            triggerRefresh();
+            updateFilters({ name: event.target.value || null });
           }}
           className='h-8 w-44 sm:w-56'
         />
@@ -108,14 +120,12 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
               selected={selectedDate}
               onSelect={(date) => {
                 if (!date) {
-                  void setScheduledAt(null);
-                  triggerRefresh();
+                  updateFilters({ scheduled_at: null });
                   return;
                 }
                 const ts = date.getTime();
-                void setScheduledAt(String(ts));
+                updateFilters({ scheduled_at: String(ts) });
                 setDatePopoverOpen(false);
-                triggerRefresh();
               }}
               initialFocus
             />
@@ -123,14 +133,13 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
         </Popover>
 
         <Select
-          value={driverId ?? 'all'}
+          value={driverId}
           onValueChange={(val) => {
             if (val === 'all') {
-              void setDriverId(null);
+              updateFilters({ driver_id: null });
             } else {
-              void setDriverId(val);
+              updateFilters({ driver_id: val });
             }
-            triggerRefresh();
           }}
         >
           <SelectTrigger className='h-8 w-40 text-xs'>
@@ -146,14 +155,13 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
         </Select>
 
         <Select
-          value={status ?? 'all'}
+          value={status}
           onValueChange={(val) => {
             if (val === 'all') {
-              void setStatus(null);
+              updateFilters({ status: null });
             } else {
-              void setStatus(val);
+              updateFilters({ status: val });
             }
-            triggerRefresh();
           }}
         >
           <SelectTrigger className='h-8 w-40 text-xs'>
@@ -169,14 +177,14 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
         </Select>
 
         <Select
-          value={payerId ?? 'all'}
+          value={payerId}
           onValueChange={(val) => {
+            // Changing payer invalidates billing type
             if (val === 'all') {
-              void setPayerId(null);
+              updateFilters({ payer_id: null, billing_type_id: null });
             } else {
-              void setPayerId(val);
+              updateFilters({ payer_id: val, billing_type_id: null });
             }
-            triggerRefresh();
           }}
         >
           <SelectTrigger className='h-8 w-44 text-xs'>
@@ -193,6 +201,32 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
             ))}
           </SelectContent>
         </Select>
+
+        <Select
+          value={billingTypeId}
+          onValueChange={(val) => {
+            if (val === 'all') {
+              updateFilters({ billing_type_id: null });
+            } else {
+              updateFilters({ billing_type_id: val });
+            }
+          }}
+          disabled={!billingTypes.length}
+        >
+          <SelectTrigger className='h-8 w-44 text-xs'>
+            <SelectValue placeholder='Abrechnung' />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value='all' className='text-xs'>
+              Alle Abrechnungen
+            </SelectItem>
+            {billingTypes.map((bt) => (
+              <SelectItem key={bt.id} value={bt.id} className='text-xs'>
+                {bt.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className='flex items-center gap-3'>
         <span className='text-muted-foreground hidden text-[11px] sm:inline'>
@@ -203,12 +237,14 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
           size='sm'
           className='text-muted-foreground hover:text-foreground h-8 px-3 text-xs'
           onClick={() => {
-            void setName(null);
-            void setDriverId('all');
-            void setStatus(null);
-            void setPayerId(null);
-            void setScheduledAt(null);
-            triggerRefresh();
+            updateFilters({
+              name: null,
+              driver_id: null,
+              status: null,
+              payer_id: null,
+              scheduled_at: null,
+              billing_type_id: null
+            });
           }}
         >
           Filter zurücksetzen

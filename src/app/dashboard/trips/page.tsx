@@ -15,6 +15,8 @@ export const metadata = {
   title: 'Dashboard: Fahrten'
 };
 
+export const dynamic = 'force-dynamic';
+
 type pageProps = {
   searchParams: Promise<SearchParams>;
 };

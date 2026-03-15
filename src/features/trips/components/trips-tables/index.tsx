@@ -8,7 +8,6 @@ import * as React from 'react';
 import { ColumnDef } from '@tanstack/react-table';
 import { parseAsInteger, useQueryState } from 'nuqs';
 import { columns } from './columns';
-import { TripsDriverFilter } from './driver-filter';
 
 export { columns };
 
@@ -90,9 +89,7 @@ export function TripsTable<TData, TValue>({
         return cn(classes);
       }}
     >
-      <DataTableToolbar table={table}>
-        <TripsDriverFilter table={table} />
-      </DataTableToolbar>
+      <DataTableToolbar table={table} />
     </DataTable>
   );
 }

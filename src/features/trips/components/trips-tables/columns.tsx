@@ -71,7 +71,7 @@ export const columns: ColumnDef<any>[] = [
       label: 'Datum',
       variant: 'date'
     },
-    enableColumnFilter: true
+    enableColumnFilter: false
   },
   {
     id: 'time',
@@ -143,7 +143,7 @@ export const columns: ColumnDef<any>[] = [
       label: 'Fahrgast',
       variant: 'text'
     },
-    enableColumnFilter: true
+    enableColumnFilter: false
   },
   {
     accessorKey: 'pickup_address',
@@ -209,7 +209,7 @@ export const columns: ColumnDef<any>[] = [
         value
       }))
     },
-    enableColumnFilter: true
+    enableColumnFilter: false
   },
   {
     id: 'payer_name',
