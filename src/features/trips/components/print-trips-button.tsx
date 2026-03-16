@@ -5,7 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Printer, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
-import { useSearchParams } from 'next/navigation';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { toPng, toJpeg } from 'html-to-image';
 import JSZip from 'jszip';
@@ -16,30 +21,25 @@ import { createRoot } from 'react-dom/client';
 
 export function PrintTripsButton() {
   const [isGenerating, setIsGenerating] = React.useState(false);
-  const searchParams = useSearchParams();
-
-  // Get the scheduled_at from search params or default to today
-  const scheduledAtParam = searchParams.get('scheduled_at');
+  const [date, setDate] = React.useState<Date | undefined>(new Date());
+  const [isOpen, setIsOpen] = React.useState(false);
 
   const generatePrintouts = async () => {
+    if (!date) {
+      toast.error('Bitte wählen Sie ein Datum aus.');
+      return;
+    }
+
     try {
       setIsGenerating(true);
+      setIsOpen(false);
       const supabase = createClient();
 
-      // 1. Determine the date range for the filtered day
-      let dateToProcess = new Date();
-      if (scheduledAtParam) {
-        const timestamp = Number(scheduledAtParam.split(',')[0]);
-        if (!isNaN(timestamp)) {
-          dateToProcess = new Date(timestamp);
-        }
-      }
-
-      const start = startOfDay(dateToProcess).toISOString();
-      const end = endOfDay(dateToProcess).toISOString();
+      const start = startOfDay(date).toISOString();
+      const end = endOfDay(date).toISOString();
 
       // 2. Fetch all trips for that day
-      toast.info('Lade Fahrten für den Druck...');
+      toast.info(`Lade Fahrten für den ${format(date, 'dd.MM.yyyy')}...`);
       const { data: trips, error } = await supabase
         .from('trips')
         .select(
@@ -71,10 +71,8 @@ export function PrintTripsButton() {
       // 4. Generate images and PDFs for each group
       toast.info(`Generiere ${Object.keys(groups).length} Druckvorlagen...`);
       const zip = new JSZip();
-      const dateStr = format(dateToProcess, 'dd.MM.yy');
+      const dateStr = format(date, 'dd.MM.yy');
 
-      // To generate images, we need to temporarily render the templates in the DOM
-      // but hidden from view.
       const offscreenContainer = document.createElement('div');
       offscreenContainer.style.position = 'absolute';
       offscreenContainer.style.left = '-9999px';
@@ -84,54 +82,47 @@ export function PrintTripsButton() {
       for (const driverName of Object.keys(groups)) {
         const driverTrips = groups[driverName];
 
-        // --- Render Desktop Template (PNG) ---
         const desktopDiv = document.createElement('div');
         offscreenContainer.appendChild(desktopDiv);
         const desktopRoot = createRoot(desktopDiv);
         desktopRoot.render(
           <PrintTemplate
             driverName={driverName}
-            date={dateToProcess}
+            date={date}
             trips={driverTrips}
           />
         );
 
-        // --- Render Mobile Template (for PDF) ---
         const mobileDiv = document.createElement('div');
         offscreenContainer.appendChild(mobileDiv);
         const mobileRoot = createRoot(mobileDiv);
         mobileRoot.render(
           <MobilePrintTemplate
             driverName={driverName}
-            date={dateToProcess}
+            date={date}
             trips={driverTrips}
           />
         );
 
-        // Wait for React to render
         await new Promise((resolve) => setTimeout(resolve, 800));
 
-        // 1. Capture PNG for Desktop
         const desktopElement = desktopDiv.firstElementChild as HTMLElement;
         if (desktopElement) {
           const pngDataUrl = await toPng(desktopElement, {
-            quality: 0.8, // Slightly lower quality for smaller PNGs
-            pixelRatio: 1.5 // 1.5 is enough for clear text
+            quality: 0.8,
+            pixelRatio: 1.5
           });
           const pngBase64 = pngDataUrl.replace(/^data:image\/png;base64,/, '');
           zip.file(`${dateStr}.${driverName}.png`, pngBase64, { base64: true });
         }
 
-        // 2. Capture PDF (from mobile view)
         const mobileElement = mobileDiv.firstElementChild as HTMLElement;
         if (mobileElement) {
-          // Use JPEG for PDF background to significantly reduce size
           const mobileJpegDataUrl = await toJpeg(mobileElement, {
-            quality: 0.75, // Good balance for readability vs size
-            pixelRatio: 1.2 // Lower pixel ratio for mobile PDF
+            quality: 0.75,
+            pixelRatio: 1.2
           });
 
-          // Create PDF using jsPDF
           const width = mobileElement.offsetWidth;
           const height = mobileElement.offsetHeight;
 
@@ -139,15 +130,13 @@ export function PrintTripsButton() {
             orientation: 'portrait',
             unit: 'px',
             format: [width, height],
-            compress: true // Enable jsPDF's internal compression
+            compress: true
           });
 
           pdf.addImage(mobileJpegDataUrl, 'JPEG', 0, 0, width, height);
 
-          // 3. Add Interactive Layer (Links)
           const mobileRect = mobileElement.getBoundingClientRect();
 
-          // Find all address links
           const addressElements =
             mobileElement.querySelectorAll('[data-address]');
           addressElements.forEach((el) => {
@@ -165,7 +154,6 @@ export function PrintTripsButton() {
             }
           });
 
-          // Find all phone links
           const phoneElements = mobileElement.querySelectorAll('[data-phone]');
           phoneElements.forEach((el) => {
             const rect = el.getBoundingClientRect();
@@ -185,21 +173,18 @@ export function PrintTripsButton() {
           zip.file(`${dateStr}.${driverName}.pdf`, pdfBlob);
         }
 
-        // Cleanup
         desktopRoot.unmount();
         mobileRoot.unmount();
         offscreenContainer.removeChild(desktopDiv);
         offscreenContainer.removeChild(mobileDiv);
       }
 
-      // 5. Finalize ZIP and download
       const content = await zip.generateAsync({ type: 'blob' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(content);
       link.download = `Fahrtenplan_${dateStr}.zip`;
       link.click();
 
-      // Cleanup
       document.body.removeChild(offscreenContainer);
       toast.success('Druckvorlagen und PDFs erfolgreich generiert!');
     } catch (err: any) {
@@ -211,18 +196,44 @@ export function PrintTripsButton() {
   };
 
   return (
-    <Button
-      variant='outline'
-      onClick={generatePrintouts}
-      disabled={isGenerating}
-      className='gap-2'
-    >
-      {isGenerating ? (
-        <Loader2 className='h-4 w-4 animate-spin' />
-      ) : (
-        <Printer className='h-4 w-4' />
-      )}
-      Fahrten drucken
-    </Button>
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <Button variant='outline' disabled={isGenerating} className='gap-2'>
+          {isGenerating ? (
+            <Loader2 className='h-4 w-4 animate-spin' />
+          ) : (
+            <Printer className='h-4 w-4' />
+          )}
+          Fahrten drucken
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className='w-auto p-0' align='end'>
+        <div className='border-b bg-slate-50 p-3'>
+          <h4 className='text-sm font-bold text-slate-900'>
+            Druckdatum wählen
+          </h4>
+          <p className='text-[10px] text-slate-500'>
+            Fahrten für diesen Tag werden exportiert.
+          </p>
+        </div>
+        <Calendar
+          mode='single'
+          selected={date}
+          onSelect={setDate}
+          initialFocus
+          disabled={(date) => isGenerating}
+        />
+        <div className='flex justify-end border-t bg-slate-50 p-3'>
+          <Button
+            size='sm'
+            onClick={generatePrintouts}
+            disabled={isGenerating || !date}
+            className='w-full bg-emerald-600 hover:bg-emerald-700'
+          >
+            {isGenerating ? 'Generiere...' : 'ZIP Generieren'}
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
