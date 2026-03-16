@@ -1,7 +1,16 @@
 ---
 name: World-class Cmd+K experience
 overview: "Transform the command palette from page-only navigation into a dispatch-centric power tool: @-search for Fahrgäste with next/previous/cancelled context, global \"Neue Fahrt\", and trip→driver assignment, using kbar dynamic actions and German labels throughout."
-todos: []
+todos:
+  - id: todo-1773644054200-9o45vt2vr
+    content: "Can you please make the kbar more intuitve. I would like to ensure that if the user hits @ that he can start looking for clients. suggestions should appear after 2 letters. "
+    status: pending
+  - id: todo-1773644101282-xf78u4rrv
+    content: "if client is choosen, the last 3 prev and next 3 trips should show up. Everything below exactly like kbar function and ui. Imagine the kbar as being a 1 huge column. "
+    status: pending
+  - id: todo-1773644158693-zl1rrwxpr
+    content: Currently we do have src/features/clients/components/passenger-search-overlay.tsx which has a lots of the functions but not the design we want for our kbar, nor the flow. please ensure to allign
+    status: pending
 isProject: false
 ---
 

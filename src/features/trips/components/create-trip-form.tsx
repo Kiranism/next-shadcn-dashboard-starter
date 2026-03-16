@@ -99,12 +99,18 @@ interface CreateTripFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
   onClientSelect?: (client: ClientOption | null) => void;
+  /**
+   * Optional client id to preselect when opening the form
+   * globally (e.g. via Cmd+K \"Neue Fahrt für [Name]\").
+   */
+  preselectedClientId?: string;
 }
 
 export function CreateTripForm({
   onSuccess,
   onCancel,
-  onClientSelect
+  onClientSelect,
+  preselectedClientId
 }: CreateTripFormProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const hasInitializedReturnDateRef = React.useRef(false);
@@ -147,8 +153,36 @@ export function CreateTripForm({
   const watchedReturnMode = form.watch('return_mode') as ReturnMode;
   const watchedScheduledAt = form.watch('scheduled_at');
 
-  const { payers, billingTypes, drivers, isLoading, searchClients } =
-    useTripFormData(watchedPayerId || null);
+  const {
+    payers,
+    billingTypes,
+    drivers,
+    isLoading,
+    searchClients,
+    searchClientsById
+  } = useTripFormData(watchedPayerId || null);
+
+  // When preselectedClientId is provided (e.g. from Cmd+K),
+  // resolve it to a ClientOption once on mount and notify the parent.
+  React.useEffect(() => {
+    if (!preselectedClientId || !onClientSelect) return;
+
+    let isActive = true;
+
+    const resolveClient = async () => {
+      const client = await searchClientsById(preselectedClientId);
+      if (client && isActive) {
+        onClientSelect(client);
+      }
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    resolveClient();
+
+    return () => {
+      isActive = false;
+    };
+  }, [preselectedClientId, onClientSelect, searchClientsById]);
 
   // Reset billing type when payer changes
   React.useEffect(() => {

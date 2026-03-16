@@ -127,6 +127,21 @@ export function useTripFormData(payerId?: string | null) {
     return data || [];
   };
 
+  const searchClientsById = async (
+    id: string
+  ): Promise<ClientOption | null> => {
+    if (!id) return null;
+    const supabase = createClient();
+    const { data } = await supabase
+      .from('clients')
+      .select(
+        'id, first_name, last_name, company_name, is_company, phone, street, street_number, zip_code, city'
+      )
+      .eq('id', id)
+      .single();
+    return (data as ClientOption) || null;
+  };
+
   return {
     payers,
     billingTypes,
@@ -134,6 +149,7 @@ export function useTripFormData(payerId?: string | null) {
     isLoading,
     searchClients,
     searchClientsByFirstName,
-    searchClientsByLastName
+    searchClientsByLastName,
+    searchClientsById
   };
 }

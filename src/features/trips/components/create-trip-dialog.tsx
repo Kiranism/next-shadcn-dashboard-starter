@@ -18,15 +18,29 @@ interface CreateTripDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  /**
+   * Optional client preset when opening globally (e.g. from Cmd+K).
+   * When provided, the form should preselect this client.
+   */
+  preselectedClientId?: string | null;
 }
 
 export function CreateTripDialog({
   open,
   onOpenChange,
-  onSuccess
+  onSuccess,
+  preselectedClientId
 }: CreateTripDialogProps) {
   const [selectedClient, setSelectedClient] =
     React.useState<ClientOption | null>(null);
+
+  // When the dialog opens with a preselected client id, ensure the
+  // internal state is reset so the form can handle selecting it.
+  React.useEffect(() => {
+    if (!open) {
+      setSelectedClient(null);
+    }
+  }, [open]);
 
   const handleSuccess = () => {
     onOpenChange(false);
@@ -79,6 +93,7 @@ export function CreateTripDialog({
               onSuccess={handleSuccess}
               onCancel={() => handleOpenChange(false)}
               onClientSelect={setSelectedClient}
+              preselectedClientId={preselectedClientId ?? undefined}
             />
           </div>
 

@@ -1,5 +1,10 @@
 'use client';
 import { navItems } from '@/config/nav-config';
+import { CreateTripDialog } from '@/features/trips/components/create-trip-dialog';
+import { useCreateTripDialogStore } from '@/features/trips/stores/use-create-trip-dialog-store';
+import { useFilteredNavItems } from '@/hooks/use-nav';
+import { usePassengerSearchStore } from '@/features/clients/stores/use-passenger-search-store';
+import { PassengerSearchOverlay } from '@/features/clients/components/passenger-search-overlay';
 import {
   KBarAnimator,
   KBarPortal,
@@ -11,7 +16,6 @@ import { useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 import RenderResults from './render-result';
 import useThemeSwitching from './use-theme-switching';
-import { useFilteredNavItems } from '@/hooks/use-nav';
 
 export default function KBar({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -24,7 +28,7 @@ export default function KBar({ children }: { children: React.ReactNode }) {
       router.push(url);
     };
 
-    return filteredItems.flatMap((navItem) => {
+    const navigateActions = filteredItems.flatMap((navItem) => {
       // Only include base action if the navItem has a real URL and is not just a container
       const baseAction =
         navItem.url !== '#'
@@ -54,11 +58,49 @@ export default function KBar({ children }: { children: React.ReactNode }) {
       // Return only valid actions (ignoring null base actions for containers)
       return baseAction ? [baseAction, ...childActions] : childActions;
     });
+
+    const newTripAction = {
+      id: 'newTripAction',
+      name: 'Neue Fahrt',
+      section: 'Aktionen',
+      shortcut: ['t', 't'],
+      keywords: 'neue fahrt fahrt erstellen',
+      subtitle: 'Neue Fahrt von überall erstellen (Schnell: t t)',
+      perform: () => {
+        // Open the global create-trip dialog without a preset client
+        useCreateTripDialogStore.getState().openDialog();
+      }
+    };
+
+    const passengerSearchAction = {
+      id: 'passengerSearchAction',
+      name: 'Fahrgast-Suche öffnen',
+      section: 'Aktionen',
+      keywords: 'fahrgast fahrgäste kunde passenger suche',
+      subtitle: 'Fahrgast suchen und Fahrten einsehen',
+      perform: () => {
+        usePassengerSearchStore.getState().openSearch();
+      }
+    };
+
+    return [newTripAction, passengerSearchAction, ...navigateActions];
   }, [router, filteredItems]);
+
+  const { open, preselectedClientId, closeDialog } = useCreateTripDialogStore();
 
   return (
     <KBarProvider actions={actions}>
       <KBarComponent>{children}</KBarComponent>
+      <CreateTripDialog
+        open={open}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            closeDialog();
+          }
+        }}
+        preselectedClientId={preselectedClientId}
+      />
+      <PassengerSearchOverlay />
     </KBarProvider>
   );
 }

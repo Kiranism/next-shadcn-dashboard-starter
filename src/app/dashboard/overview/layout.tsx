@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import PageContainer from '@/components/layout/page-container';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -12,10 +11,19 @@ import {
   CardAction,
   CardFooter
 } from '@/components/ui/card';
-import { IconTrendingDown, IconTrendingUp } from '@tabler/icons-react';
-import { CreateTripDialog } from '@/features/trips/components/create-trip-dialog';
-import { Plus } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { IconTrendingUp } from '@tabler/icons-react';
 import { PendingToursWidget } from '@/features/dashboard/components/pending-tours-widget';
+import { useTrips } from '@/features/trips/hooks/use-trips';
+import { StatsCard } from '@/features/dashboard/components/stats-card';
+import { subDays } from 'date-fns';
+import {
+  getTripsForDay,
+  calculateTotalRevenue,
+  calculateTrend,
+  formatCurrency,
+  formatNumber
+} from '@/features/dashboard/lib/stats-utils';
 
 export default function OverViewLayout({
   sales,
@@ -28,105 +36,99 @@ export default function OverViewLayout({
   bar_stats: React.ReactNode;
   area_stats: React.ReactNode;
 }) {
+  const { trips, isLoading } = useTrips();
+
+  const {
+    tripsToday,
+    revenueToday,
+    tripsYesterday,
+    revenueYesterday,
+    tripsTrend,
+    revenueTrend
+  } = React.useMemo(() => {
+    const today = new Date();
+    const yesterday = subDays(today, 1);
+
+    const tToday = getTripsForDay(trips, today);
+    const tYesterday = getTripsForDay(trips, yesterday);
+
+    const rToday = calculateTotalRevenue(tToday);
+    const rYesterday = calculateTotalRevenue(tYesterday);
+
+    return {
+      tripsToday: tToday,
+      revenueToday: rToday,
+      tripsYesterday: tYesterday,
+      revenueYesterday: rYesterday,
+      tripsTrend: calculateTrend(tToday.length, tYesterday.length),
+      revenueTrend: calculateTrend(rToday, rYesterday)
+    };
+  }, [trips]);
+
   return (
     <PageContainer>
       <div className='flex flex-1 flex-col space-y-2'>
         <div className='flex items-center justify-between space-y-2'>
           <h2 className='text-2xl font-bold tracking-tight'>
-            Hi, Welcome back 👋
+            Hi, Willkommen zurück 👋
           </h2>
           <div className='hidden items-center space-x-2 md:flex'>
             <Button>Download</Button>
           </div>
         </div>
         <div className='*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs md:grid-cols-2 lg:grid-cols-4'>
+          <StatsCard
+            title='Fahrten heute'
+            value={formatNumber(tripsToday.length)}
+            trend={tripsTrend}
+            description='Geplante Fahrten für heute'
+            isLoading={isLoading}
+          />
+          <StatsCard
+            title='Umsatz heute'
+            value={formatCurrency(revenueToday)}
+            trend={revenueTrend}
+            description='Gesamtumsatz der heutigen Fahrten'
+            isLoading={isLoading}
+          />
           <Card className='@container/card'>
             <CardHeader>
-              <CardDescription>Total Revenue</CardDescription>
+              <CardDescription>Platzhalter</CardDescription>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
-                $1,250.00
+                0,00
               </CardTitle>
               <CardAction>
                 <Badge variant='outline'>
                   <IconTrendingUp />
-                  +12.5%
+                  +12,5%
                 </Badge>
               </CardAction>
             </CardHeader>
             <CardFooter className='flex-col items-start gap-1.5 text-sm'>
               <div className='line-clamp-1 flex gap-2 font-medium'>
-                Trending up this month <IconTrendingUp className='size-4' />
+                Platzhalter <IconTrendingUp className='size-4' />
               </div>
-              <div className='text-muted-foreground'>
-                Visitors for the last 6 months
-              </div>
+              <div className='text-muted-foreground'>Platzhalter</div>
             </CardFooter>
           </Card>
           <Card className='@container/card'>
             <CardHeader>
-              <CardDescription>New Customers</CardDescription>
+              <CardDescription>Wachstumsrate</CardDescription>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
-                1,234
-              </CardTitle>
-              <CardAction>
-                <Badge variant='outline'>
-                  <IconTrendingDown />
-                  -20%
-                </Badge>
-              </CardAction>
-            </CardHeader>
-            <CardFooter className='flex-col items-start gap-1.5 text-sm'>
-              <div className='line-clamp-1 flex gap-2 font-medium'>
-                Down 20% this period <IconTrendingDown className='size-4' />
-              </div>
-              <div className='text-muted-foreground'>
-                Acquisition needs attention
-              </div>
-            </CardFooter>
-          </Card>
-          <Card className='@container/card'>
-            <CardHeader>
-              <CardDescription>Active Accounts</CardDescription>
-              <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
-                45,678
+                0,00
               </CardTitle>
               <CardAction>
                 <Badge variant='outline'>
                   <IconTrendingUp />
-                  +12.5%
+                  +4,5%
                 </Badge>
               </CardAction>
             </CardHeader>
             <CardFooter className='flex-col items-start gap-1.5 text-sm'>
               <div className='line-clamp-1 flex gap-2 font-medium'>
-                Strong user retention <IconTrendingUp className='size-4' />
+                Platzhalter <IconTrendingUp className='size-4' />
               </div>
-              <div className='text-muted-foreground'>
-                Engagement exceed targets
-              </div>
-            </CardFooter>
-          </Card>
-          <Card className='@container/card'>
-            <CardHeader>
-              <CardDescription>Growth Rate</CardDescription>
-              <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
-                4.5%
-              </CardTitle>
-              <CardAction>
-                <Badge variant='outline'>
-                  <IconTrendingUp />
-                  +4.5%
-                </Badge>
-              </CardAction>
-            </CardHeader>
-            <CardFooter className='flex-col items-start gap-1.5 text-sm'>
-              <div className='line-clamp-1 flex gap-2 font-medium'>
-                Steady performance increase{' '}
-                <IconTrendingUp className='size-4' />
-              </div>
-              <div className='text-muted-foreground'>
-                Meets growth projections
-              </div>
+              <div className='text-muted-foreground'>Platzhalter</div>
             </CardFooter>
           </Card>
         </div>
