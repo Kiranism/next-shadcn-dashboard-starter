@@ -15,6 +15,7 @@ import { PieGraph } from './pie-graph';
 import { RecentSales } from './recent-sales';
 import { IconTrendingUp, IconTrendingDown } from '@tabler/icons-react';
 import { Badge } from '@/components/ui/badge';
+import { CreateTripDialogButton } from '@/features/trips/components/create-trip-dialog-button';
 
 export default function OverViewPage() {
   return (
@@ -25,7 +26,7 @@ export default function OverViewPage() {
             Hi, Welcome back 👋
           </h2>
           <div className='hidden items-center space-x-2 md:flex'>
-            <Button>Download</Button>
+            <CreateTripDialogButton />
           </div>
         </div>
         <Tabs defaultValue='overview' className='space-y-4'>

@@ -24,6 +24,7 @@ import {
   formatCurrency,
   formatNumber
 } from '@/features/dashboard/lib/stats-utils';
+import { CreateTripDialogButton } from '@/features/trips/components/create-trip-dialog-button';
 
 export default function OverViewLayout({
   sales,
@@ -73,7 +74,7 @@ export default function OverViewLayout({
             Hi, Willkommen zurück 👋
           </h2>
           <div className='hidden items-center space-x-2 md:flex'>
-            <Button>Download</Button>
+            <CreateTripDialogButton />
           </div>
         </div>
         <div className='*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs md:grid-cols-2 lg:grid-cols-4'>
