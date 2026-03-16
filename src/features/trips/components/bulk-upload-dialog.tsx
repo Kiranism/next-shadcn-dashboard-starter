@@ -128,7 +128,7 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
       skipEmptyLines: true,
       complete: async (results) => {
         const rows = results.data;
-        const validatedRows: ValidatedTripRow[] = [];
+        const validatedRows: ValidatedTripRow<InsertTrip>[] = [];
         const errors: string[] = [];
         const groupIdMap = new Map<string, string>();
 
