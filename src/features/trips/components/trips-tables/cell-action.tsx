@@ -8,7 +8,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { Edit, MoreHorizontal, Eye, Trash } from 'lucide-react';
+import { Edit, MoreHorizontal, Eye, Trash, Share2 } from 'lucide-react';
 import { useState } from 'react';
 import { TripDetailSheet } from '@/features/overview/components/trip-detail-sheet';
 import { useRouter } from 'next/navigation';
@@ -16,6 +16,8 @@ import type { Trip } from '@/features/trips/api/trips.service';
 import { useTripCancellation } from '@/features/trips/hooks/use-trip-cancellation';
 import { hasPairedLeg } from '@/features/trips/api/recurring-exceptions.actions';
 import { RecurringTripCancelDialog } from '@/features/trips/components/recurring-trip-cancel-dialog';
+import { copyTripToClipboard } from '@/features/trips/lib/share-utils';
+import { toast } from 'sonner';
 
 interface CellActionProps {
   data: Trip;
@@ -82,6 +84,18 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
           </DropdownMenuItem>
           <DropdownMenuItem disabled>
             <Edit className='mr-2 h-4 w-4' /> Bearbeiten
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={async () => {
+              const success = await copyTripToClipboard(data);
+              if (success) {
+                toast.success('Details in die Zwischenablage kopiert');
+              } else {
+                toast.error('Kopieren fehlgeschlagen');
+              }
+            }}
+          >
+            <Share2 className='mr-2 h-4 w-4' /> QuickShare (WhatsApp)
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
