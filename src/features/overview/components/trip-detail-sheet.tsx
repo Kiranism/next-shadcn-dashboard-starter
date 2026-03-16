@@ -35,13 +35,15 @@ import {
   Clock,
   AlertCircle,
   CreditCard,
-  Trash2
+  Trash2,
+  Share2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Trip } from '@/features/trips/api/trips.service';
 import { useTripCancellation } from '@/features/trips/hooks/use-trip-cancellation';
 import { hasPairedLeg } from '@/features/trips/api/recurring-exceptions.actions';
 import { RecurringTripCancelDialog } from '@/features/trips/components/recurring-trip-cancel-dialog';
+import { copyTripToClipboard } from '@/features/trips/lib/share-utils';
 
 interface TripDetailSheetProps {
   tripId: string | null;
@@ -431,6 +433,23 @@ export function TripDetailSheet({
                 )}
               </div>
               <div className='flex items-center gap-2'>
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  className='text-blue-600 hover:bg-blue-50 hover:text-blue-700'
+                  onClick={async () => {
+                    const success = await copyTripToClipboard(trip as Trip);
+                    if (success) {
+                      toast.success('Details kopiert');
+                    } else {
+                      toast.error('Fehler beim Kopieren');
+                    }
+                  }}
+                >
+                  <Share2 className='mr-1.5 h-3.5 w-3.5' />
+                  QuickShare
+                </Button>
                 <Button
                   type='button'
                   variant='outline'

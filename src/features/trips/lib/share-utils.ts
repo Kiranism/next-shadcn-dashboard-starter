@@ -19,7 +19,13 @@ export function formatTripForSharing(trip: Trip): string {
   const to = trip.dropoff_address || '-';
   const toStation = trip.dropoff_station ? ` (${trip.dropoff_station})` : '';
 
-  return `${time} - ${passenger} - von ${from}${fromStation} - nach ${to}${toStation}`;
+  let text = `${time} - ${passenger} - von ${from}${fromStation} - nach ${to}${toStation}`;
+
+  if (trip.notes) {
+    text += `\n\n${trip.notes}`;
+  }
+
+  return text;
 }
 
 /**

@@ -3,7 +3,9 @@
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { MapPinned, Users } from 'lucide-react';
+import { MapPinned, Users, Share2 } from 'lucide-react';
+import { copyTripToClipboard } from '@/features/trips/lib/share-utils';
+import { toast } from 'sonner';
 
 interface TripRowProps {
   trip: any;
@@ -125,16 +127,33 @@ export function TripRow({
           {trip.dropoff_address || 'Keine Zieladresse'}
         </p>
       </div>
-      <div className='ml-4 flex flex-col items-end gap-1'>
-        <Badge
-          variant={getBadgeVariant(trip.status) as any}
-          className={cn(
-            'px-2 py-0 whitespace-nowrap',
-            compact ? 'h-4 text-[9px]' : 'h-5 text-[10px]'
-          )}
-        >
-          {getStatusLabel(trip.status)}
-        </Badge>
+      <div className='ml-4 flex flex-col items-end gap-1.5'>
+        <div className='flex items-center gap-1.5'>
+          <Badge
+            variant={getBadgeVariant(trip.status) as any}
+            className={cn(
+              'px-2 py-0 whitespace-nowrap',
+              compact ? 'h-4 text-[9px]' : 'h-5 text-[10px]'
+            )}
+          >
+            {getStatusLabel(trip.status)}
+          </Badge>
+          <button
+            onClick={async (e) => {
+              e.stopPropagation();
+              const success = await copyTripToClipboard(trip);
+              if (success) {
+                toast.success('Details kopiert');
+              } else {
+                toast.error('Fehler');
+              }
+            }}
+            className='hover:bg-primary/10 flex h-6 w-6 items-center justify-center rounded-md border border-slate-200 bg-white/50 text-slate-500 transition-colors hover:text-blue-600'
+            title='QuickShare (WhatsApp)'
+          >
+            <Share2 className='h-3.5 w-3.5' />
+          </button>
+        </div>
         <p className='text-muted-foreground text-[10px] font-bold tracking-wider whitespace-nowrap uppercase'>
           Fahrer:{' '}
           <span className='text-foreground font-medium'>
