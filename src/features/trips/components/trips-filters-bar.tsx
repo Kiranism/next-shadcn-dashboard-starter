@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { format } from 'date-fns';
+import { format, startOfWeek, endOfWeek, subWeeks, addWeeks } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { CalendarIcon } from 'lucide-react';
 
@@ -102,6 +102,15 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
     { label: 'Abgeschlossen', value: 'completed' },
     { label: 'Storniert', value: 'cancelled' }
   ];
+  const setWeekRange = (anchor: Date) => {
+    const weekStart = startOfWeek(anchor, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(anchor, { weekStartsOn: 1 });
+    const fromTs = weekStart.getTime();
+    const toTs = weekEnd.getTime();
+    updateFilters({ scheduled_at: `${fromTs},${toTs}` });
+    setDatePopoverOpen(false);
+  };
+
   const updateFilters = (updates: Record<string, string | null>) => {
     const params = new URLSearchParams(searchParams.toString());
 
@@ -145,37 +154,72 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
               <span className='xs:inline hidden'>{dateButtonLabel}</span>
             </Button>
           </PopoverTrigger>
-          <PopoverContent className='w-auto p-0' align='start'>
-            <Calendar
-              mode='range'
-              selected={selectedDateRange}
-              onSelect={(range: DateRange | undefined) => {
-                if (!range?.from) {
-                  updateFilters({ scheduled_at: null });
-                  return;
-                }
-                const startOfDay = (d: Date) => {
-                  const x = new Date(d);
-                  x.setHours(0, 0, 0, 0);
-                  return x.getTime();
-                };
-                const endOfDay = (d: Date) => {
-                  const x = new Date(d);
-                  x.setHours(23, 59, 59, 999);
-                  return x.getTime();
-                };
-                const fromTs = startOfDay(range.from);
-                const toTs = range.to
-                  ? endOfDay(range.to)
-                  : startOfDay(range.from);
-                const value =
-                  fromTs === toTs ? String(fromTs) : `${fromTs},${toTs}`;
-                updateFilters({ scheduled_at: value });
-                if (range.from && range.to) setDatePopoverOpen(false);
-              }}
-              numberOfMonths={1}
-              initialFocus
-            />
+          <PopoverContent
+            className='flex h-fit w-full min-w-[var(--radix-popover-trigger-width)] flex-col p-0 sm:min-w-[280px]'
+            align='start'
+          >
+            <div className='flex shrink-0 flex-wrap gap-1.5 border-b px-3 py-2'>
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                className='h-7 text-xs'
+                onClick={() => setWeekRange(subWeeks(new Date(), 1))}
+              >
+                Letzte Woche
+              </Button>
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                className='h-7 text-xs'
+                onClick={() => setWeekRange(new Date())}
+              >
+                Diese Woche
+              </Button>
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                className='h-7 text-xs'
+                onClick={() => setWeekRange(addWeeks(new Date(), 1))}
+              >
+                Nächste Woche
+              </Button>
+            </div>
+            <div className='w-full min-w-0 shrink-0'>
+              <Calendar
+                mode='range'
+                selected={selectedDateRange}
+                onSelect={(range: DateRange | undefined) => {
+                  if (!range?.from) {
+                    updateFilters({ scheduled_at: null });
+                    return;
+                  }
+                  const startOfDay = (d: Date) => {
+                    const x = new Date(d);
+                    x.setHours(0, 0, 0, 0);
+                    return x.getTime();
+                  };
+                  const endOfDay = (d: Date) => {
+                    const x = new Date(d);
+                    x.setHours(23, 59, 59, 999);
+                    return x.getTime();
+                  };
+                  const fromTs = startOfDay(range.from);
+                  const toTs = range.to
+                    ? endOfDay(range.to)
+                    : startOfDay(range.from);
+                  const value =
+                    fromTs === toTs ? String(fromTs) : `${fromTs},${toTs}`;
+                  updateFilters({ scheduled_at: value });
+                  if (range.from && range.to) setDatePopoverOpen(false);
+                }}
+                numberOfMonths={1}
+                initialFocus
+                className='w-full'
+              />
+            </div>
           </PopoverContent>
         </Popover>
 
