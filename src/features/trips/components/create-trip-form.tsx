@@ -953,7 +953,17 @@ export function CreateTripForm({
                   <div className='col-span-3'>
                     <AddressAutocomplete
                       value={group.street || ''}
-                      onChange={(result) => {
+                      onChange={(result: AddressResult | string) => {
+                        if (typeof result === 'string') {
+                          handleManualAddressFieldChange(
+                            group.uid,
+                            'pickup',
+                            'street',
+                            result
+                          );
+                          return;
+                        }
+
                         if (result.street) {
                           updatePickupAddress(group.uid, result);
                         } else {
@@ -1130,7 +1140,17 @@ export function CreateTripForm({
                   <div className='col-span-3'>
                     <AddressAutocomplete
                       value={group.street || ''}
-                      onChange={(result) => {
+                      onChange={(result: AddressResult | string) => {
+                        if (typeof result === 'string') {
+                          handleManualAddressFieldChange(
+                            group.uid,
+                            'dropoff',
+                            'street',
+                            result
+                          );
+                          return;
+                        }
+
                         if (result.street) {
                           updateDropoffAddress(group.uid, result);
                         } else {
