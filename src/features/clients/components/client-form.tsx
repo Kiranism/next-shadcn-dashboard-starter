@@ -13,7 +13,12 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
-import { Client, clientsService } from '@/features/clients/api/clients.service';
+import {
+  Client,
+  clientsService,
+  type InsertClient,
+  type UpdateClient
+} from '@/features/clients/api/clients.service';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
