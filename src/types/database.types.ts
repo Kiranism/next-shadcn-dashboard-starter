@@ -56,6 +56,7 @@ export type Database = {
           company_name: string | null;
           created_at: string;
           first_name: string | null;
+          greeting_style: string | null;
           id: string;
           is_company: boolean;
           last_name: string | null;
@@ -77,6 +78,7 @@ export type Database = {
           company_name?: string | null;
           created_at?: string;
           first_name?: string | null;
+          greeting_style?: string | null;
           id?: string;
           is_company?: boolean;
           last_name?: string | null;
@@ -98,6 +100,7 @@ export type Database = {
           company_name?: string | null;
           created_at?: string;
           first_name?: string | null;
+          greeting_style?: string | null;
           id?: string;
           is_company?: boolean;
           last_name?: string | null;
@@ -720,6 +723,7 @@ export type Database = {
           driving_duration_seconds: number | null;
           dropoff_location: Json | null;
           dropoff_station: string | null;
+          greeting_style: string | null;
           has_missing_geodata: boolean;
           group_id: string | null;
           id: string;
@@ -772,6 +776,7 @@ export type Database = {
           driving_duration_seconds?: number | null;
           dropoff_location?: Json | null;
           dropoff_station?: string | null;
+          greeting_style?: string | null;
           has_missing_geodata?: boolean;
           group_id?: string | null;
           id?: string;
@@ -820,6 +825,7 @@ export type Database = {
           driving_duration_seconds?: number | null;
           dropoff_location?: Json | null;
           dropoff_station?: string | null;
+          greeting_style?: string | null;
           has_missing_geodata?: boolean;
           group_id?: string | null;
           id?: string;

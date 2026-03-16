@@ -46,6 +46,7 @@ const formSchema = z.object({
   city: z.string().min(1, { message: 'Stadt ist erforderlich.' }),
   phone: z.string().optional(),
   relation: z.string().optional(),
+  greeting_style: z.string().optional(),
   notes: z.string().optional(),
   requires_daily_scheduling: z.boolean()
 });
@@ -86,6 +87,7 @@ export default function ClientForm({
     city: initialData?.city || '',
     phone: initialData?.phone || '',
     relation: initialData?.relation || '',
+    greeting_style: initialData?.greeting_style || '',
     notes: initialData?.notes || '',
     requires_daily_scheduling: initialData?.requires_daily_scheduling ?? false
   };
@@ -232,6 +234,12 @@ export default function ClientForm({
                 name='relation'
                 label='Beziehung'
                 placeholder='Beziehung eingeben'
+              />
+              <FormInput
+                control={form.control}
+                name='greeting_style'
+                label='Anrede'
+                placeholder='z. B. Herr, Frau, Dr., etc.'
               />
               <FormInput
                 control={form.control}

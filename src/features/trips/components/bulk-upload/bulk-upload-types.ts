@@ -6,6 +6,7 @@ export type ParsedCsvRow = {
   firstname?: string;
   lastname?: string;
   phone?: string;
+  greeting_style?: string;
   pickup_street: string;
   pickup_zip: string;
   pickup_city: string;

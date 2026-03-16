@@ -134,7 +134,8 @@ export function ResolveClientsStep({
         is_company: false,
         relation: null,
         notes: null,
-        requires_daily_scheduling: false
+        requires_daily_scheduling: false,
+        greeting_style: current.row.source.greeting_style || null
       });
 
       await supabase

@@ -22,7 +22,7 @@ Wichtig: **Alle gültigen Fahrten werden immer zuerst erstellt.** Der Wizard die
 Verwenden Sie diese exakte Kopfzeile (Reihenfolge ist wichtig):
 
 ```text
-kostentraeger,abrechnungsart,date,time,firstname,lastname,phone,pickup_street,pickup_zip,pickup_city,pickup_station,dropoff_street,dropoff_zip,dropoff_city,dropoff_station,is_wheelchair,notes,group_id,driver_name
+kostentraeger,abrechnungsart,date,time,firstname,lastname,phone,greeting_style,pickup_street,pickup_zip,pickup_city,pickup_station,dropoff_street,dropoff_zip,dropoff_city,dropoff_station,is_wheelchair,notes,group_id,driver_name
 ```
 
 ### 3. Column Details
@@ -56,6 +56,9 @@ kostentraeger,abrechnungsart,date,time,firstname,lastname,phone,pickup_street,pi
 
 - **phone** (optional)  
   Telefonnummer des Fahrgasts. Wird als `client_phone` gespeichert.
+
+- **greeting_style** (optional)  
+  Bevorzugte Anrede des Fahrgasts (z. B. `Herr`, `Frau`). Wird an der Fahrt (`trips.greeting_style`) und beim Anlegen eines neuen Fahrgasts aus dem Wizard an den Client (`clients.greeting_style`) übernommen.
 
 - **pickup_street** (required)  
   Straßenanteil der Abholadresse (mit oder ohne Hausnummer).

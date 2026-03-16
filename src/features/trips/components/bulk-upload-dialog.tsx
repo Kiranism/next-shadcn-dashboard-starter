@@ -400,6 +400,7 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
                   is_wheelchair:
                     (parsedRow.is_wheelchair || '').toUpperCase() === 'TRUE',
                   notes: parsedRow.notes || null,
+                  greeting_style: parsedRow.greeting_style || null,
                   status,
                   company_id: companyId,
                   created_by: user?.id || null,
