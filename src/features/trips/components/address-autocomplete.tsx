@@ -29,11 +29,13 @@ export interface AddressResult {
   lat?: number;
   lng?: number;
   distance?: number;
+  placeId?: string;
 }
 
 interface AddressAutocompleteProps {
   value: string;
-  onChange: (result: AddressResult) => void;
+  onChange: (result: AddressResult | string) => void;
+  onSelectCallback?: (result: AddressResult) => void;
   placeholder?: string;
   disabled?: boolean;
   className?: string;
@@ -42,128 +44,161 @@ interface AddressAutocompleteProps {
 export function AddressAutocomplete({
   value,
   onChange,
-  placeholder = 'Straße suchen...',
+  onSelectCallback,
+  placeholder = 'Adresse suchen...',
   disabled = false,
   className
 }: AddressAutocompleteProps) {
   const [open, setOpen] = React.useState(false);
   const [suggestions, setSuggestions] = React.useState<AddressResult[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
-  const debouncedQuery = useDebounce(value, 500);
+  const debouncedQuery = useDebounce(value, 300);
 
   React.useEffect(() => {
-    if (!debouncedQuery || debouncedQuery.length < 3) {
-      setSuggestions([]);
-      return;
-    }
-
-    // Don't fetch if the debounced query is exactly the same as a recent selection's address
-    // This is simplified; in a real app you might want to track if it was a selection or manual type
-
     const fetchSuggestions = async () => {
+      if (!debouncedQuery || debouncedQuery.length < 3) {
+        setSuggestions([]);
+        return;
+      }
+
       setIsLoading(true);
       try {
-        const OLDENBURG_LAT = 53.1435;
-        const OLDENBURG_LON = 8.2147;
-
-        // Use viewbox to strongly bias results toward Oldenburg region
-        // viewbox = west,south,east,north (roughly ~30km around Oldenburg)
-        const viewbox = `${OLDENBURG_LON - 0.5},${OLDENBURG_LAT - 0.3},${OLDENBURG_LON + 0.5},${OLDENBURG_LAT + 0.3}`;
-
-        // First pass: bounded=1 forces results ONLY within viewbox
-        const boundedResponse = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-            debouncedQuery
-          )}&addressdetails=1&limit=20&countrycodes=de&dedupe=1&viewbox=${viewbox}&bounded=1`
-        );
-        const boundedData = await boundedResponse.json();
-
-        // Second pass: unbounded fallback if no results found locally
-        let rawData = boundedData;
-        if (boundedData.length === 0) {
-          const unboundedResponse = await fetch(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-              debouncedQuery
-            )}&addressdetails=1&limit=20&countrycodes=de&dedupe=1&viewbox=${viewbox}&bounded=0`
-          );
-          rawData = await unboundedResponse.json();
-        }
-
-        const results: AddressResult[] = rawData.map((item: any) => {
-          const addr = item.address;
-          const lat = parseFloat(item.lat);
-          const lng = parseFloat(item.lon);
-
-          const distance = Math.sqrt(
-            Math.pow(lat - OLDENBURG_LAT, 2) + Math.pow(lng - OLDENBURG_LON, 2)
-          );
-
-          // Capture city from ALL possible Nominatim fields
-          const city =
-            addr.city ||
-            addr.town ||
-            addr.village ||
-            addr.suburb ||
-            addr.municipality ||
-            addr.county ||
-            '';
-
-          return {
-            address: item.display_name,
-            street: addr.road || addr.pedestrian || addr.street,
-            street_number: addr.house_number,
-            zip_code: addr.postcode,
-            city,
-            lat,
-            lng,
-            distance
-          };
+        const response = await fetch('/api/places-autocomplete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: debouncedQuery })
         });
+        const data = await response.json();
 
-        // Deduplication
-        const uniqueResults: AddressResult[] = [];
-        const seen = new Set<string>();
-        for (const r of results) {
-          if (!r.street) continue;
-          const key = `${r.street}|${r.zip_code || ''}|${r.city}`.toLowerCase();
-          if (!seen.has(key)) {
-            uniqueResults.push(r);
-            seen.add(key);
-          }
+        // Google Places v1 usually returns `suggestions`, but be defensive and
+        // also support `predictions` or a direct array response.
+        const apiSuggestions = (
+          Array.isArray(data?.suggestions)
+            ? data.suggestions
+            : Array.isArray(data?.predictions)
+              ? data.predictions
+              : Array.isArray(data)
+                ? data
+                : []
+        ) as any[];
+
+        const rawSuggestions: AddressResult[] = apiSuggestions
+          .map((item: any) => {
+            const p = item.placePrediction ?? item;
+
+            // Try multiple shapes for structured formatting
+            const mainText =
+              p.structuredFormat?.mainText?.text ??
+              p.structured_formatting?.main_text ??
+              p.structured_formatting?.mainText ??
+              p.description;
+
+            const secondaryText =
+              p.structuredFormat?.secondaryText?.text ??
+              p.structured_formatting?.secondary_text ??
+              p.structured_formatting?.secondaryText ??
+              undefined;
+
+            const addressText =
+              p.text?.text ??
+              p.description ??
+              [mainText, secondaryText].filter(Boolean).join(', ');
+
+            return {
+              address: addressText,
+              street: mainText,
+              city: secondaryText,
+              placeId: p.placeId ?? p.place_id,
+              // Google Places autocomplete can include distanceMeters from the bias center
+              distance:
+                typeof p.distanceMeters === 'number'
+                  ? p.distanceMeters
+                  : typeof item.distanceMeters === 'number'
+                    ? item.distanceMeters
+                    : undefined
+            };
+          })
+          .filter((r) => !!r.address);
+
+        if (rawSuggestions.length === 0) {
+          setSuggestions([]);
+          setOpen(false);
+          return;
         }
 
-        // Check against display_name too — catches Oldenburg when city field is tricky
-        const oldenburgResults = uniqueResults.filter(
-          (r) =>
-            (r.city || '').toLowerCase().includes('oldenburg') ||
-            r.address.toLowerCase().includes('oldenburg')
+        // If we clearly have a street-like main text, prefer those; otherwise fall back to all.
+        const streetResults =
+          rawSuggestions.filter((r) => !!r.street) ?? rawSuggestions;
+
+        // Prioritize Oldenburg streets, then nearby streets by distance
+        const oldenburgResults = streetResults.filter((r) =>
+          (r.city || '').toLowerCase().includes('oldenburg')
         );
-        const nearbyResults = uniqueResults.filter(
+
+        const nearbyResults = streetResults.filter(
           (r) => !oldenburgResults.includes(r)
         );
 
-        nearbyResults.sort((a, b) => (a.distance || 0) - (b.distance || 0));
+        // Sort Oldenburg streets alphabetically (street, then house number if present later)
+        oldenburgResults.sort((a, b) => {
+          const streetCompare = (a.street || '').localeCompare(b.street || '');
+          if (streetCompare !== 0) return streetCompare;
+          return (a.street_number || '').localeCompare(b.street_number || '');
+        });
+
+        // Sort nearby streets by distance from Oldenburg bias center if available
+        nearbyResults.sort(
+          (a, b) =>
+            (a.distance || Number.POSITIVE_INFINITY) -
+            (b.distance || Number.POSITIVE_INFINITY)
+        );
 
         const finalResults =
           oldenburgResults.length > 0
             ? [...oldenburgResults, ...nearbyResults]
             : nearbyResults;
 
-        setSuggestions(finalResults.slice(0, 15));
+        setSuggestions(finalResults);
         if (finalResults.length > 0) setOpen(true);
       } catch (error) {
         console.error('Error fetching address suggestions:', error);
+        setSuggestions([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     fetchSuggestions();
   }, [debouncedQuery]);
 
-  const handleSelect = (result: AddressResult) => {
-    onChange(result);
+  const handleSelect = async (result: AddressResult) => {
+    if (result.placeId) {
+      setIsLoading(true);
+      try {
+        const res = await fetch(`/api/place-details?placeId=${result.placeId}`);
+        const details = await res.json();
+
+        const finalResult = {
+          ...result,
+          lat: details.lat,
+          lng: details.lng,
+          zip_code: details.zip_code,
+          street: details.street || result.street,
+          street_number: details.street_number,
+          city: details.city || result.city
+        };
+
+        onChange(finalResult);
+        onSelectCallback?.(finalResult);
+      } catch (error) {
+        console.error('Error fetching place details:', error);
+        onChange(result);
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      onChange(result);
+    }
     setOpen(false);
   };
 
@@ -196,6 +231,7 @@ export function AddressAutocomplete({
             className='overflow-y-auto overscroll-contain'
             onWheel={(e) => e.stopPropagation()}
           >
+            <CommandEmpty>Keine Adresse gefunden.</CommandEmpty>
             <CommandGroup>
               {suggestions.map((s, i) => (
                 <CommandItem
