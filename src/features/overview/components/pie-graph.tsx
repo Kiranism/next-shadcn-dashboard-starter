@@ -18,55 +18,67 @@ import {
   ChartTooltip,
   ChartTooltipContent
 } from '@/components/ui/chart';
-
-const chartData = [
-  { browser: 'chrome', visitors: 275, fill: 'var(--primary)' },
-  { browser: 'safari', visitors: 200, fill: 'var(--primary-light)' },
-  { browser: 'firefox', visitors: 287, fill: 'var(--primary-lighter)' },
-  { browser: 'edge', visitors: 173, fill: 'var(--primary-dark)' },
-  { browser: 'other', visitors: 190, fill: 'var(--primary-darker)' }
-];
-
-const chartConfig = {
-  visitors: {
-    label: 'Visitors'
-  },
-  chrome: {
-    label: 'Chrome',
-    color: 'var(--primary)'
-  },
-  safari: {
-    label: 'Safari',
-    color: 'var(--primary)'
-  },
-  firefox: {
-    label: 'Firefox',
-    color: 'var(--primary)'
-  },
-  edge: {
-    label: 'Edge',
-    color: 'var(--primary)'
-  },
-  other: {
-    label: 'Other',
-    color: 'var(--primary)'
-  }
-} satisfies ChartConfig;
+import { useTrips } from '@/features/trips/hooks/use-trips';
+import { usePayers } from '@/features/payers/hooks/use-payers';
+import { getPayerDistribution } from '@/features/dashboard/lib/payer-utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function PieGraph() {
-  const totalVisitors = React.useMemo(() => {
-    return chartData.reduce((acc, curr) => acc + curr.visitors, 0);
-  }, []);
+  const { trips, isLoading: tripsLoading } = useTrips();
+  const { data: payers, isLoading: payersLoading } = usePayers();
+
+  const chartData = React.useMemo(() => {
+    if (!trips || !payers) return [];
+    return getPayerDistribution(trips, payers);
+  }, [trips, payers]);
+
+  const totalTrips = React.useMemo(() => {
+    return chartData.reduce((acc, curr) => acc + curr.count, 0);
+  }, [chartData]);
+
+  const chartConfig = React.useMemo(() => {
+    const config: ChartConfig = {
+      count: {
+        label: 'Fahrten'
+      }
+    };
+    chartData.forEach((item) => {
+      config[item.name] = {
+        label: item.name,
+        color: item.fill
+      };
+    });
+    return config;
+  }, [chartData]);
+
+  const topPayer = chartData[0];
+
+  if (tripsLoading || payersLoading) {
+    return (
+      <Card className='@container/card'>
+        <CardHeader className='pb-2'>
+          <Skeleton className='h-6 w-1/3' />
+          <Skeleton className='h-4 w-1/4' />
+        </CardHeader>
+        <CardContent>
+          <div className='flex h-[250px] items-center justify-center'>
+            <Skeleton className='h-40 w-40 rounded-full' />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className='@container/card'>
       <CardHeader>
-        <CardTitle>Pie Chart - Donut with Text</CardTitle>
+        <CardTitle>Kostenträger-Verteilung</CardTitle>
         <CardDescription>
           <span className='hidden @[540px]/card:block'>
-            Total visitors by browser for the last 6 months
+            Übersicht der Fahrten nach Versicherung/Kostenträger
+            (Gesamtzeitraum)
           </span>
-          <span className='@[540px]/card:hidden'>Browser distribution</span>
+          <span className='@[540px]/card:hidden'>Kostenträger-Verteilung</span>
         </CardDescription>
       </CardHeader>
       <CardContent className='px-2 pt-4 sm:px-6 sm:pt-6'>
@@ -75,42 +87,14 @@ export function PieGraph() {
           className='mx-auto aspect-square h-[250px]'
         >
           <PieChart>
-            <defs>
-              {['chrome', 'safari', 'firefox', 'edge', 'other'].map(
-                (browser, index) => (
-                  <linearGradient
-                    key={browser}
-                    id={`fill${browser}`}
-                    x1='0'
-                    y1='0'
-                    x2='0'
-                    y2='1'
-                  >
-                    <stop
-                      offset='0%'
-                      stopColor='var(--primary)'
-                      stopOpacity={1 - index * 0.15}
-                    />
-                    <stop
-                      offset='100%'
-                      stopColor='var(--primary)'
-                      stopOpacity={0.8 - index * 0.15}
-                    />
-                  </linearGradient>
-                )
-              )}
-            </defs>
             <ChartTooltip
               cursor={false}
               content={<ChartTooltipContent hideLabel />}
             />
             <Pie
-              data={chartData.map((item) => ({
-                ...item,
-                fill: `url(#fill${item.browser})`
-              }))}
-              dataKey='visitors'
-              nameKey='browser'
+              data={chartData}
+              dataKey='count'
+              nameKey='name'
               innerRadius={60}
               strokeWidth={2}
               stroke='var(--background)'
@@ -130,14 +114,14 @@ export function PieGraph() {
                           y={viewBox.cy}
                           className='fill-foreground text-3xl font-bold'
                         >
-                          {totalVisitors.toLocaleString()}
+                          {totalTrips.toLocaleString()}
                         </tspan>
                         <tspan
                           x={viewBox.cx}
                           y={(viewBox.cy || 0) + 24}
                           className='fill-muted-foreground text-sm'
                         >
-                          Total Visitors
+                          Gesamt Fahrten
                         </tspan>
                       </text>
                     );
@@ -149,13 +133,15 @@ export function PieGraph() {
         </ChartContainer>
       </CardContent>
       <CardFooter className='flex-col gap-2 text-sm'>
-        <div className='flex items-center gap-2 leading-none font-medium'>
-          Chrome leads with{' '}
-          {((chartData[0].visitors / totalVisitors) * 100).toFixed(1)}%{' '}
-          <IconTrendingUp className='h-4 w-4' />
-        </div>
+        {topPayer && (
+          <div className='flex items-center gap-2 leading-none font-medium'>
+            {topPayer.name} ist Spitzenreiter mit{' '}
+            {((topPayer.count / totalTrips) * 100).toFixed(1)}%{' '}
+            <IconTrendingUp className='text-primary h-4 w-4' />
+          </div>
+        )}
         <div className='text-muted-foreground leading-none'>
-          Based on data from January - June 2024
+          Basierend auf allen im System erfassten Fahrten
         </div>
       </CardFooter>
     </Card>
