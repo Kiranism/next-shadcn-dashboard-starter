@@ -39,7 +39,13 @@ interface AddressGroupCardProps {
   searchClients?: (query: string) => Promise<ClientOption[]>;
   onClientLinked?: (client: ClientOption | null) => void;
   onAddressChoice?: (
-    address: string,
+    payload: {
+      address: string;
+      street: string;
+      street_number: string;
+      zip_code: string;
+      city: string;
+    },
     type: 'pickup' | 'dropoff',
     pickupGroupUid: string
   ) => void;

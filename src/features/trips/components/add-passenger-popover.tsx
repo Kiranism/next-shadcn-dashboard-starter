@@ -27,7 +27,13 @@ interface AddPassengerPopoverProps {
   ) => void;
   onClientLinked?: (client: ClientOption | null) => void;
   onAddressChoice?: (
-    address: string,
+    payload: {
+      address: string;
+      street: string;
+      street_number: string;
+      zip_code: string;
+      city: string;
+    },
     type: 'pickup' | 'dropoff',
     pickupGroupUid: string
   ) => void;
@@ -99,10 +105,38 @@ export function AddPassengerPopover({
   };
 
   const handleAddressChoice = (type: 'pickup' | 'dropoff') => {
-    if (pendingAddress && onAddressChoice) {
-      onAddressChoice(pendingAddress, type, pickupGroupUid);
+    if (pendingAddress && selectedClient && onAddressChoice) {
+      // 1) Add the passenger based on the selected client (so the name appears in the Fahrgast list)
+      const trimmedFirst = (selectedClient.first_name || '').trim();
+      const trimmedLast = (selectedClient.last_name || '').trim();
+
+      onAdd({
+        uid: crypto.randomUUID(),
+        client_id: selectedClient.id,
+        first_name: trimmedFirst || selectedClient.company_name || '',
+        last_name: trimmedLast,
+        phone: selectedClient.phone || undefined,
+        pickup_group_uid: pickupGroupUid,
+        is_wheelchair: isWheelchair
+      });
+      onClientLinked?.(selectedClient);
+
+      // 2) Fill the address fields in the trip form
+      onAddressChoice(
+        {
+          address: pendingAddress,
+          street: selectedClient.street,
+          street_number: selectedClient.street_number,
+          zip_code: selectedClient.zip_code,
+          city: selectedClient.city
+        },
+        type,
+        pickupGroupUid
+      );
     }
     setPendingAddress(null);
+    setOpen(false);
+    reset();
   };
 
   const handleOpenChange = (value: boolean) => {

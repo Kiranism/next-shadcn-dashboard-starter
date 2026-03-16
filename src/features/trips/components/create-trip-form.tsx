@@ -467,16 +467,41 @@ export function CreateTripForm({
   // ── Address choice from client selection ──────────────────────────────────
 
   const handleAddressChoice = React.useCallback(
-    (address: string, type: 'pickup' | 'dropoff', pickupGroupUid: string) => {
+    (
+      payload: {
+        address: string;
+        street: string;
+        street_number: string;
+        zip_code: string;
+        city: string;
+      },
+      type: 'pickup' | 'dropoff',
+      pickupGroupUid: string
+    ) => {
+      const result: AddressResult = {
+        address:
+          payload.address ||
+          [
+            [payload.street, payload.street_number].filter(Boolean).join(' '),
+            [payload.zip_code, payload.city].filter(Boolean).join(' ')
+          ]
+            .filter(Boolean)
+            .join(', '),
+        street: payload.street,
+        street_number: payload.street_number,
+        zip_code: payload.zip_code,
+        city: payload.city
+      };
+
       if (type === 'pickup') {
-        updatePickupAddress(pickupGroupUid, address);
+        updatePickupAddress(pickupGroupUid, result);
       } else {
         const firstEmpty = dropoffGroups.find((g) => !g.address.trim());
         const target = firstEmpty ?? dropoffGroups[0];
-        if (target) updateDropoffAddress(target.uid, address);
+        if (target) updateDropoffAddress(target.uid, result);
       }
     },
-    [dropoffGroups] // eslint-disable-line react-hooks/exhaustive-deps
+    [dropoffGroups] // eslint-disable-line react-hooks-exhaustive-deps
   );
 
   const handleManualAddressFieldChange = (
