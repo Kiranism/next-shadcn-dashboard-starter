@@ -20,7 +20,7 @@ interface AddressGroupCardProps {
   mode: 'pickup' | 'dropoff';
   passengers: PassengerEntry[];
   unassignedPassengers?: PassengerEntry[];
-  onAddressChange: (result: AddressResult) => void;
+  onAddressChange: (result: AddressResult | string) => void;
   onRemoveGroup?: () => void;
   onAddPassenger?: (
     passenger: Omit<
@@ -164,7 +164,12 @@ export function AddressGroupCard({
               <div className='col-span-3'>
                 <AddressAutocomplete
                   value={group.street || ''}
-                  onChange={(result) => {
+                  onChange={(result: AddressResult | string) => {
+                    if (typeof result === 'string') {
+                      onManualFieldChange?.('street', result);
+                      return;
+                    }
+
                     if (result.street) {
                       onAddressChange(result);
                     } else {
