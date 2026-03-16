@@ -68,6 +68,8 @@ export type Database = {
           relation: string | null;
           updated_at: string | null;
           zip_code: string;
+          lat: number | null;
+          lng: number | null;
         };
         Insert: {
           city: string;
@@ -87,6 +89,8 @@ export type Database = {
           relation?: string | null;
           updated_at?: string | null;
           zip_code: string;
+          lat?: number | null;
+          lng?: number | null;
         };
         Update: {
           city?: string;
@@ -106,6 +110,8 @@ export type Database = {
           relation?: string | null;
           updated_at?: string | null;
           zip_code?: string;
+          lat?: number | null;
+          lng?: number | null;
         };
         Relationships: [];
       };
@@ -706,6 +712,8 @@ export type Database = {
           dropoff_address: string | null;
           dropoff_lat: number | null;
           dropoff_lng: number | null;
+          driving_distance_km: number | null;
+          driving_duration_seconds: number | null;
           dropoff_location: Json | null;
           dropoff_station: string | null;
           group_id: string | null;
@@ -745,6 +753,8 @@ export type Database = {
           dropoff_address?: string | null;
           dropoff_lat?: number | null;
           dropoff_lng?: number | null;
+          driving_distance_km?: number | null;
+          driving_duration_seconds?: number | null;
           dropoff_location?: Json | null;
           dropoff_station?: string | null;
           group_id?: string | null;

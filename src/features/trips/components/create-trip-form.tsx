@@ -29,6 +29,7 @@ import { Separator } from '@/components/ui/separator';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { useTripFormData } from '@/features/trips/hooks/use-trip-form-data';
 import { tripsService } from '@/features/trips/api/trips.service';
+import { getDrivingMetrics } from '@/lib/google-directions';
 import { getStatusWhenDriverChanges } from '@/features/trips/lib/trip-status';
 import { createClient as createSupabaseClient } from '@/lib/supabase/client';
 import { format } from 'date-fns';
@@ -540,6 +541,44 @@ export function CreateTripForm({
   const getDropoffGroupPassengers = (groupUid: string) =>
     passengers.filter((p) => p.dropoff_group_uid === groupUid);
 
+  const ensureGroupHasCoords = async (
+    group: AddressGroupEntry
+  ): Promise<AddressGroupEntry> => {
+    if (typeof group.lat === 'number' && typeof group.lng === 'number') {
+      return group;
+    }
+
+    if (!group.street && !group.address) {
+      return group;
+    }
+
+    try {
+      const response = await fetch('/api/geocode-address', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          street: group.street,
+          street_number: group.street_number,
+          zip_code: group.zip_code,
+          city: group.city
+        })
+      });
+
+      if (!response.ok) {
+        return group;
+      }
+
+      const data = (await response.json()) as { lat?: number; lng?: number };
+      if (typeof data.lat === 'number' && typeof data.lng === 'number') {
+        return { ...group, lat: data.lat, lng: data.lng };
+      }
+    } catch {
+      // ignore and fall back to original group
+    }
+
+    return group;
+  };
+
   // ── Submit ─────────────────────────────────────────────────────────────────
 
   const handleSubmit = async (values: TripFormValues) => {
@@ -603,11 +642,18 @@ export function CreateTripForm({
         companyId = profile?.company_id ?? null;
       }
 
+      const resolvedPickupGroups = await Promise.all(
+        pickupGroups.map((g) => ensureGroupHasCoords(g))
+      );
+      const resolvedDropoffGroups = await Promise.all(
+        dropoffGroups.map((g) => ensureGroupHasCoords(g))
+      );
+
       const pickupGroupMap = Object.fromEntries(
-        pickupGroups.map((g) => [g.uid, g])
+        resolvedPickupGroups.map((g) => [g.uid, g])
       );
       const dropoffGroupMap = Object.fromEntries(
-        dropoffGroups.map((g) => [g.uid, g])
+        resolvedDropoffGroups.map((g) => [g.uid, g])
       );
 
       // group_id only applies when multiple passengers are bundled together in one dispatch
@@ -654,8 +700,32 @@ export function CreateTripForm({
 
       if (!requirePassenger) {
         // Anonymous mode: create 1 trip using address group addresses directly
-        const pickupGroup = pickupGroups[0];
-        const dropoffGroup = dropoffGroups[0];
+        const pickupGroup = resolvedPickupGroups[0];
+        const dropoffGroup = resolvedDropoffGroups[0];
+
+        const pickupHasCoords =
+          typeof pickupGroup.lat === 'number' &&
+          typeof pickupGroup.lng === 'number';
+        const dropoffHasCoords =
+          typeof dropoffGroup.lat === 'number' &&
+          typeof dropoffGroup.lng === 'number';
+
+        let outboundDrivingDistanceKm: number | null = null;
+        let outboundDrivingDurationSeconds: number | null = null;
+
+        if (pickupHasCoords && dropoffHasCoords) {
+          const metrics = await getDrivingMetrics(
+            pickupGroup.lat as number,
+            pickupGroup.lng as number,
+            dropoffGroup.lat as number,
+            dropoffGroup.lng as number
+          );
+
+          if (metrics) {
+            outboundDrivingDistanceKm = metrics.distanceKm;
+            outboundDrivingDurationSeconds = metrics.durationSeconds;
+          }
+        }
 
         const outbound = await tripsService.createTrip({
           ...baseTrip,
@@ -680,12 +750,31 @@ export function CreateTripForm({
           dropoff_lat: dropoffGroup.lat || null,
           dropoff_lng: dropoffGroup.lng || null,
           dropoff_station: null,
-          group_id: null
+          group_id: null,
+          driving_distance_km: outboundDrivingDistanceKm,
+          driving_duration_seconds: outboundDrivingDurationSeconds
         } as any);
         outboundTrips = [outbound];
         tripCount = 1;
 
         if (shouldCreateReturn) {
+          let returnDrivingDistanceKm: number | null = null;
+          let returnDrivingDurationSeconds: number | null = null;
+
+          if (pickupHasCoords && dropoffHasCoords) {
+            const metrics = await getDrivingMetrics(
+              dropoffGroup.lat as number,
+              dropoffGroup.lng as number,
+              pickupGroup.lat as number,
+              pickupGroup.lng as number
+            );
+
+            if (metrics) {
+              returnDrivingDistanceKm = metrics.distanceKm;
+              returnDrivingDurationSeconds = metrics.durationSeconds;
+            }
+          }
+
           await tripsService.createTrip({
             ...baseTrip,
             is_wheelchair: values.is_wheelchair,
@@ -711,7 +800,9 @@ export function CreateTripForm({
             dropoff_lng: pickupGroup.lng || null,
             dropoff_station: null,
             group_id: null,
-            linked_trip_id: outbound.id
+            linked_trip_id: outbound.id,
+            driving_distance_km: returnDrivingDistanceKm,
+            driving_duration_seconds: returnDrivingDurationSeconds
           } as any);
         }
       } else {
@@ -720,6 +811,13 @@ export function CreateTripForm({
           passengers.map((p) => {
             const pickupGroup = pickupGroupMap[p.pickup_group_uid];
             const dropoffGroup = dropoffGroupMap[p.dropoff_group_uid!];
+
+            const pickupHasCoords =
+              typeof pickupGroup?.lat === 'number' &&
+              typeof pickupGroup?.lng === 'number';
+            const dropoffHasCoords =
+              typeof dropoffGroup?.lat === 'number' &&
+              typeof dropoffGroup?.lng === 'number';
 
             return tripsService.createTrip({
               ...baseTrip,
@@ -745,7 +843,11 @@ export function CreateTripForm({
               dropoff_lat: dropoffGroup?.lat || null,
               dropoff_lng: dropoffGroup?.lng || null,
               dropoff_station: p.dropoff_station || null,
-              group_id: groupId
+              group_id: groupId,
+              // For passenger mode, we currently compute driving distance in the backfill script
+              // to avoid excessive synchronous API calls when creating many trips at once.
+              driving_distance_km: null,
+              driving_duration_seconds: null
             } as any);
           })
         );
@@ -758,34 +860,63 @@ export function CreateTripForm({
               const pickupGroup = pickupGroupMap[p.pickup_group_uid];
               const dropoffGroup = dropoffGroupMap[p.dropoff_group_uid!];
 
-              return tripsService.createTrip({
-                ...baseTrip,
-                is_wheelchair: p.is_wheelchair,
-                client_id: p.client_id || null,
-                client_name:
-                  [p.first_name, p.last_name].filter(Boolean).join(' ') || null,
-                client_phone: p.phone || null,
-                driver_id: null,
-                scheduled_at: returnScheduledAt,
-                pickup_address: dropoffGroup?.address || '',
-                pickup_street: dropoffGroup?.street || null,
-                pickup_street_number: dropoffGroup?.street_number || null,
-                pickup_zip_code: dropoffGroup?.zip_code || null,
-                pickup_city: dropoffGroup?.city || null,
-                pickup_lat: dropoffGroup?.lat || null,
-                pickup_lng: dropoffGroup?.lng || null,
-                pickup_station: p.dropoff_station || null,
-                dropoff_address: pickupGroup?.address || '',
-                dropoff_street: pickupGroup?.street || null,
-                dropoff_street_number: pickupGroup?.street_number || null,
-                dropoff_zip_code: pickupGroup?.zip_code || null,
-                dropoff_city: pickupGroup?.city || null,
-                dropoff_lat: pickupGroup?.lat || null,
-                dropoff_lng: pickupGroup?.lng || null,
-                dropoff_station: p.pickup_station || null,
-                group_id: null,
-                linked_trip_id: outbound.id
-              } as any);
+              const pickupHasCoords =
+                typeof pickupGroup?.lat === 'number' &&
+                typeof pickupGroup?.lng === 'number';
+              const dropoffHasCoords =
+                typeof dropoffGroup?.lat === 'number' &&
+                typeof dropoffGroup?.lng === 'number';
+
+              return (async () => {
+                let drivingDistanceKm: number | null = null;
+                let drivingDurationSeconds: number | null = null;
+
+                if (pickupHasCoords && dropoffHasCoords) {
+                  const metrics = await getDrivingMetrics(
+                    dropoffGroup!.lat as number,
+                    dropoffGroup!.lng as number,
+                    pickupGroup!.lat as number,
+                    pickupGroup!.lng as number
+                  );
+
+                  if (metrics) {
+                    drivingDistanceKm = metrics.distanceKm;
+                    drivingDurationSeconds = metrics.durationSeconds;
+                  }
+                }
+
+                return tripsService.createTrip({
+                  ...baseTrip,
+                  is_wheelchair: p.is_wheelchair,
+                  client_id: p.client_id || null,
+                  client_name:
+                    [p.first_name, p.last_name].filter(Boolean).join(' ') ||
+                    null,
+                  client_phone: p.phone || null,
+                  driver_id: null,
+                  scheduled_at: returnScheduledAt,
+                  pickup_address: dropoffGroup?.address || '',
+                  pickup_street: dropoffGroup?.street || null,
+                  pickup_street_number: dropoffGroup?.street_number || null,
+                  pickup_zip_code: dropoffGroup?.zip_code || null,
+                  pickup_city: dropoffGroup?.city || null,
+                  pickup_lat: dropoffGroup?.lat || null,
+                  pickup_lng: dropoffGroup?.lng || null,
+                  pickup_station: p.dropoff_station || null,
+                  dropoff_address: pickupGroup?.address || '',
+                  dropoff_street: pickupGroup?.street || null,
+                  dropoff_street_number: pickupGroup?.street_number || null,
+                  dropoff_zip_code: pickupGroup?.zip_code || null,
+                  dropoff_city: pickupGroup?.city || null,
+                  dropoff_lat: pickupGroup?.lat || null,
+                  dropoff_lng: pickupGroup?.lng || null,
+                  dropoff_station: p.pickup_station || null,
+                  group_id: null,
+                  linked_trip_id: outbound.id,
+                  driving_distance_km: drivingDistanceKm,
+                  driving_duration_seconds: drivingDurationSeconds
+                } as any);
+              })();
             })
           );
         }
