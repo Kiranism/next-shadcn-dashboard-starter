@@ -13,5 +13,11 @@ export interface PassengerEntry {
 
 export interface AddressGroupEntry {
   uid: string;
-  address: string;
+  address: string; // The full formatted address for display/backward compat
+  street?: string;
+  street_number?: string;
+  zip_code?: string;
+  city?: string;
+  lat?: number;
+  lng?: number;
 }

@@ -47,7 +47,9 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AddressGroupCard } from './address-group-card';
+import { AddressAutocomplete } from './address-autocomplete';
 import type { PassengerEntry, AddressGroupEntry } from '@/features/trips/types';
+import type { AddressResult } from './address-autocomplete';
 import type { ClientOption } from '@/features/trips/hooks/use-trip-form-data';
 
 type ReturnMode = 'none' | 'time_tbd' | 'exact';
@@ -367,9 +369,25 @@ export function CreateTripForm({
     setPickupGroups(remaining);
   };
 
-  const updatePickupAddress = (uid: string, address: string) => {
+  const updatePickupAddress = (uid: string, result: AddressResult | string) => {
+    const isString = typeof result === 'string';
+    const address = isString ? result : result.address;
+
     setPickupGroups((prev) =>
-      prev.map((g) => (g.uid === uid ? { ...g, address } : g))
+      prev.map((g) =>
+        g.uid === uid
+          ? {
+              ...g,
+              address,
+              street: isString ? g.street : result.street,
+              street_number: isString ? g.street_number : result.street_number,
+              zip_code: isString ? g.zip_code : result.zip_code,
+              city: isString ? g.city : result.city,
+              lat: isString ? g.lat : result.lat,
+              lng: isString ? g.lng : result.lng
+            }
+          : g
+      )
     );
     setFormErrors((e) => ({
       ...e,
@@ -378,7 +396,22 @@ export function CreateTripForm({
     // Sync first dropoff group when prefillDropoffFromPickup is active
     if (behavior.prefillDropoffFromPickup) {
       setDropoffGroups((prev) =>
-        prev.map((g, i) => (i === 0 ? { ...g, address } : g))
+        prev.map((g, i) =>
+          i === 0
+            ? {
+                ...g,
+                address,
+                street: isString ? g.street : result.street,
+                street_number: isString
+                  ? g.street_number
+                  : result.street_number,
+                zip_code: isString ? g.zip_code : result.zip_code,
+                city: isString ? g.city : result.city,
+                lat: isString ? g.lat : result.lat,
+                lng: isString ? g.lng : result.lng
+              }
+            : g
+        )
       );
     }
   };
@@ -402,9 +435,28 @@ export function CreateTripForm({
     setDropoffGroups((prev) => prev.filter((g) => g.uid !== uid));
   };
 
-  const updateDropoffAddress = (uid: string, address: string) => {
+  const updateDropoffAddress = (
+    uid: string,
+    result: AddressResult | string
+  ) => {
+    const isString = typeof result === 'string';
+    const address = isString ? result : result.address;
+
     setDropoffGroups((prev) =>
-      prev.map((g) => (g.uid === uid ? { ...g, address } : g))
+      prev.map((g) =>
+        g.uid === uid
+          ? {
+              ...g,
+              address,
+              street: isString ? g.street : result.street,
+              street_number: isString ? g.street_number : result.street_number,
+              zip_code: isString ? g.zip_code : result.zip_code,
+              city: isString ? g.city : result.city,
+              lat: isString ? g.lat : result.lat,
+              lng: isString ? g.lng : result.lng
+            }
+          : g
+      )
     );
     setFormErrors((e) => ({
       ...e,
@@ -426,6 +478,32 @@ export function CreateTripForm({
     },
     [dropoffGroups] // eslint-disable-line react-hooks/exhaustive-deps
   );
+
+  const handleManualAddressFieldChange = (
+    uid: string,
+    type: 'pickup' | 'dropoff',
+    field: keyof AddressGroupEntry,
+    value: string
+  ) => {
+    const setter = type === 'pickup' ? setPickupGroups : setDropoffGroups;
+    setter((prev) =>
+      prev.map((g) => {
+        if (g.uid === uid) {
+          const updated = { ...g, [field]: value };
+          // Re-construct the full address string for backward compatibility/display
+          const streetStr = [updated.street, updated.street_number]
+            .filter(Boolean)
+            .join(' ');
+          const cityStr = [updated.zip_code, updated.city]
+            .filter(Boolean)
+            .join(' ');
+          updated.address = [streetStr, cityStr].filter(Boolean).join(', ');
+          return updated;
+        }
+        return g;
+      })
+    );
+  };
 
   // ── Derived values ─────────────────────────────────────────────────────────
 
@@ -551,8 +629,9 @@ export function CreateTripForm({
 
       if (!requirePassenger) {
         // Anonymous mode: create 1 trip using address group addresses directly
-        const pickupAddress = pickupGroups[0]?.address || '';
-        const dropoffAddress = dropoffGroups[0]?.address || '';
+        const pickupGroup = pickupGroups[0];
+        const dropoffGroup = dropoffGroups[0];
+
         const outbound = await tripsService.createTrip({
           ...baseTrip,
           is_wheelchair: values.is_wheelchair,
@@ -560,12 +639,24 @@ export function CreateTripForm({
           client_name: null,
           client_phone: null,
           scheduled_at: values.scheduled_at.toISOString(),
-          pickup_address: pickupAddress,
+          pickup_address: pickupGroup.address || '',
+          pickup_street: pickupGroup.street || null,
+          pickup_street_number: pickupGroup.street_number || null,
+          pickup_zip_code: pickupGroup.zip_code || null,
+          pickup_city: pickupGroup.city || null,
+          pickup_lat: pickupGroup.lat || null,
+          pickup_lng: pickupGroup.lng || null,
           pickup_station: null,
-          dropoff_address: dropoffAddress,
+          dropoff_address: dropoffGroup.address || '',
+          dropoff_street: dropoffGroup.street || null,
+          dropoff_street_number: dropoffGroup.street_number || null,
+          dropoff_zip_code: dropoffGroup.zip_code || null,
+          dropoff_city: dropoffGroup.city || null,
+          dropoff_lat: dropoffGroup.lat || null,
+          dropoff_lng: dropoffGroup.lng || null,
           dropoff_station: null,
           group_id: null
-        });
+        } as any);
         outboundTrips = [outbound];
         tripCount = 1;
 
@@ -578,22 +669,33 @@ export function CreateTripForm({
             client_phone: null,
             driver_id: null,
             scheduled_at: returnScheduledAt,
-            pickup_address: dropoffAddress,
+            pickup_address: dropoffGroup.address || '',
+            pickup_street: dropoffGroup.street || null,
+            pickup_street_number: dropoffGroup.street_number || null,
+            pickup_zip_code: dropoffGroup.zip_code || null,
+            pickup_city: dropoffGroup.city || null,
+            pickup_lat: dropoffGroup.lat || null,
+            pickup_lng: dropoffGroup.lng || null,
             pickup_station: null,
-            dropoff_address: pickupAddress,
+            dropoff_address: pickupGroup.address || '',
+            dropoff_street: pickupGroup.street || null,
+            dropoff_street_number: pickupGroup.street_number || null,
+            dropoff_zip_code: pickupGroup.zip_code || null,
+            dropoff_city: pickupGroup.city || null,
+            dropoff_lat: pickupGroup.lat || null,
+            dropoff_lng: pickupGroup.lng || null,
             dropoff_station: null,
             group_id: null,
             linked_trip_id: outbound.id
-          });
+          } as any);
         }
       } else {
         // Passenger mode: each passenger has their own is_wheelchair flag
         outboundTrips = await Promise.all(
           passengers.map((p) => {
-            const pickupAddress =
-              pickupGroupMap[p.pickup_group_uid]?.address || '';
-            const dropoffAddress =
-              dropoffGroupMap[p.dropoff_group_uid!]?.address || '';
+            const pickupGroup = pickupGroupMap[p.pickup_group_uid];
+            const dropoffGroup = dropoffGroupMap[p.dropoff_group_uid!];
+
             return tripsService.createTrip({
               ...baseTrip,
               is_wheelchair: p.is_wheelchair,
@@ -602,12 +704,24 @@ export function CreateTripForm({
                 [p.first_name, p.last_name].filter(Boolean).join(' ') || null,
               client_phone: p.phone || null,
               scheduled_at: values.scheduled_at.toISOString(),
-              pickup_address: pickupAddress,
+              pickup_address: pickupGroup?.address || '',
+              pickup_street: pickupGroup?.street || null,
+              pickup_street_number: pickupGroup?.street_number || null,
+              pickup_zip_code: pickupGroup?.zip_code || null,
+              pickup_city: pickupGroup?.city || null,
+              pickup_lat: pickupGroup?.lat || null,
+              pickup_lng: pickupGroup?.lng || null,
               pickup_station: p.pickup_station || null,
-              dropoff_address: dropoffAddress,
+              dropoff_address: dropoffGroup?.address || '',
+              dropoff_street: dropoffGroup?.street || null,
+              dropoff_street_number: dropoffGroup?.street_number || null,
+              dropoff_zip_code: dropoffGroup?.zip_code || null,
+              dropoff_city: dropoffGroup?.city || null,
+              dropoff_lat: dropoffGroup?.lat || null,
+              dropoff_lng: dropoffGroup?.lng || null,
               dropoff_station: p.dropoff_station || null,
               group_id: groupId
-            });
+            } as any);
           })
         );
         tripCount = passengers.length;
@@ -616,10 +730,9 @@ export function CreateTripForm({
           await Promise.all(
             outboundTrips.map((outbound, idx) => {
               const p = passengers[idx];
-              const pickupAddress =
-                pickupGroupMap[p.pickup_group_uid]?.address || '';
-              const dropoffAddress =
-                dropoffGroupMap[p.dropoff_group_uid!]?.address || '';
+              const pickupGroup = pickupGroupMap[p.pickup_group_uid];
+              const dropoffGroup = dropoffGroupMap[p.dropoff_group_uid!];
+
               return tripsService.createTrip({
                 ...baseTrip,
                 is_wheelchair: p.is_wheelchair,
@@ -629,13 +742,25 @@ export function CreateTripForm({
                 client_phone: p.phone || null,
                 driver_id: null,
                 scheduled_at: returnScheduledAt,
-                pickup_address: dropoffAddress,
+                pickup_address: dropoffGroup?.address || '',
+                pickup_street: dropoffGroup?.street || null,
+                pickup_street_number: dropoffGroup?.street_number || null,
+                pickup_zip_code: dropoffGroup?.zip_code || null,
+                pickup_city: dropoffGroup?.city || null,
+                pickup_lat: dropoffGroup?.lat || null,
+                pickup_lng: dropoffGroup?.lng || null,
                 pickup_station: p.dropoff_station || null,
-                dropoff_address: pickupAddress,
+                dropoff_address: pickupGroup?.address || '',
+                dropoff_street: pickupGroup?.street || null,
+                dropoff_street_number: pickupGroup?.street_number || null,
+                dropoff_zip_code: pickupGroup?.zip_code || null,
+                dropoff_city: pickupGroup?.city || null,
+                dropoff_lat: pickupGroup?.lat || null,
+                dropoff_lng: pickupGroup?.lng || null,
                 dropoff_station: p.pickup_station || null,
                 group_id: null,
                 linked_trip_id: outbound.id
-              });
+              } as any);
             })
           );
         }
@@ -798,20 +923,82 @@ export function CreateTripForm({
               Kein Fahrgastname erforderlich — Fahrt wird anonym erstellt.
             </div>
             {pickupGroups.map((group) => (
-              <div key={group.uid} className='relative'>
-                <MapPin className='pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-emerald-500' />
-                <Input
-                  value={group.address}
-                  onChange={(e) =>
-                    updatePickupAddress(group.uid, e.target.value)
-                  }
-                  placeholder='Abholadresse — Straße, PLZ Ort'
-                  className={cn(
-                    'h-9 pl-9',
-                    formErrors.pickupGroups?.[group.uid] && 'border-destructive'
-                  )}
-                  disabled={isPickupLocked}
-                />
+              <div key={group.uid} className='flex flex-col gap-2'>
+                <div className='grid grid-cols-4 gap-2'>
+                  <div className='col-span-3'>
+                    <AddressAutocomplete
+                      value={group.street || ''}
+                      onChange={(result) => {
+                        if (result.street) {
+                          updatePickupAddress(group.uid, result);
+                        } else {
+                          handleManualAddressFieldChange(
+                            group.uid,
+                            'pickup',
+                            'street',
+                            result.address
+                          );
+                        }
+                      }}
+                      placeholder='Straße'
+                      disabled={isPickupLocked}
+                      className={cn(
+                        formErrors.pickupGroups?.[group.uid] &&
+                          'border-destructive'
+                      )}
+                    />
+                  </div>
+                  <div className='col-span-1'>
+                    <Input
+                      value={group.street_number || ''}
+                      onChange={(e) =>
+                        handleManualAddressFieldChange(
+                          group.uid,
+                          'pickup',
+                          'street_number',
+                          e.target.value
+                        )
+                      }
+                      placeholder='Nr.'
+                      className='h-8 text-[11px]'
+                      disabled={isPickupLocked}
+                    />
+                  </div>
+                </div>
+                <div className='grid grid-cols-4 gap-2'>
+                  <div className='col-span-1'>
+                    <Input
+                      value={group.zip_code || ''}
+                      onChange={(e) =>
+                        handleManualAddressFieldChange(
+                          group.uid,
+                          'pickup',
+                          'zip_code',
+                          e.target.value
+                        )
+                      }
+                      placeholder='PLZ'
+                      className='h-8 text-[11px]'
+                      disabled={isPickupLocked}
+                    />
+                  </div>
+                  <div className='col-span-3'>
+                    <Input
+                      value={group.city || ''}
+                      onChange={(e) =>
+                        handleManualAddressFieldChange(
+                          group.uid,
+                          'pickup',
+                          'city',
+                          e.target.value
+                        )
+                      }
+                      placeholder='Stadt'
+                      className='h-8 text-[11px]'
+                      disabled={isPickupLocked}
+                    />
+                  </div>
+                </div>
                 {formErrors.pickupGroups?.[group.uid] && (
                   <p className='text-destructive mt-1 text-[10px]'>
                     Adresse ist erforderlich
@@ -851,6 +1038,14 @@ export function CreateTripForm({
                 searchClients={searchClients}
                 onClientLinked={onClientSelect}
                 onAddressChoice={handleAddressChoice}
+                onManualFieldChange={(field, value) =>
+                  handleManualAddressFieldChange(
+                    group.uid,
+                    'pickup',
+                    field,
+                    value
+                  )
+                }
                 isLocked={isPickupLocked}
                 groupLabel={
                   pickupGroups.length > 1
@@ -905,21 +1100,82 @@ export function CreateTripForm({
         {!requirePassenger ? (
           <div className='flex flex-col gap-3'>
             {dropoffGroups.map((group) => (
-              <div key={group.uid} className='relative'>
-                <Navigation className='pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-rose-500' />
-                <Input
-                  value={group.address}
-                  onChange={(e) =>
-                    updateDropoffAddress(group.uid, e.target.value)
-                  }
-                  placeholder='Zieladresse — Straße, PLZ Ort'
-                  className={cn(
-                    'h-9 pl-9',
-                    formErrors.dropoffGroups?.[group.uid] &&
-                      'border-destructive'
-                  )}
-                  disabled={isDropoffLocked}
-                />
+              <div key={group.uid} className='flex flex-col gap-2'>
+                <div className='grid grid-cols-4 gap-2'>
+                  <div className='col-span-3'>
+                    <AddressAutocomplete
+                      value={group.street || ''}
+                      onChange={(result) => {
+                        if (result.street) {
+                          updateDropoffAddress(group.uid, result);
+                        } else {
+                          handleManualAddressFieldChange(
+                            group.uid,
+                            'dropoff',
+                            'street',
+                            result.address
+                          );
+                        }
+                      }}
+                      placeholder='Straße'
+                      disabled={isDropoffLocked}
+                      className={cn(
+                        formErrors.dropoffGroups?.[group.uid] &&
+                          'border-destructive'
+                      )}
+                    />
+                  </div>
+                  <div className='col-span-1'>
+                    <Input
+                      value={group.street_number || ''}
+                      onChange={(e) =>
+                        handleManualAddressFieldChange(
+                          group.uid,
+                          'dropoff',
+                          'street_number',
+                          e.target.value
+                        )
+                      }
+                      placeholder='Nr.'
+                      className='h-8 text-[11px]'
+                      disabled={isDropoffLocked}
+                    />
+                  </div>
+                </div>
+                <div className='grid grid-cols-4 gap-2'>
+                  <div className='col-span-1'>
+                    <Input
+                      value={group.zip_code || ''}
+                      onChange={(e) =>
+                        handleManualAddressFieldChange(
+                          group.uid,
+                          'dropoff',
+                          'zip_code',
+                          e.target.value
+                        )
+                      }
+                      placeholder='PLZ'
+                      className='h-8 text-[11px]'
+                      disabled={isDropoffLocked}
+                    />
+                  </div>
+                  <div className='col-span-3'>
+                    <Input
+                      value={group.city || ''}
+                      onChange={(e) =>
+                        handleManualAddressFieldChange(
+                          group.uid,
+                          'dropoff',
+                          'city',
+                          e.target.value
+                        )
+                      }
+                      placeholder='Stadt'
+                      className='h-8 text-[11px]'
+                      disabled={isDropoffLocked}
+                    />
+                  </div>
+                </div>
                 {formErrors.dropoffGroups?.[group.uid] && (
                   <p className='text-destructive mt-1 text-[10px]'>
                     Adresse ist erforderlich
@@ -982,6 +1238,14 @@ export function CreateTripForm({
                   onWheelchairChange={updatePassengerWheelchair}
                   onAssignPassenger={(passengerUid) =>
                     assignToDropoff(passengerUid, group.uid)
+                  }
+                  onManualFieldChange={(field, value) =>
+                    handleManualAddressFieldChange(
+                      group.uid,
+                      'dropoff',
+                      field,
+                      value
+                    )
                   }
                   isLocked={isDropoffLocked}
                   groupLabel={

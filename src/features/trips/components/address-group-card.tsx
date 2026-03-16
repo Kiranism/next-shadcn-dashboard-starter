@@ -9,6 +9,10 @@ import { PassengerBadge } from './passenger-badge';
 import { AddPassengerPopover } from './add-passenger-popover';
 import { PassengerAssignPopover } from './passenger-assign-popover';
 import type { PassengerEntry, AddressGroupEntry } from '@/features/trips/types';
+import {
+  AddressAutocomplete,
+  type AddressResult
+} from './address-autocomplete';
 import type { ClientOption } from '@/features/trips/hooks/use-trip-form-data';
 
 interface AddressGroupCardProps {
@@ -16,7 +20,7 @@ interface AddressGroupCardProps {
   mode: 'pickup' | 'dropoff';
   passengers: PassengerEntry[];
   unassignedPassengers?: PassengerEntry[];
-  onAddressChange: (address: string) => void;
+  onAddressChange: (result: AddressResult) => void;
   onRemoveGroup?: () => void;
   onAddPassenger?: (
     passenger: Omit<
@@ -39,6 +43,7 @@ interface AddressGroupCardProps {
     type: 'pickup' | 'dropoff',
     pickupGroupUid: string
   ) => void;
+  onManualFieldChange?: (field: keyof AddressGroupEntry, value: string) => void;
   isLocked?: boolean;
   groupLabel?: string;
   hasError?: boolean;
@@ -59,6 +64,7 @@ export function AddressGroupCard({
   searchClients,
   onClientLinked,
   onAddressChoice,
+  onManualFieldChange,
   isLocked = false,
   groupLabel,
   hasError = false
@@ -147,23 +153,59 @@ export function AddressGroupCard({
 
         {/* 2/3 — Address column */}
         <div className='col-span-2 flex flex-col justify-center gap-1.5 p-3'>
-          <label className='text-muted-foreground text-[10px] font-medium tracking-wider uppercase'>
-            {addressLabel}
-          </label>
-          <div className='relative'>
-            <Icon
-              className={cn(
-                'pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2',
-                iconColor
-              )}
-            />
-            <Input
-              value={group.address}
-              onChange={(e) => onAddressChange(e.target.value)}
-              placeholder='Straße, PLZ Ort'
-              className={cn('h-9 pl-9', hasError && 'border-destructive')}
-              disabled={isLocked}
-            />
+          <div className='flex flex-col gap-2'>
+            <div className='grid grid-cols-4 gap-2'>
+              <div className='col-span-3'>
+                <AddressAutocomplete
+                  value={group.street || ''}
+                  onChange={(result) => {
+                    if (result.street) {
+                      onAddressChange(result);
+                    } else {
+                      onManualFieldChange?.('street', result.address);
+                    }
+                  }}
+                  placeholder='Straße'
+                  disabled={isLocked}
+                  className={cn(hasError && 'border-destructive')}
+                />
+              </div>
+              <div className='col-span-1'>
+                <Input
+                  value={group.street_number || ''}
+                  onChange={(e) =>
+                    onManualFieldChange?.('street_number', e.target.value)
+                  }
+                  placeholder='Nr.'
+                  className='h-8 text-[11px]'
+                  disabled={isLocked}
+                />
+              </div>
+            </div>
+            <div className='grid grid-cols-4 gap-2'>
+              <div className='col-span-1'>
+                <Input
+                  value={group.zip_code || ''}
+                  onChange={(e) =>
+                    onManualFieldChange?.('zip_code', e.target.value)
+                  }
+                  placeholder='PLZ'
+                  className='h-8 text-[11px]'
+                  disabled={isLocked}
+                />
+              </div>
+              <div className='col-span-3'>
+                <Input
+                  value={group.city || ''}
+                  onChange={(e) =>
+                    onManualFieldChange?.('city', e.target.value)
+                  }
+                  placeholder='Stadt'
+                  className='h-8 text-[11px]'
+                  disabled={isLocked}
+                />
+              </div>
+            </div>
           </div>
           {hasError && (
             <p className='text-destructive text-[10px]'>
