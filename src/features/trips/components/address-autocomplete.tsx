@@ -28,6 +28,7 @@ export interface AddressResult {
   city?: string;
   lat?: number;
   lng?: number;
+  distance?: number;
 }
 
 interface AddressAutocompleteProps {
@@ -62,28 +63,94 @@ export function AddressAutocomplete({
     const fetchSuggestions = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(
+        const OLDENBURG_LAT = 53.1435;
+        const OLDENBURG_LON = 8.2147;
+
+        // Use viewbox to strongly bias results toward Oldenburg region
+        // viewbox = west,south,east,north (roughly ~30km around Oldenburg)
+        const viewbox = `${OLDENBURG_LON - 0.5},${OLDENBURG_LAT - 0.3},${OLDENBURG_LON + 0.5},${OLDENBURG_LAT + 0.3}`;
+
+        // First pass: bounded=1 forces results ONLY within viewbox
+        const boundedResponse = await fetch(
           `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
             debouncedQuery
-          )}&addressdetails=1&limit=15&countrycodes=de&dedupe=1` // Increased limit and added dedupe
+          )}&addressdetails=1&limit=20&countrycodes=de&dedupe=1&viewbox=${viewbox}&bounded=1`
         );
-        const data = await response.json();
+        const boundedData = await boundedResponse.json();
 
-        const results: AddressResult[] = data.map((item: any) => {
+        // Second pass: unbounded fallback if no results found locally
+        let rawData = boundedData;
+        if (boundedData.length === 0) {
+          const unboundedResponse = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+              debouncedQuery
+            )}&addressdetails=1&limit=20&countrycodes=de&dedupe=1&viewbox=${viewbox}&bounded=0`
+          );
+          rawData = await unboundedResponse.json();
+        }
+
+        const results: AddressResult[] = rawData.map((item: any) => {
           const addr = item.address;
+          const lat = parseFloat(item.lat);
+          const lng = parseFloat(item.lon);
+
+          const distance = Math.sqrt(
+            Math.pow(lat - OLDENBURG_LAT, 2) + Math.pow(lng - OLDENBURG_LON, 2)
+          );
+
+          // Capture city from ALL possible Nominatim fields
+          const city =
+            addr.city ||
+            addr.town ||
+            addr.village ||
+            addr.suburb ||
+            addr.municipality ||
+            addr.county ||
+            '';
+
           return {
             address: item.display_name,
-            street: addr.road || addr.pedestrian || addr.street || '',
-            street_number: addr.house_number || '',
-            zip_code: addr.postcode || '',
-            city: addr.city || addr.town || addr.village || addr.suburb || '',
-            lat: parseFloat(item.lat),
-            lng: parseFloat(item.lon)
+            street: addr.road || addr.pedestrian || addr.street,
+            street_number: addr.house_number,
+            zip_code: addr.postcode,
+            city,
+            lat,
+            lng,
+            distance
           };
         });
 
-        setSuggestions(results);
-        if (results.length > 0) setOpen(true);
+        // Deduplication
+        const uniqueResults: AddressResult[] = [];
+        const seen = new Set<string>();
+        for (const r of results) {
+          if (!r.street) continue;
+          const key = `${r.street}|${r.zip_code || ''}|${r.city}`.toLowerCase();
+          if (!seen.has(key)) {
+            uniqueResults.push(r);
+            seen.add(key);
+          }
+        }
+
+        // Check against display_name too — catches Oldenburg when city field is tricky
+        const oldenburgResults = uniqueResults.filter(
+          (r) =>
+            (r.city || '').toLowerCase().includes('oldenburg') ||
+            r.address.toLowerCase().includes('oldenburg')
+        );
+        const nearbyResults = uniqueResults.filter(
+          (r) => !oldenburgResults.includes(r)
+        );
+
+        nearbyResults.sort((a, b) => (a.distance || 0) - (b.distance || 0));
+
+        const finalResults =
+          oldenburgResults.length > 0
+            ? [...oldenburgResults, ...nearbyResults]
+            : nearbyResults;
+
+        setSuggestions(finalResults.slice(0, 15));
+        if (finalResults.length > 0) setOpen(true);
       } catch (error) {
         console.error('Error fetching address suggestions:', error);
       } finally {
