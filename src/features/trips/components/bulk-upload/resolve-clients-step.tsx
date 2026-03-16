@@ -66,10 +66,10 @@ export function ResolveClientsStep({
       const streetRaw = usePickup
         ? current.row.source.pickup_street || ''
         : current.row.source.dropoff_street || '';
-      const zip = usePickup
+      let zip = usePickup
         ? current.row.source.pickup_zip || ''
         : current.row.source.dropoff_zip || '';
-      const city = usePickup
+      let city = usePickup
         ? current.row.source.pickup_city || ''
         : current.row.source.dropoff_city || '';
 
@@ -104,6 +104,15 @@ export function ResolveClientsStep({
           if (typeof data.lat === 'number' && typeof data.lng === 'number') {
             lat = data.lat;
             lng = data.lng;
+          }
+
+          // Normalise zip_code and city for the client based on Google's data,
+          // similar to how trips are enriched in the bulk upload.
+          if (typeof data.zip_code === 'string' && data.zip_code.trim()) {
+            zip = data.zip_code.trim();
+          }
+          if (typeof data.city === 'string' && data.city.trim()) {
+            city = data.city.trim();
           }
         }
       } catch {

@@ -29,7 +29,8 @@ import type { InsertTrip } from '@/features/trips/api/trips.service';
 import {
   type ParsedCsvRow,
   type ValidatedTripRow,
-  type UnresolvedRow
+  type UnresolvedRow,
+  type ValidationIssue
 } from '@/features/trips/components/bulk-upload/bulk-upload-types';
 import { ResolveClientsStep } from '@/features/trips/components/bulk-upload/resolve-clients-step';
 
@@ -228,6 +229,32 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
           return null;
         };
 
+        const splitStreetAndNumber = (
+          raw: string | undefined
+        ): { street: string | null; streetNumber: string | null } => {
+          if (!raw) {
+            return { street: null, streetNumber: null };
+          }
+
+          const trimmed = raw.trim();
+          // Match the first digit and treat everything from there as the house number,
+          // allowing things like "4", "4A", "4 A", "9 C" at the end.
+          const match = trimmed.match(/^(.+?)(\s+\d+\s*\w*)$/u);
+
+          if (!match) {
+            // No obvious number part found – keep full string as street, no number
+            return { street: trimmed, streetNumber: null };
+          }
+
+          const street = match[1].trim();
+          const streetNumber = match[2].trim();
+
+          return {
+            street: street || null,
+            streetNumber: streetNumber || null
+          };
+        };
+
         for (let i = 0; i < rows.length; i++) {
           const rowRaw = rows[i] as any;
           const parsedRow: ParsedCsvRow = {} as ParsedCsvRow;
@@ -276,8 +303,34 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
             }
           }
 
-          const pickup_address = `${parsedRow.pickup_street}, ${parsedRow.pickup_zip} ${parsedRow.pickup_city}`;
-          const dropoff_address = `${parsedRow.dropoff_street}, ${parsedRow.dropoff_zip} ${parsedRow.dropoff_city}`;
+          const pickupStreetParts = splitStreetAndNumber(
+            parsedRow.pickup_street
+          );
+          const dropoffStreetParts = splitStreetAndNumber(
+            parsedRow.dropoff_street
+          );
+
+          const pickup_address = `${[
+            [pickupStreetParts.street, pickupStreetParts.streetNumber]
+              .filter(Boolean)
+              .join(' '),
+            [parsedRow.pickup_zip, parsedRow.pickup_city]
+              .filter(Boolean)
+              .join(' ')
+          ]
+            .filter(Boolean)
+            .join(', ')}`;
+
+          const dropoff_address = `${[
+            [dropoffStreetParts.street, dropoffStreetParts.streetNumber]
+              .filter(Boolean)
+              .join(' '),
+            [parsedRow.dropoff_zip, parsedRow.dropoff_city]
+              .filter(Boolean)
+              .join(' ')
+          ]
+            .filter(Boolean)
+            .join(', ')}`;
 
           const scheduled_at = parseGermanDate(parsedRow.date, parsedRow.time);
           if (!scheduled_at) {
@@ -323,16 +376,20 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
                   client_phone: parsedRow.phone || null,
                   scheduled_at: scheduled_at.toISOString(),
                   pickup_address,
-                  pickup_street: parsedRow.pickup_street || null,
-                  pickup_street_number: null,
+                  pickup_street:
+                    pickupStreetParts.street || parsedRow.pickup_street || null,
+                  pickup_street_number: pickupStreetParts.streetNumber,
                   pickup_zip_code: parsedRow.pickup_zip || null,
                   pickup_city: parsedRow.pickup_city || null,
                   pickup_lat: null,
                   pickup_lng: null,
                   pickup_station: parsedRow.pickup_station || null,
                   dropoff_address,
-                  dropoff_street: parsedRow.dropoff_street || null,
-                  dropoff_street_number: null,
+                  dropoff_street:
+                    dropoffStreetParts.street ||
+                    parsedRow.dropoff_street ||
+                    null,
+                  dropoff_street_number: dropoffStreetParts.streetNumber,
                   dropoff_zip_code: parsedRow.dropoff_zip || null,
                   dropoff_city: parsedRow.dropoff_city || null,
                   dropoff_lat: null,
@@ -450,13 +507,29 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
               }
 
               // Keep the denormalized address strings in sync with potentially
-              // corrected zip/city values.
-              row.trip.pickup_address = `${row.trip.pickup_street ?? ''}, ${
-                row.trip.pickup_zip_code ?? ''
-              } ${row.trip.pickup_city ?? ''}`.trim();
-              row.trip.dropoff_address = `${row.trip.dropoff_street ?? ''}, ${
-                row.trip.dropoff_zip_code ?? ''
-              } ${row.trip.dropoff_city ?? ''}`.trim();
+              // corrected zip/city values and include the house number again
+              // so that the wizard and UI always show the full address.
+              row.trip.pickup_address = `${[
+                [row.trip.pickup_street, row.trip.pickup_street_number]
+                  .filter(Boolean)
+                  .join(' '),
+                [row.trip.pickup_zip_code, row.trip.pickup_city]
+                  .filter(Boolean)
+                  .join(' ')
+              ]
+                .filter(Boolean)
+                .join(', ')}`;
+
+              row.trip.dropoff_address = `${[
+                [row.trip.dropoff_street, row.trip.dropoff_street_number]
+                  .filter(Boolean)
+                  .join(' '),
+                [row.trip.dropoff_zip_code, row.trip.dropoff_city]
+                  .filter(Boolean)
+                  .join(' ')
+              ]
+                .filter(Boolean)
+                .join(', ')}`;
 
               if (
                 typeof row.trip.pickup_lat === 'number' &&
