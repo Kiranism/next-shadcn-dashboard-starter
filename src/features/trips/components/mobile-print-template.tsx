@@ -9,6 +9,7 @@ interface TripData {
   id: string;
   scheduled_at: string;
   client_name: string | null;
+  client_phone: string | null;
   pickup_address: string | null;
   pickup_station: string | null;
   dropoff_address: string | null;
@@ -117,11 +118,21 @@ export function MobilePrintTemplate({
                         />
                       )}
                     </div>
-                    {billingType?.name && (
-                      <p className='text-[9px] font-bold tracking-wider text-slate-500 uppercase'>
-                        {billingType.name}
-                      </p>
-                    )}
+                    <div className='flex items-center justify-between'>
+                      {trip.client_phone && (
+                        <p
+                          className='text-[10px] font-bold text-slate-600 tabular-nums'
+                          data-phone={trip.client_phone}
+                        >
+                          {trip.client_phone}
+                        </p>
+                      )}
+                      {billingType?.name && (
+                        <p className='text-[9px] font-bold tracking-wider text-slate-500 uppercase'>
+                          {billingType.name}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -133,7 +144,10 @@ export function MobilePrintTemplate({
                   <span className='w-10 text-[10px] font-black tracking-tighter text-slate-400 uppercase'>
                     Start
                   </span>
-                  <div className='flex-1 text-sm leading-tight'>
+                  <div
+                    className='flex-1 text-sm leading-tight'
+                    data-address={trip.pickup_address || ''}
+                  >
                     {formatAddress(trip.pickup_address)}
                     {trip.pickup_station && (
                       <span className='ml-1.5 inline-flex items-center rounded border border-slate-100 bg-white/60 px-1.5 py-0.5 text-[10px] font-bold text-slate-700'>
@@ -151,7 +165,10 @@ export function MobilePrintTemplate({
                   <span className='w-10 text-[10px] font-black tracking-tighter text-slate-400 uppercase'>
                     Ziel
                   </span>
-                  <div className='flex-1 text-sm leading-tight'>
+                  <div
+                    className='flex-1 text-sm leading-tight'
+                    data-address={trip.dropoff_address || ''}
+                  >
                     {formatAddress(trip.dropoff_address)}
                     {trip.dropoff_station && (
                       <span className='ml-1.5 inline-flex items-center rounded border border-slate-100 bg-white/60 px-1.5 py-0.5 text-[10px] font-bold text-slate-700'>

@@ -9,12 +9,17 @@ interface TripData {
   id: string;
   scheduled_at: string;
   client_name: string | null;
+  client_phone: string | null;
   pickup_address: string | null;
   pickup_station: string | null;
   dropoff_address: string | null;
   dropoff_station: string | null;
   notes: string | null;
   is_wheelchair: boolean;
+  billing_types?: {
+    name: string;
+    color: string | null;
+  } | null;
   driver?: { name: string } | null;
 }
 
@@ -90,6 +95,8 @@ export function PrintTemplate({ driverName, date, trips }: PrintTemplateProps) {
               );
             };
 
+            const billingType = trip.billing_types;
+
             return (
               <tr
                 key={trip.id}
@@ -98,15 +105,31 @@ export function PrintTemplate({ driverName, date, trips }: PrintTemplateProps) {
                 <td className='p-3 font-mono text-lg font-bold'>
                   {format(new Date(trip.scheduled_at), 'HH:mm')}
                 </td>
-                <td className='p-3 font-semibold'>
-                  <div className='flex items-center gap-2'>
-                    <span>{trip.client_name || '-'}</span>
-                    {trip.is_wheelchair && (
-                      <Accessibility
-                        className='h-4 w-4 text-red-600'
-                        strokeWidth={3}
-                      />
-                    )}
+                <td className='p-3'>
+                  <div className='flex flex-col gap-0.5'>
+                    <div className='flex items-center gap-2'>
+                      <span className='font-semibold'>
+                        {trip.client_name || '-'}
+                      </span>
+                      {trip.is_wheelchair && (
+                        <Accessibility
+                          className='h-4 w-4 text-red-600'
+                          strokeWidth={3}
+                        />
+                      )}
+                    </div>
+                    <div className='flex items-center justify-between gap-4'>
+                      {trip.client_phone && (
+                        <span className='text-[10px] font-bold text-slate-600 tabular-nums'>
+                          {trip.client_phone}
+                        </span>
+                      )}
+                      {billingType?.name && (
+                        <span className='text-[9px] font-bold tracking-tight text-slate-400 uppercase'>
+                          {billingType.name}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </td>
                 <td className='p-3 text-sm'>{trip.pickup_station || '-'}</td>

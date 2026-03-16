@@ -143,6 +143,44 @@ export function PrintTripsButton() {
           });
 
           pdf.addImage(mobileJpegDataUrl, 'JPEG', 0, 0, width, height);
+
+          // 3. Add Interactive Layer (Links)
+          const mobileRect = mobileElement.getBoundingClientRect();
+
+          // Find all address links
+          const addressElements =
+            mobileElement.querySelectorAll('[data-address]');
+          addressElements.forEach((el) => {
+            const rect = el.getBoundingClientRect();
+            const address = el.getAttribute('data-address');
+            if (address && address.trim() !== '') {
+              const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+              pdf.link(
+                rect.left - mobileRect.left,
+                rect.top - mobileRect.top,
+                rect.width,
+                rect.height,
+                { url }
+              );
+            }
+          });
+
+          // Find all phone links
+          const phoneElements = mobileElement.querySelectorAll('[data-phone]');
+          phoneElements.forEach((el) => {
+            const rect = el.getBoundingClientRect();
+            const phone = el.getAttribute('data-phone');
+            if (phone && phone.trim() !== '') {
+              pdf.link(
+                rect.left - mobileRect.left,
+                rect.top - mobileRect.top,
+                rect.width,
+                rect.height,
+                { url: `tel:${phone.replace(/\s+/g, '')}` }
+              );
+            }
+          });
+
           const pdfBlob = pdf.output('blob');
           zip.file(`${dateStr}.${driverName}.pdf`, pdfBlob);
         }
