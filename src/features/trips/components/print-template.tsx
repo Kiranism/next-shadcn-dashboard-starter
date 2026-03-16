@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { Accessibility } from 'lucide-react';
 
 interface TripData {
   id: string;
@@ -13,6 +14,7 @@ interface TripData {
   dropoff_address: string | null;
   dropoff_station: string | null;
   notes: string | null;
+  is_wheelchair: boolean;
   driver?: { name: string } | null;
 }
 
@@ -96,7 +98,17 @@ export function PrintTemplate({ driverName, date, trips }: PrintTemplateProps) {
                 <td className='p-3 font-mono text-lg font-bold'>
                   {format(new Date(trip.scheduled_at), 'HH:mm')}
                 </td>
-                <td className='p-3 font-semibold'>{trip.client_name || '-'}</td>
+                <td className='p-3 font-semibold'>
+                  <div className='flex items-center gap-2'>
+                    <span>{trip.client_name || '-'}</span>
+                    {trip.is_wheelchair && (
+                      <Accessibility
+                        className='h-4 w-4 text-red-600'
+                        strokeWidth={3}
+                      />
+                    )}
+                  </div>
+                </td>
                 <td className='p-3 text-sm'>{trip.pickup_station || '-'}</td>
                 <td className='p-3 text-sm'>
                   {formatAddress(trip.pickup_address)}

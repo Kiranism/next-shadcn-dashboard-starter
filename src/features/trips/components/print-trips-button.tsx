@@ -45,7 +45,8 @@ export function PrintTripsButton() {
         .select(
           `
           *,
-          driver:users!trips_driver_id_fkey(name)
+          driver:users!trips_driver_id_fkey(name),
+          billing_types(*)
         `
         )
         .gte('scheduled_at', start)

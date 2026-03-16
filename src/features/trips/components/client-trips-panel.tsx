@@ -114,7 +114,7 @@ export function ClientTripsPanel({
               {trips.map((trip) => (
                 <div key={trip.id} className='flex items-stretch gap-1'>
                   <div className='flex-1'>
-                    <TripRow trip={trip} onClick={() => {}} compact />
+                    <TripRow trip={trip} onClick={() => {}} compact showDate />
                   </div>
                   <div className='flex items-center'>
                     <ClientTripActions

@@ -9,9 +9,15 @@ interface TripRowProps {
   trip: any;
   onClick: () => void;
   compact?: boolean;
+  showDate?: boolean;
 }
 
-export function TripRow({ trip, onClick, compact = false }: TripRowProps) {
+export function TripRow({
+  trip,
+  onClick,
+  compact = false,
+  showDate = false
+}: TripRowProps) {
   const scheduledTime = trip.scheduled_at
     ? format(new Date(trip.scheduled_at), 'HH:mm')
     : '--:--';
@@ -83,6 +89,11 @@ export function TripRow({ trip, onClick, compact = false }: TripRowProps) {
         >
           {scheduledTime}
         </div>
+        {showDate && trip.scheduled_at && (
+          <div className='text-muted-foreground mt-0.5 text-[10px] font-medium'>
+            {format(new Date(trip.scheduled_at), 'dd.MM.yy')}
+          </div>
+        )}
         {billingType?.name && (
           <span className='text-muted-foreground truncate text-[10px] font-medium uppercase'>
             {billingType.name}
