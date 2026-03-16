@@ -3,6 +3,8 @@ const GEOCODE_ENDPOINT = 'https://maps.googleapis.com/maps/api/geocode/json';
 export interface GeocodedLocation {
   lat: number;
   lng: number;
+  zip_code?: string | null;
+  city?: string | null;
 }
 
 export async function geocodeStructuredAddressToLatLng(params: {
@@ -60,7 +62,8 @@ export async function geocodeStructuredAddressToLatLng(params: {
       return null;
     }
 
-    const location = data.results[0].geometry?.location;
+    const result = data.results[0];
+    const location = result.geometry?.location;
     if (
       !location ||
       typeof location.lat !== 'number' ||
@@ -70,9 +73,34 @@ export async function geocodeStructuredAddressToLatLng(params: {
       return null;
     }
 
+    let zipCode: string | null = null;
+    let city: string | null = null;
+
+    const components: Array<{
+      long_name: string;
+      short_name: string;
+      types: string[];
+    }> = Array.isArray(result.address_components)
+      ? result.address_components
+      : [];
+
+    for (const component of components) {
+      if (component.types.includes('postal_code')) {
+        zipCode = component.long_name;
+      }
+      if (
+        component.types.includes('locality') ||
+        component.types.includes('postal_town')
+      ) {
+        city = component.long_name;
+      }
+    }
+
     return {
       lat: location.lat,
-      lng: location.lng
+      lng: location.lng,
+      zip_code: zipCode,
+      city
     };
   } catch (error) {
     console.error('Error calling Geocoding API', error);

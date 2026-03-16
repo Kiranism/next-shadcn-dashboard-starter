@@ -11,6 +11,7 @@ import { Suspense } from 'react';
 import { CreateTripDialogButton } from '@/features/trips/components/create-trip-dialog-button';
 import { BulkUploadDialog } from '@/features/trips/components/bulk-upload-dialog';
 import { PrintTripsButton } from '@/features/trips/components/print-trips-button';
+import { PendingDriverAssignmentsPanel } from '@/features/trips/components/pending-driver-assignments-panel';
 
 export const metadata = {
   title: 'Dashboard: Fahrten'
@@ -46,6 +47,7 @@ export default async function Page(props: pageProps) {
       >
         <TripsListingPage searchParams={props.searchParams} />
       </Suspense>
+      <PendingDriverAssignmentsPanel />
     </PageContainer>
   );
 }

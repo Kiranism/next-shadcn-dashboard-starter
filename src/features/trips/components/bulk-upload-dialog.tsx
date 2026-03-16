@@ -1,9 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import Papa from 'papaparse';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -28,15 +25,26 @@ import {
 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
-const bulkUploadSchema = z.object({
-  file: z.any()
-});
+import type { InsertTrip } from '@/features/trips/api/trips.service';
+import {
+  type ParsedCsvRow,
+  type ValidatedTripRow,
+  type UnresolvedRow
+} from '@/features/trips/components/bulk-upload/bulk-upload-types';
+import { ResolveClientsStep } from '@/features/trips/components/bulk-upload/resolve-clients-step';
 
 interface BulkUploadDialogProps {
   onSuccess?: () => void;
 }
 
+/**
+ * BulkUploadDialog
+ *
+ * Handles the end‑to‑end CSV import flow for trips:
+ * - parses and validates rows
+ * - creates trips in bulk
+ * - starts a follow‑up wizard to resolve trips without linked clients.
+ */
 export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
@@ -44,7 +52,19 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
   const [results, setResults] = React.useState<{
     success: number;
     errors: string[];
+    rows: ValidatedTripRow[];
   } | null>(null);
+  const [mode, setMode] = React.useState<'upload' | 'resolve_clients' | 'done'>(
+    'upload'
+  );
+  const [unresolvedRows, setUnresolvedRows] = React.useState<
+    UnresolvedRow<InsertTrip>[]
+  >([]);
+  const [currentIndex, setCurrentIndex] = React.useState(0);
+  const [isCreatingClient, setIsCreatingClient] = React.useState(false);
+  const [homeAddressChoice, setHomeAddressChoice] = React.useState<
+    'pickup' | 'dropoff'
+  >('pickup');
 
   const { payers } = useTripFormData(null);
   const [billingTypes, setBillingTypes] = React.useState<any[]>([]);
@@ -60,6 +80,10 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
     fetchAllBillingTypes();
   }, []);
 
+  /**
+   * Parses a German style date (DD.MM.YY / DD.MM.YYYY) and 24h time (HH:mm)
+   * into a JavaScript Date instance. Returns null for invalid input.
+   */
   const parseGermanDate = (dateStr: string, timeStr: string) => {
     try {
       // Handle DD.MM.YY or DD.MM.YYYY
@@ -79,20 +103,31 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
     }
   };
 
+  /**
+   * Main CSV processing entrypoint used by the file uploader.
+   * Responsible for:
+   * - reading the CSV
+   * - building ValidatedTripRow entries with issues
+   * - inserting successful trips
+   * - preparing unresolvedRows for the client‑resolution wizard.
+   */
   const processCsv = async (files: File[]) => {
     if (files.length === 0) return;
 
     setIsProcessing(true);
     setResults(null);
+    setMode('upload');
+    setUnresolvedRows([]);
+    setCurrentIndex(0);
 
     const file = files[0];
 
-    Papa.parse(file, {
+    Papa.parse<ParsedCsvRow>(file, {
       header: true,
       skipEmptyLines: true,
       complete: async (results) => {
-        const rows = results.data as any[];
-        const tripsToInsert: any[] = [];
+        const rows = results.data;
+        const validatedRows: ValidatedTripRow[] = [];
         const errors: string[] = [];
         const groupIdMap = new Map<string, string>();
 
@@ -111,101 +146,397 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
           companyId = profile?.company_id ?? null;
         }
 
+        // Preload clients for simple in-memory matching.
+        // Prefer same company, but fall back to all clients if company_id is missing.
+        type CompanyClient = {
+          id: string;
+          first_name: string | null;
+          last_name: string | null;
+          phone: string | null;
+        };
+
+        let companyClients: CompanyClient[] = [];
+        const clientsQuery = supabase
+          .from('clients')
+          .select('id, first_name, last_name, phone');
+
+        const { data: clientsData } = companyId
+          ? await clientsQuery.eq('company_id', companyId)
+          : await clientsQuery;
+
+        companyClients = (clientsData as CompanyClient[]) || [];
+
+        const normalize = (value: string | null | undefined) =>
+          (value || '').trim().toLowerCase();
+
+        type CompanyDriver = {
+          id: string;
+          name: string;
+          is_active: boolean | null;
+          role: string;
+          company_id: string | null;
+        };
+
+        let companyDrivers: CompanyDriver[] = [];
+
+        const driversBaseQuery = supabase
+          .from('users')
+          .select('id, name, is_active, role, company_id')
+          .eq('role', 'driver')
+          .eq('is_active', true);
+
+        const { data: driversData } = companyId
+          ? await driversBaseQuery.eq('company_id', companyId)
+          : await driversBaseQuery;
+
+        companyDrivers = (driversData as CompanyDriver[]) || [];
+
+        const findMatchingClient = (
+          row: ParsedCsvRow
+        ): CompanyClient | null => {
+          const fullName =
+            `${row.firstname || ''} ${row.lastname || ''}`.trim();
+          if (!fullName) return null;
+
+          const normFullName = normalize(fullName);
+
+          const candidates = companyClients.filter((client) => {
+            const clientFullName = `${client.first_name || ''} ${
+              client.last_name || ''
+            }`.trim();
+            return normalize(clientFullName) === normFullName;
+          });
+
+          if (candidates.length === 1) return candidates[0];
+          return null;
+        };
+
+        const findMatchingDriver = (
+          row: ParsedCsvRow
+        ): CompanyDriver | null => {
+          const rawName = row.driver_name;
+          if (!rawName) return null;
+
+          const normTarget = normalize(rawName);
+          if (!normTarget) return null;
+
+          const candidates = companyDrivers.filter(
+            (driver) => normalize(driver.name) === normTarget
+          );
+
+          if (candidates.length === 1) return candidates[0];
+          return null;
+        };
+
         for (let i = 0; i < rows.length; i++) {
-          const rowRaw = rows[i];
-          // Trim all keys and values to handle messy CSVs
-          const row: any = {};
-          Object.keys(rowRaw).forEach((key) => {
-            row[key.trim()] = String(rowRaw[key] || '').trim();
+          const rowRaw = rows[i] as any;
+          const parsedRow: ParsedCsvRow = {} as ParsedCsvRow;
+          Object.keys(rowRaw || {}).forEach((key) => {
+            const trimmedKey = key.trim();
+            (parsedRow as any)[trimmedKey] = String(rowRaw[key] || '').trim();
           });
 
           const rowNum = i + 2; // +1 for 0-index, +1 for header row
+          const issues: ValidationIssue[] = [];
 
-          try {
-            // 1. Find Payer
-            if (!row.kostentraeger) throw new Error(`Kostenträger ist leer.`);
-            const payer = payers.find(
-              (p) => p.name.toLowerCase() === row.kostentraeger.toLowerCase()
+          if (!parsedRow.kostentraeger) {
+            issues.push({
+              type: 'payer_not_found',
+              message: 'Kostenträger ist leer.'
+            });
+          }
+
+          const payer = payers.find(
+            (p) =>
+              p.name.toLowerCase() ===
+              (parsedRow.kostentraeger || '').toLowerCase()
+          );
+          if (!payer) {
+            issues.push({
+              type: 'payer_not_found',
+              message: `Kostenträger "${parsedRow.kostentraeger}" nicht gefunden.`
+            });
+          }
+
+          let billingTypeId: string | null = null;
+          if (parsedRow.abrechnungsart && payer) {
+            const bt = billingTypes.find(
+              (b) =>
+                b.name.toLowerCase() ===
+                  parsedRow.abrechnungsart!.toLowerCase() &&
+                b.payer_id === payer.id
             );
-            if (!payer)
-              throw new Error(
-                `Kostenträger "${row.kostentraeger}" nicht gefunden.`
-              );
-
-            // 2. Find Billing Type (optional)
-            let billingTypeId = null;
-            if (row.abrechnungsart) {
-              const bt = billingTypes.find(
-                (b) =>
-                  b.name.toLowerCase() === row.abrechnungsart.toLowerCase() &&
-                  b.payer_id === payer.id
-              );
-              if (!bt)
-                throw new Error(
-                  `Abrechnungsart "${row.abrechnungsart}" für Kostenträger "${row.kostentraeger}" nicht gefunden.`
-                );
+            if (!bt) {
+              issues.push({
+                type: 'billing_type_not_found',
+                message: `Abrechnungsart "${parsedRow.abrechnungsart}" für Kostenträger "${parsedRow.kostentraeger}" nicht gefunden.`
+              });
+            } else {
               billingTypeId = bt.id;
             }
-
-            // 3. Construct Pickup/Dropoff Addresses
-            const pickup_address = `${row.pickup_street}, ${row.pickup_zip} ${row.pickup_city}`;
-            const dropoff_address = `${row.dropoff_street}, ${row.dropoff_zip} ${row.dropoff_city}`;
-
-            // 4. Validate Date/Time
-            const scheduled_at = parseGermanDate(row.date, row.time);
-            if (!scheduled_at)
-              throw new Error(
-                `Ungültiges Datum/Uhrzeit Format (erwartet DD.MM.YY HH:mm): "${row.date} ${row.time}"`
-              );
-
-            let finalGroupId = null;
-            if (row.group_id) {
-              if (!groupIdMap.has(row.group_id)) {
-                groupIdMap.set(row.group_id, crypto.randomUUID());
-              }
-              finalGroupId = groupIdMap.get(row.group_id);
-            }
-
-            tripsToInsert.push({
-              payer_id: payer.id,
-              billing_type_id: billingTypeId,
-              client_name:
-                `${row.firstname || ''} ${row.lastname || ''}`.trim() || null,
-              client_phone: row.phone || null,
-              scheduled_at: scheduled_at.toISOString(),
-              pickup_address,
-              pickup_station: row.pickup_station || null,
-              dropoff_address,
-              dropoff_station: row.dropoff_station || null,
-              is_wheelchair: row.is_wheelchair.toUpperCase() === 'TRUE',
-              notes: row.notes || null,
-              status: 'pending',
-              company_id: companyId,
-              created_by: user?.id || null,
-              group_id: finalGroupId,
-              stop_updates: []
-            });
-          } catch (e: any) {
-            errors.push(`Zeile ${rowNum}: ${e.message}`);
           }
+
+          const pickup_address = `${parsedRow.pickup_street}, ${parsedRow.pickup_zip} ${parsedRow.pickup_city}`;
+          const dropoff_address = `${parsedRow.dropoff_street}, ${parsedRow.dropoff_zip} ${parsedRow.dropoff_city}`;
+
+          const scheduled_at = parseGermanDate(parsedRow.date, parsedRow.time);
+          if (!scheduled_at) {
+            issues.push({
+              type: 'invalid_datetime',
+              message: `Ungültiges Datum/Uhrzeit Format (erwartet DD.MM.YY HH:mm): "${parsedRow.date} ${parsedRow.time}"`
+            });
+          }
+
+          let finalGroupId: string | null = null;
+          if (parsedRow.group_id) {
+            if (!groupIdMap.has(parsedRow.group_id)) {
+              groupIdMap.set(parsedRow.group_id, crypto.randomUUID());
+            }
+            finalGroupId = groupIdMap.get(parsedRow.group_id) ?? null;
+          }
+
+          const fullNameFromCsv =
+            `${parsedRow.firstname || ''} ${parsedRow.lastname || ''}`.trim() ||
+            null;
+
+          // Try to match an existing client by full name
+          const matchedClient = findMatchingClient(parsedRow);
+
+          const matchedDriver = findMatchingDriver(parsedRow);
+          const hasDriverNameFromCsv =
+            typeof parsedRow.driver_name === 'string' &&
+            parsedRow.driver_name.trim().length > 0;
+          const driverId: string | null = matchedDriver?.id ?? null;
+          const needsDriverAssignment = hasDriverNameFromCsv && !matchedDriver;
+
+          const trip: InsertTrip | null =
+            payer && scheduled_at
+              ? {
+                  payer_id: payer.id,
+                  billing_type_id: billingTypeId,
+                  client_id: matchedClient?.id ?? null,
+                  client_name: matchedClient
+                    ? `${matchedClient.first_name || ''} ${
+                        matchedClient.last_name || ''
+                      }`.trim() || null
+                    : fullNameFromCsv,
+                  client_phone: parsedRow.phone || null,
+                  scheduled_at: scheduled_at.toISOString(),
+                  pickup_address,
+                  pickup_street: parsedRow.pickup_street || null,
+                  pickup_street_number: null,
+                  pickup_zip_code: parsedRow.pickup_zip || null,
+                  pickup_city: parsedRow.pickup_city || null,
+                  pickup_lat: null,
+                  pickup_lng: null,
+                  pickup_station: parsedRow.pickup_station || null,
+                  dropoff_address,
+                  dropoff_street: parsedRow.dropoff_street || null,
+                  dropoff_street_number: null,
+                  dropoff_zip_code: parsedRow.dropoff_zip || null,
+                  dropoff_city: parsedRow.dropoff_city || null,
+                  dropoff_lat: null,
+                  dropoff_lng: null,
+                  dropoff_station: parsedRow.dropoff_station || null,
+                  is_wheelchair:
+                    (parsedRow.is_wheelchair || '').toUpperCase() === 'TRUE',
+                  notes: parsedRow.notes || null,
+                  status: 'pending',
+                  company_id: companyId,
+                  created_by: user?.id || null,
+                  group_id: finalGroupId,
+                  stop_updates: [],
+                  has_missing_geodata: true,
+                  driver_id: driverId,
+                  needs_driver_assignment: needsDriverAssignment,
+                  ingestion_source: 'csv_bulk_upload'
+                }
+              : null;
+
+          const matchedClientId: string | null = matchedClient?.id ?? null;
+
+          validatedRows.push({
+            rowNumber: rowNum,
+            source: parsedRow,
+            trip,
+            issues,
+            clientId: matchedClientId
+          });
         }
 
-        if (tripsToInsert.length > 0 && errors.length === 0) {
+        const successfulRows = validatedRows.filter(
+          (row) => row.trip && row.issues.length === 0
+        );
+
+        // Geocode pickup/dropoff addresses for successful rows using the existing
+        // geocoding API endpoint so that trips get lat/lng where possible and
+        // normalize zip_code/city based on Google data (street is treated as
+        // the source of truth).
+        await Promise.all(
+          successfulRows.map(async (row) => {
+            if (!row.trip) return;
+
+            try {
+              const [pickupResult, dropoffResult] = await Promise.all([
+                fetch('/api/geocode-address', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    street: row.trip.pickup_street,
+                    street_number: row.trip.pickup_street_number,
+                    zip_code: row.trip.pickup_zip_code,
+                    city: row.trip.pickup_city
+                  })
+                }),
+                fetch('/api/geocode-address', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    street: row.trip.dropoff_street,
+                    street_number: row.trip.dropoff_street_number,
+                    zip_code: row.trip.dropoff_zip_code,
+                    city: row.trip.dropoff_city
+                  })
+                })
+              ]);
+
+              const pickupOk = pickupResult.ok;
+              const dropoffOk = dropoffResult.ok;
+
+              const pickupData = pickupOk ? await pickupResult.json() : null;
+              const dropoffData = dropoffOk ? await dropoffResult.json() : null;
+
+              if (
+                pickupData &&
+                typeof pickupData.lat === 'number' &&
+                typeof pickupData.lng === 'number'
+              ) {
+                row.trip.pickup_lat = pickupData.lat;
+                row.trip.pickup_lng = pickupData.lng;
+              }
+
+              if (
+                dropoffData &&
+                typeof dropoffData.lat === 'number' &&
+                typeof dropoffData.lng === 'number'
+              ) {
+                row.trip.dropoff_lat = dropoffData.lat;
+                row.trip.dropoff_lng = dropoffData.lng;
+              }
+
+              // Use Google-derived postal code and city to backfill or correct
+              // CSV values when possible. We assume the street (from CSV) is
+              // correct and trust Google's metadata for that street.
+              if (pickupData) {
+                if (pickupData.zip_code) {
+                  row.trip.pickup_zip_code = pickupData.zip_code;
+                }
+                if (pickupData.city) {
+                  row.trip.pickup_city = pickupData.city;
+                }
+              }
+
+              if (dropoffData) {
+                if (dropoffData.zip_code) {
+                  row.trip.dropoff_zip_code = dropoffData.zip_code;
+                }
+                if (dropoffData.city) {
+                  row.trip.dropoff_city = dropoffData.city;
+                }
+              }
+
+              // Keep the denormalized address strings in sync with potentially
+              // corrected zip/city values.
+              row.trip.pickup_address = `${row.trip.pickup_street ?? ''}, ${
+                row.trip.pickup_zip_code ?? ''
+              } ${row.trip.pickup_city ?? ''}`.trim();
+              row.trip.dropoff_address = `${row.trip.dropoff_street ?? ''}, ${
+                row.trip.dropoff_zip_code ?? ''
+              } ${row.trip.dropoff_city ?? ''}`.trim();
+
+              if (
+                typeof row.trip.pickup_lat === 'number' &&
+                typeof row.trip.pickup_lng === 'number' &&
+                typeof row.trip.dropoff_lat === 'number' &&
+                typeof row.trip.dropoff_lng === 'number'
+              ) {
+                row.trip.has_missing_geodata = false;
+              }
+            } catch {
+              // If geocoding fails, we keep has_missing_geodata = true and
+              // allow later backfill scripts to handle it.
+            }
+          })
+        );
+
+        const successfulTrips = successfulRows.map(
+          (row) => row.trip!
+        ) as InsertTrip[];
+
+        if (successfulTrips.length > 0 && errors.length === 0) {
           try {
-            await tripsService.bulkCreateTrips(tripsToInsert);
+            const createdTrips =
+              await tripsService.bulkCreateTrips(successfulTrips);
+
+            // Map back created trip ids to corresponding rows (by index)
+            const unresolved = createdTrips
+              .map((trip: any, idx: number) => ({
+                tripId: trip.id as string,
+                row: successfulRows[idx]
+              }))
+              .filter(
+                ({ row }) =>
+                  !row.clientId &&
+                  row.trip?.client_name &&
+                  row.trip?.ingestion_source === 'csv_bulk_upload'
+              );
+
+            setUnresolvedRows(unresolved);
+
             toast.success(
-              `${tripsToInsert.length} Fahrten erfolgreich hochgeladen!`
+              `${successfulTrips.length} Fahrten erfolgreich hochgeladen!`
             );
-            setResults({ success: tripsToInsert.length, errors: [] });
+            setResults({
+              success: successfulTrips.length,
+              errors: [],
+              rows: validatedRows
+            });
             onSuccess?.();
             router.refresh();
-            setTimeout(() => setOpen(false), 2000);
+
+            if (unresolved.length > 0) {
+              setMode('resolve_clients');
+              setCurrentIndex(0);
+            } else {
+              setMode('done');
+              setTimeout(() => setOpen(false), 2000);
+            }
           } catch (e: any) {
             errors.push(`Datenbankfehler: ${e.message}`);
-            setResults({ success: 0, errors });
+            setResults({ success: 0, errors, rows: validatedRows });
           }
         } else {
-          setResults({ success: tripsToInsert.length, errors });
+          const combinedErrors =
+            errors.length > 0
+              ? errors
+              : validatedRows
+                  .filter((r) => r.issues.length > 0)
+                  .flatMap((r) =>
+                    r.issues.map(
+                      (issue) => `Zeile ${r.rowNumber}: ${issue.message}`
+                    )
+                  );
+
+          setResults({
+            success: successfulTrips.length,
+            errors: combinedErrors,
+            rows: validatedRows
+          });
+          setMode('done');
         }
         setIsProcessing(false);
       },
@@ -237,7 +568,7 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
         </DialogHeader>
 
         <div className='grid gap-4 py-4'>
-          {!results && (
+          {mode === 'upload' && !results && (
             <FileUploader
               accept={{ 'text/csv': ['.csv'] }}
               maxFiles={1}
@@ -256,24 +587,27 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
             </div>
           )}
 
-          {results && (
+          {mode === 'upload' && results && (
             <div className='space-y-4'>
-              {results.success > 0 && results.errors.length === 0 && (
-                <Alert className='border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20'>
-                  <CheckCircle2 className='h-4 w-4 text-emerald-600' />
-                  <AlertTitle className='text-emerald-800 dark:text-emerald-400'>
-                    Erfolg!
-                  </AlertTitle>
-                  <AlertDescription className='text-emerald-700 dark:text-emerald-500'>
-                    {results.success} Fahrten wurden erfolgreich erstellt.
-                  </AlertDescription>
-                </Alert>
-              )}
+              <Alert className='border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20'>
+                <CheckCircle2 className='h-4 w-4 text-emerald-600' />
+                <AlertTitle className='text-emerald-800 dark:text-emerald-400'>
+                  CSV analysiert
+                </AlertTitle>
+                <AlertDescription className='text-emerald-700 dark:text-emerald-500'>
+                  {
+                    results.rows.filter((r) => r.trip && r.issues.length === 0)
+                      .length
+                  }{' '}
+                  Fahrten sind bereit zum Erstellen. Bitte prüfen Sie offene
+                  Probleme unten.
+                </AlertDescription>
+              </Alert>
 
               {results.errors.length > 0 && (
                 <Alert variant='destructive'>
                   <AlertCircle className='h-4 w-4' />
-                  <AlertTitle>Fehler beim Import</AlertTitle>
+                  <AlertTitle>Probleme beim Import</AlertTitle>
                   <AlertDescription>
                     <ScrollArea className='mt-2 h-32 pr-4'>
                       <ul className='list-inside list-disc space-y-1 text-xs'>
@@ -289,9 +623,57 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
               <Button
                 variant='outline'
                 className='w-full'
-                onClick={() => setResults(null)}
+                onClick={() => {
+                  setResults(null);
+                  setMode('upload');
+                }}
               >
                 Erneut versuchen
+              </Button>
+            </div>
+          )}
+
+          {mode === 'resolve_clients' && unresolvedRows.length > 0 && (
+            <ResolveClientsStep
+              unresolvedRows={unresolvedRows}
+              currentIndex={currentIndex}
+              homeAddressChoice={homeAddressChoice}
+              isCreatingClient={isCreatingClient}
+              onHomeAddressChange={setHomeAddressChoice}
+              onUseAsNonClient={() => {
+                if (currentIndex + 1 < unresolvedRows.length) {
+                  setCurrentIndex((idx) => idx + 1);
+                } else {
+                  setMode('done');
+                }
+              }}
+              onDone={() => {
+                setMode('done');
+              }}
+            />
+          )}
+
+          {mode === 'done' && (
+            <div className='space-y-4'>
+              <Alert className='border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20'>
+                <CheckCircle2 className='h-4 w-4 text-emerald-600' />
+                <AlertTitle className='text-emerald-800 dark:text-emerald-400'>
+                  Import abgeschlossen
+                </AlertTitle>
+                <AlertDescription className='text-emerald-700 dark:text-emerald-500'>
+                  Alle aus dieser CSV erstellten Fahrten wurden verarbeitet.
+                </AlertDescription>
+              </Alert>
+              <Button
+                type='button'
+                className='w-full'
+                onClick={() => {
+                  setOpen(false);
+                  setResults(null);
+                  setMode('upload');
+                }}
+              >
+                Dialog schließen
               </Button>
             </div>
           )}
