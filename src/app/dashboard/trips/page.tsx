@@ -10,6 +10,7 @@ import { SearchParams } from 'nuqs/server';
 import { Suspense } from 'react';
 import { CreateTripDialogButton } from '@/features/trips/components/create-trip-dialog-button';
 import { BulkUploadDialog } from '@/features/trips/components/bulk-upload-dialog';
+import { PrintTripsButton } from '@/features/trips/components/print-trips-button';
 
 export const metadata = {
   title: 'Dashboard: Fahrten'
@@ -32,6 +33,7 @@ export default async function Page(props: pageProps) {
       pageDescription='Alle Fahrten auf einen Blick verwalten.'
       pageHeaderAction={
         <div className='flex items-center gap-2'>
+          <PrintTripsButton />
           <BulkUploadDialog />
           <CreateTripDialogButton />
         </div>
