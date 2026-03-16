@@ -223,13 +223,13 @@ export function PassengerSearchOverlay() {
                 </div>
                 <div className='flex gap-2'>
                   <Button
-                    size='xs'
+                    size='sm'
                     variant='outline'
                     onClick={handleOpenProfile}
                   >
                     Profil öffnen
                   </Button>
-                  <Button size='xs' onClick={handleOpenNewTrip}>
+                  <Button size='sm' onClick={handleOpenNewTrip}>
                     Neue Fahrt
                   </Button>
                 </div>
