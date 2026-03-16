@@ -361,6 +361,8 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
             parsedRow.driver_name.trim().length > 0;
           const driverId: string | null = matchedDriver?.id ?? null;
           const needsDriverAssignment = hasDriverNameFromCsv && !matchedDriver;
+          const status: 'pending' | 'assigned' =
+            driverId != null ? 'assigned' : 'pending';
 
           const trip: InsertTrip | null =
             payer && scheduled_at
@@ -398,7 +400,7 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
                   is_wheelchair:
                     (parsedRow.is_wheelchair || '').toUpperCase() === 'TRUE',
                   notes: parsedRow.notes || null,
-                  status: 'pending',
+                  status,
                   company_id: companyId,
                   created_by: user?.id || null,
                   group_id: finalGroupId,
