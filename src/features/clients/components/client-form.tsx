@@ -121,7 +121,7 @@ export default function ClientForm({
         }
       }
 
-      const payload: InsertClient | UpdateClient = {
+      const payload = {
         ...(values as any),
         is_company: isCompany,
         company_id: companyIdStr,
