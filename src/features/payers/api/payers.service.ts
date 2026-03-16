@@ -14,7 +14,15 @@ export const DEFAULT_BEHAVIOR: BillingTypeBehavior = {
   prefillDropoffFromPickup: false,
   requirePassenger: true,
   defaultPickup: null,
-  defaultDropoff: null
+  defaultDropoff: null,
+  defaultPickupStreet: null,
+  defaultPickupStreetNumber: null,
+  defaultPickupZip: null,
+  defaultPickupCity: null,
+  defaultDropoffStreet: null,
+  defaultDropoffStreetNumber: null,
+  defaultDropoffZip: null,
+  defaultDropoffCity: null
 };
 
 export class PayersService {

@@ -5,8 +5,18 @@ export interface BillingTypeBehavior {
   lockDropoff: boolean;
   prefillDropoffFromPickup: boolean;
   requirePassenger: boolean;
+  // Legacy single-string defaults (kept for backward compatibility)
   defaultPickup?: string | null;
   defaultDropoff?: string | null;
+  // Structured defaults for better prefilling
+  defaultPickupStreet?: string | null;
+  defaultPickupStreetNumber?: string | null;
+  defaultPickupZip?: string | null;
+  defaultPickupCity?: string | null;
+  defaultDropoffStreet?: string | null;
+  defaultDropoffStreetNumber?: string | null;
+  defaultDropoffZip?: string | null;
+  defaultDropoffCity?: string | null;
 }
 
 export interface BillingType {

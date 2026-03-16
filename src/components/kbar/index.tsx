@@ -13,7 +13,7 @@ import {
   KBarSearch
 } from 'kbar';
 import { useRouter } from 'next/navigation';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import RenderResults from './render-result';
 import useThemeSwitching from './use-theme-switching';
 
@@ -86,11 +86,26 @@ export default function KBar({ children }: { children: React.ReactNode }) {
     return [newTripAction, passengerSearchAction, ...navigateActions];
   }, [router, filteredItems]);
 
-  const { open, preselectedClientId, closeDialog } = useCreateTripDialogStore();
-
   return (
     <KBarProvider actions={actions}>
       <KBarComponent>{children}</KBarComponent>
+      <ClientOnlyDialogs />
+    </KBarProvider>
+  );
+}
+
+const ClientOnlyDialogs = () => {
+  const [mounted, setMounted] = useState(false);
+  const { open, closeDialog, preselectedClientId } = useCreateTripDialogStore();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
+  return (
+    <>
       <CreateTripDialog
         open={open}
         onOpenChange={(isOpen) => {
@@ -101,9 +116,10 @@ export default function KBar({ children }: { children: React.ReactNode }) {
         preselectedClientId={preselectedClientId}
       />
       <PassengerSearchOverlay />
-    </KBarProvider>
+    </>
   );
-}
+};
+
 const KBarComponent = ({ children }: { children: React.ReactNode }) => {
   useThemeSwitching();
 

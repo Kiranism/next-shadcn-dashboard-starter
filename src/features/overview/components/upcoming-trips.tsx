@@ -62,7 +62,7 @@ export function UpcomingTrips() {
   };
 
   return (
-    <Card className='h-full'>
+    <Card>
       <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-4'>
         <div className='space-y-1'>
           <CardTitle>Nächste Fahrten</CardTitle>

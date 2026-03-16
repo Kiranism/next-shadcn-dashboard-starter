@@ -510,6 +510,11 @@ function SidebarMenuButton({
   const defaultId = React.useId();
   const id = props.id || defaultId;
 
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const button = (
     <Comp
       data-slot='sidebar-menu-button'
@@ -517,7 +522,7 @@ function SidebarMenuButton({
       data-size={size}
       data-active={isActive}
       className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
-      id={id}
+      id={mounted ? id : undefined}
       {...props}
     />
   );

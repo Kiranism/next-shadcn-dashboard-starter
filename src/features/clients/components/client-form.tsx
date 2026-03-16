@@ -116,10 +116,14 @@ export default function ClientForm({
         }
       }
 
-      const payload = {
-        ...values,
+      const payload: InsertClient | UpdateClient = {
+        ...(values as any),
         is_company: isCompany,
-        company_id: companyIdStr
+        company_id: companyIdStr,
+        // Preserve existing lat/lng when editing; rely on AddressAutocomplete to have
+        // populated them on the values object when a suggestion was selected.
+        lat: (initialData as any)?.lat ?? (values as any).lat ?? null,
+        lng: (initialData as any)?.lng ?? (values as any).lng ?? null
       };
 
       if (initialData) {

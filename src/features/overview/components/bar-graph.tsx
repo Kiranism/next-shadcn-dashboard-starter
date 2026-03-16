@@ -82,7 +82,7 @@ export function BarGraph() {
   }
 
   return (
-    <Card className='@container/card h-full'>
+    <Card className='@container/card'>
       <CardHeader className='flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row'>
         <div className='flex flex-1 flex-col justify-center gap-1 border-b px-6 py-5 sm:border-b-0'>
           <CardTitle>Auslastungsanalyse</CardTitle>

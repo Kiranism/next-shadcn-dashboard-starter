@@ -204,14 +204,82 @@ export function CreateTripForm({
     // Address defaults
     const defaultPickup = b.defaultPickup ?? b.default_pickup;
     const defaultDropoff = b.defaultDropoff ?? b.default_dropoff;
-    if (defaultPickup) {
+
+    const pickupStreet =
+      b.defaultPickupStreet ?? b.default_pickup_street ?? null;
+    const pickupStreetNumber =
+      b.defaultPickupStreetNumber ?? b.default_pickup_street_number ?? null;
+    const pickupZip = b.defaultPickupZip ?? b.default_pickup_zip ?? null;
+    const pickupCity = b.defaultPickupCity ?? b.default_pickup_city ?? null;
+
+    const dropoffStreet =
+      b.defaultDropoffStreet ?? b.default_dropoff_street ?? null;
+    const dropoffStreetNumber =
+      b.defaultDropoffStreetNumber ?? b.default_dropoff_street_number ?? null;
+    const dropoffZip = b.defaultDropoffZip ?? b.default_dropoff_zip ?? null;
+    const dropoffCity = b.defaultDropoffCity ?? b.default_dropoff_city ?? null;
+
+    if (
+      defaultPickup ||
+      pickupStreet ||
+      pickupStreetNumber ||
+      pickupZip ||
+      pickupCity
+    ) {
+      const pickupAddress =
+        defaultPickup ||
+        [
+          [pickupStreet, pickupStreetNumber].filter(Boolean).join(' '),
+          [pickupZip, pickupCity].filter(Boolean).join(' ')
+        ]
+          .filter(Boolean)
+          .join(', ');
+
       setPickupGroups((prev) =>
-        prev.map((g, i) => (i === 0 ? { ...g, address: defaultPickup } : g))
+        prev.map((g, i) =>
+          i === 0
+            ? {
+                ...g,
+                address: pickupAddress,
+                street: pickupStreet ?? g.street,
+                street_number: pickupStreetNumber ?? g.street_number,
+                zip_code: pickupZip ?? g.zip_code,
+                city: pickupCity ?? g.city
+              }
+            : g
+        )
       );
     }
-    if (defaultDropoff) {
+
+    if (
+      defaultDropoff ||
+      dropoffStreet ||
+      dropoffStreetNumber ||
+      dropoffZip ||
+      dropoffCity
+    ) {
+      const dropoffAddress =
+        defaultDropoff ||
+        [
+          [dropoffStreet, dropoffStreetNumber].filter(Boolean).join(' '),
+          [dropoffZip, dropoffCity].filter(Boolean).join(' ')
+        ]
+          .filter(Boolean)
+          .join(', ');
+
       setDropoffGroups((prev) =>
-        prev.map((g, i) => (i === 0 ? { ...g, address: defaultDropoff } : g))
+        prev.map((g, i) =>
+          i === 0
+            ? {
+                ...g,
+                address: dropoffAddress,
+                street: dropoffStreet ?? g.street,
+                street_number: dropoffStreetNumber ?? g.street_number,
+                zip_code: dropoffZip ?? g.zip_code,
+                city: dropoffCity ?? g.city
+              }
+            : g
+        )
       );
     }
 

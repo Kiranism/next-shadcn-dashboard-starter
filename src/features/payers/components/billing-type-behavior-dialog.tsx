@@ -34,6 +34,10 @@ import {
 import { toast } from 'sonner';
 import { useBillingTypes } from '../hooks/use-billing-types';
 import type { BillingType, BillingTypeBehavior } from '../types/payer.types';
+import {
+  AddressAutocomplete,
+  type AddressResult
+} from '@/features/trips/components/address-autocomplete';
 
 const formSchema = z.object({
   returnPolicy: z.enum(['none', 'time_tbd', 'exact']),
@@ -43,7 +47,15 @@ const formSchema = z.object({
   prefillDropoffFromPickup: z.boolean(),
   requirePassenger: z.boolean(),
   defaultPickup: z.string().optional().nullable(),
-  defaultDropoff: z.string().optional().nullable()
+  defaultPickupStreet: z.string().optional().nullable(),
+  defaultPickupStreetNumber: z.string().optional().nullable(),
+  defaultPickupZip: z.string().optional().nullable(),
+  defaultPickupCity: z.string().optional().nullable(),
+  defaultDropoff: z.string().optional().nullable(),
+  defaultDropoffStreet: z.string().optional().nullable(),
+  defaultDropoffStreetNumber: z.string().optional().nullable(),
+  defaultDropoffZip: z.string().optional().nullable(),
+  defaultDropoffCity: z.string().optional().nullable()
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -79,7 +91,18 @@ function normaliseBehavior(b: any): FormValues {
     ),
     requirePassenger,
     defaultPickup: b.defaultPickup ?? b.default_pickup ?? '',
-    defaultDropoff: b.defaultDropoff ?? b.default_dropoff ?? ''
+    defaultPickupStreet: b.defaultPickupStreet ?? b.default_pickup_street ?? '',
+    defaultPickupStreetNumber:
+      b.defaultPickupStreetNumber ?? b.default_pickup_street_number ?? '',
+    defaultPickupZip: b.defaultPickupZip ?? b.default_pickup_zip ?? '',
+    defaultPickupCity: b.defaultPickupCity ?? b.default_pickup_city ?? '',
+    defaultDropoff: b.defaultDropoff ?? b.default_dropoff ?? '',
+    defaultDropoffStreet:
+      b.defaultDropoffStreet ?? b.default_dropoff_street ?? '',
+    defaultDropoffStreetNumber:
+      b.defaultDropoffStreetNumber ?? b.default_dropoff_street_number ?? '',
+    defaultDropoffZip: b.defaultDropoffZip ?? b.default_dropoff_zip ?? '',
+    defaultDropoffCity: b.defaultDropoffCity ?? b.default_dropoff_city ?? ''
   };
 }
 
@@ -108,7 +131,15 @@ export function BillingTypeBehaviorDialog({
       prefillDropoffFromPickup: false,
       requirePassenger: true,
       defaultPickup: '',
-      defaultDropoff: ''
+      defaultPickupStreet: '',
+      defaultPickupStreetNumber: '',
+      defaultPickupZip: '',
+      defaultPickupCity: '',
+      defaultDropoff: '',
+      defaultDropoffStreet: '',
+      defaultDropoffStreetNumber: '',
+      defaultDropoffZip: '',
+      defaultDropoffCity: ''
     }
   });
 
@@ -126,7 +157,17 @@ export function BillingTypeBehaviorDialog({
       const processedData: BillingTypeBehavior = {
         ...data,
         defaultPickup: data.defaultPickup?.trim() || null,
-        defaultDropoff: data.defaultDropoff?.trim() || null
+        defaultPickupStreet: data.defaultPickupStreet?.trim() || null,
+        defaultPickupStreetNumber:
+          data.defaultPickupStreetNumber?.trim() || null,
+        defaultPickupZip: data.defaultPickupZip?.trim() || null,
+        defaultPickupCity: data.defaultPickupCity?.trim() || null,
+        defaultDropoff: data.defaultDropoff?.trim() || null,
+        defaultDropoffStreet: data.defaultDropoffStreet?.trim() || null,
+        defaultDropoffStreetNumber:
+          data.defaultDropoffStreetNumber?.trim() || null,
+        defaultDropoffZip: data.defaultDropoffZip?.trim() || null,
+        defaultDropoffCity: data.defaultDropoffCity?.trim() || null
       };
       await updateBehavior({ id: billingType.id, behavior: processedData });
       toast.success('Verhalten aktualisiert');
@@ -244,12 +285,126 @@ export function BillingTypeBehaviorDialog({
                     <FormItem>
                       <FormLabel>Standard-Abholadresse</FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder='Optional'
-                          {...field}
+                        <AddressAutocomplete
                           value={field.value || ''}
+                          onChange={(result: AddressResult | string) => {
+                            if (typeof result === 'string') {
+                              field.onChange(result);
+                            } else {
+                              // Use the full formatted address, but prefer structured pieces when available
+                              const streetPart = [
+                                result.street,
+                                result.street_number
+                              ]
+                                .filter(Boolean)
+                                .join(' ');
+                              const cityPart = [result.zip_code, result.city]
+                                .filter(Boolean)
+                                .join(' ');
+                              const full =
+                                result.address ||
+                                [streetPart, cityPart]
+                                  .filter(Boolean)
+                                  .join(', ');
+                              field.onChange(full);
+                              form.setValue(
+                                'defaultPickupStreet',
+                                result.street || ''
+                              );
+                              form.setValue(
+                                'defaultPickupStreetNumber',
+                                result.street_number || ''
+                              );
+                              form.setValue(
+                                'defaultPickupZip',
+                                result.zip_code || ''
+                              );
+                              form.setValue(
+                                'defaultPickupCity',
+                                result.city || ''
+                              );
+                            }
+                          }}
+                          placeholder='Optional'
+                          className='h-8 text-[11px]'
                         />
                       </FormControl>
+                      <div className='mt-2 grid grid-cols-4 gap-2'>
+                        <FormField
+                          control={form.control}
+                          name='defaultPickupStreet'
+                          render={({ field: f }) => (
+                            <FormItem className='col-span-2'>
+                              <FormLabel className='text-[11px]'>
+                                Straße
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...f}
+                                  value={f.value || ''}
+                                  className='h-7 text-[11px]'
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name='defaultPickupStreetNumber'
+                          render={({ field: f }) => (
+                            <FormItem>
+                              <FormLabel className='text-[11px]'>Nr.</FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...f}
+                                  value={f.value || ''}
+                                  className='h-7 text-[11px]'
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name='defaultPickupZip'
+                          render={({ field: f }) => (
+                            <FormItem>
+                              <FormLabel className='text-[11px]'>PLZ</FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...f}
+                                  value={f.value || ''}
+                                  className='h-7 text-[11px]'
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <div className='mt-2 grid grid-cols-4 gap-2'>
+                        <FormField
+                          control={form.control}
+                          name='defaultPickupCity'
+                          render={({ field: f }) => (
+                            <FormItem className='col-span-4'>
+                              <FormLabel className='text-[11px]'>
+                                Stadt
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...f}
+                                  value={f.value || ''}
+                                  className='h-7 text-[11px]'
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <FormDescription className='mt-2'>
+                        Vorgabe für Abholadresse im Fahrtenformular (z. B.
+                        Heim).
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -308,12 +463,125 @@ export function BillingTypeBehaviorDialog({
                     <FormItem>
                       <FormLabel>Standard-Zieladresse</FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder='Optional'
-                          {...field}
+                        <AddressAutocomplete
                           value={field.value || ''}
+                          onChange={(result: AddressResult | string) => {
+                            if (typeof result === 'string') {
+                              field.onChange(result);
+                            } else {
+                              const streetPart = [
+                                result.street,
+                                result.street_number
+                              ]
+                                .filter(Boolean)
+                                .join(' ');
+                              const cityPart = [result.zip_code, result.city]
+                                .filter(Boolean)
+                                .join(' ');
+                              const full =
+                                result.address ||
+                                [streetPart, cityPart]
+                                  .filter(Boolean)
+                                  .join(', ');
+                              field.onChange(full);
+                              form.setValue(
+                                'defaultDropoffStreet',
+                                result.street || ''
+                              );
+                              form.setValue(
+                                'defaultDropoffStreetNumber',
+                                result.street_number || ''
+                              );
+                              form.setValue(
+                                'defaultDropoffZip',
+                                result.zip_code || ''
+                              );
+                              form.setValue(
+                                'defaultDropoffCity',
+                                result.city || ''
+                              );
+                            }
+                          }}
+                          placeholder='Optional'
+                          className='h-8 text-[11px]'
                         />
                       </FormControl>
+                      <div className='mt-2 grid grid-cols-4 gap-2'>
+                        <FormField
+                          control={form.control}
+                          name='defaultDropoffStreet'
+                          render={({ field: f }) => (
+                            <FormItem className='col-span-2'>
+                              <FormLabel className='text-[11px]'>
+                                Straße
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...f}
+                                  value={f.value || ''}
+                                  className='h-7 text-[11px]'
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name='defaultDropoffStreetNumber'
+                          render={({ field: f }) => (
+                            <FormItem>
+                              <FormLabel className='text-[11px]'>Nr.</FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...f}
+                                  value={f.value || ''}
+                                  className='h-7 text-[11px]'
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name='defaultDropoffZip'
+                          render={({ field: f }) => (
+                            <FormItem>
+                              <FormLabel className='text-[11px]'>PLZ</FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...f}
+                                  value={f.value || ''}
+                                  className='h-7 text-[11px]'
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <div className='mt-2 grid grid-cols-4 gap-2'>
+                        <FormField
+                          control={form.control}
+                          name='defaultDropoffCity'
+                          render={({ field: f }) => (
+                            <FormItem className='col-span-4'>
+                              <FormLabel className='text-[11px]'>
+                                Stadt
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...f}
+                                  value={f.value || ''}
+                                  className='h-7 text-[11px]'
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <FormDescription className='mt-2'>
+                        Vorgabe für Zieladresse im Fahrtenformular (z. B.
+                        Klinik).
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
