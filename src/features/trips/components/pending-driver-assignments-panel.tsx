@@ -36,6 +36,8 @@ export function PendingDriverAssignmentsPanel() {
   const [selectedDriverByTrip, setSelectedDriverByTrip] = React.useState<
     Record<string, string>
   >({});
+  const [showNoPendingMessage, setShowNoPendingMessage] = React.useState(false);
+  const [showPendingPanel, setShowPendingPanel] = React.useState(false);
 
   React.useEffect(() => {
     const load = async () => {
@@ -124,6 +126,30 @@ export function PendingDriverAssignmentsPanel() {
     }
   };
 
+  // Show a temporary "all assigned" message for 5 seconds whenever
+  // there are no pending trips. This is primarily used after bulk upload.
+  React.useEffect(() => {
+    if (trips.length === 0) {
+      setShowNoPendingMessage(true);
+      const timeout = setTimeout(() => {
+        setShowNoPendingMessage(false);
+      }, 5000);
+      return () => clearTimeout(timeout);
+    }
+  }, [trips.length]);
+
+  // Show the pending assignments panel only temporarily (5 seconds)
+  // when there are pending trips.
+  React.useEffect(() => {
+    if (trips.length > 0) {
+      setShowPendingPanel(true);
+      const timeout = setTimeout(() => {
+        setShowPendingPanel(false);
+      }, 5000);
+      return () => clearTimeout(timeout);
+    }
+  }, [trips.length]);
+
   if (isLoading) {
     return (
       <div className='bg-card mt-4 rounded-lg border px-4 py-3 text-sm'>
@@ -137,7 +163,7 @@ export function PendingDriverAssignmentsPanel() {
     );
   }
 
-  if (trips.length === 0) {
+  if (trips.length === 0 && showNoPendingMessage) {
     return (
       <div className='bg-card mt-4 rounded-lg border px-4 py-3 text-sm'>
         <div className='flex items-center gap-2'>
@@ -148,6 +174,10 @@ export function PendingDriverAssignmentsPanel() {
         </div>
       </div>
     );
+  }
+
+  if (!showPendingPanel) {
+    return null;
   }
 
   return (
