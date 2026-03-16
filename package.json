@@ -72,6 +72,7 @@
     "eslint-config-next": "^16.0.7",
     "html-to-image": "^1.11.13",
     "input-otp": "^1.4.2",
+    "jspdf": "^4.2.0",
     "jszip": "^3.10.1",
     "kbar": "^0.1.0-beta.45",
     "lucide-react": "^0.476.0",

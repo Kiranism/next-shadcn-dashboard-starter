@@ -7,9 +7,11 @@ import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
 import { format, startOfDay, endOfDay } from 'date-fns';
-import { toPng } from 'html-to-image';
+import { toPng, toJpeg } from 'html-to-image';
 import JSZip from 'jszip';
+import { jsPDF } from 'jspdf';
 import { PrintTemplate } from './print-template';
+import { MobilePrintTemplate } from './mobile-print-template';
 import { createRoot } from 'react-dom/client';
 
 export function PrintTripsButton() {
@@ -65,7 +67,7 @@ export function PrintTripsButton() {
         groups[driverName].push(trip);
       });
 
-      // 4. Generate images for each group
+      // 4. Generate images and PDFs for each group
       toast.info(`Generiere ${Object.keys(groups).length} Druckvorlagen...`);
       const zip = new JSZip();
       const dateStr = format(dateToProcess, 'dd.MM.yy');
@@ -81,13 +83,11 @@ export function PrintTripsButton() {
       for (const driverName of Object.keys(groups)) {
         const driverTrips = groups[driverName];
 
-        // Create a temporary div for this driver's template
-        const templateDiv = document.createElement('div');
-        offscreenContainer.appendChild(templateDiv);
-
-        // Render the React component into the div
-        const root = createRoot(templateDiv);
-        root.render(
+        // --- Render Desktop Template (PNG) ---
+        const desktopDiv = document.createElement('div');
+        offscreenContainer.appendChild(desktopDiv);
+        const desktopRoot = createRoot(desktopDiv);
+        desktopRoot.render(
           <PrintTemplate
             driverName={driverName}
             date={dateToProcess}
@@ -95,27 +95,62 @@ export function PrintTripsButton() {
           />
         );
 
-        // Wait a bit for React to render and fonts to load
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        // --- Render Mobile Template (for PDF) ---
+        const mobileDiv = document.createElement('div');
+        offscreenContainer.appendChild(mobileDiv);
+        const mobileRoot = createRoot(mobileDiv);
+        mobileRoot.render(
+          <MobilePrintTemplate
+            driverName={driverName}
+            date={dateToProcess}
+            trips={driverTrips}
+          />
+        );
 
-        // Convert to PNG
-        // The id in PrintTemplate matches this selector
-        const elementToCapture = templateDiv.firstElementChild as HTMLElement;
-        if (elementToCapture) {
-          const dataUrl = await toPng(elementToCapture, {
-            quality: 0.95,
-            pixelRatio: 2 // Higher quality for print
-          });
+        // Wait for React to render
+        await new Promise((resolve) => setTimeout(resolve, 800));
 
-          const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
-          zip.file(`${dateStr}.${driverName}.png`, base64Data, {
-            base64: true
+        // 1. Capture PNG for Desktop
+        const desktopElement = desktopDiv.firstElementChild as HTMLElement;
+        if (desktopElement) {
+          const pngDataUrl = await toPng(desktopElement, {
+            quality: 0.8, // Slightly lower quality for smaller PNGs
+            pixelRatio: 1.5 // 1.5 is enough for clear text
           });
+          const pngBase64 = pngDataUrl.replace(/^data:image\/png;base64,/, '');
+          zip.file(`${dateStr}.${driverName}.png`, pngBase64, { base64: true });
         }
 
-        // Cleanup this specific root
-        root.unmount();
-        offscreenContainer.removeChild(templateDiv);
+        // 2. Capture PDF (from mobile view)
+        const mobileElement = mobileDiv.firstElementChild as HTMLElement;
+        if (mobileElement) {
+          // Use JPEG for PDF background to significantly reduce size
+          const mobileJpegDataUrl = await toJpeg(mobileElement, {
+            quality: 0.75, // Good balance for readability vs size
+            pixelRatio: 1.2 // Lower pixel ratio for mobile PDF
+          });
+
+          // Create PDF using jsPDF
+          const width = mobileElement.offsetWidth;
+          const height = mobileElement.offsetHeight;
+
+          const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'px',
+            format: [width, height],
+            compress: true // Enable jsPDF's internal compression
+          });
+
+          pdf.addImage(mobileJpegDataUrl, 'JPEG', 0, 0, width, height);
+          const pdfBlob = pdf.output('blob');
+          zip.file(`${dateStr}.${driverName}.pdf`, pdfBlob);
+        }
+
+        // Cleanup
+        desktopRoot.unmount();
+        mobileRoot.unmount();
+        offscreenContainer.removeChild(desktopDiv);
+        offscreenContainer.removeChild(mobileDiv);
       }
 
       // 5. Finalize ZIP and download
@@ -127,7 +162,7 @@ export function PrintTripsButton() {
 
       // Cleanup
       document.body.removeChild(offscreenContainer);
-      toast.success('Druckvorlagen erfolgreich generiert!');
+      toast.success('Druckvorlagen und PDFs erfolgreich generiert!');
     } catch (err: any) {
       console.error('Print generation error:', err);
       toast.error('Fehler beim Generieren der Druckvorlagen: ' + err.message);
