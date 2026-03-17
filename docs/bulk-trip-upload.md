@@ -42,11 +42,13 @@ kostentraeger,abrechnungsart,date,time,firstname,lastname,phone,greeting_style,p
   - Erlaubte Formate: `DD.MM.YY` oder `DD.MM.YYYY`  
     Beispiele: `16.03.26`, `16.03.2026`
 
-- **time** (required)  
+- **time** (optional)  
   Uhrzeit der Fahrt.
   - Format: `HH:MM` (24h)  
     Beispiele: `08:30`, `14:05`
-  - `date` und `time` werden zu `scheduled_at` kombiniert. Ungültige Kombinationen führen zu `invalid_datetime`.
+  - Wenn angegeben, wird `date + time` zu `scheduled_at` kombiniert.
+  - Wenn leer: Die Fahrt wird mit `scheduled_at = NULL` und `requested_date = date` angelegt. Sie erscheint automatisch im **Offene Touren**-Widget, wo die Abholzeit nachträglich eingetragen werden kann. Das Datum wird im Widget vorausgefüllt.
+  - Ungültiges `date`-Format führt weiterhin zu `invalid_datetime` und die Zeile wird abgelehnt.
 
 - **firstname** (optional)  
   Vorname des Fahrgasts. Wird mit `lastname` zu `client_name` kombiniert.
@@ -144,7 +146,8 @@ Für jede **valide** Zeile wird ein `InsertTrip`-Payload aufgebaut und als Fahrt
 - `client_id` (falls ein bestehender Client eindeutig gefunden wurde)
 - `client_name` (aus Clientdaten oder `firstname` + `lastname`)
 - `client_phone` (aus `phone`)
-- `scheduled_at` (kombiniert aus `date` + `time`)
+- `scheduled_at` (kombiniert aus `date` + `time`; `NULL` wenn keine Uhrzeit angegeben)
+- `requested_date` (ISO-Datum aus `date`, gesetzt wenn `time` fehlt; `NULL` wenn `time` vorhanden)
 - `pickup_address`, `pickup_station`
 - `dropoff_address`, `dropoff_station`
 - `is_wheelchair`
@@ -165,7 +168,28 @@ Zusätzlich werden für alle per CSV erstellten Fahrten folgende Flags gesetzt:
 - `ingestion_source = 'csv_bulk_upload'`  
   Damit können CSV-Importe separat gefiltert und ausgewertet werden.
 
-### 6. Client-Resolution-Wizard nach dem Upload
+### 6. Abrechnungsart-Verhaltensregeln (Behavior Rules)
+
+Wenn eine Abrechnungsart ein konfiguriertes `behavior_profile` hat, werden diese Regeln **automatisch beim Import angewendet**. Es gelten dieselben Regeln wie beim manuellen Erstellen einer Fahrt:
+
+| Regel | Wirkung beim Import |
+|---|---|
+| `lockPickup` + Standard-Abholadresse | CSV-Abholadresse wird mit der konfigurierten Standardadresse **überschrieben** |
+| `lockDropoff` + Standard-Zieladresse | CSV-Zieladresse wird mit der konfigurierten Standardadresse **überschrieben** |
+| `prefillDropoffFromPickup` | Zieladresse wird von der (ggf. überschriebenen) Abholadresse kopiert |
+| `returnPolicy = 'time_tbd'` oder `'exact'` | Eine **Rückfahrt** wird automatisch angelegt: Adressen werden getauscht, `scheduled_at = NULL`, `link_type = 'return'`. Die Rückfahrt erscheint im **Offene Touren**-Widget. |
+| `returnPolicy = 'none'` | Keine Rückfahrt wird angelegt |
+
+**Hinweis:** Bei `returnPolicy = 'exact'` kann die exakte Zeit aus einer CSV nicht ermittelt werden – die Rückfahrt wird daher analog zu `time_tbd` behandelt und muss im Widget nachgeplant werden.
+
+Die Import-Zusammenfassung im Dialog zeigt nach dem Upload:
+- Anzahl automatisch erstellter Rückfahrten
+- Anzahl durch Regeln überschriebener Adressen
+
+Weitere Details: siehe [`docs/bulk-upload-behavior-rules.md`](./bulk-upload-behavior-rules.md).
+
+### 7. Client-Resolution-Wizard nach dem Upload
+
 
 Direkt nach einem erfolgreichen Upload passiert Folgendes:
 
@@ -181,7 +205,7 @@ Direkt nach einem erfolgreichen Upload passiert Folgendes:
    - Der Dialog wechselt in den Modus **„Fahrgäste auflösen“**.
    - Es öffnet sich ein Schritt-für-Schritt-Wizard innerhalb desselben Dialogs.
 
-#### 6.1. Was im Wizard angezeigt wird
+#### 7.1. Was im Wizard angezeigt wird
 
 Pro Eintrag in `unresolvedRows` sehen Sie:
 
@@ -189,7 +213,7 @@ Pro Eintrag in `unresolvedRows` sehen Sie:
 - Abholadresse (`pickup_address`) und Zieladresse (`dropoff_address`).
 - Einen Fortschrittsindikator, z. B. „2 von 5 Fahrgästen“.
 
-#### 6.2. Ihre Optionen pro Fahrgast
+#### 7.2. Ihre Optionen pro Fahrgast
 
 Für jeden ungelösten Fahrgast gibt es zwei Hauptaktionen:
 
@@ -213,7 +237,7 @@ Für jeden ungelösten Fahrgast gibt es zwei Hauptaktionen:
        - `client_name = "<Vorname Nachname>"` aus dem neuen Client.
     3. Der Wizard springt automatisch zum nächsten Eintrag (oder beendet sich).
 
-#### 6.3. Abschluss („Done“-State)
+#### 7.3. Abschluss („Done“-State)
 
 Wenn alle `unresolvedRows` durchlaufen sind, wechselt der Dialog in den **„Import abgeschlossen“**-Zustand:
 

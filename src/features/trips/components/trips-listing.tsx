@@ -135,8 +135,8 @@ export default async function TripsListingPage({
     query = query.order('scheduled_at', { ascending: true });
   }
 
-  if (view === 'calendar') {
-    // For calendar view, we need all trips in a reasonably large window, not just 10.
+  if (view === 'calendar' || view === 'kanban') {
+    // For calendar and kanban view, we need all trips in a reasonably large window, not just 10.
     // In a production app, we would pass start/end dates from the calendar to fetch exactly the month.
     // For now, we'll just skip small pagination.
     query = query.limit(2000);

@@ -49,9 +49,19 @@ export function ResolveClientsStep({
         }
       }
 
-      const name = current.clientName || '';
-      const [firstName, ...lastParts] = name.split(' ');
-      const lastName = lastParts.join(' ').trim() || null;
+      // Use the original CSV columns when available (fresh upload path).
+      // Fall back to splitting the concatenated name only for the resume-from-DB
+      // path where the separate parts are no longer recoverable.
+      let firstName: string | null;
+      let lastName: string | null;
+      if (current.clientFirstName !== null || current.clientLastName !== null) {
+        firstName = current.clientFirstName;
+        lastName = current.clientLastName;
+      } else {
+        const parts = (current.clientName || '').trim().split(/\s+/);
+        firstName = parts[0] || null;
+        lastName = parts.slice(1).join(' ') || null;
+      }
 
       const usePickup = homeAddressChoice === 'pickup';
 

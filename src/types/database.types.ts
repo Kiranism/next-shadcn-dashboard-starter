@@ -747,6 +747,7 @@ export type Database = {
           pickup_location: Json | null;
           pickup_station: string | null;
           price: number | null;
+          requested_date: string | null;
           return_status: string | null;
           rule_id: string | null;
           scheduled_at: string | null;
@@ -800,6 +801,7 @@ export type Database = {
           pickup_location?: Json | null;
           pickup_station?: string | null;
           price?: number | null;
+          requested_date?: string | null;
           return_status?: string | null;
           rule_id?: string | null;
           scheduled_at?: string | null;
@@ -845,6 +847,7 @@ export type Database = {
           pickup_location?: Json | null;
           pickup_station?: string | null;
           price?: number | null;
+          requested_date?: string | null;
           return_status?: string | null;
           rule_id?: string | null;
           scheduled_at?: string | null;

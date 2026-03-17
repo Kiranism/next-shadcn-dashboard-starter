@@ -5,6 +5,7 @@ import { startOfWeek, endOfWeek } from 'date-fns';
 import type { Trip } from '@/features/trips/api/trips.service';
 
 export type UnplannedTrip = Trip & {
+  requested_date?: string | null;
   linked_trip?: { scheduled_at: string | null } | null;
 };
 
@@ -38,7 +39,7 @@ export function useUnplannedTrips(filter: UnplannedFilter) {
 
       const { data: unplannedRows, error: fetchError } = await supabase
         .from('trips')
-        .select('*')
+        .select('*, requested_date')
         .is('scheduled_at', null)
         .not('status', 'in', '("cancelled","completed")')
         .order('created_at', { ascending: false });
@@ -81,11 +82,16 @@ export function useUnplannedTrips(filter: UnplannedFilter) {
         filter === 'all'
           ? withLinked
           : withLinked.filter((trip) => {
-              const linkedAt = trip.linked_trip?.scheduled_at;
-              if (!linkedAt) return false;
-              const linkedDate = new Date(linkedAt);
-              if (filter === 'today') return isToday(linkedDate);
-              if (filter === 'week') return isThisWeek(linkedDate);
+              // Priority: linked outbound trip's confirmed time → requested_date from CSV → exclude
+              const dateStr =
+                trip.linked_trip?.scheduled_at ??
+                (trip.requested_date
+                  ? `${trip.requested_date}T12:00:00`
+                  : null);
+              if (!dateStr) return false;
+              const date = new Date(dateStr);
+              if (filter === 'today') return isToday(date);
+              if (filter === 'week') return isThisWeek(date);
               return true;
             });
 

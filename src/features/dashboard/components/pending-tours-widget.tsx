@@ -18,8 +18,9 @@ import { Button } from '@/components/ui/button';
 import { tripsService } from '@/features/trips/api/trips.service';
 import { set } from 'date-fns';
 import { toast } from 'sonner';
-import { PlusCircle, Loader2 } from 'lucide-react';
+import { PlusCircle, Loader2, ArrowLeftRight, Calendar } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import type { UnplannedTrip } from '@/features/dashboard/hooks/use-unplanned-trips';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -29,6 +30,8 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { format } from 'date-fns';
+import { de } from 'date-fns/locale';
 
 const FILTER_TABS: { value: UnplannedFilter; label: string }[] = [
   { value: 'today', label: 'Heute' },
@@ -126,10 +129,18 @@ function UnplannedTripRow({
   drivers: any[];
   onScheduled: () => void;
 }) {
-  const [dateStr, setDateStr] = useState(() => {
-    const d = new Date();
-    return d.toISOString().slice(0, 10);
-  });
+  const isReturnTrip = trip.link_type === 'return';
+
+  // Pre-fill date from requested_date (CSV date-only import) or outbound
+  // trip's scheduled_at (return trip context), falling back to today.
+  const initialDate = (() => {
+    if (trip.requested_date) return trip.requested_date;
+    const linkedAt = trip.linked_trip?.scheduled_at;
+    if (linkedAt) return new Date(linkedAt).toISOString().slice(0, 10);
+    return new Date().toISOString().slice(0, 10);
+  })();
+
+  const [dateStr, setDateStr] = useState(initialDate);
   const [time, setTime] = useState('');
   const [driverId, setDriverId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -168,20 +179,53 @@ function UnplannedTripRow({
     }
   };
 
+  const linkedOutboundTime = trip.linked_trip?.scheduled_at
+    ? format(new Date(trip.linked_trip.scheduled_at), 'EEE dd.MM. HH:mm', {
+        locale: de
+      })
+    : null;
+
   return (
-    <div className='flex flex-col gap-3 rounded-lg border p-3 lg:flex-row lg:items-center lg:justify-between'>
-      <div className='min-w-0 flex-1'>
-        <span className='text-sm font-semibold'>
-          {trip.client_name || 'Unbekannt'}
-        </span>
-        {trip.pickup_address && (
-          <p className='text-muted-foreground line-clamp-1 text-xs'>
-            {trip.pickup_address.split(',')[0]} →{' '}
-            {trip.dropoff_address?.split(',')[0] || '—'}
-          </p>
-        )}
+    <div className='flex flex-col gap-2 rounded-lg border p-3'>
+      {/* Header row: name + badges */}
+      <div className='flex items-start justify-between gap-2'>
+        <div className='min-w-0 flex-1'>
+          <div className='flex flex-wrap items-center gap-1.5'>
+            <span className='text-sm font-semibold'>
+              {trip.client_name || 'Unbekannt'}
+            </span>
+            {isReturnTrip && (
+              <Badge variant='secondary' className='gap-1 px-1.5 py-0 text-xs'>
+                <ArrowLeftRight className='h-3 w-3' />
+                Rückfahrt
+              </Badge>
+            )}
+            {trip.requested_date && !isReturnTrip && (
+              <Badge variant='outline' className='gap-1 px-1.5 py-0 text-xs'>
+                <Calendar className='h-3 w-3' />
+                Termin:{' '}
+                {format(new Date(trip.requested_date), 'dd.MM.', {
+                  locale: de
+                })}
+              </Badge>
+            )}
+          </div>
+          {trip.pickup_address && (
+            <p className='text-muted-foreground line-clamp-1 text-xs'>
+              {trip.pickup_address.split(',')[0]} →{' '}
+              {trip.dropoff_address?.split(',')[0] || '—'}
+            </p>
+          )}
+          {isReturnTrip && linkedOutboundTime && (
+            <p className='text-muted-foreground mt-0.5 text-xs'>
+              Hinfahrt: {linkedOutboundTime}
+            </p>
+          )}
+        </div>
       </div>
-      <div className='flex flex-wrap items-center gap-2 lg:flex-nowrap'>
+
+      {/* Scheduling controls */}
+      <div className='flex flex-wrap items-center gap-2'>
         <div className='flex items-center gap-2'>
           <Input
             type='date'

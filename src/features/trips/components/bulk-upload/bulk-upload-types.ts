@@ -2,7 +2,8 @@ export type ParsedCsvRow = {
   kostentraeger: string;
   abrechnungsart?: string;
   date: string;
-  time: string;
+  /** Optional — if omitted the trip is created with scheduled_at = NULL and requested_date set. */
+  time?: string;
   firstname?: string;
   lastname?: string;
   phone?: string;
@@ -40,6 +41,10 @@ export interface ValidatedTripRow<TripShape = unknown> {
   trip: TripShape | null;
   issues: ValidationIssue[];
   clientId?: string | null;
+  /** True when the billing type's returnPolicy demands an auto-created return trip. */
+  needsReturnTrip?: boolean;
+  /** True when at least one address field was overridden by a behavior rule default. */
+  addressOverrideApplied?: boolean;
 }
 
 export interface UnresolvedRow<TripShape = unknown> {
@@ -50,10 +55,17 @@ export interface UnresolvedRow<TripShape = unknown> {
 /**
  * A DB-backed row used when rehydrating the wizard after dialog close.
  * Contains only the fields that are actually stored on the `trips` table.
+ *
+ * clientFirstName / clientLastName carry the original CSV columns separately
+ * so the wizard never has to guess the split from the concatenated clientName.
+ * Both are null in the resume-from-DB path (the DB only stores the combined
+ * client_name), in which case the wizard falls back to a space-split.
  */
 export interface RehydratedTripRow {
   tripId: string;
   clientName: string | null;
+  clientFirstName: string | null;
+  clientLastName: string | null;
   clientPhone: string | null;
   pickupAddress: string | null;
   pickupStreet: string | null;
