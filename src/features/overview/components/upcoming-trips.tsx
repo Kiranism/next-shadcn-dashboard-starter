@@ -24,8 +24,9 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TripRow } from './trip-row';
 import { TripDetailSheet } from './trip-detail-sheet';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
+import { subMinutes } from 'date-fns';
 
 export function UpcomingTrips() {
   const {
@@ -39,6 +40,62 @@ export function UpcomingTrips() {
   } = useUpcomingTrips();
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const scrollAreaRef = useRef<HTMLDivElement | null>(null);
+  const anchorTripRef = useRef<HTMLDivElement | null>(null);
+
+  const anchorTripId = (() => {
+    if (!trips.length) return null;
+
+    const now = new Date();
+    const anchorTime = subMinutes(now, 15);
+
+    // Ensure we work on a time-sorted copy (ascending)
+    const sorted = [...trips].sort((a, b) => {
+      const aTime = a.scheduled_at ? new Date(a.scheduled_at).getTime() : 0;
+      const bTime = b.scheduled_at ? new Date(b.scheduled_at).getTime() : 0;
+      return aTime - bTime;
+    });
+
+    // Anchor to the last trip BEFORE (or equal to) anchorTime.
+    // If none exist, fall back to the first trip after anchorTime.
+    let anchorTrip: (typeof sorted)[number] | null = null;
+
+    for (let i = sorted.length - 1; i >= 0; i--) {
+      const trip = sorted[i];
+      if (!trip?.scheduled_at) continue;
+      const scheduled = new Date(trip.scheduled_at);
+      if (scheduled <= anchorTime) {
+        anchorTrip = trip;
+        break;
+      }
+    }
+
+    if (!anchorTrip) {
+      anchorTrip =
+        sorted.find((trip) => {
+          if (!trip?.scheduled_at) return false;
+          return new Date(trip.scheduled_at) > anchorTime;
+        }) ??
+        sorted[0] ??
+        null;
+    }
+
+    return anchorTrip?.id ?? null;
+  })();
+
+  useEffect(() => {
+    const raf = window.requestAnimationFrame(() => {
+      const container = scrollAreaRef.current;
+      const anchorEl = anchorTripRef.current;
+      if (!container || !anchorEl) return;
+
+      // Scroll ONLY within the trips list container (no page scroll)
+      const nextTop = anchorEl.offsetTop - container.offsetTop;
+      container.scrollTop = Math.max(0, nextTop);
+    });
+
+    return () => window.cancelAnimationFrame(raf);
+  }, [anchorTripId, filter, statusFilter, trips.length]);
 
   const handleTripClick = (id: string) => {
     setSelectedTripId(id);
@@ -62,7 +119,7 @@ export function UpcomingTrips() {
   };
 
   return (
-    <Card>
+    <Card className='@container/card flex h-[560px] max-h-[70vh] flex-col'>
       <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-4'>
         <div className='space-y-1'>
           <CardTitle>Nächste Fahrten</CardTitle>
@@ -145,37 +202,44 @@ export function UpcomingTrips() {
         </Tabs>
       </div>
 
-      <CardContent className='pt-0'>
-        {isLoading ? (
-          <div className='space-y-1'>
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className='flex items-center p-2'>
-                <Skeleton className='h-9 w-12' />
-                <div className='ml-4 flex-1 space-y-1'>
-                  <Skeleton className='h-4 w-[150px]' />
-                  <Skeleton className='h-3 w-[200px]' />
+      <CardContent className='min-h-0 flex-1 pt-0'>
+        <div ref={scrollAreaRef} className='h-full overflow-y-auto'>
+          {isLoading ? (
+            <div className='space-y-1'>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className='flex items-center p-2'>
+                  <Skeleton className='h-9 w-12' />
+                  <div className='ml-4 flex-1 space-y-1'>
+                    <Skeleton className='h-4 w-[150px]' />
+                    <Skeleton className='h-3 w-[200px]' />
+                  </div>
+                  <Skeleton className='ml-auto h-4 w-[80px]' />
                 </div>
-                <Skeleton className='ml-auto h-4 w-[80px]' />
-              </div>
-            ))}
-          </div>
-        ) : trips.length === 0 ? (
-          <div className='text-muted-foreground border-muted/50 flex h-[300px] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed'>
-            <p className='text-sm italic'>
-              Keine Fahrten für diesen Zeitraum gefunden.
-            </p>
-          </div>
-        ) : (
-          <div className='grid gap-2'>
-            {trips.map((trip) => (
-              <TripRow
-                key={trip.id}
-                trip={trip}
-                onClick={() => handleTripClick(trip.id)}
-              />
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          ) : trips.length === 0 ? (
+            <div className='text-muted-foreground border-muted/50 flex h-[300px] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed'>
+              <p className='text-sm italic'>
+                Keine Fahrten für diesen Zeitraum gefunden.
+              </p>
+            </div>
+          ) : (
+            <div className='grid gap-2'>
+              {trips.map((trip) => {
+                const isAnchor = anchorTripId === trip.id;
+
+                return (
+                  <div key={trip.id} ref={isAnchor ? anchorTripRef : undefined}>
+                    <TripRow
+                      trip={trip}
+                      onClick={() => handleTripClick(trip.id)}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </CardContent>
       <TripDetailSheet
         tripId={selectedTripId}

@@ -136,12 +136,12 @@ export default function OverViewLayout({
         <div className='flex flex-col gap-4 lg:grid lg:grid-cols-7 lg:items-start'>
           <div className='flex flex-col gap-4 lg:col-span-4'>
             <PendingToursWidget />
-            {bar_stats}
-            {area_stats}
+            {React.Children.toArray(bar_stats)}
+            {React.Children.toArray(area_stats)}
           </div>
           <div className='flex flex-col gap-4 lg:col-span-3'>
-            {sales}
-            {pie_stats}
+            {React.Children.toArray(sales)}
+            {React.Children.toArray(pie_stats)}
           </div>
         </div>
       </div>
