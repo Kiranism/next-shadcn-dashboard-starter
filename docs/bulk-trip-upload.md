@@ -97,9 +97,24 @@ kostentraeger,abrechnungsart,date,time,firstname,lastname,phone,greeting_style,p
   Freitext, der als `notes` an der Fahrt gespeichert wird.
 
 - **group_id** (optional)  
-  Freies Gruppierungskennzeichen, um mehrere CSV-Zeilen einer logischen Gruppe (Tour) zuzuordnen.
-  - Alle Zeilen mit demselben `group_id` werden intern auf eine UUID gemappt, die als `group_id` an den Fahrten gespeichert wird.
-  - Beispiel: `tour-1`, `dialysis-morning`.
+  Gruppierungskennzeichen, das mehrere CSV-Zeilen einer logischen Tour zuordnet **und gleichzeitig die Reihenfolge der Stopps definiert**.
+
+  **Neues Format (empfohlen): `<Gruppenname>.<Stoppreihenfolge>`**  
+  Der Teil nach dem letzten Punkt ist eine positive ganze Zahl und gibt die Reihenfolge innerhalb der Gruppe an.
+
+  | CSV-Wert      | Gruppe   | Stopp-Nr. | Bedeutung |
+  |---------------|----------|-----------|-----------|
+  | `1.1`         | `1`      | 1         | Stopp A (erster Halt) |
+  | `1.2`         | `1`      | 2         | Stopp B (zweiter Halt) |
+  | `1.3`         | `1`      | 3         | Stopp C (dritter Halt) |
+  | `tour-abc.1`  | `tour-abc` | 1       | Erster Stopp der Tour „tour-abc" |
+  | `tour-abc.10` | `tour-abc` | 10      | Zehnter Stopp der Tour „tour-abc" |
+
+  Alle Zeilen mit demselben Gruppenanteil werden intern auf eine gemeinsame UUID gemappt. Die Stopp-Nummer (`stop_order`) wird zusätzlich an der Fahrt gespeichert und bestimmt überall die Anzeigereihenfolge – in der Fahrtendetail-Ansicht, in gedruckten Tourbüchern und im PDF.
+
+  **Altes Format (weiterhin unterstützt):** Ein einfaches Schlüsselwort ohne Punkt (z. B. `tour-1`, `dialysis-morning`) funktioniert weiterhin. Die Reihenfolge innerhalb der Gruppe wird in diesem Fall durch die Abfahrtszeit (`scheduled_at`) bestimmt.
+
+  > **Wichtig:** Damit Fahrer immer in der richtigen Reihenfolge fahren (Stopp A → B → C), sollte das neue Punktformat verwendet werden, da Zeiten nicht immer bekannt sind.
 
 - **driver_name** (optional, empfohlen)  
   Exakter Fahrername wie in der App angezeigt, zur späteren Fahrermatching-Logik.
@@ -154,6 +169,7 @@ Für jede **valide** Zeile wird ein `InsertTrip`-Payload aufgebaut und als Fahrt
 - `notes`
 - `company_id`, `created_by`
 - `group_id` (aus `group_id` der CSV auf interne UUID gemappt)
+- `stop_order` (Stopp-Nummer aus dem Punktformat, z. B. `1.2` → `2`; `NULL` bei altem Format)
 - `status = 'pending'`
 - `stop_updates = []`
 

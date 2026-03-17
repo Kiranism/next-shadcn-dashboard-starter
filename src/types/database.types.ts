@@ -752,6 +752,7 @@ export type Database = {
           rule_id: string | null;
           scheduled_at: string | null;
           status: string;
+          stop_order: number | null;
           stop_updates: Json;
           vehicle_id: string | null;
         };
@@ -806,6 +807,7 @@ export type Database = {
           rule_id?: string | null;
           scheduled_at?: string | null;
           status: string;
+          stop_order?: number | null;
           stop_updates?: Json;
           vehicle_id?: string | null;
         };
@@ -852,6 +854,7 @@ export type Database = {
           rule_id?: string | null;
           scheduled_at?: string | null;
           status?: string;
+          stop_order?: number | null;
           stop_updates?: Json;
           vehicle_id?: string | null;
         };

@@ -876,7 +876,7 @@ export function CreateTripForm({
       } else {
         // Passenger mode: each passenger has their own is_wheelchair flag
         outboundTrips = await Promise.all(
-          passengers.map((p) => {
+          passengers.map((p, idx) => {
             const pickupGroup = pickupGroupMap[p.pickup_group_uid];
             const dropoffGroup = dropoffGroupMap[p.dropoff_group_uid!];
 
@@ -912,6 +912,7 @@ export function CreateTripForm({
               dropoff_lng: dropoffGroup?.lng || null,
               dropoff_station: p.dropoff_station || null,
               group_id: groupId,
+              stop_order: passengers.length > 1 ? idx + 1 : null,
               // For passenger mode, we currently compute driving distance in the backfill script
               // to avoid excessive synchronous API calls when creating many trips at once.
               driving_distance_km: null,

@@ -8,6 +8,7 @@ import { Accessibility } from 'lucide-react';
 interface TripData {
   id: string;
   group_id?: string | null;
+  stop_order?: number | null;
   scheduled_at: string;
   client_name: string | null;
   client_phone: string | null;
@@ -58,11 +59,15 @@ export function MobilePrintTemplate({
     }
 
     for (const [groupId, groupTrips] of map.entries()) {
-      groupTrips.sort(
-        (a, b) =>
-          new Date(a.scheduled_at).getTime() -
-          new Date(b.scheduled_at).getTime()
-      );
+      groupTrips.sort((a, b) => {
+        if (a.stop_order != null && b.stop_order != null) {
+          return a.stop_order - b.stop_order;
+        }
+        return (
+          new Date(a.scheduled_at ?? 0).getTime() -
+          new Date(b.scheduled_at ?? 0).getTime()
+        );
+      });
       groups.push({ key: `group:${groupId}`, groupId, trips: groupTrips });
     }
 

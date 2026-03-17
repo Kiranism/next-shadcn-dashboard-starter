@@ -46,6 +46,33 @@ interface BulkUploadDialogProps {
 }
 
 /**
+ * Parses a dotted group_id CSV value (e.g. "1.2", "tour-abc.3") into its
+ * group label and explicit stop order.
+ *
+ * Format: "<label>.<stopOrder>" where stopOrder is a positive integer.
+ * Falls back to { label: raw, stopOrder: null } for old-style labels.
+ *
+ * Examples:
+ *   "1.2"        → { label: "1",        stopOrder: 2 }
+ *   "tour-abc.3" → { label: "tour-abc", stopOrder: 3 }
+ *   "tour-1"     → { label: "tour-1",   stopOrder: null }  (backward compat)
+ */
+function parseGroupId(raw: string): {
+  label: string;
+  stopOrder: number | null;
+} {
+  const lastDotIndex = raw.lastIndexOf('.');
+  if (lastDotIndex > 0) {
+    const suffix = raw.slice(lastDotIndex + 1);
+    const order = parseInt(suffix, 10);
+    if (!isNaN(order) && String(order) === suffix) {
+      return { label: raw.slice(0, lastDotIndex), stopOrder: order };
+    }
+  }
+  return { label: raw, stopOrder: null };
+}
+
+/**
  * BulkUploadDialog
  *
  * Handles the end‑to‑end CSV import flow for trips:
@@ -651,11 +678,15 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
           const requested_date = dateTimeResult?.requestedDate ?? null;
 
           let finalGroupId: string | null = null;
+          let finalStopOrder: number | null = null;
           if (parsedRow.group_id) {
-            if (!groupIdMap.has(parsedRow.group_id)) {
-              groupIdMap.set(parsedRow.group_id, crypto.randomUUID());
+            const parsed = parseGroupId(parsedRow.group_id);
+            const groupLabel = parsed.label;
+            finalStopOrder = parsed.stopOrder;
+            if (!groupIdMap.has(groupLabel)) {
+              groupIdMap.set(groupLabel, crypto.randomUUID());
             }
-            finalGroupId = groupIdMap.get(parsedRow.group_id) ?? null;
+            finalGroupId = groupIdMap.get(groupLabel) ?? null;
           }
 
           const fullNameFromCsv =
@@ -717,6 +748,7 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
                   company_id: companyId,
                   created_by: user?.id || null,
                   group_id: finalGroupId,
+                  stop_order: finalStopOrder,
                   stop_updates: [],
                   has_missing_geodata: true,
                   driver_id: driverId,

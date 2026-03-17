@@ -114,6 +114,7 @@ export function TripDetailSheet({
           .from('trips')
           .select('*')
           .eq('group_id', trip.group_id)
+          .order('stop_order', { ascending: true, nullsFirst: false })
           .order('scheduled_at', { ascending: true });
         setGroupTrips(data || []);
         setIsLoadingGroup(false);
