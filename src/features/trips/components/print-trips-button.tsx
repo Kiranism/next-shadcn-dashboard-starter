@@ -12,10 +12,9 @@ import {
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format, startOfDay, endOfDay } from 'date-fns';
-import { toPng, toJpeg } from 'html-to-image';
+import { toJpeg } from 'html-to-image';
 import JSZip from 'jszip';
 import { jsPDF } from 'jspdf';
-import { PrintTemplate } from './print-template';
 import { MobilePrintTemplate } from './mobile-print-template';
 import { createRoot } from 'react-dom/client';
 
@@ -82,17 +81,6 @@ export function PrintTripsButton() {
       for (const driverName of Object.keys(groups)) {
         const driverTrips = groups[driverName];
 
-        const desktopDiv = document.createElement('div');
-        offscreenContainer.appendChild(desktopDiv);
-        const desktopRoot = createRoot(desktopDiv);
-        desktopRoot.render(
-          <PrintTemplate
-            driverName={driverName}
-            date={date}
-            trips={driverTrips}
-          />
-        );
-
         const mobileDiv = document.createElement('div');
         offscreenContainer.appendChild(mobileDiv);
         const mobileRoot = createRoot(mobileDiv);
@@ -105,16 +93,6 @@ export function PrintTripsButton() {
         );
 
         await new Promise((resolve) => setTimeout(resolve, 800));
-
-        const desktopElement = desktopDiv.firstElementChild as HTMLElement;
-        if (desktopElement) {
-          const pngDataUrl = await toPng(desktopElement, {
-            quality: 0.8,
-            pixelRatio: 1.5
-          });
-          const pngBase64 = pngDataUrl.replace(/^data:image\/png;base64,/, '');
-          zip.file(`${dateStr}.${driverName}.png`, pngBase64, { base64: true });
-        }
 
         const mobileElement = mobileDiv.firstElementChild as HTMLElement;
         if (mobileElement) {
@@ -173,9 +151,7 @@ export function PrintTripsButton() {
           zip.file(`${dateStr}.${driverName}.pdf`, pdfBlob);
         }
 
-        desktopRoot.unmount();
         mobileRoot.unmount();
-        offscreenContainer.removeChild(desktopDiv);
         offscreenContainer.removeChild(mobileDiv);
       }
 
