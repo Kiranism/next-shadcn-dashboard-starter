@@ -46,3 +46,24 @@ export interface UnresolvedRow<TripShape = unknown> {
   tripId: string;
   row: ValidatedTripRow<TripShape>;
 }
+
+/**
+ * A DB-backed row used when rehydrating the wizard after dialog close.
+ * Contains only the fields that are actually stored on the `trips` table.
+ */
+export interface RehydratedTripRow {
+  tripId: string;
+  clientName: string | null;
+  clientPhone: string | null;
+  pickupAddress: string | null;
+  pickupStreet: string | null;
+  pickupStreetNumber: string | null;
+  pickupZip: string | null;
+  pickupCity: string | null;
+  dropoffAddress: string | null;
+  dropoffStreet: string | null;
+  dropoffStreetNumber: string | null;
+  dropoffZip: string | null;
+  dropoffCity: string | null;
+  greetingStyle: string | null;
+}

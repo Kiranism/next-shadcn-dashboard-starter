@@ -21,7 +21,8 @@ import {
   Upload,
   FileSpreadsheet,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  RotateCcw
 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -29,10 +30,14 @@ import type { InsertTrip } from '@/features/trips/api/trips.service';
 import {
   type ParsedCsvRow,
   type ValidatedTripRow,
-  type UnresolvedRow,
-  type ValidationIssue
+  type ValidationIssue,
+  type RehydratedTripRow
 } from '@/features/trips/components/bulk-upload/bulk-upload-types';
 import { ResolveClientsStep } from '@/features/trips/components/bulk-upload/resolve-clients-step';
+import {
+  useBulkUploadResumeStore,
+  hasPendingResumeSession
+} from '@/features/trips/stores/use-bulk-upload-resume-store';
 
 interface BulkUploadDialogProps {
   onSuccess?: () => void;
@@ -45,6 +50,10 @@ interface BulkUploadDialogProps {
  * - parses and validates rows
  * - creates trips in bulk
  * - starts a follow‑up wizard to resolve trips without linked clients.
+ *
+ * The wizard state is persisted to localStorage so an accidental dialog
+ * close does not lose progress. Re-opening the dialog shows a resume
+ * banner when an unfinished session is found.
  */
 export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
   const router = useRouter();
@@ -55,20 +64,21 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
     errors: string[];
     rows: ValidatedTripRow[];
   } | null>(null);
-  const [mode, setMode] = React.useState<'upload' | 'resolve_clients' | 'done'>(
-    'upload'
-  );
-  const [unresolvedRows, setUnresolvedRows] = React.useState<
-    UnresolvedRow<InsertTrip>[]
-  >([]);
-  const [currentIndex, setCurrentIndex] = React.useState(0);
-  const [isCreatingClient, setIsCreatingClient] = React.useState(false);
-  const [homeAddressChoice, setHomeAddressChoice] = React.useState<
-    'pickup' | 'dropoff'
-  >('pickup');
+  const [mode, setMode] = React.useState<
+    'upload' | 'resume_prompt' | 'resume_loading' | 'resolve_clients' | 'done'
+  >('upload');
+
+  // Wizard rows — built either from a fresh upload or rehydrated from DB.
+  const [wizardRows, setWizardRows] = React.useState<RehydratedTripRow[]>([]);
+
+  // ── Resume store ──────────────────────────────────────────────────────────
+  const resumeStore = useBulkUploadResumeStore();
+  const hasPending = hasPendingResumeSession(resumeStore);
 
   const { payers } = useTripFormData(null);
-  const [billingTypes, setBillingTypes] = React.useState<any[]>([]);
+  const [billingTypes, setBillingTypes] = React.useState<
+    { id: string; name: string; payer_id: string }[]
+  >([]);
 
   React.useEffect(() => {
     const fetchAllBillingTypes = async () => {
@@ -76,18 +86,88 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
       const { data } = await supabase
         .from('billing_types')
         .select('id, name, payer_id');
-      if (data) setBillingTypes(data);
+      if (data)
+        setBillingTypes(
+          data as { id: string; name: string; payer_id: string }[]
+        );
     };
     fetchAllBillingTypes();
   }, []);
 
-  /**
-   * Parses a German style date (DD.MM.YY / DD.MM.YYYY) and 24h time (HH:mm)
-   * into a JavaScript Date instance. Returns null for invalid input.
-   */
+  // Show resume prompt when the dialog first opens if there's pending state.
+  const handleOpenChange = (next: boolean) => {
+    if (next && hasPending && mode === 'upload') {
+      setMode('resume_prompt');
+    }
+    setOpen(next);
+  };
+
+  // ── Resume / Discard ──────────────────────────────────────────────────────
+
+  const handleDiscard = () => {
+    resumeStore.clear();
+    setMode('upload');
+  };
+
+  const handleResume = async () => {
+    setMode('resume_loading');
+    try {
+      const supabase = createSupabaseClient();
+      const { data, error } = await supabase
+        .from('trips')
+        .select(
+          'id, client_id, client_name, client_phone, pickup_address, pickup_street, pickup_street_number, pickup_zip_code, pickup_city, dropoff_address, dropoff_street, dropoff_street_number, dropoff_zip_code, dropoff_city, greeting_style'
+        )
+        .in('id', resumeStore.tripIds)
+        .is('client_id', null)
+        .not('client_name', 'is', null);
+
+      if (error) throw error;
+
+      const rows: RehydratedTripRow[] = (data || []).map((t: any) => ({
+        tripId: t.id as string,
+        clientName: t.client_name as string | null,
+        clientPhone: t.client_phone as string | null,
+        pickupAddress: t.pickup_address as string | null,
+        pickupStreet: t.pickup_street as string | null,
+        pickupStreetNumber: t.pickup_street_number as string | null,
+        pickupZip: t.pickup_zip_code as string | null,
+        pickupCity: t.pickup_city as string | null,
+        dropoffAddress: t.dropoff_address as string | null,
+        dropoffStreet: t.dropoff_street as string | null,
+        dropoffStreetNumber: t.dropoff_street_number as string | null,
+        dropoffZip: t.dropoff_zip_code as string | null,
+        dropoffCity: t.dropoff_city as string | null,
+        greetingStyle: t.greeting_style as string | null
+      }));
+
+      if (rows.length === 0) {
+        // All trips have been resolved in the meantime – finish up.
+        resumeStore.clear();
+        setMode('done');
+        return;
+      }
+
+      // Clamp the stored index to the actual list length.
+      const clampedIndex = Math.min(resumeStore.currentIndex, rows.length - 1);
+      if (clampedIndex !== resumeStore.currentIndex) {
+        resumeStore.setIndex(clampedIndex);
+      }
+
+      setWizardRows(rows);
+      setMode('resolve_clients');
+    } catch {
+      toast.error(
+        'Fehler beim Laden der offenen Fahrgäste. Bitte versuche es erneut.'
+      );
+      setMode('resume_prompt');
+    }
+  };
+
+  // ── CSV parsing helpers ───────────────────────────────────────────────────
+
   const parseGermanDate = (dateStr: string, timeStr: string) => {
     try {
-      // Handle DD.MM.YY or DD.MM.YYYY
       const dateParts = dateStr.trim().split('.');
       if (dateParts.length !== 3) return null;
 
@@ -110,7 +190,7 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
    * - reading the CSV
    * - building ValidatedTripRow entries with issues
    * - inserting successful trips
-   * - preparing unresolvedRows for the client‑resolution wizard.
+   * - preparing wizard rows for the client‑resolution step.
    */
   const processCsv = async (files: File[]) => {
     if (files.length === 0) return;
@@ -118,16 +198,16 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
     setIsProcessing(true);
     setResults(null);
     setMode('upload');
-    setUnresolvedRows([]);
-    setCurrentIndex(0);
+    setWizardRows([]);
+    resumeStore.clear();
 
     const file = files[0];
 
     Papa.parse<ParsedCsvRow>(file, {
       header: true,
       skipEmptyLines: true,
-      complete: async (results) => {
-        const rows = results.data;
+      complete: async (papaResults) => {
+        const rows = papaResults.data;
         const validatedRows: ValidatedTripRow<InsertTrip>[] = [];
         const errors: string[] = [];
         const groupIdMap = new Map<string, string>();
@@ -147,8 +227,6 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
           companyId = profile?.company_id ?? null;
         }
 
-        // Preload clients for simple in-memory matching.
-        // Prefer same company, but fall back to all clients if company_id is missing.
         type CompanyClient = {
           id: string;
           first_name: string | null;
@@ -232,26 +310,16 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
         const splitStreetAndNumber = (
           raw: string | undefined
         ): { street: string | null; streetNumber: string | null } => {
-          if (!raw) {
-            return { street: null, streetNumber: null };
-          }
+          if (!raw) return { street: null, streetNumber: null };
 
           const trimmed = raw.trim();
-          // Match the first digit and treat everything from there as the house number,
-          // allowing things like "4", "4A", "4 A", "9 C" at the end.
           const match = trimmed.match(/^(.+?)(\s+\d+\s*\w*)$/u);
 
-          if (!match) {
-            // No obvious number part found – keep full string as street, no number
-            return { street: trimmed, streetNumber: null };
-          }
-
-          const street = match[1].trim();
-          const streetNumber = match[2].trim();
+          if (!match) return { street: trimmed, streetNumber: null };
 
           return {
-            street: street || null,
-            streetNumber: streetNumber || null
+            street: match[1].trim() || null,
+            streetNumber: match[2].trim() || null
           };
         };
 
@@ -263,7 +331,7 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
             (parsedRow as any)[trimmedKey] = String(rowRaw[key] || '').trim();
           });
 
-          const rowNum = i + 2; // +1 for 0-index, +1 for header row
+          const rowNum = i + 2;
           const issues: ValidationIssue[] = [];
 
           if (!parsedRow.kostentraeger) {
@@ -352,7 +420,6 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
             `${parsedRow.firstname || ''} ${parsedRow.lastname || ''}`.trim() ||
             null;
 
-          // Try to match an existing client by full name
           const matchedClient = findMatchingClient(parsedRow);
 
           const matchedDriver = findMatchingDriver(parsedRow);
@@ -428,10 +495,7 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
           (row) => row.trip && row.issues.length === 0
         );
 
-        // Geocode pickup/dropoff addresses for successful rows using the existing
-        // geocoding API endpoint so that trips get lat/lng where possible and
-        // normalize zip_code/city based on Google data (street is treated as
-        // the source of truth).
+        // Geocode pickup/dropoff addresses for successful rows.
         await Promise.all(
           successfulRows.map(async (row) => {
             if (!row.trip) return;
@@ -440,9 +504,7 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
               const [pickupResult, dropoffResult] = await Promise.all([
                 fetch('/api/geocode-address', {
                   method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json'
-                  },
+                  headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
                     street: row.trip.pickup_street,
                     street_number: row.trip.pickup_street_number,
@@ -452,9 +514,7 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
                 }),
                 fetch('/api/geocode-address', {
                   method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json'
-                  },
+                  headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
                     street: row.trip.dropoff_street,
                     street_number: row.trip.dropoff_street_number,
@@ -464,11 +524,12 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
                 })
               ]);
 
-              const pickupOk = pickupResult.ok;
-              const dropoffOk = dropoffResult.ok;
-
-              const pickupData = pickupOk ? await pickupResult.json() : null;
-              const dropoffData = dropoffOk ? await dropoffResult.json() : null;
+              const pickupData = pickupResult.ok
+                ? await pickupResult.json()
+                : null;
+              const dropoffData = dropoffResult.ok
+                ? await dropoffResult.json()
+                : null;
 
               if (
                 pickupData &&
@@ -488,9 +549,6 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
                 row.trip.dropoff_lng = dropoffData.lng;
               }
 
-              // Use Google-derived postal code and city to backfill or correct
-              // CSV values when possible. We assume the street (from CSV) is
-              // correct and trust Google's metadata for that street.
               if (pickupData) {
                 if (pickupData.zip_code) {
                   row.trip.pickup_zip_code = pickupData.zip_code;
@@ -509,9 +567,6 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
                 }
               }
 
-              // Keep the denormalized address strings in sync with potentially
-              // corrected zip/city values and include the house number again
-              // so that the wizard and UI always show the full address.
               row.trip.pickup_address = `${[
                 [row.trip.pickup_street, row.trip.pickup_street_number]
                   .filter(Boolean)
@@ -543,8 +598,7 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
                 row.trip.has_missing_geodata = false;
               }
             } catch {
-              // If geocoding fails, we keep has_missing_geodata = true and
-              // allow later backfill scripts to handle it.
+              // Non-fatal: keep has_missing_geodata = true for later backfill.
             }
           })
         );
@@ -558,20 +612,18 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
             const createdTrips =
               await tripsService.bulkCreateTrips(successfulTrips);
 
-            // Map back created trip ids to corresponding rows (by index)
-            const unresolved = createdTrips
+            // Build wizard rows from the created trips' data.
+            const unresolvedCreated = createdTrips
               .map((trip: any, idx: number) => ({
-                tripId: trip.id as string,
-                row: successfulRows[idx]
+                createdTrip: trip,
+                sourceRow: successfulRows[idx]
               }))
               .filter(
-                ({ row }) =>
-                  !row.clientId &&
-                  row.trip?.client_name &&
-                  row.trip?.ingestion_source === 'csv_bulk_upload'
+                ({ sourceRow }) =>
+                  !sourceRow.clientId &&
+                  sourceRow.trip?.client_name &&
+                  sourceRow.trip?.ingestion_source === 'csv_bulk_upload'
               );
-
-            setUnresolvedRows(unresolved);
 
             toast.success(
               `${successfulTrips.length} Fahrten erfolgreich hochgeladen!`
@@ -584,9 +636,34 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
             onSuccess?.();
             router.refresh();
 
-            if (unresolved.length > 0) {
+            if (unresolvedCreated.length > 0) {
+              // Map to RehydratedTripRow using data we already have in memory.
+              const freshRows: RehydratedTripRow[] = unresolvedCreated.map(
+                ({ createdTrip, sourceRow }) => ({
+                  tripId: createdTrip.id as string,
+                  clientName: sourceRow.trip?.client_name ?? null,
+                  clientPhone: sourceRow.trip?.client_phone ?? null,
+                  pickupAddress: sourceRow.trip?.pickup_address ?? null,
+                  pickupStreet: sourceRow.trip?.pickup_street ?? null,
+                  pickupStreetNumber:
+                    sourceRow.trip?.pickup_street_number ?? null,
+                  pickupZip: sourceRow.trip?.pickup_zip_code ?? null,
+                  pickupCity: sourceRow.trip?.pickup_city ?? null,
+                  dropoffAddress: sourceRow.trip?.dropoff_address ?? null,
+                  dropoffStreet: sourceRow.trip?.dropoff_street ?? null,
+                  dropoffStreetNumber:
+                    sourceRow.trip?.dropoff_street_number ?? null,
+                  dropoffZip: sourceRow.trip?.dropoff_zip_code ?? null,
+                  dropoffCity: sourceRow.trip?.dropoff_city ?? null,
+                  greetingStyle: sourceRow.trip?.greeting_style ?? null
+                })
+              );
+
+              // Persist resume session so a dialog close doesn't lose work.
+              resumeStore.start(freshRows.map((r) => r.tripId));
+
+              setWizardRows(freshRows);
               setMode('resolve_clients');
-              setCurrentIndex(0);
             } else {
               setMode('done');
               setTimeout(() => setOpen(false), 2000);
@@ -623,12 +700,33 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
     });
   };
 
+  // ── Wizard advance helpers ────────────────────────────────────────────────
+
+  const handleWizardSkip = () => {
+    const nextIndex = resumeStore.currentIndex + 1;
+    resumeStore.advance();
+    if (nextIndex >= wizardRows.length) {
+      resumeStore.clear();
+      setMode('done');
+    }
+  };
+
+  const handleWizardDone = () => {
+    resumeStore.clear();
+    setMode('done');
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant='outline' className='gap-2'>
           <Upload className='h-4 w-4' />
           Bulk Upload
+          {hasPending && (
+            <span className='ml-1 h-2 w-2 rounded-full bg-amber-500' />
+          )}
         </Button>
       </DialogTrigger>
       <DialogContent className='sm:max-w-[500px]'>
@@ -644,11 +742,54 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
         </DialogHeader>
 
         <div className='grid gap-4 py-4'>
+          {/* ── Resume prompt ── */}
+          {mode === 'resume_prompt' && (
+            <div className='space-y-3'>
+              <Alert className='border-amber-200 bg-amber-50 dark:bg-amber-950/20'>
+                <RotateCcw className='h-4 w-4 text-amber-600' />
+                <AlertTitle className='text-amber-800 dark:text-amber-400'>
+                  Unfertiger Bulk-Upload gefunden
+                </AlertTitle>
+                <AlertDescription className='text-amber-700 dark:text-amber-500'>
+                  {resumeStore.tripIds.length} Fahrgast
+                  {resumeStore.tripIds.length !== 1
+                    ? 'gäste wurden'
+                    : ' wurde'}{' '}
+                  noch nicht zugeordnet. Möchten Sie dort weitermachen?
+                </AlertDescription>
+              </Alert>
+              <div className='flex gap-2'>
+                <Button type='button' className='flex-1' onClick={handleResume}>
+                  Fortsetzen
+                </Button>
+                <Button
+                  type='button'
+                  variant='outline'
+                  className='flex-1'
+                  onClick={handleDiscard}
+                >
+                  Verwerfen
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Resume loading ── */}
+          {mode === 'resume_loading' && (
+            <div className='flex flex-col items-center justify-center py-8'>
+              <span className='h-8 w-8 animate-spin rounded-full border-4 border-emerald-600 border-t-transparent' />
+              <p className='text-muted-foreground mt-4 text-sm'>
+                Lade offene Fahrgäste…
+              </p>
+            </div>
+          )}
+
+          {/* ── Initial upload UI ── */}
           {mode === 'upload' && !results && (
             <FileUploader
               accept={{ 'text/csv': ['.csv'] }}
               maxFiles={1}
-              maxSize={1024 * 1024 * 5} // 5MB
+              maxSize={1024 * 1024 * 5}
               onUpload={processCsv}
               disabled={isProcessing}
             />
@@ -709,26 +850,19 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
             </div>
           )}
 
-          {mode === 'resolve_clients' && unresolvedRows.length > 0 && (
+          {/* ── Wizard ── */}
+          {mode === 'resolve_clients' && wizardRows.length > 0 && (
             <ResolveClientsStep
-              unresolvedRows={unresolvedRows}
-              currentIndex={currentIndex}
-              homeAddressChoice={homeAddressChoice}
-              isCreatingClient={isCreatingClient}
-              onHomeAddressChange={setHomeAddressChoice}
-              onUseAsNonClient={() => {
-                if (currentIndex + 1 < unresolvedRows.length) {
-                  setCurrentIndex((idx) => idx + 1);
-                } else {
-                  setMode('done');
-                }
-              }}
-              onDone={() => {
-                setMode('done');
-              }}
+              rows={wizardRows}
+              currentIndex={resumeStore.currentIndex}
+              homeAddressChoice={resumeStore.homeAddressChoice}
+              onHomeAddressChange={resumeStore.setHomeAddressChoice}
+              onSkip={handleWizardSkip}
+              onDone={handleWizardDone}
             />
           )}
 
+          {/* ── Done ── */}
           {mode === 'done' && (
             <div className='space-y-4'>
               <Alert className='border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20'>

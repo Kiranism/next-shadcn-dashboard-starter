@@ -5,36 +5,33 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { createClient as createSupabaseClient } from '@/lib/supabase/client';
 import { clientsService } from '@/features/clients/api/clients.service';
-import type { InsertTrip } from '@/features/trips/api/trips.service';
-import type { UnresolvedRow } from './bulk-upload-types';
+import type { RehydratedTripRow } from './bulk-upload-types';
 
 interface ResolveClientsStepProps {
-  unresolvedRows: UnresolvedRow<InsertTrip>[];
+  rows: RehydratedTripRow[];
   currentIndex: number;
   homeAddressChoice: 'pickup' | 'dropoff';
-  isCreatingClient: boolean;
   onHomeAddressChange: (choice: 'pickup' | 'dropoff') => void;
-  onUseAsNonClient: () => void;
+  onSkip: () => void;
   onDone: () => void;
 }
 
 export function ResolveClientsStep({
-  unresolvedRows,
+  rows,
   currentIndex,
   homeAddressChoice,
-  isCreatingClient,
   onHomeAddressChange,
-  onUseAsNonClient,
+  onSkip,
   onDone
 }: ResolveClientsStepProps) {
-  const [isGeocoding, setIsGeocoding] = React.useState(false);
+  const [isWorking, setIsWorking] = React.useState(false);
 
   const handleCreateAndLinkClient = async () => {
-    const current = unresolvedRows[currentIndex];
+    const current = rows[currentIndex];
     if (!current) return;
 
     try {
-      setIsGeocoding(true);
+      setIsWorking(true);
       const supabase = createSupabaseClient();
       const {
         data: { user }
@@ -52,45 +49,43 @@ export function ResolveClientsStep({
         }
       }
 
-      const name =
-        current.row.trip?.client_name ||
-        `${current.row.source.firstname || ''} ${
-          current.row.source.lastname || ''
-        }`.trim();
-
+      const name = current.clientName || '';
       const [firstName, ...lastParts] = name.split(' ');
       const lastName = lastParts.join(' ').trim() || null;
 
       const usePickup = homeAddressChoice === 'pickup';
 
+      // Use pre-split street fields from the DB row when available,
+      // otherwise fall through to the full address string.
       const streetRaw = usePickup
-        ? current.row.source.pickup_street || ''
-        : current.row.source.dropoff_street || '';
-      let zip = usePickup
-        ? current.row.source.pickup_zip || ''
-        : current.row.source.dropoff_zip || '';
+        ? current.pickupStreet || current.pickupAddress || ''
+        : current.dropoffStreet || current.dropoffAddress || '';
+      let zip = usePickup ? current.pickupZip || '' : current.dropoffZip || '';
       let city = usePickup
-        ? current.row.source.pickup_city || ''
-        : current.row.source.dropoff_city || '';
+        ? current.pickupCity || ''
+        : current.dropoffCity || '';
 
       let street = streetRaw;
-      let streetNumber = '';
-      const streetMatch = streetRaw.match(/^(.*\S)\s+(\d+\w*)$/);
-      if (streetMatch) {
-        street = streetMatch[1];
-        streetNumber = streetMatch[2];
+      let streetNumber =
+        (usePickup
+          ? current.pickupStreetNumber
+          : current.dropoffStreetNumber) || '';
+
+      // If explicit street_number is missing, try to split from the raw value.
+      if (!streetNumber) {
+        const streetMatch = streetRaw.match(/^(.*\S)\s+(\d+\w*)$/);
+        if (streetMatch) {
+          street = streetMatch[1];
+          streetNumber = streetMatch[2];
+        }
       }
 
-      // Try to geocode the chosen home address so that the client (and trip)
-      // receive lat/lng coordinates immediately.
       let lat: number | null = null;
       let lng: number | null = null;
       try {
         const res = await fetch('/api/geocode-address', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             street,
             street_number: streetNumber || undefined,
@@ -105,9 +100,6 @@ export function ResolveClientsStep({
             lat = data.lat;
             lng = data.lng;
           }
-
-          // Normalise zip_code and city for the client based on Google's data,
-          // similar to how trips are enriched in the bulk upload.
           if (typeof data.zip_code === 'string' && data.zip_code.trim()) {
             zip = data.zip_code.trim();
           }
@@ -116,14 +108,13 @@ export function ResolveClientsStep({
           }
         }
       } catch {
-        // Non-fatal: we can still create the client without coordinates.
+        // Non-fatal: client is still created without coordinates.
       }
 
       const client = await clientsService.createClient({
         first_name: firstName || null,
         last_name: lastName,
-        phone:
-          current.row.source.phone || current.row.trip?.client_phone || null,
+        phone: current.clientPhone || null,
         street,
         street_number: streetNumber || '1',
         zip_code: zip,
@@ -135,7 +126,7 @@ export function ResolveClientsStep({
         relation: null,
         notes: null,
         requires_daily_scheduling: false,
-        greeting_style: current.row.source.greeting_style || null
+        greeting_style: current.greetingStyle || null
       });
 
       await supabase
@@ -147,11 +138,7 @@ export function ResolveClientsStep({
             null,
           ...(lat !== null && lng !== null
             ? usePickup
-              ? {
-                  pickup_lat: lat,
-                  pickup_lng: lng,
-                  has_missing_geodata: false
-                }
+              ? { pickup_lat: lat, pickup_lng: lng, has_missing_geodata: false }
               : {
                   dropoff_lat: lat,
                   dropoff_lng: lng,
@@ -163,25 +150,22 @@ export function ResolveClientsStep({
 
       toast.success('Fahrgast wurde erstellt und mit der Fahrt verknüpft.');
 
-      if (currentIndex + 1 < unresolvedRows.length) {
-        onUseAsNonClient();
+      if (currentIndex + 1 < rows.length) {
+        onSkip();
       } else {
         onDone();
       }
-    } catch (error: any) {
-      toast.error(
-        error?.message || 'Konnte Fahrgast nicht erstellen und verknüpfen.'
-      );
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Unbekannter Fehler';
+      toast.error(msg || 'Konnte Fahrgast nicht erstellen und verknüpfen.');
     } finally {
-      setIsGeocoding(false);
+      setIsWorking(false);
     }
   };
 
-  if (unresolvedRows.length === 0) {
-    return null;
-  }
+  if (rows.length === 0) return null;
 
-  if (currentIndex >= unresolvedRows.length) {
+  if (currentIndex >= rows.length) {
     return (
       <div className='space-y-2 text-sm'>
         <p>Alle Fahrgäste aus diesem Upload wurden bearbeitet.</p>
@@ -192,34 +176,30 @@ export function ResolveClientsStep({
     );
   }
 
-  const current = unresolvedRows[currentIndex];
+  const current = rows[currentIndex];
 
   return (
     <div className='space-y-4'>
       <div className='space-y-3 text-sm'>
         <div className='font-medium'>
-          Fahrgast {currentIndex + 1} von {unresolvedRows.length}
+          Fahrgast {currentIndex + 1} von {rows.length}
         </div>
         <div>
           <div className='font-medium'>Name</div>
           <div className='text-muted-foreground'>
-            {current.row.trip?.client_name ||
-              `${current.row.source.firstname || ''} ${
-                current.row.source.lastname || ''
-              }`.trim() ||
-              '—'}
+            {current.clientName || '—'}
           </div>
         </div>
         <div>
           <div className='font-medium'>Abholadresse</div>
           <div className='text-muted-foreground'>
-            {current.row.trip?.pickup_address || '—'}
+            {current.pickupAddress || '—'}
           </div>
         </div>
         <div>
           <div className='font-medium'>Zieladresse</div>
           <div className='text-muted-foreground'>
-            {current.row.trip?.dropoff_address || '—'}
+            {current.dropoffAddress || '—'}
           </div>
         </div>
         <div className='space-y-1 pt-1 text-xs'>
@@ -237,7 +217,7 @@ export function ResolveClientsStep({
               <span>
                 <div className='font-medium'>Abholadresse</div>
                 <div className='text-muted-foreground'>
-                  {current.row.trip?.pickup_address || '—'}
+                  {current.pickupAddress || '—'}
                 </div>
               </span>
             </label>
@@ -251,7 +231,7 @@ export function ResolveClientsStep({
               <span>
                 <div className='font-medium'>Zieladresse</div>
                 <div className='text-muted-foreground'>
-                  {current.row.trip?.dropoff_address || '—'}
+                  {current.dropoffAddress || '—'}
                 </div>
               </span>
             </label>
@@ -263,17 +243,25 @@ export function ResolveClientsStep({
             type='button'
             variant='outline'
             className='w-full'
-            onClick={onUseAsNonClient}
+            onClick={onSkip}
+            disabled={isWorking}
           >
             Als Nicht‑Kunde verwenden
           </Button>
           <Button
             type='button'
             className='w-full'
-            disabled={isCreatingClient || isGeocoding}
+            disabled={isWorking}
             onClick={handleCreateAndLinkClient}
           >
-            Neuen Fahrgast anlegen &amp; verknüpfen
+            {isWorking ? (
+              <span className='flex items-center gap-2'>
+                <span className='border-background h-3.5 w-3.5 animate-spin rounded-full border-2 border-t-transparent' />
+                Wird erstellt…
+              </span>
+            ) : (
+              'Neuen Fahrgast anlegen \u0026 verknüpfen'
+            )}
           </Button>
         </div>
       </div>
