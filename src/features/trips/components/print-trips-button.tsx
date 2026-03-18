@@ -184,11 +184,11 @@ export function PrintTripsButton() {
         </Button>
       </PopoverTrigger>
       <PopoverContent className='w-auto p-0' align='end'>
-        <div className='border-b bg-slate-50 p-3'>
-          <h4 className='text-sm font-bold text-slate-900'>
+        <div className='bg-muted border-b p-3'>
+          <h4 className='text-foreground text-sm font-bold'>
             Druckdatum wählen
           </h4>
-          <p className='text-[10px] text-slate-500'>
+          <p className='text-muted-foreground text-[10px]'>
             Fahrten für diesen Tag werden exportiert.
           </p>
         </div>
@@ -199,12 +199,12 @@ export function PrintTripsButton() {
           initialFocus
           disabled={(date) => isGenerating}
         />
-        <div className='flex justify-end border-t bg-slate-50 p-3'>
+        <div className='bg-muted flex justify-end border-t p-3'>
           <Button
             size='sm'
             onClick={generatePrintouts}
             disabled={isGenerating || !date}
-            className='w-full bg-emerald-600 hover:bg-emerald-700'
+            className='bg-primary hover:bg-primary/90 w-full'
           >
             {isGenerating ? 'Generiere...' : 'ZIP Generieren'}
           </Button>
