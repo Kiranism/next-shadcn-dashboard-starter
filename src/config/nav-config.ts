@@ -34,6 +34,12 @@ export const navItems: NavItem[] = [
         shortcut: ['f', 'f']
       },
       {
+        title: 'Fahrer',
+        url: '/dashboard/drivers',
+        icon: 'user',
+        shortcut: ['f', 'a']
+      },
+      {
         title: 'Kostenträger',
         url: '/dashboard/payers',
         icon: 'billing',

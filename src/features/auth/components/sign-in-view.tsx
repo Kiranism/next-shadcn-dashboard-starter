@@ -23,10 +23,12 @@ export default function SignInView() {
     setError(null);
 
     const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
+    const { data, error: signInError } = await supabase.auth.signInWithPassword(
+      {
+        email,
+        password
+      }
+    );
 
     if (signInError) {
       setError(signInError.message);
@@ -34,7 +36,20 @@ export default function SignInView() {
       return;
     }
 
-    router.replace('/dashboard/overview');
+    const userId = data?.user?.id;
+    let targetUrl = '/dashboard/overview';
+    if (userId) {
+      const { data: profile } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', userId)
+        .single();
+      if (profile?.role === 'driver') {
+        targetUrl = '/driver/shift';
+      }
+    }
+
+    router.replace(targetUrl);
     router.refresh();
   };
 

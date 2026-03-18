@@ -44,11 +44,13 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   const isDashboardRoute = pathname.startsWith('/dashboard');
+  const isDriverRoute = pathname.startsWith('/driver');
   const isAuthRoute = pathname.startsWith('/auth');
 
-  if (isDashboardRoute && !user) {
+  if ((isDashboardRoute || isDriverRoute) && !user) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = '/auth/sign-in';
+    redirectUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(redirectUrl);
   }
 

@@ -57,6 +57,7 @@ export function ClientsColumnView() {
     // overflow-hidden: prevents the panel content from bleeding outside the border
     <div className='flex min-h-0 flex-1 overflow-hidden rounded-lg border'>
       <ResizablePanelGroup
+        id='clients-column-layout'
         direction='horizontal'
         className='h-full w-full'
         autoSaveId='clients-column-layout'
@@ -78,7 +79,7 @@ export function ClientsColumnView() {
         {/* ── Column 2: Client Detail ───────────────────────────── */}
         {showDetail && (
           <>
-            <ResizableHandle withHandle />
+            <ResizableHandle id='clients-detail-handle' withHandle />
             <ResizablePanel
               id='clients-detail'
               order={2}
@@ -104,7 +105,7 @@ export function ClientsColumnView() {
         {/* ── Column 3: Recurring Rule Form ─────────────────────── */}
         {showRule && (
           <>
-            <ResizableHandle withHandle />
+            <ResizableHandle id='clients-rule-handle' withHandle />
             <ResizablePanel
               id='clients-rule'
               order={3}
