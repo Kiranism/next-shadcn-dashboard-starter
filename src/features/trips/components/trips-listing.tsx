@@ -64,21 +64,31 @@ export default async function TripsListingPage({
       `client_name.ilike.%${term}%,pickup_address.ilike.%${term}%,dropoff_address.ilike.%${term}%`
     );
   }
+  // Date filter: include trips in range OR unscheduled (scheduled_at IS NULL).
+  // Ensures Kanban shows both scheduled and unscheduled trips for the selected date(s).
   if (scheduledAt) {
     const parts = scheduledAt.split(',');
 
-    // Range filter: "from,to"
     if (parts.length === 2) {
+      // Range filter: "from,to" – show scheduled in range + all unscheduled
       const [from, to] = parts;
-      if (from) {
-        query = query.gte('scheduled_at', new Date(Number(from)).toISOString());
-      }
-      if (to) {
-        query = query.lte('scheduled_at', new Date(Number(to)).toISOString());
+      if (from && to) {
+        const startISO = new Date(Number(from)).toISOString();
+        const endISO = new Date(Number(to)).toISOString();
+        query = query.or(
+          `and(scheduled_at.gte.${startISO},scheduled_at.lte.${endISO}),scheduled_at.is.null`
+        );
+      } else if (from) {
+        query = query.or(
+          `scheduled_at.gte.${new Date(Number(from)).toISOString()},scheduled_at.is.null`
+        );
+      } else if (to) {
+        query = query.or(
+          `scheduled_at.lte.${new Date(Number(to)).toISOString()},scheduled_at.is.null`
+        );
       }
     } else if (parts.length === 1 && parts[0]) {
-      // Single-day filter: interpret the timestamp as a date and
-      // constrain results to that calendar day (local time).
+      // Single-day filter: constrain to calendar day (local time) + unscheduled
       const timestamp = Number(parts[0]);
       if (!Number.isNaN(timestamp)) {
         const day = new Date(timestamp);
@@ -92,10 +102,11 @@ export default async function TripsListingPage({
           day.getMonth(),
           day.getDate() + 1
         );
-
-        query = query
-          .gte('scheduled_at', startOfDay.toISOString())
-          .lt('scheduled_at', endOfDay.toISOString());
+        const startISO = startOfDay.toISOString();
+        const endISO = endOfDay.toISOString();
+        query = query.or(
+          `and(scheduled_at.gte.${startISO},scheduled_at.lt.${endISO}),scheduled_at.is.null`
+        );
       }
     }
   }

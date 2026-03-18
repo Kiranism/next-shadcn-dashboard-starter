@@ -30,7 +30,7 @@ Relevant files:
 - `src/features/trips/components/trips-listing.tsx`
 - `src/features/trips/components/trips-filters-bar.tsx`
 - `src/features/trips/components/trips-view-toggle.tsx`
-- `src/features/trips/components/trips-kanban-board.tsx`
+- `src/features/trips/components/trips-kanban-board.tsx` (see `docs/kanban-view.md` for Kanban features)
 - `src/features/trips/components/trips-tables/index.tsx`
 - `src/features/trips/stores/use-trips-table-store.ts`
 
@@ -46,7 +46,7 @@ Relevant files:
    - Builds a Supabase query and applies filters on the server.
    - Renders `TripsFiltersBar` (shared across views) and then the active view:
      - List view (`TripsTable`),
-     - Kanban view (`TripsKanbanBoard`).
+     - Kanban view (`TripsKanbanBoard`). Kanban supports inline time editing and drag-to-group; see `docs/kanban-view.md`.
 4. **Client filter bar** (`TripsFiltersBar`):
    - Reads current filter values from `useSearchParams()`.
    - On change, builds a new `URLSearchParams` and calls `router.replace(nextUrl, { scroll: false })`.
@@ -308,7 +308,7 @@ Then applied to Supabase:
 - `payer_id`: `eq('payer_id', payerId)`.
 - `billing_type_id`: `eq('billing_type_id', billingTypeId)`.
 - `name`: `ilike('client_name', %name%)`.
-- `scheduled_at`: range or single-day filter based on Unix timestamps.
+- `scheduled_at`: range or single-day filter. Includes trips with `scheduled_at` in the selected range **or** `scheduled_at IS NULL` (unscheduled), so the Kanban shows both scheduled and unscheduled trips for the chosen date(s).
 
 The `view` param controls query limits:
 
