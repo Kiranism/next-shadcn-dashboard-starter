@@ -10,6 +10,22 @@ import { de } from 'date-fns/locale';
 import { Accessibility, RepeatIcon } from 'lucide-react';
 import { DriverSelectCell } from './driver-select-cell';
 
+function parseAddress(raw: string | null | undefined): {
+  street: string | null;
+  cityLine: string | null;
+} {
+  if (!raw) return { street: null, cityLine: null };
+  // Split on the first occurrence of a 5-digit German ZIP code
+  const match = raw.match(/^(.*?)\s*,?\s*(\d{5}\s+.+)$/);
+  if (match) {
+    return {
+      street: match[1].trim() || null,
+      cityLine: match[2].trim()
+    };
+  }
+  return { street: raw, cityLine: null };
+}
+
 const statusMap: Record<
   string,
   {
@@ -150,18 +166,30 @@ export const columns: ColumnDef<any>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Abholung' />
     ),
-    cell: ({ row }) => (
-      <div className='flex max-w-[200px] flex-col truncate'>
-        <span title={row.original.pickup_address}>
-          {row.original.pickup_address}
-        </span>
-        {row.original.pickup_station && (
-          <span className='text-muted-foreground truncate text-[10px] italic'>
-            ({row.original.pickup_station})
+    cell: ({ row }) => {
+      const { street, cityLine } = parseAddress(row.original.pickup_address);
+      const station = row.original.pickup_station as string | undefined;
+      return (
+        <div
+          className='flex max-w-[200px] flex-col'
+          title={row.original.pickup_address ?? ''}
+        >
+          <span className='flex min-w-0 items-center gap-1.5'>
+            <span className='truncate text-sm font-medium'>{street}</span>
+            {station && (
+              <span className='bg-muted text-foreground shrink-0 rounded px-1.5 py-0 text-[10px] font-medium'>
+                {station}
+              </span>
+            )}
           </span>
-        )}
-      </div>
-    ),
+          {cityLine && (
+            <span className='text-muted-foreground truncate text-xs'>
+              {cityLine}
+            </span>
+          )}
+        </div>
+      );
+    },
     meta: { label: 'Abholung' }
   },
   {
@@ -169,18 +197,30 @@ export const columns: ColumnDef<any>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Ziel' />
     ),
-    cell: ({ row }) => (
-      <div className='flex max-w-[200px] flex-col truncate'>
-        <span title={row.original.dropoff_address}>
-          {row.original.dropoff_address}
-        </span>
-        {row.original.dropoff_station && (
-          <span className='text-muted-foreground truncate text-[10px] italic'>
-            ({row.original.dropoff_station})
+    cell: ({ row }) => {
+      const { street, cityLine } = parseAddress(row.original.dropoff_address);
+      const station = row.original.dropoff_station as string | undefined;
+      return (
+        <div
+          className='flex max-w-[200px] flex-col'
+          title={row.original.dropoff_address ?? ''}
+        >
+          <span className='flex min-w-0 items-center gap-1.5'>
+            <span className='truncate text-sm font-medium'>{street}</span>
+            {station && (
+              <span className='bg-muted text-foreground shrink-0 rounded px-1.5 py-0 text-[10px] font-medium'>
+                {station}
+              </span>
+            )}
           </span>
-        )}
-      </div>
-    ),
+          {cityLine && (
+            <span className='text-muted-foreground truncate text-xs'>
+              {cityLine}
+            </span>
+          )}
+        </div>
+      );
+    },
     meta: { label: 'Ziel' }
   },
   {

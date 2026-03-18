@@ -23,7 +23,7 @@ export default async function TripsListingPage({
   const driverId = searchParamsCache.get('driver_id');
   const payerId = searchParamsCache.get('payer_id');
   const billingTypeId = searchParamsCache.get('billing_type_id');
-  const name = searchParamsCache.get('name');
+  const search = searchParamsCache.get('search');
   const scheduledAt = searchParamsCache.get('scheduled_at');
 
   const supabase = await createClient();
@@ -58,8 +58,11 @@ export default async function TripsListingPage({
   if (billingTypeId) {
     query = query.eq('billing_type_id', billingTypeId);
   }
-  if (name) {
-    query = query.ilike('client_name', `%${name}%`);
+  if (search) {
+    const term = search.replace(/'/g, "''");
+    query = query.or(
+      `client_name.ilike.%${term}%,pickup_address.ilike.%${term}%,dropoff_address.ilike.%${term}%`
+    );
   }
   if (scheduledAt) {
     const parts = scheduledAt.split(',');

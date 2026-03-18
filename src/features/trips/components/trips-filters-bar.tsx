@@ -45,7 +45,7 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
 
-  const name = searchParams.get('name') ?? '';
+  const search = searchParams.get('search') ?? '';
   const driverId = searchParams.get('driver_id') ?? 'all';
   const status = searchParams.get('status') ?? 'all';
   const payerId = searchParams.get('payer_id') ?? 'all';
@@ -66,6 +66,14 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
     // columnVisibility in deps ensures re-render (and fresh getIsVisible()) on every toggle
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [table, columnVisibility]);
+
+  const [localSearch, setLocalSearch] = useState(search);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Sync local input back when URL search param changes externally (e.g. reset button)
+  useEffect(() => {
+    setLocalSearch(search);
+  }, [search]);
 
   const hasSetDefaultDate = useRef(false);
 
@@ -157,15 +165,21 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
     });
   };
 
+  const handleSearchChange = (value: string) => {
+    setLocalSearch(value);
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      updateFilters({ search: value || null });
+    }, 350);
+  };
+
   return (
     <div className='bg-muted/40 mb-1 flex min-w-0 flex-1 items-center justify-between gap-2 rounded-lg px-3 py-2 text-xs'>
       <div className='flex min-w-0 flex-1 flex-wrap items-center gap-2 md:flex-nowrap'>
         <Input
-          placeholder='Fahrgast / Adresse suchen'
-          value={name}
-          onChange={(event) => {
-            updateFilters({ name: event.target.value || null });
-          }}
+          placeholder='Fahrgast oder Adresse suchen'
+          value={localSearch}
+          onChange={(event) => handleSearchChange(event.target.value)}
           className='h-8 min-w-[120px] flex-1 truncate'
         />
 
@@ -406,7 +420,7 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
           className='text-muted-foreground hover:text-foreground h-8 px-3 text-xs'
           onClick={() => {
             updateFilters({
-              name: null,
+              search: null,
               driver_id: null,
               status: null,
               payer_id: null,
