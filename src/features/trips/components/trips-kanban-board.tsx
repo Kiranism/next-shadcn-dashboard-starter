@@ -17,7 +17,15 @@ import {
   pointerWithin
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Maximize2, Minimize2, Users, X } from 'lucide-react';
+import {
+  GripVertical,
+  Maximize2,
+  Minimize2,
+  Users,
+  X,
+  ZoomIn,
+  ZoomOut
+} from 'lucide-react';
 import { format, set } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -69,12 +77,25 @@ interface TripsKanbanBoardProps {
 
 type GroupByMode = 'driver' | 'status' | 'payer';
 
+/** localStorage key for persisting column order per group-by mode. */
+const KANBAN_COLUMN_ORDER_KEY = 'taxigo-kanban-column-order';
+
 type KanbanColumn = {
   id: string;
   title: string;
   subtitle?: string;
 };
 
+/**
+ * Kanban board for managing trips. Groups trips by driver, status, or payer.
+ * Supports:
+ * - Drag trips between columns (assign driver/status/payer)
+ * - Group trips by dropping one onto another
+ * - Drag entire group via group header; drag single card to remove from group
+ * - Reorder columns by dragging column headers
+ * - Zoom in/out; sticky column headers when scrolling
+ * - Column order persisted in localStorage per page reload
+ */
 export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
   const router = useRouter();
   const { drivers } = useTripFormData();
@@ -84,6 +105,63 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
   >({});
   const [isSaving, setIsSaving] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [columnOrderByMode, setColumnOrderByMode] = useState<
+    Partial<Record<GroupByMode, string[]>>
+  >({});
+
+  /** Restore column order from localStorage on mount. */
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem(KANBAN_COLUMN_ORDER_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Partial<
+        Record<GroupByMode, string[]>
+      > | null;
+      if (parsed && typeof parsed === 'object') {
+        setColumnOrderByMode(parsed);
+      }
+    } catch {
+      // Ignore invalid JSON or access errors
+    }
+  }, []);
+
+  /** Persist column order to localStorage whenever it changes. */
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (Object.keys(columnOrderByMode).length === 0) return;
+    try {
+      localStorage.setItem(
+        KANBAN_COLUMN_ORDER_KEY,
+        JSON.stringify(columnOrderByMode)
+      );
+    } catch {
+      // Ignore quota exceeded or access errors
+    }
+  }, [columnOrderByMode]);
+
+  const zoomIn = useCallback(
+    () => setZoom((z) => Math.min(1, Math.round((z + 0.1) * 10) / 10)),
+    []
+  );
+  const zoomOut = useCallback(
+    () => setZoom((z) => Math.max(0.5, Math.round((z - 0.1) * 10) / 10)),
+    []
+  );
+  const [zoomInput, setZoomInput] = useState<string | null>(null);
+
+  const applyZoomInput = useCallback((raw: string) => {
+    const parsed = parseInt(raw.replace(/%/g, ''), 10);
+    if (!Number.isNaN(parsed)) {
+      const clamped = Math.max(50, Math.min(100, parsed));
+      setZoom(clamped / 100);
+    }
+    setZoomInput(null);
+  }, []);
+
+  const zoomDisplayValue =
+    zoomInput !== null ? zoomInput : String(Math.round(zoom * 100));
 
   /** Callback when time is edited in TripCard; stages scheduled_at for save. */
   const onTimeChange = useCallback(
@@ -172,16 +250,33 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
     [router, effectiveTrips]
   );
 
+  /** Column definitions (driver/status/payer) from current groupBy mode. */
   const columns: KanbanColumn[] = useMemo(
     () => buildColumns(effectiveTrips, groupBy, drivers),
     [effectiveTrips, groupBy, drivers]
   );
+  /** Trips grouped by column id for display. */
   const itemsByColumn = useMemo(
     () => buildItemsByColumn(effectiveTrips, columns, groupBy),
     [effectiveTrips, columns, groupBy]
   );
 
-  /** Maps group_id to display label "Gruppe 1", "Gruppe 2", etc. (ordered by earliest scheduled_at). */
+  /**
+   * Column order for display. Uses saved order from columnOrderByMode when available;
+   * otherwise preserves buildColumns default. New columns (e.g. new driver) appear at end.
+   */
+  const effectiveColumns = useMemo(() => {
+    const order = columnOrderByMode[groupBy];
+    if (!order?.length) return columns;
+    const orderSet = new Set(order);
+    const ordered = order
+      .filter((id) => columns.some((c) => c.id === id))
+      .map((id) => columns.find((c) => c.id === id)!);
+    const rest = columns.filter((c) => !orderSet.has(c.id));
+    return [...ordered, ...rest];
+  }, [columns, columnOrderByMode, groupBy]);
+
+  /** Maps group_id → "Gruppe 1", "Gruppe 2", etc. (ordered by earliest scheduled_at). */
   const groupLabels = useMemo(() => {
     const ids = [
       ...new Set(effectiveTrips.map((t) => t.group_id).filter(Boolean))
@@ -203,17 +298,44 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
     return map;
   }, [effectiveTrips]);
 
+  /**
+   * Handles all drag-and-drop end events on the Kanban board.
+   * Branches by dragged item type:
+   * 1. Column → reorder columns (drop column A on column B to move A to B's position)
+   * 2. Trip onto trip → group trips (dragged joins target's group)
+   * 3. Trip/group onto column → update driver/status/payer; ungroup if single trip leaving group
+   */
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       const { active, over } = event;
       if (!over) return;
 
       const draggedId = String(active.id);
-
-      // Drop on trip card → group trips (Option A)
       const overStr = String(over.id);
-      // Droppable ids for trip cards use "trip-{id}" to distinguish from column ids.
-      if (overStr.startsWith('trip-')) {
+      const isDraggingGroup = draggedId.startsWith('group-');
+
+      // 1. Column reorder: drag column header onto another column
+      if (draggedId.startsWith('column-')) {
+        const draggedColumnId = draggedId.replace(/^column-/, '');
+        const isOverColumn = effectiveColumns.some((c) => c.id === overStr);
+        if (isOverColumn && draggedColumnId !== overStr) {
+          setColumnOrderByMode((prev) => {
+            const currentOrder =
+              prev[groupBy] ?? effectiveColumns.map((c) => c.id);
+            const fromIdx = currentOrder.indexOf(draggedColumnId);
+            const toIdx = currentOrder.indexOf(overStr);
+            if (fromIdx === -1 || toIdx === -1) return prev;
+            const reordered = [...currentOrder];
+            reordered.splice(fromIdx, 1);
+            reordered.splice(toIdx, 0, draggedColumnId);
+            return { ...prev, [groupBy]: reordered };
+          });
+          return;
+        }
+      }
+
+      // 2. Drop trip onto another trip card → group trips (dragged joins target's group)
+      if (!isDraggingGroup && overStr.startsWith('trip-')) {
         const targetId = overStr.replace(/^trip-/, '');
         if (targetId === draggedId) return;
 
@@ -256,27 +378,50 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
         return;
       }
 
-      // Drop on column → update driver/status/payer
+      // 3. Drop trip or group onto column → update driver/status/payer
       const targetColumnId = overStr;
+      const tripIdsToUpdate = isDraggingGroup
+        ? effectiveTrips
+            .filter((t) => t.group_id === draggedId.replace('group-', ''))
+            .map((t) => t.id)
+        : [draggedId];
+
+      const draggedTrip = effectiveTrips.find((t) => t.id === draggedId);
+      const isSingleTripLeavingGroup =
+        !isDraggingGroup && !!draggedTrip?.group_id;
+
       setPendingChanges((prev) => {
         const next = { ...prev };
-        const current = next[draggedId] ?? {};
+        const value =
+          groupBy === 'driver'
+            ? targetColumnId === 'unassigned'
+              ? null
+              : targetColumnId
+            : groupBy === 'status'
+              ? targetColumnId
+              : targetColumnId === 'no_payer'
+                ? null
+                : targetColumnId;
 
-        if (groupBy === 'driver') {
-          current.driver_id =
-            targetColumnId === 'unassigned' ? null : targetColumnId;
-        } else if (groupBy === 'status') {
-          current.status = targetColumnId;
-        } else if (groupBy === 'payer') {
-          current.payer_id =
-            targetColumnId === 'no_payer' ? null : targetColumnId;
+        for (const id of tripIdsToUpdate) {
+          const current = next[id] ?? {};
+          if (groupBy === 'driver') {
+            current.driver_id = value as string | null;
+          } else if (groupBy === 'status') {
+            current.status = value as string;
+          } else if (groupBy === 'payer') {
+            current.payer_id = value as string | null;
+          }
+          if (isSingleTripLeavingGroup && id === draggedId) {
+            current.group_id = null;
+            current.stop_order = null;
+          }
+          next[id] = current;
         }
-
-        next[draggedId] = current;
         return next;
       });
     },
-    [groupBy, effectiveTrips]
+    [groupBy, effectiveTrips, effectiveColumns]
   );
 
   const handleReset = useCallback(() => {
@@ -347,6 +492,46 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
     <div className='flex shrink-0 items-center justify-between gap-3 border-b px-4 py-2 text-sm'>
       <div className='flex items-center gap-2'>
         {expandButton}
+        <div className='text-muted-foreground flex items-center gap-0.5 border-r pr-2'>
+          <Button
+            type='button'
+            variant='ghost'
+            size='icon'
+            className='h-8 w-8'
+            onClick={zoomOut}
+            disabled={zoom <= 0.5}
+            aria-label='Verkleinern'
+          >
+            <ZoomOut className='h-4 w-4' />
+          </Button>
+          <Input
+            type='text'
+            inputMode='numeric'
+            value={zoomDisplayValue}
+            onChange={(e) => setZoomInput(e.target.value)}
+            onFocus={() => setZoomInput(zoomDisplayValue)}
+            onBlur={() => applyZoomInput(zoomDisplayValue)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.currentTarget.blur();
+              }
+            }}
+            className='h-8 w-14 [appearance:textfield] px-2 text-center text-xs [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none'
+            aria-label='Zoom in Prozent'
+          />
+          <span className='text-muted-foreground text-xs'>%</span>
+          <Button
+            type='button'
+            variant='ghost'
+            size='icon'
+            className='h-8 w-8'
+            onClick={zoomIn}
+            disabled={zoom >= 1}
+            aria-label='Vergrößern'
+          >
+            <ZoomIn className='h-4 w-4' />
+          </Button>
+        </div>
         <div className='flex flex-col'>
           <span className='font-medium'>Kanban-Ansicht</span>
           <span className='text-muted-foreground text-xs'>
@@ -411,8 +596,11 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
         collisionDetection={pointerWithin}
         onDragEnd={handleDragEnd}
       >
-        <div className='inline-flex min-h-[260px] min-w-max gap-3 p-3'>
-          {columns.map((column) => {
+        <div
+          className='inline-flex min-h-[260px] min-w-max gap-3 p-3'
+          style={{ zoom }}
+        >
+          {effectiveColumns.map((column) => {
             const items = itemsByColumn[column.id] ?? [];
             return (
               <KanbanColumnView
@@ -532,7 +720,12 @@ function chunkItemsByGroup(
     }
   }
 
-  // Sort trips within each group by scheduled_at / stop_order
+  const getSortPosition = (t: TripsKanbanBoardProps['trips'][number]) => {
+    if (t.scheduled_at) return new Date(t.scheduled_at).getTime();
+    if (t.link_type === 'return') return Infinity;
+    return -1;
+  };
+
   const blocks: {
     type: 'single' | 'group';
     trips: TripsKanbanBoardProps['trips'];
@@ -540,30 +733,21 @@ function chunkItemsByGroup(
   }[] = [];
 
   for (const trip of singles) {
-    const pos = trip.scheduled_at
-      ? new Date(trip.scheduled_at).getTime()
-      : Infinity;
-    blocks.push({ type: 'single', trips: [trip], position: pos });
+    blocks.push({
+      type: 'single',
+      trips: [trip],
+      position: getSortPosition(trip)
+    });
   }
 
-  for (const trips of groupMap.values()) {
-    trips.sort((a, b) => {
+  for (const groupTrips of groupMap.values()) {
+    groupTrips.sort((a, b) => {
       if (a.stop_order != null && b.stop_order != null)
         return a.stop_order - b.stop_order;
-      const aTime = a.scheduled_at
-        ? new Date(a.scheduled_at).getTime()
-        : Infinity;
-      const bTime = b.scheduled_at
-        ? new Date(b.scheduled_at).getTime()
-        : Infinity;
-      return aTime - bTime;
+      return getSortPosition(a) - getSortPosition(b);
     });
-    const position = Math.min(
-      ...trips.map((t) =>
-        t.scheduled_at ? new Date(t.scheduled_at).getTime() : Infinity
-      )
-    );
-    blocks.push({ type: 'group', trips, position });
+    const position = Math.min(...groupTrips.map(getSortPosition));
+    blocks.push({ type: 'group', trips: groupTrips, position });
   }
 
   blocks.sort((a, b) => a.position - b.position);
@@ -595,11 +779,15 @@ function buildItemsByColumn(
     itemsByColumn[columnId].push(trip);
   }
 
+  const getSortPosition = (trip: TripsKanbanBoardProps['trips'][number]) => {
+    if (trip.scheduled_at) return new Date(trip.scheduled_at).getTime();
+    if (trip.link_type === 'return') return Infinity;
+    return -1;
+  };
+
   Object.keys(itemsByColumn).forEach((columnId) => {
     itemsByColumn[columnId].sort((a, b) => {
-      const aTime = a.scheduled_at ? new Date(a.scheduled_at).getTime() : 0;
-      const bTime = b.scheduled_at ? new Date(b.scheduled_at).getTime() : 0;
-      return aTime - bTime;
+      return getSortPosition(a) - getSortPosition(b);
     });
   });
 
@@ -624,9 +812,33 @@ function GroupedTripsContainer({
   const groupId = trips[0]?.group_id;
   if (!groupId || trips.length === 0) return null;
 
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setDraggableRef,
+    transform,
+    isDragging
+  } = useDraggable({
+    id: `group-${groupId}`,
+    data: { groupId, tripIds: trips.map((t) => t.id) }
+  });
+
+  const dragStyle = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.6 : 1
+  };
+
   return (
-    <div className='border-primary/25 bg-primary/5 flex flex-col gap-1.5 rounded-lg border-2 p-1.5'>
-      <div className='flex items-center justify-between gap-2 px-1.5 py-0.5'>
+    <div
+      ref={setDraggableRef}
+      style={dragStyle}
+      className='border-primary/25 bg-primary/5 flex flex-col gap-1.5 rounded-lg border-2 p-1.5'
+    >
+      <div
+        className='flex cursor-grab items-center justify-between gap-2 px-1.5 py-0.5 active:cursor-grabbing'
+        {...listeners}
+        {...attributes}
+      >
         <span className='text-muted-foreground text-[10px] font-medium uppercase'>
           {groupLabel ?? 'Gruppe'}
         </span>
@@ -636,6 +848,7 @@ function GroupedTripsContainer({
             e.stopPropagation();
             onUngroup(groupId);
           }}
+          onPointerDown={(e) => e.stopPropagation()}
           className='text-muted-foreground hover:text-foreground text-[10px]'
           title='Gruppe auflösen'
           aria-label='Gruppe auflösen'
@@ -663,6 +876,7 @@ interface TripCardProps {
   columnId: string;
   groupLabel?: string;
   hideGroupBadge?: boolean;
+  disableDrag?: boolean;
   onTimeChange: (tripId: string, scheduledAt: string | null) => void;
   onUngroup: (groupId: string) => void;
 }
@@ -686,19 +900,58 @@ function KanbanColumnView({
     id: column.id
   });
 
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setDraggableRef,
+    transform,
+    isDragging
+  } = useDraggable({
+    id: `column-${column.id}`,
+    data: { columnId: column.id }
+  });
+
+  const setRefs = useCallback(
+    (node: HTMLDivElement | null) => {
+      setNodeRef(node);
+      setDraggableRef(node);
+    },
+    [setNodeRef, setDraggableRef]
+  );
+
+  const dragStyle =
+    transform && isDragging
+      ? {
+          transform: CSS.Translate.toString(transform),
+          opacity: 0.9,
+          zIndex: 50
+        }
+      : undefined;
+
   return (
     <div
-      ref={setNodeRef}
-      className='bg-muted/40 flex w-72 flex-shrink-0 flex-col rounded-lg border'
+      ref={setRefs}
+      className={cn(
+        'flex w-72 flex-shrink-0 flex-col rounded-lg border',
+        isDragging ? 'bg-muted/60 ring-primary/30 z-50 ring-2' : 'bg-muted/40'
+      )}
+      style={dragStyle}
     >
-      <div className='flex items-baseline justify-between gap-2 border-b px-3 py-2'>
-        <div className='flex flex-col'>
-          <span className='text-sm font-medium'>{column.title}</span>
-          {column.subtitle && (
-            <span className='text-muted-foreground text-[11px]'>
-              {column.subtitle}
-            </span>
-          )}
+      <div
+        className='bg-muted sticky top-0 z-10 flex cursor-grab items-baseline justify-between gap-2 rounded-t-lg border-b px-3 py-2 shadow-[0_1px_3px_rgba(0,0,0,0.06)] active:cursor-grabbing'
+        {...listeners}
+        {...attributes}
+      >
+        <div className='flex min-w-0 flex-1 items-center gap-1.5'>
+          <GripVertical className='text-muted-foreground h-4 w-4 shrink-0' />
+          <div className='flex min-w-0 flex-col'>
+            <span className='text-sm font-medium'>{column.title}</span>
+            {column.subtitle && (
+              <span className='text-muted-foreground text-[11px]'>
+                {column.subtitle}
+              </span>
+            )}
+          </div>
         </div>
         <Badge variant='outline' className='px-2 py-0 text-[11px]'>
           {items.length}
@@ -756,23 +1009,27 @@ function TripCard({
   columnId,
   groupLabel,
   hideGroupBadge = false,
+  disableDrag = false,
   onTimeChange,
   onUngroup
 }: TripCardProps) {
   const scheduledAt = trip.scheduled_at;
 
   const [timeValue, setTimeValue] = useState(() =>
-    scheduledAt ? format(new Date(scheduledAt), 'HH:mm') : '08:00'
+    scheduledAt ? format(new Date(scheduledAt), 'HH:mm') : ''
   );
 
   useEffect(() => {
-    if (scheduledAt) {
-      setTimeValue(format(new Date(scheduledAt), 'HH:mm'));
-    }
+    setTimeValue(scheduledAt ? format(new Date(scheduledAt), 'HH:mm') : '');
   }, [scheduledAt]);
 
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({
     id: `trip-${trip.id}`
+  });
+
+  const draggable = useDraggable({
+    id: trip.id,
+    data: { tripId: trip.id, columnId }
   });
 
   const {
@@ -781,15 +1038,14 @@ function TripCard({
     setNodeRef: setDraggableRef,
     transform,
     isDragging
-  } = useDraggable({
-    id: trip.id,
-    data: { tripId: trip.id, columnId }
-  });
+  } = draggable;
 
-  const dragStyle = {
-    transform: CSS.Translate.toString(transform),
-    opacity: isDragging ? 0.6 : 1
-  };
+  const dragStyle = disableDrag
+    ? {}
+    : {
+        transform: CSS.Translate.toString(transform),
+        opacity: isDragging ? 0.6 : 1
+      };
 
   const payerName = trip.payer?.name;
   const billing = trip.billing_type;
@@ -830,11 +1086,13 @@ function TripCard({
       className={cn('relative', isOver && 'ring-primary/50 rounded-md ring-2')}
     >
       <Card
-        ref={setDraggableRef}
+        ref={disableDrag ? undefined : setDraggableRef}
         style={style}
-        className='bg-background flex cursor-grab flex-col gap-1 rounded-md border p-2 text-xs shadow-sm active:cursor-grabbing'
-        {...listeners}
-        {...attributes}
+        className={cn(
+          'bg-background flex flex-col gap-1 rounded-md border p-2 text-xs shadow-sm',
+          !disableDrag && 'cursor-grab active:cursor-grabbing'
+        )}
+        {...(!disableDrag ? { ...listeners, ...attributes } : {})}
       >
         <div className='flex items-center justify-between gap-2'>
           <div
@@ -880,6 +1138,7 @@ function TripCard({
                   e.stopPropagation();
                   onUngroup(trip.group_id!);
                 }}
+                onPointerDown={(e) => e.stopPropagation()}
                 className='hover:bg-muted ml-0.5 rounded p-0.5'
                 title='Gruppe auflösen'
                 aria-label='Gruppe auflösen'

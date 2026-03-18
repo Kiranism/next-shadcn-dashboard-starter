@@ -435,6 +435,10 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
     status: 'pending',
     driver_id: null,
     needs_driver_assignment: false,
+    // Do NOT inherit CSV grouping — return trip is a link, not a group member
+    group_id: null,
+    stop_order: null,
+    stop_updates: [],
     // Swap addresses
     pickup_address: outbound.dropoff_address ?? null,
     pickup_street: outbound.dropoff_street ?? null,

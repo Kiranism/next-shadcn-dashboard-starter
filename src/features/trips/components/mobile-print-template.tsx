@@ -12,6 +12,7 @@ interface TripData {
   scheduled_at: string;
   client_name: string | null;
   client_phone: string | null;
+  greeting_style?: string | null;
   pickup_address: string | null;
   pickup_station: string | null;
   dropoff_address: string | null;
@@ -198,7 +199,11 @@ export function MobilePrintTemplate({
           const formatCity = (addr: string | null) => {
             if (!addr) return '';
             const parts = addr.split(',');
-            return parts.length > 1 ? ` (${parts[1].trim()})` : '';
+            if (parts.length < 2) return '';
+            const cityPart = parts[1].trim();
+            // Do not show city or zip when city is Oldenburg
+            if (/\bOldenburg\b/i.test(cityPart)) return '';
+            return ` (${cityPart})`;
           };
 
           if (!isGrouped && primaryTrip) {
@@ -222,7 +227,7 @@ export function MobilePrintTemplate({
                   style={{ backgroundColor: singleBillingColor || '#0f172a' }}
                 />
 
-                {/* Card Header: Time and Name */}
+                {/* Card Header: Time, Greeting + Name, Phone/Billing */}
                 <div className='mb-2 flex items-center justify-between gap-3 border-b border-slate-100/50 pb-2'>
                   <div className='flex min-w-0 flex-1 items-center gap-2'>
                     <div
@@ -236,7 +241,10 @@ export function MobilePrintTemplate({
                     <div className='min-w-0 flex-1'>
                       <div className='flex items-center gap-1.5'>
                         <p className='truncate text-base font-extrabold text-slate-900'>
-                          {trip.client_name || 'Anonym'}
+                          {[trip.greeting_style, trip.client_name || 'Anonym']
+                            .filter(Boolean)
+                            .join(' ')
+                            .trim() || 'Anonym'}
                         </p>
                         {trip.is_wheelchair && (
                           <Accessibility
@@ -264,7 +272,7 @@ export function MobilePrintTemplate({
                   </div>
                 </div>
 
-                {/* Route Section - Combined */}
+                {/* Street addresses below name */}
                 <div className='space-y-1.5 px-0.5'>
                   {/* Start */}
                   <div className='flex items-baseline gap-2'>
@@ -326,7 +334,7 @@ export function MobilePrintTemplate({
 
           const passengerMap = new Map<
             string,
-            { name: string; wheelchair: boolean }
+            { name: string; greeting_style: string | null; wheelchair: boolean }
           >();
           for (const t of group.trips) {
             const name = t.client_name?.trim();
@@ -335,11 +343,19 @@ export function MobilePrintTemplate({
             if (existing) {
               if (t.is_wheelchair) existing.wheelchair = true;
             } else {
-              passengerMap.set(name, { name, wheelchair: t.is_wheelchair });
+              passengerMap.set(name, {
+                name,
+                greeting_style: t.greeting_style ?? null,
+                wheelchair: t.is_wheelchair
+              });
             }
           }
           const passengerEntries = Array.from(passengerMap.values());
-          const passengerNames = passengerEntries.map((p) => p.name);
+          const passengerNames = passengerEntries.map(
+            (p) =>
+              [p.greeting_style, p.name].filter(Boolean).join(' ').trim() ||
+              p.name
+          );
 
           const dropoffStops = new Map<
             string,
@@ -450,7 +466,12 @@ export function MobilePrintTemplate({
                                 className='inline-flex items-center'
                               >
                                 {index > 0 && ', '}
-                                <span>{p.name}</span>
+                                <span>
+                                  {[p.greeting_style, p.name]
+                                    .filter(Boolean)
+                                    .join(' ')
+                                    .trim() || p.name}
+                                </span>
                                 {p.wheelchair && (
                                   <Accessibility
                                     className='ml-1 h-4 w-4 shrink-0 text-red-600'
@@ -542,17 +563,20 @@ export function MobilePrintTemplate({
                   </div>
                 ))}
 
-                {/* Notes - Only if applicable */}
+                {/* Notes - All unique notes from trips in this group */}
                 {group.trips.some((t) => t.notes && t.notes.trim() !== '') && (
                   <div className='mt-2 flex items-start gap-2 rounded-lg border border-amber-100/50 bg-amber-50/50 p-2'>
                     <span className='mt-0.5 text-[9px] font-black tracking-tighter text-amber-600 uppercase'>
                       Hinweis
                     </span>
                     <p className='flex-1 text-[11px] leading-tight font-bold text-amber-900'>
-                      {group.trips
-                        .map((t) => t.notes?.trim())
-                        .filter((n): n is string => !!n)
-                        .slice(0, 1)[0] || ''}
+                      {Array.from(
+                        new Set(
+                          group.trips
+                            .map((t) => t.notes?.trim())
+                            .filter((n): n is string => !!n)
+                        )
+                      ).join(' • ')}
                     </p>
                   </div>
                 )}

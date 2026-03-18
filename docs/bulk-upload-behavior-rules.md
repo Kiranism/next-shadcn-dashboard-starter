@@ -83,6 +83,8 @@ When 10 Konsil rows are uploaded:
 4. The dispatcher sees all 10 return trips in the **Offene Touren** widget, each showing the outbound trip time as a context hint ("Hinfahrt: Di, 25.03 um 09:30").
 5. As the dispatcher learns the return times from calls, they fill them in one by one.
 
+**Grouping vs linking:** Auto-return trips receive `group_id = null` and `stop_order = null`. They are **link-children** (referenced via `linked_trip_id` + `link_type`), not **group members**. If the outbound row had a CSV `group_id` (e.g. multiple passengers on one tour), the return trip does not inherit it — grouping applies only to CSV-originated trips.
+
 **Why at import time rather than form time?**
 
 Dispatch systems at scale (Uber's trip engine, Amazon same-day logistics) enforce pairing rules at ingest, not at rendering. Creating the return trip at import time:

@@ -37,7 +37,7 @@ export function PrintTripsButton() {
       const start = startOfDay(date).toISOString();
       const end = endOfDay(date).toISOString();
 
-      // 2. Fetch all trips for that day
+      // 2. Fetch all trips for that day (includes notes for print template)
       toast.info(`Lade Fahrten für den ${format(date, 'dd.MM.yyyy')}...`);
       const { data: trips, error } = await supabase
         .from('trips')
