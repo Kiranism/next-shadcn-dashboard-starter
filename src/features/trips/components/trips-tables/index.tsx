@@ -86,12 +86,12 @@ export function TripsTable<TData, TValue>({
 
         if (row.group_id && groupCounts[row.group_id] > 1) {
           classes.push(
-            'border-l-4 border-l-emerald-500 bg-emerald-50/30 dark:bg-emerald-500/10'
+            'border-l-4 border-l-green-500 bg-green-50/30 dark:bg-green-950/10'
           );
         }
 
         if (scheduledAt && isToday(scheduledAt)) {
-          classes.push('bg-slate-50/80 dark:bg-slate-900/40');
+          classes.push('bg-muted/40');
         }
 
         if (scheduledAt && isNowWindow(scheduledAt)) {

@@ -7,6 +7,11 @@ import { Users, Share2, AlertTriangle } from 'lucide-react';
 import { copyTripToClipboard } from '@/features/trips/lib/share-utils';
 import { getCancelledPartnerLabel } from '@/features/trips/lib/trip-direction';
 import { toast } from 'sonner';
+import {
+  tripStatusBadge,
+  tripStatusLabels,
+  type TripStatus
+} from '@/lib/trip-status';
 
 interface TripRowProps {
   trip: any;
@@ -29,55 +34,19 @@ export function TripRow({
   const rowColor = billingType?.color || 'transparent';
 
   const isGrouped = !!trip.group_id;
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'pending':
-      case 'open':
-        return 'Offen';
-      case 'assigned':
-        return 'Zugewiesen';
-      case 'in_progress':
-      case 'driving':
-        return 'Unterwegs';
-      case 'completed':
-        return 'Erledigt';
-      case 'cancelled':
-        return 'Storniert';
-      default:
-        return status;
-    }
-  };
-
-  const getBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'default';
-      case 'assigned':
-        return 'secondary';
-      case 'in_progress':
-      case 'driving':
-        return 'outline';
-      case 'cancelled':
-        return 'destructive';
-      default:
-        return 'outline';
-    }
-  };
+  const tripStatus = (trip.status as TripStatus) ?? 'pending';
 
   return (
     <div
       onClick={onClick}
       className={cn(
         'group mb-0 flex cursor-pointer items-start rounded-lg p-1.5 transition-all select-none',
-        rowColor === 'transparent'
-          ? 'hover:bg-slate-100/50'
-          : 'hover:brightness-95'
+        rowColor === 'transparent' ? 'hover:bg-muted/50' : 'hover:brightness-95'
       )}
       style={{
         backgroundColor:
           rowColor !== 'transparent'
-            ? `color-mix(in srgb, ${rowColor}, white 85%)`
+            ? `color-mix(in srgb, ${rowColor}, var(--background) 85%)`
             : undefined,
         borderLeft:
           rowColor !== 'transparent' ? `4px solid ${rowColor}` : undefined
@@ -103,7 +72,7 @@ export function TripRow({
           </span>
         )}
         {trip.is_wheelchair && (
-          <span className='truncate text-[10px] font-bold text-rose-600 uppercase'>
+          <span className='truncate text-[10px] font-bold text-rose-600 uppercase dark:text-rose-400'>
             Rollstuhl
           </span>
         )}
@@ -119,7 +88,7 @@ export function TripRow({
             {trip.client_name || 'Unbekannter Kunde'}
           </p>
           {isGrouped && (
-            <div className='flex items-center gap-0.5 rounded-full border border-sky-200 bg-sky-100 px-1.5 py-0.5 text-[10px] font-bold text-sky-700'>
+            <div className='flex items-center gap-0.5 rounded-full border border-sky-200 bg-sky-100 px-1.5 py-0.5 text-[10px] font-bold text-sky-700 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-400'>
               <Users className='h-2.5 w-2.5' /> Gruppe
             </div>
           )}
@@ -131,13 +100,13 @@ export function TripRow({
       <div className='ml-4 flex flex-col items-end gap-1.5'>
         <div className='flex items-center gap-1.5'>
           <Badge
-            variant={getBadgeVariant(trip.status) as any}
             className={cn(
+              tripStatusBadge({ status: tripStatus }),
               'px-2 py-0 whitespace-nowrap',
               compact ? 'h-4 text-[9px]' : 'h-5 text-[10px]'
             )}
           >
-            {getStatusLabel(trip.status)}
+            {tripStatusLabels[tripStatus] ?? trip.status}
           </Badge>
           <button
             onClick={async (e) => {
@@ -149,14 +118,19 @@ export function TripRow({
                 toast.error('Fehler');
               }
             }}
-            className='hover:bg-primary/10 flex h-6 w-6 items-center justify-center rounded-md border border-slate-200 bg-white/50 text-slate-500 transition-colors hover:text-blue-600'
+            className='hover:bg-primary/10 border-border bg-background/50 text-muted-foreground hover:text-primary flex h-6 w-6 items-center justify-center rounded-md border transition-colors'
             title='QuickShare (WhatsApp)'
           >
             <Share2 className='h-3.5 w-3.5' />
           </button>
         </div>
         {trip.linked_partner_status === 'cancelled' && (
-          <div className='flex items-center gap-0.5 rounded border border-red-200 bg-red-50 px-1.5 py-0.5 text-[9px] font-bold whitespace-nowrap text-red-600'>
+          <div
+            className={cn(
+              tripStatusBadge({ status: 'cancelled' }),
+              'flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-bold whitespace-nowrap'
+            )}
+          >
             <AlertTriangle className='h-2.5 w-2.5' />
             {getCancelledPartnerLabel(trip)}
           </div>

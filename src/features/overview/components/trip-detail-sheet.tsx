@@ -49,6 +49,11 @@ import {
 import { RecurringTripCancelDialog } from '@/features/trips/components/recurring-trip-cancel-dialog';
 import { copyTripToClipboard } from '@/features/trips/lib/share-utils';
 import { getCancelledPartnerLabel } from '@/features/trips/lib/trip-direction';
+import {
+  tripStatusBadge,
+  tripStatusLabels,
+  type TripStatus
+} from '@/lib/trip-status';
 
 interface TripDetailSheetProps {
   tripId: string | null;
@@ -153,34 +158,11 @@ export function TripDetailSheet({
   };
 
   const getStatusInfo = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return {
-          label: 'ERLEDIGT',
-          class: 'bg-green-500/10 text-green-600 border-green-200'
-        };
-      case 'assigned':
-        return {
-          label: 'ZUGEWIESEN',
-          class: 'bg-blue-500/10 text-blue-600 border-blue-200'
-        };
-      case 'in_progress':
-      case 'driving':
-        return {
-          label: 'UNTERWEGS',
-          class: 'bg-amber-500/10 text-amber-600 border-amber-200'
-        };
-      case 'cancelled':
-        return {
-          label: 'STORNIERT',
-          class: 'bg-red-500/10 text-red-600 border-red-200'
-        };
-      default:
-        return {
-          label: status.toUpperCase(),
-          class: 'bg-slate-100 text-slate-600 border-slate-200'
-        };
-    }
+    const s = status as TripStatus;
+    return {
+      label: (tripStatusLabels[s] ?? status).toUpperCase(),
+      class: tripStatusBadge({ status: s })
+    };
   };
 
   return (
@@ -208,7 +190,7 @@ export function TripDetailSheet({
               className='relative overflow-hidden border-b p-6 pb-4'
               style={{
                 backgroundColor: trip.billing_types?.color
-                  ? `color-mix(in srgb, ${trip.billing_types.color}, white 90%)`
+                  ? `color-mix(in srgb, ${trip.billing_types.color}, var(--background) 90%)`
                   : 'transparent',
                 borderBottomColor: trip.billing_types?.color || '#e2e8f0'
               }}
@@ -266,7 +248,7 @@ export function TripDetailSheet({
 
                   <div className='relative ml-3 space-y-0'>
                     {/* Vertical Line Connector */}
-                    <div className='absolute top-4 bottom-4 left-[11px] w-[2px] bg-slate-100' />
+                    <div className='bg-border absolute top-4 bottom-4 left-[11px] w-[2px]' />
 
                     {(() => {
                       const tripsToMap =
@@ -385,7 +367,7 @@ export function TripDetailSheet({
                       onValueChange={handleDriverChange}
                       disabled={isUpdatingDriver}
                     >
-                      <SelectTrigger className='h-8 border-slate-200 text-xs font-semibold'>
+                      <SelectTrigger className='border-border h-8 text-xs font-semibold'>
                         <SelectValue placeholder='Fahrer auswählen' />
                       </SelectTrigger>
                       <SelectContent>
@@ -434,11 +416,13 @@ export function TripDetailSheet({
                 </section>
 
                 {trip.notes && (
-                  <section className='rounded-lg border border-amber-100 bg-amber-50 p-3'>
-                    <h4 className='mb-1 flex items-center gap-1 text-xs font-bold text-amber-800'>
+                  <section className='rounded-lg border border-amber-100 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/40'>
+                    <h4 className='mb-1 flex items-center gap-1 text-xs font-bold text-amber-800 dark:text-amber-400'>
                       <AlertCircle className='h-3 w-3' /> Wichtige Hinweise
                     </h4>
-                    <p className='text-sm text-amber-900'>{trip.notes}</p>
+                    <p className='text-sm text-amber-900 dark:text-amber-300'>
+                      {trip.notes}
+                    </p>
                   </section>
                 )}
               </div>
@@ -465,7 +449,7 @@ export function TripDetailSheet({
                   type='button'
                   variant='outline'
                   size='sm'
-                  className='text-blue-600 hover:bg-blue-50 hover:text-blue-700'
+                  className='text-primary hover:bg-primary/10 hover:text-primary'
                   onClick={async () => {
                     const success = await copyTripToClipboard(trip as Trip);
                     if (success) {
@@ -590,10 +574,10 @@ function TimelineItem({
       <div className='absolute top-[10px] left-0 z-10'>
         <div
           className={cn(
-            'flex h-6 w-6 items-center justify-center rounded-full border-2 text-[10px] font-bold whitespace-nowrap shadow-sm ring-[4px] ring-white',
+            'ring-background flex h-6 w-6 items-center justify-center rounded-full border-2 text-[10px] font-bold whitespace-nowrap shadow-sm ring-[4px]',
             stopLabel?.startsWith('A')
-              ? 'border-green-600 bg-green-500 text-white'
-              : 'border-red-600 bg-red-500 text-white'
+              ? 'border-green-600 bg-green-500 text-white dark:border-green-500 dark:bg-green-600'
+              : 'border-red-600 bg-red-500 text-white dark:border-red-500 dark:bg-red-600'
           )}
         >
           {stopLabel}
@@ -605,7 +589,7 @@ function TimelineItem({
             {title}
           </span>
           {time && (
-            <span className='rounded border border-green-100 bg-green-50 px-1.5 py-0.5 text-[10px] font-medium text-green-600 italic'>
+            <span className='rounded border border-green-100 bg-green-50 px-1.5 py-0.5 text-[10px] font-medium text-green-600 italic dark:border-green-800 dark:bg-green-950/40 dark:text-green-400'>
               Erledigt: {format(new Date(time), 'HH:mm')}
             </span>
           )}
@@ -615,19 +599,19 @@ function TimelineItem({
         >
           {address}
           {station && (
-            <span className='text-xs font-normal text-slate-500'>
+            <span className='text-muted-foreground text-xs font-normal'>
               ({station})
             </span>
           )}
         </div>
         {name && (
-          <span className='text-xs font-medium text-slate-600'>
+          <span className='text-muted-foreground text-xs font-medium'>
             Fahrgast: {name}
           </span>
         )}
 
         {isCancelled && (
-          <div className='mt-1 flex w-fit items-center gap-1 rounded border border-red-100 bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-600'>
+          <div className='mt-1 flex w-fit items-center gap-1 rounded border border-red-100 bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-600 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400'>
             <AlertCircle className='h-3 w-3' /> PERSON NICHT ERSCHIENEN
           </div>
         )}

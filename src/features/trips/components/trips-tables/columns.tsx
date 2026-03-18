@@ -1,7 +1,7 @@
 'use client';
 
 import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-header';
-import { Column, ColumnDef } from '@tanstack/react-table';
+import { ColumnDef } from '@tanstack/react-table';
 import { CellAction } from './cell-action';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,12 @@ import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { Accessibility, RepeatIcon } from 'lucide-react';
 import { DriverSelectCell } from './driver-select-cell';
+import { cn } from '@/lib/utils';
+import {
+  tripStatusBadge,
+  tripStatusLabels,
+  type TripStatus
+} from '@/lib/trip-status';
 
 function parseAddress(raw: string | null | undefined): {
   street: string | null;
@@ -26,19 +32,13 @@ function parseAddress(raw: string | null | undefined): {
   return { street: raw, cityLine: null };
 }
 
-const statusMap: Record<
-  string,
-  {
-    label: string;
-    variant: 'outline' | 'default' | 'secondary' | 'destructive';
-  }
-> = {
-  pending: { label: 'Offen', variant: 'outline' },
-  assigned: { label: 'Zugewiesen', variant: 'default' },
-  in_progress: { label: 'In Fahrt', variant: 'secondary' },
-  completed: { label: 'Abgeschlossen', variant: 'default' },
-  cancelled: { label: 'Storniert', variant: 'destructive' }
-};
+const statusFilterOptions: { label: string; value: string }[] = [
+  { label: 'Offen', value: 'pending' },
+  { label: 'Zugewiesen', value: 'assigned' },
+  { label: 'In Fahrt', value: 'in_progress' },
+  { label: 'Abgeschlossen', value: 'completed' },
+  { label: 'Storniert', value: 'cancelled' }
+];
 
 export const columns: ColumnDef<any>[] = [
   {
@@ -117,10 +117,12 @@ export const columns: ColumnDef<any>[] = [
       return (
         <div className='flex items-center gap-2'>
           <span className='font-medium'>{format(date, 'HH:mm')}</span>
-          {isRecurring && <RepeatIcon className='h-3 w-3 text-blue-500' />}
+          {isRecurring && (
+            <RepeatIcon className='h-3 w-3 text-blue-500 dark:text-blue-400' />
+          )}
           {isNowWindow && (
             <span
-              className='h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.2)]'
+              className='bg-primary h-2 w-2 rounded-full shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary),transparent_80%)]'
               aria-label='Aktuelle Fahrt'
             />
           )}
@@ -146,7 +148,7 @@ export const columns: ColumnDef<any>[] = [
           {row.original.is_wheelchair && (
             <Badge
               variant='outline'
-              className='w-fit origin-left scale-75 bg-black text-white hover:bg-black/90'
+              className='bg-foreground text-background hover:bg-foreground/90 w-fit origin-left scale-75'
             >
               <Accessibility className='mr-1 h-3 w-3' />
               Rollstuhl
@@ -240,17 +242,17 @@ export const columns: ColumnDef<any>[] = [
       <DataTableColumnHeader column={column} title='Status' />
     ),
     cell: ({ cell }) => {
-      const status = cell.getValue<string>();
-      const config = statusMap[status] || { label: status, variant: 'outline' };
-      return <Badge variant={config.variant}>{config.label}</Badge>;
+      const status = cell.getValue<string>() as TripStatus;
+      return (
+        <Badge className={tripStatusBadge({ status })}>
+          {tripStatusLabels[status] ?? status}
+        </Badge>
+      );
     },
     meta: {
       label: 'Status',
       variant: 'select',
-      options: Object.entries(statusMap).map(([value, { label }]) => ({
-        label,
-        value
-      }))
+      options: statusFilterOptions
     },
     enableColumnFilter: false
   },
@@ -278,7 +280,7 @@ export const columns: ColumnDef<any>[] = [
           style={{
             borderColor: bt.color,
             color: bt.color,
-            backgroundColor: `color-mix(in srgb, ${bt.color}, transparent 90%)`
+            backgroundColor: `color-mix(in srgb, ${bt.color}, var(--background) 90%)`
           }}
         >
           {bt.name}

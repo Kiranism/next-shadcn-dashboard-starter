@@ -151,17 +151,18 @@ export function UpcomingTrips() {
           onValueChange={(v) => setStatusFilter(v as StatusFilter)}
           className='w-full'
         >
-          <TabsList className='grid h-12 w-full grid-cols-3 bg-slate-100/80 p-1.5'>
+          <TabsList className='bg-muted/60 grid h-12 w-full grid-cols-3 p-1.5'>
             <TabsTrigger
               value='all'
-              className='flex items-center gap-2 rounded-md text-xs font-semibold transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm'
+              className='data-[state=active]:bg-background flex items-center gap-2 rounded-md text-xs font-semibold transition-all data-[state=active]:shadow-sm'
             >
               Alle
               <Badge
                 variant={statusFilter === 'all' ? 'default' : 'secondary'}
                 className={cn(
                   'pointer-events-none flex h-5 min-w-[20px] justify-center px-1.5 text-[10px]',
-                  statusFilter === 'all' && 'bg-blue-600 hover:bg-blue-600'
+                  statusFilter === 'all' &&
+                    'bg-blue-600 hover:bg-blue-600 dark:bg-blue-500 dark:hover:bg-blue-500'
                 )}
               >
                 {getStatusCount('all')}
@@ -169,14 +170,15 @@ export function UpcomingTrips() {
             </TabsTrigger>
             <TabsTrigger
               value='open'
-              className='flex items-center gap-2 rounded-md text-xs font-semibold transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm'
+              className='data-[state=active]:bg-background flex items-center gap-2 rounded-md text-xs font-semibold transition-all data-[state=active]:shadow-sm'
             >
               Offen
               <Badge
                 variant={statusFilter === 'open' ? 'default' : 'secondary'}
                 className={cn(
                   'pointer-events-none flex h-5 min-w-[20px] justify-center px-1.5 text-[10px]',
-                  statusFilter === 'open' && 'bg-amber-600 hover:bg-amber-600'
+                  statusFilter === 'open' &&
+                    'bg-amber-600 hover:bg-amber-600 dark:bg-amber-500 dark:hover:bg-amber-500'
                 )}
               >
                 {getStatusCount('open')}
@@ -184,7 +186,7 @@ export function UpcomingTrips() {
             </TabsTrigger>
             <TabsTrigger
               value='completed'
-              className='flex items-center gap-2 rounded-md text-xs font-semibold transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm'
+              className='data-[state=active]:bg-background flex items-center gap-2 rounded-md text-xs font-semibold transition-all data-[state=active]:shadow-sm'
             >
               Erledigt
               <Badge
@@ -192,7 +194,7 @@ export function UpcomingTrips() {
                 className={cn(
                   'pointer-events-none flex h-5 min-w-[20px] justify-center px-1.5 text-[10px]',
                   statusFilter === 'completed' &&
-                    'bg-green-600 hover:bg-green-600'
+                    'bg-green-600 hover:bg-green-600 dark:bg-green-500 dark:hover:bg-green-500'
                 )}
               >
                 {getStatusCount('completed')}

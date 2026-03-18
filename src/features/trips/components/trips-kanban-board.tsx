@@ -30,6 +30,12 @@ import type { Trip } from '../api/trips.service';
 import { tripsService } from '../api/trips.service';
 import { useTripFormData } from '@/features/trips/hooks/use-trip-form-data';
 import { getStatusWhenDriverChanges } from '@/features/trips/lib/trip-status';
+import {
+  tripStatusBadge,
+  tripStatusLabels,
+  type TripStatus
+} from '@/lib/trip-status';
+import { cn } from '@/lib/utils';
 
 interface TripsKanbanBoardProps {
   trips: (Trip & {
@@ -41,14 +47,6 @@ interface TripsKanbanBoardProps {
 }
 
 type GroupByMode = 'driver' | 'status' | 'payer';
-
-const STATUS_LABEL_DE: Record<string, string> = {
-  pending: 'Offen',
-  assigned: 'Zugewiesen',
-  in_progress: 'In Fahrt',
-  completed: 'Abgeschlossen',
-  cancelled: 'Storniert'
-};
 
 type KanbanColumn = {
   id: string;
@@ -440,7 +438,12 @@ function KanbanColumnView({
       <div
         className='flex flex-1 flex-col gap-2 p-2'
         style={
-          isOver ? { backgroundColor: 'rgba(59,130,246,0.08)' } : undefined
+          isOver
+            ? {
+                backgroundColor:
+                  'color-mix(in srgb, var(--primary), transparent 92%)'
+              }
+            : undefined
         }
       >
         {items.length === 0 ? (
@@ -486,7 +489,7 @@ function TripCard({ trip, columnId }: TripCardProps) {
     cardColor !== 'transparent'
       ? {
           ...dragStyle,
-          backgroundColor: `color-mix(in srgb, ${cardColor}, white 88%)`,
+          backgroundColor: `color-mix(in srgb, ${cardColor}, var(--background) 88%)`,
           borderLeft: `3px solid ${cardColor}`
         }
       : dragStyle;
@@ -502,8 +505,13 @@ function TripCard({ trip, columnId }: TripCardProps) {
       <div className='flex items-center justify-between gap-2'>
         <span className='font-semibold'>{timeLabel}</span>
         {trip.status && (
-          <Badge variant='outline' className='text-[10px] uppercase'>
-            {STATUS_LABEL_DE[trip.status] ?? trip.status}
+          <Badge
+            className={cn(
+              tripStatusBadge({ status: trip.status as TripStatus }),
+              'text-[10px]'
+            )}
+          >
+            {tripStatusLabels[trip.status as TripStatus] ?? trip.status}
           </Badge>
         )}
       </div>
@@ -531,7 +539,7 @@ function TripCard({ trip, columnId }: TripCardProps) {
                 ? {
                     borderColor: billing.color,
                     color: billing.color,
-                    backgroundColor: `color-mix(in srgb, ${billing.color}, transparent 90%)`
+                    backgroundColor: `color-mix(in srgb, ${billing.color}, var(--background) 90%)`
                   }
                 : undefined
             }
