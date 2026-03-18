@@ -22,7 +22,7 @@ export const tripsService = {
     const { data, error } = await supabase
       .from('trips')
       .select(
-        '*, billing_types(*), clients(*), payers(*), driver:users!trips_driver_id_fkey(name)'
+        '*, billing_types(*), clients(*), payers(*), driver:accounts!trips_driver_id_fkey(name)'
       )
       .eq('id', id)
       .single();
@@ -76,7 +76,7 @@ export const tripsService = {
     const { data, error } = await supabase
       .from('trips')
       .select(
-        '*, driver:users!trips_driver_id_fkey(name), billing_types(name, color)'
+        '*, driver:accounts!trips_driver_id_fkey(name), billing_types(name, color)'
       )
       .gte('scheduled_at', startDate)
       .lte('scheduled_at', endDate)

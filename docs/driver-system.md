@@ -2,6 +2,8 @@
 
 This document describes the driver (Fahrer) subsystem: admin management, mobile shift tracking, and related architecture.
 
+> **Note:** App user profiles are stored in `public.accounts` (renamed from `users`). See [accounts-table.md](accounts-table.md) for details.
+
 ---
 
 ## Overview
@@ -16,8 +18,8 @@ This document describes the driver (Fahrer) subsystem: admin management, mobile 
 
 | Table | Purpose |
 |-------|---------|
-| `users` | User profiles with `role` (`driver` \| `admin`), `company_id`, `is_active` |
-| `driver_profiles` | Driver-specific data: `license_number`, `default_vehicle_id` (1:1 with users) |
+| `accounts` | User profiles with `role` (`driver` \| `admin`), `company_id`, `is_active`. Renamed from `users` to avoid confusion with `auth.users`. |
+| `driver_profiles` | Driver-specific data: `license_number`, `default_vehicle_id` (1:1 with accounts) |
 | `shifts` | Shift records: `driver_id`, `vehicle_id`, `started_at`, `ended_at`, `status` |
 | `shift_events` | Event log: `shift_id`, `event_type`, `lat`, `lng`, `metadata`, `timestamp` |
 | `vehicles` | Company vehicles for shift assignment |
@@ -44,7 +46,7 @@ Defined in `src/features/drivers/types.ts`.
 
 ### API
 
-- `POST /api/drivers/create` — Creates auth user + `users` row + `driver_profiles` (for role=driver). Uses `SUPABASE_SERVICE_ROLE_KEY`. Requires authenticated admin with `company_id`.
+- `POST /api/drivers/create` — Creates auth user + `accounts` row + `driver_profiles` (for role=driver). Uses `SUPABASE_SERVICE_ROLE_KEY`. Requires authenticated admin with `company_id`.
 
 ---
 

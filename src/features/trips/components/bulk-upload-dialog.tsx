@@ -490,7 +490,7 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
         let companyId: string | null = null;
         if (user?.id) {
           const { data: profile } = await supabase
-            .from('users')
+            .from('accounts')
             .select('company_id')
             .eq('id', user.id)
             .single();
@@ -530,7 +530,7 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
         let companyDrivers: CompanyDriver[] = [];
 
         const driversBaseQuery = supabase
-          .from('users')
+          .from('accounts')
           .select('id, name, is_active, role, company_id')
           .eq('role', 'driver')
           .eq('is_active', true);

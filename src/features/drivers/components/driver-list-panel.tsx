@@ -90,6 +90,14 @@ export function DriverListPanel({
   );
 }
 
+function getDisplayName(d: DriverWithProfile): string {
+  const u = d as { first_name?: string | null; last_name?: string | null };
+  if (u?.first_name || u?.last_name) {
+    return [u.first_name, u.last_name].filter(Boolean).join(' ').trim();
+  }
+  return d.name;
+}
+
 function DriverListItem({
   driver,
   isSelected
@@ -97,8 +105,9 @@ function DriverListItem({
   driver: DriverWithProfile;
   isSelected: boolean;
 }) {
+  const name = getDisplayName(driver);
   const initials =
-    driver.name
+    name
       .split(' ')
       .map((n) => n.charAt(0))
       .join('')
@@ -124,10 +133,11 @@ function DriverListItem({
             isSelected && 'text-foreground'
           )}
         >
-          {driver.name}
+          {name}
         </p>
-        <p className='text-muted-foreground mt-0.5 truncate text-xs capitalize'>
-          {driver.role} {!driver.is_active && '• Inaktiv'}
+        <p className='text-muted-foreground mt-0.5 truncate text-xs'>
+          {(driver as { email?: string | null }).email ?? driver.role}{' '}
+          {!driver.is_active && '• Inaktiv'}
         </p>
       </div>
     </div>

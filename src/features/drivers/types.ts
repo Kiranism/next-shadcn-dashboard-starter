@@ -39,7 +39,7 @@ export const BREAK_REASONS = {
 export type BreakReason = (typeof BREAK_REASONS)[keyof typeof BREAK_REASONS];
 
 /** User row from DB (users table). */
-export type User = Database['public']['Tables']['users']['Row'];
+export type User = Database['public']['Tables']['accounts']['Row'];
 
 /** Driver profile row (driver_profiles table). */
 export type DriverProfile =

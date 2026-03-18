@@ -40,7 +40,7 @@ export default function SignInView() {
     let targetUrl = '/dashboard/overview';
     if (userId) {
       const { data: profile } = await supabase
-        .from('users')
+        .from('accounts')
         .select('role')
         .eq('id', userId)
         .single();

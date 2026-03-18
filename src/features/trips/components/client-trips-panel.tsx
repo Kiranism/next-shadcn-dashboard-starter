@@ -44,7 +44,7 @@ export function ClientTripsPanel({
       const since = startOfToday.toISOString();
 
       const selectFields =
-        'id, scheduled_at, pickup_address, dropoff_address, status, is_wheelchair, group_id, client_name, rule_id, client_id, billing_types(name, color), driver:users!trips_driver_id_fkey(name)';
+        'id, scheduled_at, pickup_address, dropoff_address, status, is_wheelchair, group_id, client_name, rule_id, client_id, billing_types(name, color), driver:accounts!trips_driver_id_fkey(name)';
 
       // Primary: match by client_id (FK to clients table)
       const { data: byId } = await supabase

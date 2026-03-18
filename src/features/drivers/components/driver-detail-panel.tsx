@@ -50,7 +50,18 @@ export function DriverDetailPanel({
       .finally(() => setLoading(false));
   }, [driverId, isNew]);
 
-  const displayName = isNew ? 'Neuer Fahrer' : (driver?.name ?? '...');
+  const getDisplayName = (d: DriverWithProfile) => {
+    const u = d as { first_name?: string | null; last_name?: string | null };
+    if (u?.first_name || u?.last_name) {
+      return [u.first_name, u.last_name].filter(Boolean).join(' ').trim();
+    }
+    return d.name;
+  };
+  const displayName = isNew
+    ? 'Neuer Fahrer'
+    : driver
+      ? getDisplayName(driver)
+      : '...';
 
   const handleSuccess = (saved?: DriverWithProfile) => {
     if (saved) {

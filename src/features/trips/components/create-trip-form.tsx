@@ -703,7 +703,7 @@ export function CreateTripForm({
       let companyId: string | null = null;
       if (user?.id) {
         const { data: profile } = await supabase
-          .from('users')
+          .from('accounts')
           .select('company_id')
           .eq('id', user.id)
           .single();

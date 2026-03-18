@@ -179,7 +179,7 @@ export type Database = {
             foreignKeyName: 'driver_documents_driver_id_fkey';
             columns: ['driver_id'];
             isOneToOne: false;
-            referencedRelation: 'users';
+            referencedRelation: 'accounts';
             referencedColumns: ['id'];
           }
         ];
@@ -192,6 +192,12 @@ export type Database = {
           license_number: string | null;
           notes: string | null;
           user_id: string | null;
+          street: string | null;
+          street_number: string | null;
+          zip_code: string | null;
+          city: string | null;
+          lat: number | null;
+          lng: number | null;
         };
         Insert: {
           created_at?: string | null;
@@ -200,6 +206,12 @@ export type Database = {
           license_number?: string | null;
           notes?: string | null;
           user_id?: string | null;
+          street?: string | null;
+          street_number?: string | null;
+          zip_code?: string | null;
+          city?: string | null;
+          lat?: number | null;
+          lng?: number | null;
         };
         Update: {
           created_at?: string | null;
@@ -208,6 +220,12 @@ export type Database = {
           license_number?: string | null;
           notes?: string | null;
           user_id?: string | null;
+          street?: string | null;
+          street_number?: string | null;
+          zip_code?: string | null;
+          city?: string | null;
+          lat?: number | null;
+          lng?: number | null;
         };
         Relationships: [
           {
@@ -221,7 +239,7 @@ export type Database = {
             foreignKeyName: 'driver_profiles_user_id_fkey';
             columns: ['user_id'];
             isOneToOne: false;
-            referencedRelation: 'users';
+            referencedRelation: 'accounts';
             referencedColumns: ['id'];
           }
         ];
@@ -266,7 +284,7 @@ export type Database = {
             foreignKeyName: 'live_locations_driver_id_fkey';
             columns: ['driver_id'];
             isOneToOne: true;
-            referencedRelation: 'users';
+            referencedRelation: 'accounts';
             referencedColumns: ['id'];
           },
           {
@@ -318,7 +336,7 @@ export type Database = {
             foreignKeyName: 'notifications_user_id_fkey';
             columns: ['user_id'];
             isOneToOne: false;
-            referencedRelation: 'users';
+            referencedRelation: 'accounts';
             referencedColumns: ['id'];
           }
         ];
@@ -534,7 +552,7 @@ export type Database = {
             foreignKeyName: 'rides_driver_id_fkey';
             columns: ['driver_id'];
             isOneToOne: false;
-            referencedRelation: 'users';
+            referencedRelation: 'accounts';
             referencedColumns: ['id'];
           },
           {
@@ -646,7 +664,7 @@ export type Database = {
             foreignKeyName: 'shifts_driver_id_fkey';
             columns: ['driver_id'];
             isOneToOne: false;
-            referencedRelation: 'users';
+            referencedRelation: 'accounts';
             referencedColumns: ['id'];
           },
           {
@@ -688,7 +706,7 @@ export type Database = {
             foreignKeyName: 'trip_assignments_driver_id_fkey';
             columns: ['driver_id'];
             isOneToOne: false;
-            referencedRelation: 'users';
+            referencedRelation: 'accounts';
             referencedColumns: ['id'];
           },
           {
@@ -884,14 +902,14 @@ export type Database = {
             foreignKeyName: 'trips_created_by_fkey';
             columns: ['created_by'];
             isOneToOne: false;
-            referencedRelation: 'users';
+            referencedRelation: 'accounts';
             referencedColumns: ['id'];
           },
           {
             foreignKeyName: 'trips_driver_id_fkey';
             columns: ['driver_id'];
             isOneToOne: false;
-            referencedRelation: 'users';
+            referencedRelation: 'accounts';
             referencedColumns: ['id'];
           },
           {
@@ -917,13 +935,16 @@ export type Database = {
           }
         ];
       };
-      users: {
+      accounts: {
         Row: {
           company_id: string | null;
           created_at: string | null;
           id: string;
           is_active: boolean | null;
           name: string;
+          first_name: string | null;
+          last_name: string | null;
+          email: string | null;
           phone: string | null;
           role: string;
         };
@@ -933,6 +954,9 @@ export type Database = {
           id: string;
           is_active?: boolean | null;
           name: string;
+          first_name?: string | null;
+          last_name?: string | null;
+          email?: string | null;
           phone?: string | null;
           role: string;
         };
@@ -942,12 +966,15 @@ export type Database = {
           id?: string;
           is_active?: boolean | null;
           name?: string;
+          first_name?: string | null;
+          last_name?: string | null;
+          email?: string | null;
           phone?: string | null;
           role?: string;
         };
         Relationships: [
           {
-            foreignKeyName: 'users_company_id_fkey';
+            foreignKeyName: 'accounts_company_id_fkey';
             columns: ['company_id'];
             isOneToOne: false;
             referencedRelation: 'companies';

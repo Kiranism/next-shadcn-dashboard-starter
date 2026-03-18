@@ -120,7 +120,7 @@ kostentraeger,abrechnungsart,date,time,firstname,lastname,phone,greeting_style,p
 
 - **driver_name** (optional, empfohlen)  
   Exakter Fahrername wie in der App angezeigt, zur späteren Fahrermatching-Logik.
-  - Gedacht zum Matchen auf `users.name` mit `role = 'driver'` und `is_active = true` (case-insensitiv).
+  - Gedacht zum Matchen auf `accounts.name` mit `role = 'driver'` und `is_active = true` (case-insensitiv).
   - Wenn ein Match gefunden wird, kann die Fahrt später automatisch dem richtigen Fahrer zugeordnet werden.
 
 - **pair_id** (optional)  

@@ -40,7 +40,7 @@ export function ResolveClientsStep({
       let companyIdStr = '00000000-0000-0000-0000-000000000000';
       if (user?.id) {
         const { data: profile } = await supabase
-          .from('users')
+          .from('accounts')
           .select('company_id')
           .eq('id', user.id)
           .single();

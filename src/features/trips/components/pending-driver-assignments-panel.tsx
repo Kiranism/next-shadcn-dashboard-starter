@@ -51,7 +51,7 @@ export function PendingDriverAssignmentsPanel() {
       let companyId: string | null = null;
       if (user?.id) {
         const { data: profile } = await supabase
-          .from('users')
+          .from('accounts')
           .select('company_id')
           .eq('id', user.id)
           .single();
@@ -59,7 +59,7 @@ export function PendingDriverAssignmentsPanel() {
       }
 
       const driversQuery = supabase
-        .from('users')
+        .from('accounts')
         .select('id, name')
         .eq('role', 'driver')
         .eq('is_active', true);

@@ -17,7 +17,7 @@ export function usePayers() {
     if (!user) return null;
 
     const { data: profile } = await supabase
-      .from('users')
+      .from('accounts')
       .select('company_id')
       .eq('id', user.id)
       .single();

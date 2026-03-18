@@ -27,7 +27,7 @@ export default async function DriverLayout({
 
   if (user) {
     const { data: profile } = await supabase
-      .from('users')
+      .from('accounts')
       .select('role')
       .eq('id', user.id)
       .single();

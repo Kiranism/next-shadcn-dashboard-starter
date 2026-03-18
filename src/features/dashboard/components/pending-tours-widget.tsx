@@ -59,7 +59,7 @@ export function PendingToursWidget() {
     const fetchDrivers = async () => {
       const supabase = createClient();
       const { data } = await supabase
-        .from('users')
+        .from('accounts')
         .select('id, name')
         .eq('role', 'driver')
         .order('name');

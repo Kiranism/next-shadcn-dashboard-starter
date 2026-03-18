@@ -161,7 +161,7 @@ const ClientForm = forwardRef<ClientFormHandle, ClientFormProps>(
           } = await supabase.auth.getUser();
           if (user) {
             const { data: profile } = await supabase
-              .from('users')
+              .from('accounts')
               .select('company_id')
               .eq('id', user.id)
               .single();

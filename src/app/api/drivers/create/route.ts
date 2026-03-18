@@ -1,5 +1,5 @@
 /**
- * POST /api/drivers/create — Create a new driver (auth user + users row + driver_profiles).
+ * POST /api/drivers/create — Create a new driver (auth user + accounts row + driver_profiles).
  *
  * Uses SUPABASE_SERVICE_ROLE_KEY to call auth.admin.createUser.
  * company_id is taken from the authenticated admin's session.
@@ -15,7 +15,9 @@ export const dynamic = 'force-dynamic';
 type CreateDriverBody = {
   email: string;
   password: string;
-  name: string;
+  name?: string;
+  first_name?: string | null;
+  last_name?: string | null;
   phone?: string | null;
   role?: 'driver' | 'admin';
   license_number?: string | null;
@@ -45,7 +47,7 @@ export async function POST(request: Request) {
     }
 
     const { data: adminUser } = await serverSupabase
-      .from('users')
+      .from('accounts')
       .select('company_id')
       .eq('id', authUser.id)
       .single();
@@ -59,11 +61,28 @@ export async function POST(request: Request) {
     }
 
     const body = (await request.json()) as CreateDriverBody;
-    const { email, password, name, phone, role = 'driver' } = body;
+    const {
+      email,
+      password,
+      name,
+      first_name,
+      last_name,
+      phone,
+      role = 'driver'
+    } = body;
 
-    if (!email || !password || !name) {
+    const fromNames =
+      [first_name, last_name].filter(Boolean).join(' ').trim() || null;
+    const displayName = name ?? fromNames;
+    if (!email || !password) {
       return NextResponse.json(
-        { error: 'email, password, and name are required' },
+        { error: 'email and password are required' },
+        { status: 400 }
+      );
+    }
+    if (!displayName && !first_name) {
+      return NextResponse.json(
+        { error: 'name or first_name is required' },
         { status: 400 }
       );
     }
@@ -90,9 +109,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const { error: userError } = await supabaseAdmin.from('users').insert({
+    const { error: userError } = await supabaseAdmin.from('accounts').insert({
       id: newAuthUser.user.id,
-      name,
+      name: displayName ?? [first_name, last_name].filter(Boolean).join(' '),
+      first_name: first_name ?? null,
+      last_name: last_name ?? null,
+      email: newAuthUser.user.email ?? null,
       phone: phone ?? null,
       role,
       company_id: companyId,
@@ -118,7 +140,7 @@ export async function POST(request: Request) {
 
       if (profileError) {
         await supabaseAdmin
-          .from('users')
+          .from('accounts')
           .delete()
           .eq('id', newAuthUser.user.id);
         await supabaseAdmin.auth.admin.deleteUser(newAuthUser.user.id);
@@ -132,7 +154,9 @@ export async function POST(request: Request) {
     return NextResponse.json({
       id: newAuthUser.user.id,
       email: newAuthUser.user.email,
-      name,
+      name: displayName ?? [first_name, last_name].filter(Boolean).join(' '),
+      first_name: first_name ?? null,
+      last_name: last_name ?? null,
       role
     });
   } catch (err: unknown) {

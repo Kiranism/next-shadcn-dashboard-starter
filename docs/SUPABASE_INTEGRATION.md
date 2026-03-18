@@ -18,13 +18,13 @@ The **Service** is where all Supabase-specific logic (queries, filters, joins) r
 ```typescript
 import { createService, type Row } from '@/lib/supabase/service-factory';
 
-export type Driver = Row<'users'>; // or specifically 'driver_profiles'
-const baseService = createService('users');
+export type Driver = Row<'accounts'>; // or specifically 'driver_profiles'
+const baseService = createService('accounts');
 
 export const driversService = {
   ...baseService,
   async getActiveDrivers() {
-    const { data } = await supabase.from('users').select('*').eq('role', 'driver').eq('is_active', true);
+    const { data } = await supabase.from('accounts').select('*').eq('role', 'driver').eq('is_active', true);
     return data;
   }
 };

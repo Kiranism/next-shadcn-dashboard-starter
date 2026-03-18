@@ -48,7 +48,7 @@ export function useTripFormData(payerId?: string | null) {
         const [payersRes, driversRes] = await Promise.all([
           supabase.from('payers').select('id, name').order('name'),
           supabase
-            .from('users')
+            .from('accounts')
             .select('id, name')
             .eq('role', 'driver')
             .eq('is_active', true)

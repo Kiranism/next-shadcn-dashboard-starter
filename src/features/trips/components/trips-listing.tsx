@@ -32,7 +32,7 @@ export default async function TripsListingPage({
     *,
     payer:payers(name),
     billing_type:billing_types(name, color),
-    driver:users!trips_driver_id_fkey(name)
+    driver:accounts!trips_driver_id_fkey(name)
   `,
     { count: 'exact' }
   );

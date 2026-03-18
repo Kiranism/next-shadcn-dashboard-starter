@@ -9,8 +9,8 @@ import { createClient } from '@/lib/supabase/client';
 import type { Database } from '@/types/database.types';
 import type { DriverWithProfile } from '../types';
 
-export type InsertUser = Database['public']['Tables']['users']['Insert'];
-export type UpdateUser = Database['public']['Tables']['users']['Update'];
+export type InsertUser = Database['public']['Tables']['accounts']['Insert'];
+export type UpdateUser = Database['public']['Tables']['accounts']['Update'];
 
 type GetDriversFilters = {
   page?: number;
@@ -30,10 +30,11 @@ export const driversService = {
   }> {
     const supabase = createClient();
     let query = supabase
-      .from('users')
-      .select('id, name, role, phone, company_id, is_active', {
-        count: 'exact'
-      })
+      .from('accounts')
+      .select(
+        'id, name, first_name, last_name, email, role, phone, company_id, is_active',
+        { count: 'exact' }
+      )
       .eq('role', 'driver');
 
     if (!filters?.includeInactive) {
@@ -41,7 +42,10 @@ export const driversService = {
     }
 
     if (filters?.search) {
-      query = query.ilike('name', `%${filters.search}%`);
+      const term = `%${filters.search}%`;
+      query = query.or(
+        `name.ilike.${term},first_name.ilike.${term},last_name.ilike.${term},email.ilike.${term}`
+      );
     }
 
     query = query.order('name', { ascending: true });
@@ -69,21 +73,25 @@ export const driversService = {
 
   /**
    * Fetch a single user by id with driver_profile. Used for edit form.
+   * Fetches user and driver_profiles separately to avoid "Cannot coerce to single
+   * JSON object" when a user has multiple driver_profiles rows.
    */
   async getDriverById(id: string): Promise<DriverWithProfile | null> {
     const supabase = createClient();
-    const { data, error } = await supabase
-      .from('users')
-      .select('*, driver_profiles(*)')
+    const { data: user, error: userError } = await supabase
+      .from('accounts')
+      .select('*')
       .eq('id', id)
-      .single();
+      .maybeSingle();
 
-    if (error) {
-      console.error('driversService.getDriverById:', error);
-      return null;
-    }
-    if (!data) return null;
-    return data as DriverWithProfile;
+    if (userError || !user) return null;
+
+    const { data: profiles } = await supabase
+      .from('driver_profiles')
+      .select('*')
+      .eq('user_id', id);
+
+    return { ...user, driver_profiles: profiles ?? [] } as DriverWithProfile;
   },
 
   /**
@@ -95,11 +103,10 @@ export const driversService = {
   ): Promise<DriverWithProfile> {
     const supabase = createClient();
     const { data, error } = await supabase
-      .from('users')
+      .from('accounts')
       .update(updates)
       .eq('id', id)
-      .select('*, driver_profiles(*)')
-      .single();
+      .select();
 
     if (error) {
       const msg =
@@ -108,7 +115,12 @@ export const driversService = {
           : String(error);
       throw new Error(`Fahrer konnte nicht aktualisiert werden: ${msg}`);
     }
-    return data as DriverWithProfile;
+    if (!data || data.length === 0) {
+      throw new Error(
+        'Fahrer konnte nicht aktualisiert werden: Kein Eintrag gefunden.'
+      );
+    }
+    return data[0] as DriverWithProfile;
   },
 
   /**
@@ -116,7 +128,16 @@ export const driversService = {
    */
   async upsertDriverProfile(
     userId: string,
-    data: { license_number?: string | null; default_vehicle_id?: string | null }
+    data: {
+      license_number?: string | null;
+      default_vehicle_id?: string | null;
+      street?: string | null;
+      street_number?: string | null;
+      zip_code?: string | null;
+      city?: string | null;
+      lat?: number | null;
+      lng?: number | null;
+    }
   ): Promise<void> {
     const supabase = createClient();
     const { data: existing } = await supabase
@@ -125,10 +146,20 @@ export const driversService = {
       .eq('user_id', userId)
       .maybeSingle();
 
+    const profileData = {
+      license_number: data.license_number ?? null,
+      default_vehicle_id: data.default_vehicle_id ?? null,
+      street: data.street ?? null,
+      street_number: data.street_number ?? null,
+      zip_code: data.zip_code ?? null,
+      city: data.city ?? null,
+      lat: data.lat ?? null,
+      lng: data.lng ?? null
+    };
     if (existing) {
       const { error } = await supabase
         .from('driver_profiles')
-        .update(data)
+        .update(profileData)
         .eq('user_id', userId);
       if (error) {
         const msg =
@@ -142,8 +173,7 @@ export const driversService = {
     } else {
       const { error } = await supabase.from('driver_profiles').insert({
         user_id: userId,
-        license_number: data.license_number ?? null,
-        default_vehicle_id: data.default_vehicle_id ?? null
+        ...profileData
       });
       if (error) {
         const msg =

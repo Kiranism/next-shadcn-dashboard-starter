@@ -77,7 +77,7 @@ export function ShiftTracker() {
       }
 
       const { data: profile } = await supabase
-        .from('users')
+        .from('accounts')
         .select('id, company_id')
         .eq('id', user.id)
         .single();

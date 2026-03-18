@@ -12,6 +12,9 @@ import { getSortingStateParser } from '@/lib/parsers';
 
 const SORTABLE_COLUMNS = new Set([
   'name',
+  'first_name',
+  'last_name',
+  'email',
   'role',
   'phone',
   'is_active',
@@ -27,15 +30,22 @@ export default async function DriverTableListing() {
 
   const supabase = await createClient();
   let query = supabase
-    .from('users')
-    .select('id, name, role, phone, company_id, is_active', { count: 'exact' })
+    .from('accounts')
+    .select(
+      'id, name, first_name, last_name, email, role, phone, company_id, is_active',
+      { count: 'exact' }
+    )
     .eq('role', 'driver');
 
   if (search) {
-    query = query.ilike('name', `%${search}%`);
+    const term = `%${search}%`;
+    query = query.or(
+      `name.ilike.${term},first_name.ilike.${term},last_name.ilike.${term},email.ilike.${term}`
+    );
   }
 
-  const parsed = getSortingStateParser().parseServerSide(sortParam) || [];
+  const parsed =
+    getSortingStateParser().parseServerSide(sortParam ?? undefined) || [];
   const sorting = parsed.filter(
     (s: { id: string; desc: boolean }) =>
       s?.id && typeof s.id === 'string' && SORTABLE_COLUMNS.has(s.id)
