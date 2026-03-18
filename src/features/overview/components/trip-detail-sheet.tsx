@@ -34,6 +34,7 @@ import {
   History,
   Clock,
   AlertCircle,
+  AlertTriangle,
   CreditCard,
   Trash2,
   Share2
@@ -41,7 +42,10 @@ import {
 import { Button } from '@/components/ui/button';
 import type { Trip } from '@/features/trips/api/trips.service';
 import { useTripCancellation } from '@/features/trips/hooks/use-trip-cancellation';
-import { hasPairedLeg } from '@/features/trips/api/recurring-exceptions.actions';
+import {
+  hasPairedLeg,
+  findPairedTrip
+} from '@/features/trips/api/recurring-exceptions.actions';
 import { RecurringTripCancelDialog } from '@/features/trips/components/recurring-trip-cancel-dialog';
 import { copyTripToClipboard } from '@/features/trips/lib/share-utils';
 
@@ -63,6 +67,7 @@ export function TripDetailSheet({
   const [isUpdatingDriver, setIsUpdatingDriver] = useState(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [hasPair, setHasPair] = useState(false);
+  const [linkedPartner, setLinkedPartner] = useState<Trip | null>(null);
   const { cancelTrip, isLoading: isCancelling } = useTripCancellation();
 
   useEffect(() => {
@@ -124,6 +129,14 @@ export function TripDetailSheet({
     };
     fetchGroup();
   }, [trip?.group_id]);
+
+  useEffect(() => {
+    if (!trip) {
+      setLinkedPartner(null);
+      return;
+    }
+    findPairedTrip(trip as Trip).then((p) => setLinkedPartner(p ?? null));
+  }, [trip?.id]);
 
   const isLoading = isTripLoading || isLoadingGroup;
 
@@ -204,9 +217,22 @@ export function TripDetailSheet({
                 style={{ backgroundColor: trip.billing_types?.color }}
               />
               <div className='mb-2 flex items-start justify-between'>
-                <Badge className={getStatusInfo(trip.status).class}>
-                  {getStatusInfo(trip.status).label}
-                </Badge>
+                <div className='flex flex-wrap items-center gap-2'>
+                  <Badge className={getStatusInfo(trip.status).class}>
+                    {getStatusInfo(trip.status).label}
+                  </Badge>
+                  {linkedPartner?.status === 'cancelled' && (
+                    <Badge
+                      variant='destructive'
+                      className='gap-1 px-2 py-0.5 text-[10px] font-bold'
+                    >
+                      <AlertTriangle className='h-3 w-3' />
+                      {linkedPartner.link_type === 'return'
+                        ? 'Rückfahrt storniert'
+                        : 'Hinfahrt storniert'}
+                    </Badge>
+                  )}
+                </div>
               </div>
               <SheetHeader className='space-y-1 pl-3 text-left'>
                 <SheetTitle className='text-2xl font-bold tracking-tight'>
@@ -495,14 +521,20 @@ export function TripDetailSheet({
                 ).then(() => setIsCancelDialogOpen(false));
               }}
               onConfirmWithPair={
-                trip.rule_id && hasPair
+                hasPair
                   ? (reason) => {
                       // eslint-disable-next-line @typescript-eslint/no-floating-promises
-                      cancelTrip(trip as Trip, 'skip-occurrence-and-paired', {
-                        source:
-                          'Manually cancelled (Hin/Rück) via Trip Detail Sheet',
-                        reason
-                      }).then(() => setIsCancelDialogOpen(false));
+                      cancelTrip(
+                        trip as Trip,
+                        trip.rule_id
+                          ? 'skip-occurrence-and-paired'
+                          : 'cancel-nonrecurring-and-paired',
+                        {
+                          source:
+                            'Manually cancelled (Hin/Rück) via Trip Detail Sheet',
+                          reason
+                        }
+                      ).then(() => setIsCancelDialogOpen(false));
                     }
                   : undefined
               }
@@ -521,7 +553,9 @@ export function TripDetailSheet({
               singleLabel={
                 trip.rule_id
                   ? 'Nur diese Fahrt stornieren (Aussetzen)'
-                  : 'Fahrt stornieren'
+                  : hasPair
+                    ? 'Nur diese Fahrt stornieren'
+                    : 'Fahrt stornieren'
               }
               pairLabel='Diese Fahrt & Rückfahrt stornieren'
               seriesLabel='Gesamte Serie beenden'

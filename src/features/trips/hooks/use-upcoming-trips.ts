@@ -35,8 +35,29 @@ export function useUpcomingTrips() {
       }
 
       console.log('Fetching upcoming trips:', { filter, startDate, endDate });
-      const data = await tripsService.getUpcomingTrips(startDate, endDate);
-      console.log('Upcoming trips data:', data);
+      const raw = await tripsService.getUpcomingTrips(startDate, endDate);
+      console.log('Upcoming trips data:', raw);
+
+      // Cross-reference linked partners within the same result set.
+      // This covers the common case where both Hin- and Rückfahrt fall in the
+      // same time window and adds zero extra DB queries.
+      const idToTrip = new Map(raw.map((t: any) => [t.id, t]));
+      const data = raw.map((trip: any) => {
+        let linkedPartnerStatus: string | null = null;
+
+        if (trip.linked_trip_id) {
+          // Forward link: I am the Rückfahrt, partner is the Hinfahrt
+          const partner = idToTrip.get(trip.linked_trip_id);
+          if (partner) linkedPartnerStatus = partner.status ?? null;
+        } else {
+          // Inverse link: I am the Hinfahrt, find the Rückfahrt pointing to me
+          const partner = raw.find((t: any) => t.linked_trip_id === trip.id);
+          if (partner) linkedPartnerStatus = partner.status ?? null;
+        }
+
+        return { ...trip, linked_partner_status: linkedPartnerStatus };
+      });
+
       setTrips(data);
       setError(null);
     } catch (err) {

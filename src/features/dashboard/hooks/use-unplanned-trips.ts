@@ -6,7 +6,11 @@ import type { Trip } from '@/features/trips/api/trips.service';
 
 export type UnplannedTrip = Trip & {
   requested_date?: string | null;
-  linked_trip?: { scheduled_at: string | null } | null;
+  linked_trip?: {
+    scheduled_at: string | null;
+    status: string | null;
+    link_type: string | null;
+  } | null;
 };
 
 export type UnplannedFilter = 'today' | 'week' | 'all';
@@ -56,25 +60,34 @@ export function useUnplannedTrips(filter: UnplannedFilter) {
         )
       );
 
-      let linkedMap: Record<string, string | null> = {};
+      type LinkedInfo = {
+        scheduled_at: string | null;
+        status: string | null;
+        link_type: string | null;
+      };
+      let linkedMap: Record<string, LinkedInfo> = {};
       if (linkedIds.length > 0) {
         const { data: linkedRows } = await supabase
           .from('trips')
-          .select('id, scheduled_at')
+          .select('id, scheduled_at, status, link_type')
           .in('id', linkedIds);
         linkedMap = (linkedRows || []).reduce(
           (acc, r) => {
-            acc[r.id] = r.scheduled_at ?? null;
+            acc[r.id] = {
+              scheduled_at: r.scheduled_at ?? null,
+              status: r.status ?? null,
+              link_type: r.link_type ?? null
+            };
             return acc;
           },
-          {} as Record<string, string | null>
+          {} as Record<string, LinkedInfo>
         );
       }
 
       const withLinked = rows.map((trip) => ({
         ...trip,
         linked_trip: trip.linked_trip_id
-          ? { scheduled_at: linkedMap[trip.linked_trip_id] ?? null }
+          ? (linkedMap[trip.linked_trip_id] ?? null)
           : null
       })) as UnplannedTrip[];
 

@@ -18,7 +18,13 @@ import { Button } from '@/components/ui/button';
 import { tripsService } from '@/features/trips/api/trips.service';
 import { set } from 'date-fns';
 import { toast } from 'sonner';
-import { PlusCircle, Loader2, ArrowLeftRight, Calendar } from 'lucide-react';
+import {
+  PlusCircle,
+  Loader2,
+  ArrowLeftRight,
+  Calendar,
+  AlertTriangle
+} from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import type { UnplannedTrip } from '@/features/dashboard/hooks/use-unplanned-trips';
@@ -130,6 +136,10 @@ function UnplannedTripRow({
   onScheduled: () => void;
 }) {
   const isReturnTrip = trip.link_type === 'return';
+  const linkedPartnerCancelled = trip.linked_trip?.status === 'cancelled';
+  const cancelledPartnerLabel = isReturnTrip
+    ? 'Hinfahrt storniert'
+    : 'Rückfahrt storniert';
 
   // Pre-fill date from requested_date (CSV date-only import) or outbound
   // trip's scheduled_at (return trip context), falling back to today.
@@ -198,6 +208,15 @@ function UnplannedTripRow({
               <Badge variant='secondary' className='gap-1 px-1.5 py-0 text-xs'>
                 <ArrowLeftRight className='h-3 w-3' />
                 Rückfahrt
+              </Badge>
+            )}
+            {linkedPartnerCancelled && (
+              <Badge
+                variant='destructive'
+                className='gap-1 px-1.5 py-0 text-xs'
+              >
+                <AlertTriangle className='h-3 w-3' />
+                {cancelledPartnerLabel}
               </Badge>
             )}
             {trip.requested_date && !isReturnTrip && (
