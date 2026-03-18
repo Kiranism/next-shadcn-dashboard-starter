@@ -26,16 +26,17 @@
  *   onRuleDeselect  — called to close Column 3 (clear ruleId param)
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import { Panel, PanelHeader, PanelBody } from '@/components/panels';
 import { clientsService, Client } from '../api/clients.service';
 import {
   recurringRulesService,
   RecurringRule
 } from '@/features/trips/api/recurring-rules.service';
-import ClientForm from './client-form';
+import ClientForm, { ClientFormHandle } from './client-form';
 import { RecurringRulesList } from './recurring-rules-list';
 
 interface ClientDetailPanelProps {
@@ -55,6 +56,9 @@ export function ClientDetailPanel({
   onNewRule
 }: ClientDetailPanelProps) {
   const isNew = clientId === 'new';
+
+  const formRef = useRef<ClientFormHandle>(null);
+  const [isFormDirty, setIsFormDirty] = useState(false);
 
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(!isNew);
@@ -131,6 +135,19 @@ export function ClientDetailPanel({
         title={displayName}
         description={isNew ? 'Neuen Fahrgast anlegen' : 'Fahrgast bearbeiten'}
         onClose={onClose}
+        actions={
+          !loading && (
+            <Button
+              size='sm'
+              variant={isFormDirty ? 'default' : 'ghost'}
+              className='h-6 px-2 text-xs'
+              disabled={!isFormDirty}
+              onClick={() => formRef.current?.submit()}
+            >
+              {isNew ? 'Fahrgast hinzufügen' : 'Fahrgast aktualisieren'}
+            </Button>
+          )
+        }
       />
 
       <PanelBody padded>
@@ -142,10 +159,12 @@ export function ClientDetailPanel({
           <div className='space-y-8'>
             {/* Client form — noCard strips the Card wrapper since Panel provides it */}
             <ClientForm
+              ref={formRef}
               initialData={client}
               pageTitle=''
               noCard
               onSuccess={handleFormSuccess}
+              onDirtyChange={setIsFormDirty}
             />
 
             {/* Recurring rules — only shown when editing an existing client */}

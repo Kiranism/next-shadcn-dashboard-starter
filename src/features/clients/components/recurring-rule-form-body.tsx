@@ -36,10 +36,9 @@
 
 import * as React from 'react';
 import { format } from 'date-fns';
-import { UseFormReturn } from 'react-hook-form';
+import { FormProvider, UseFormReturn } from 'react-hook-form';
 import * as z from 'zod';
 import {
-  Form,
   FormControl,
   FormField,
   FormItem,
@@ -47,10 +46,8 @@ import {
   FormMessage
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2 } from 'lucide-react';
 
 // ─── Schema (shared between Sheet and Panel) ─────────────────────────────────
 
@@ -145,23 +142,19 @@ export function getRuleFormDefaults(
 
 interface RecurringRuleFormBodyProps {
   form: UseFormReturn<RuleFormValues>;
-  isSubmitting: boolean;
-  onCancel: () => void;
   /** Show the "Regel Aktiv" toggle — only relevant when editing an existing rule */
   showIsActive?: boolean;
 }
 
 export function RecurringRuleFormBody({
   form,
-  isSubmitting,
-  onCancel,
   showIsActive = false
 }: RecurringRuleFormBodyProps) {
   const watchedReturnTrip = form.watch('return_trip');
 
   return (
-    <Form form={form} onSubmit={() => {}}>
-      <div className='space-y-6 py-6 pb-20'>
+    <FormProvider {...form}>
+      <div className='space-y-6 py-6'>
         {/* ── Wochentage ──────────────────────────────────────── */}
         <FormField
           control={form.control}
@@ -348,22 +341,6 @@ export function RecurringRuleFormBody({
           />
         )}
       </div>
-
-      {/* ── Footer buttons ──────────────────────────────────────── */}
-      <div className='flex items-center justify-end gap-2 border-t pt-4'>
-        <Button
-          type='button'
-          variant='outline'
-          onClick={onCancel}
-          disabled={isSubmitting}
-        >
-          Abbrechen
-        </Button>
-        <Button type='submit' disabled={isSubmitting}>
-          {isSubmitting && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-          {showIsActive ? 'Speichern' : 'Hinzufügen'}
-        </Button>
-      </div>
-    </Form>
+    </FormProvider>
   );
 }

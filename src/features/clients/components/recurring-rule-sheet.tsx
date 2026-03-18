@@ -1,7 +1,9 @@
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import {
   Sheet,
   SheetContent,
@@ -105,13 +107,6 @@ export function RecurringRuleSheet({
     }
   };
 
-  // Wire the form's handleSubmit to the RecurringRuleFormBody onSubmit
-  // by overriding the form's onSubmit handler here
-  React.useEffect(() => {
-    // No-op: the Form component in RecurringRuleFormBody calls form.handleSubmit
-    // internally via its onSubmit prop. We override it after mount.
-  }, []);
-
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent className='flex w-full flex-col p-0 sm:max-w-md'>
@@ -124,16 +119,34 @@ export function RecurringRuleSheet({
           </SheetDescription>
         </SheetHeader>
 
-        {/* Scrollable form body — same structure as RecurringRulePanel */}
+        {/* Scrollable form fields only — footer is outside this scroll area */}
         <div className='min-h-0 flex-1 overflow-y-auto px-6'>
-          <form onSubmit={form.handleSubmit(handleSubmit)}>
-            <RecurringRuleFormBody
-              form={form}
-              isSubmitting={isSubmitting}
-              onCancel={() => onOpenChange(false)}
-              showIsActive={!!initialData}
-            />
+          <form
+            id='recurring-rule-sheet-form'
+            onSubmit={form.handleSubmit(handleSubmit)}
+          >
+            <RecurringRuleFormBody form={form} showIsActive={!!initialData} />
           </form>
+        </div>
+
+        {/* Fixed footer — never scrolls away */}
+        <div className='flex shrink-0 items-center justify-end gap-2 border-t px-6 py-4'>
+          <Button
+            type='button'
+            variant='outline'
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
+            Abbrechen
+          </Button>
+          <Button
+            type='submit'
+            form='recurring-rule-sheet-form'
+            disabled={isSubmitting}
+          >
+            {isSubmitting && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+            {initialData ? 'Speichern' : 'Hinzufügen'}
+          </Button>
         </div>
       </SheetContent>
     </Sheet>

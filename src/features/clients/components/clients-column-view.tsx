@@ -85,7 +85,11 @@ export function ClientsColumnView() {
               defaultSize={detailDefaultSize}
               minSize={28}
             >
+              {/* key={clientId} forces a full remount when the selected client
+                  changes so useForm inside ClientForm reinitialises with fresh
+                  defaultValues — prevents stale form state leaking between clients */}
               <ClientDetailPanel
+                key={clientId}
                 clientId={clientId}
                 selectedRuleId={ruleId}
                 onClose={() => nav.clearAll()}

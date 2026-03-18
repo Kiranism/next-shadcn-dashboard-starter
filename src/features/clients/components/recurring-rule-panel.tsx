@@ -33,7 +33,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Panel, PanelHeader, PanelBody } from '@/components/panels';
+import {
+  Panel,
+  PanelHeader,
+  PanelBody,
+  PanelFooter
+} from '@/components/panels';
+import { Button } from '@/components/ui/button';
 import {
   recurringRulesService,
   RecurringRule
@@ -136,7 +142,6 @@ export function RecurringRulePanel({
 
   return (
     <Panel className='flex-1'>
-      {/* Header mirrors RecurringRuleSheet's SheetHeader exactly */}
       <PanelHeader
         title={panelTitle}
         description={panelDescription}
@@ -150,17 +155,37 @@ export function RecurringRulePanel({
           </div>
         ) : (
           <div className='px-6'>
-            <form onSubmit={form.handleSubmit(handleSubmit)}>
-              <RecurringRuleFormBody
-                form={form}
-                isSubmitting={isSubmitting}
-                onCancel={onClose}
-                showIsActive={!isNew}
-              />
+            {/* id links the submit button in PanelFooter to this form via the
+                HTML `form` attribute — no nested <form> elements needed */}
+            <form
+              id='recurring-rule-panel-form'
+              onSubmit={form.handleSubmit(handleSubmit)}
+            >
+              <RecurringRuleFormBody form={form} showIsActive={!isNew} />
             </form>
           </div>
         )}
       </PanelBody>
+
+      {/* Fixed footer — always visible, never scrolls away */}
+      <PanelFooter>
+        <Button
+          type='button'
+          variant='outline'
+          onClick={onClose}
+          disabled={isSubmitting}
+        >
+          Abbrechen
+        </Button>
+        <Button
+          type='submit'
+          form='recurring-rule-panel-form'
+          disabled={isSubmitting}
+        >
+          {isSubmitting && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+          {isNew ? 'Hinzufügen' : 'Speichern'}
+        </Button>
+      </PanelFooter>
     </Panel>
   );
 }
