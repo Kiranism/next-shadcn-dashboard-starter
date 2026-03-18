@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Called after the user selects an autocomplete suggestion.
+// The autocomplete response only contains a placeId; this endpoint resolves it
+// into structured fields (coordinates, zip code, street, house number, city)
+// needed for trip creation and display.
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -12,6 +16,8 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // X-Goog-FieldMask limits the response to only the fields we need,
+    // which reduces response size and avoids billing for unused field data.
     const response = await fetch(
       `https://places.googleapis.com/v1/places/${placeId}`,
       {
@@ -26,7 +32,6 @@ export async function GET(req: NextRequest) {
 
     const data = await response.json();
 
-    // Extract lat, lng and zip_code from Google Place Details response
     const lat = data.location?.latitude;
     const lng = data.location?.longitude;
     const zip_code = data.addressComponents?.find((c: any) =>

@@ -126,11 +126,17 @@ export function AddressAutocomplete({
           return;
         }
 
-        // If we clearly have a street-like main text, prefer those; otherwise fall back to all.
+        // Keep only results that resolved to a usable street field.
+        // The Google Places API returns both 'route' and 'street_address' types;
+        // both map street into mainText so this filter stays safe either way.
         const streetResults =
           rawSuggestions.filter((r) => !!r.street) ?? rawSuggestions;
 
-        // Prioritize Oldenburg streets, then nearby streets by distance
+        // Split into two buckets:
+        //   1. Oldenburg results  — matched by the city secondary text
+        //   2. Everything else    — fallback when locationBias found no local match
+        // This mirrors what the API already does (bias, not restrict), but lets us
+        // guarantee the visual ordering even if Google mixes the two in its response.
         const oldenburgResults = streetResults.filter((r) =>
           (r.city || '').toLowerCase().includes('oldenburg')
         );
@@ -139,20 +145,26 @@ export function AddressAutocomplete({
           (r) => !oldenburgResults.includes(r)
         );
 
-        // Sort Oldenburg streets alphabetically (street, then house number if present later)
+        // Within Oldenburg: alphabetical by street name, then by house number.
+        // Alphabetical is more useful than distance here because dispatchers
+        // typically know the street name and scan visually.
         oldenburgResults.sort((a, b) => {
           const streetCompare = (a.street || '').localeCompare(b.street || '');
           if (streetCompare !== 0) return streetCompare;
           return (a.street_number || '').localeCompare(b.street_number || '');
         });
 
-        // Sort nearby streets by distance from Oldenburg bias center if available
+        // Outside Oldenburg: sort by distanceMeters from the bias centre
+        // (provided by Google Places API when locationBias is used).
+        // Falls back to Infinity so un-distanced results sink to the bottom.
         nearbyResults.sort(
           (a, b) =>
             (a.distance || Number.POSITIVE_INFINITY) -
             (b.distance || Number.POSITIVE_INFINITY)
         );
 
+        // Final order: Oldenburg first (if any), then nearest-outside results.
+        // If nothing matched locally, nearbyResults becomes the full list.
         const finalResults =
           oldenburgResults.length > 0
             ? [...oldenburgResults, ...nearbyResults]

@@ -14,15 +14,22 @@ export async function POST(req: NextRequest) {
         },
         body: JSON.stringify({
           input: query,
-          // Hard-restrict to Oldenburg area so we always get local streets first
-          locationRestriction: {
+          // Soft bias toward Oldenburg city centre (53.1435°N, 8.2147°E).
+          // Using locationBias (not locationRestriction) is intentional:
+          //   - locationRestriction = hard wall, zero results outside the circle
+          //   - locationBias       = preference, Google expands outward when no
+          //     local match exists, returning the closest results geographically
+          // This gives us "Oldenburg streets first, everything else as fallback."
+          locationBias: {
             circle: {
-              center: { latitude: 53.1435, longitude: 8.2147 }, // Oldenburg
-              radius: 15000 // 15km radius
+              center: { latitude: 53.1435, longitude: 8.2147 }, // Oldenburg centre
+              radius: 15000 // 15 km — covers the entire Oldenburg urban area
             }
           },
-          // Prefer street names; user can add house numbers after
-          includedPrimaryTypes: ['route'],
+          // Include both route (street name only) and street_address (street +
+          // house number) so dispatchers can enter precise pickup/dropoff points
+          // like "Alexanderstraße 14" without the filter blocking them.
+          includedPrimaryTypes: ['route', 'street_address'],
           includedRegionCodes: ['de'],
           languageCode: 'de'
         })
