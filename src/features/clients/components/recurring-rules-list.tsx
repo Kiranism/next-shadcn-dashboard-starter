@@ -18,22 +18,43 @@ interface RecurringRulesListProps {
   clientId: string;
   rules: RecurringRule[];
   onRulesChange: () => void;
+  /**
+   * When provided, called with the rule instead of opening the Sheet overlay.
+   * Used by ClientDetailPanel in the column view — the column view opens
+   * Column 3 (RecurringRulePanel) instead of a floating Sheet.
+   */
+  onEditRule?: (rule: RecurringRule) => void;
+  /**
+   * When provided, called instead of opening the Sheet in create mode.
+   * Used by ClientDetailPanel in the column view.
+   */
+  onNewRule?: () => void;
 }
 
 export function RecurringRulesList({
   clientId,
   rules,
-  onRulesChange
+  onRulesChange,
+  onEditRule,
+  onNewRule
 }: RecurringRulesListProps) {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [selectedRule, setSelectedRule] = useState<RecurringRule | null>(null);
 
   const handleEdit = (rule: RecurringRule) => {
+    if (onEditRule) {
+      onEditRule(rule);
+      return;
+    }
     setSelectedRule(rule);
     setIsSheetOpen(true);
   };
 
   const handleCreateNew = () => {
+    if (onNewRule) {
+      onNewRule();
+      return;
+    }
     setSelectedRule(null);
     setIsSheetOpen(true);
   };

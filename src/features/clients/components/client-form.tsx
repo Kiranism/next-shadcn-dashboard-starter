@@ -51,13 +51,29 @@ const formSchema = z.object({
   requires_daily_scheduling: z.boolean()
 });
 
-export default function ClientForm({
-  initialData,
-  pageTitle
-}: {
+interface ClientFormProps {
   initialData: Client | null;
   pageTitle: string;
-}) {
+  /**
+   * When provided, called with the saved Client instead of navigating to
+   * /dashboard/clients. Used by ClientDetailPanel in the column view so the
+   * panel can stay open and refresh its state after a successful save.
+   */
+  onSuccess?: (client: Client) => void;
+  /**
+   * When true, renders the form fields directly without the Card/CardHeader
+   * wrapper. Used in the column view where the Panel shell already provides
+   * the visual container and title.
+   */
+  noCard?: boolean;
+}
+
+export default function ClientForm({
+  initialData,
+  pageTitle,
+  onSuccess,
+  noCard = false
+}: ClientFormProps) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -134,12 +150,24 @@ export default function ClientForm({
       };
 
       if (initialData) {
-        await clientsService.updateClient(initialData.id, payload);
+        const updated = await clientsService.updateClient(
+          initialData.id,
+          payload
+        );
         toast.success('Fahrgast erfolgreich aktualisiert.');
+        if (onSuccess) {
+          onSuccess(updated);
+          return;
+        }
       } else {
-        await clientsService.createClient(payload);
+        const created = await clientsService.createClient(payload);
         toast.success('Fahrgast erfolgreich erstellt.');
+        if (onSuccess) {
+          onSuccess(created);
+          return;
+        }
       }
+      // Default behaviour when used outside the column view: navigate back
       router.push('/dashboard/clients');
       router.refresh();
     } catch (error: any) {
@@ -149,6 +177,139 @@ export default function ClientForm({
     }
   }
 
+  const formFields = (
+    <Form
+      form={form}
+      onSubmit={form.handleSubmit(onSubmit)}
+      className='space-y-8'
+    >
+      <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
+        <FormInput
+          control={form.control}
+          name='first_name'
+          label='Vorname'
+          placeholder='Vorname eingeben'
+        />
+        <FormInput
+          control={form.control}
+          name='last_name'
+          label='Nachname'
+          placeholder='Nachname eingeben'
+        />
+        <FormInput
+          control={form.control}
+          name='company_name'
+          label='Firmenname'
+          placeholder='Firmenname eingeben'
+        />
+        <FormField
+          control={form.control}
+          name='street'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                Straße<span className='ml-1 text-red-500'>*</span>
+              </FormLabel>
+              <FormControl>
+                <AddressAutocomplete
+                  value={field.value}
+                  onChange={(result: AddressResult | string) => {
+                    if (typeof result === 'string') {
+                      field.onChange(result);
+                    } else {
+                      if (!result.street) {
+                        field.onChange(result.address);
+                        return;
+                      }
+                      field.onChange(result.street || result.address);
+                      form.setValue(
+                        'street_number',
+                        result.street_number || ''
+                      );
+                      form.setValue('zip_code', result.zip_code || '');
+                      form.setValue('city', result.city || '');
+                    }
+                  }}
+                  placeholder='Straße eingeben'
+                  className='h-8 text-[11px]'
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormInput
+          control={form.control}
+          name='street_number'
+          label='Hausnummer'
+          placeholder='Hausnummer eingeben'
+          required
+        />
+        <FormInput
+          control={form.control}
+          name='relation'
+          label='Beziehung'
+          placeholder='Beziehung eingeben'
+        />
+        <FormInput
+          control={form.control}
+          name='greeting_style'
+          label='Anrede'
+          placeholder='z. B. Herr, Frau, Dr., etc.'
+        />
+        <FormInput
+          control={form.control}
+          name='zip_code'
+          label='PLZ'
+          placeholder='Postleitzahl eingeben'
+          required
+        />
+        <FormInput
+          control={form.control}
+          name='city'
+          label='Stadt'
+          placeholder='Stadt eingeben'
+          required
+        />
+        <FormInput
+          control={form.control}
+          name='phone'
+          label='Telefonnummer'
+          placeholder='Telefonnummer eingeben'
+        />
+      </div>
+
+      <FormSwitch
+        control={form.control}
+        name='requires_daily_scheduling'
+        label='Benötigt tägliche Zeitabsprache'
+        description='Aktivieren, wenn dieser Fahrgast jeden Tag eine neue Abholzeit benötigt.'
+      />
+
+      <FormTextarea
+        control={form.control}
+        name='notes'
+        label='Notizen'
+        placeholder='Zusätzliche Notizen eingeben'
+        config={{
+          maxLength: 500,
+          showCharCount: true,
+          rows: 4
+        }}
+      />
+
+      <Button type='submit' disabled={loading}>
+        {initialData ? 'Fahrgast aktualisieren' : 'Fahrgast hinzufügen'}
+      </Button>
+    </Form>
+  );
+
+  // noCard=true: render bare form fields (column view — Panel provides the container)
+  if (noCard) {
+    return formFields;
+  }
+
+  // Default: wrap in Card with title header + recurring rules list below
   return (
     <>
       <Card className='mx-auto w-full'>
@@ -157,136 +318,7 @@ export default function ClientForm({
             {pageTitle}
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <Form
-            form={form}
-            onSubmit={form.handleSubmit(onSubmit)}
-            className='space-y-8'
-          >
-            <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
-              <FormInput
-                control={form.control}
-                name='first_name'
-                label='Vorname'
-                placeholder='Vorname eingeben'
-              />
-              <FormInput
-                control={form.control}
-                name='last_name'
-                label='Nachname'
-                placeholder='Nachname eingeben'
-              />
-              <FormInput
-                control={form.control}
-                name='company_name'
-                label='Firmenname'
-                placeholder='Firmenname eingeben'
-              />
-              <FormField
-                control={form.control}
-                name='street'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Straße<span className='ml-1 text-red-500'>*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <AddressAutocomplete
-                        value={field.value}
-                        onChange={(result: AddressResult | string) => {
-                          if (typeof result === 'string') {
-                            field.onChange(result);
-                          } else {
-                            // While typing, AddressAutocomplete sends { address: typedText } with no street.
-                            // In that case, keep the raw address in the text field so the user can see their input.
-                            if (!result.street) {
-                              field.onChange(result.address);
-                              return;
-                            }
-
-                            // On selecting a suggestion, fill all structured fields.
-                            field.onChange(result.street || result.address);
-                            form.setValue(
-                              'street_number',
-                              result.street_number || ''
-                            );
-                            form.setValue('zip_code', result.zip_code || '');
-                            form.setValue('city', result.city || '');
-                          }
-                        }}
-                        placeholder='Straße eingeben'
-                        className='h-8 text-[11px]'
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormInput
-                control={form.control}
-                name='street_number'
-                label='Hausnummer'
-                placeholder='Hausnummer eingeben'
-                required
-              />
-              <FormInput
-                control={form.control}
-                name='relation'
-                label='Beziehung'
-                placeholder='Beziehung eingeben'
-              />
-              <FormInput
-                control={form.control}
-                name='greeting_style'
-                label='Anrede'
-                placeholder='z. B. Herr, Frau, Dr., etc.'
-              />
-              <FormInput
-                control={form.control}
-                name='zip_code'
-                label='PLZ'
-                placeholder='Postleitzahl eingeben'
-                required
-              />
-              <FormInput
-                control={form.control}
-                name='city'
-                label='Stadt'
-                placeholder='Stadt eingeben'
-                required
-              />
-              <FormInput
-                control={form.control}
-                name='phone'
-                label='Telefonnummer'
-                placeholder='Telefonnummer eingeben'
-              />
-            </div>
-
-            <FormSwitch
-              control={form.control}
-              name='requires_daily_scheduling'
-              label='Benötigt tägliche Zeitabsprache'
-              description='Aktivieren, wenn dieser Fahrgast jeden Tag eine neue Abholzeit benötigt.'
-            />
-
-            <FormTextarea
-              control={form.control}
-              name='notes'
-              label='Notizen'
-              placeholder='Zusätzliche Notizen eingeben'
-              config={{
-                maxLength: 500,
-                showCharCount: true,
-                rows: 4
-              }}
-            />
-
-            <Button type='submit' disabled={loading}>
-              {initialData ? 'Fahrgast aktualisieren' : 'Fahrgast hinzufügen'}
-            </Button>
-          </Form>
-        </CardContent>
+        <CardContent>{formFields}</CardContent>
       </Card>
 
       {initialData && (
