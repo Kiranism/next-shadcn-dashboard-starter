@@ -109,7 +109,22 @@ export function useUnplannedTrips(filter: UnplannedFilter) {
               return true;
             });
 
-      setTrips(filtered);
+      // Sort: trips with a scheduled_at first (ascending by time), then
+      // unscheduled trips (no time yet) at the bottom, ordered by created_at.
+      const sorted = [...filtered].sort((a, b) => {
+        const aTime = a.scheduled_at
+          ? new Date(a.scheduled_at).getTime()
+          : null;
+        const bTime = b.scheduled_at
+          ? new Date(b.scheduled_at).getTime()
+          : null;
+        if (aTime !== null && bTime !== null) return aTime - bTime;
+        if (aTime !== null) return -1;
+        if (bTime !== null) return 1;
+        return 0;
+      });
+
+      setTrips(sorted);
       setError(null);
     } catch (err) {
       const e = err as Error;
