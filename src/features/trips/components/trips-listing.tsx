@@ -4,7 +4,6 @@ import { TripsTable, columns } from './trips-tables/index';
 import { Trip } from '../api/trips.service';
 import { getSortingStateParser } from '@/lib/parsers';
 import { TripsViewToggle } from './trips-view-toggle';
-import { TripsCalendar } from './trips-calendar';
 import { TripsKanbanBoard } from './trips-kanban-board';
 import { TripsFiltersBar } from './trips-filters-bar';
 
@@ -135,10 +134,7 @@ export default async function TripsListingPage({
     query = query.order('scheduled_at', { ascending: true });
   }
 
-  if (view === 'calendar' || view === 'kanban') {
-    // For calendar and kanban view, we need all trips in a reasonably large window, not just 10.
-    // In a production app, we would pass start/end dates from the calendar to fetch exactly the month.
-    // For now, we'll just skip small pagination.
+  if (view === 'kanban') {
     query = query.limit(2000);
   } else if (page && pageLimit) {
     const from = (page - 1) * pageLimit;
@@ -160,11 +156,10 @@ export default async function TripsListingPage({
           <TripsFiltersBar totalItems={totalTrips} />
         </div>
       </div>
-      {view === 'calendar' && <TripsCalendar trips={trips as Trip[]} />}
       {view === 'kanban' && (
         <TripsKanbanBoard trips={trips as Trip[]} totalItems={totalTrips} />
       )}
-      {view !== 'calendar' && view !== 'kanban' && (
+      {view !== 'kanban' && (
         <TripsTable data={trips} totalItems={totalTrips} columns={columns} />
       )}
     </div>
