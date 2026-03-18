@@ -16,6 +16,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { tripsService } from '@/features/trips/api/trips.service';
+import { getStatusWhenDriverChanges } from '@/features/trips/lib/trip-status';
 import { set } from 'date-fns';
 import { toast } from 'sonner';
 import {
@@ -175,10 +176,14 @@ function UnplannedTripRow({
         milliseconds: 0
       });
 
-      await tripsService.updateTrip(trip.id, {
+      const updatePayload: Parameters<typeof tripsService.updateTrip>[1] = {
         scheduled_at: scheduledDate.toISOString(),
         driver_id: driverId
-      });
+      };
+      const derivedStatus = getStatusWhenDriverChanges(trip.status, driverId);
+      if (derivedStatus) updatePayload.status = derivedStatus;
+
+      await tripsService.updateTrip(trip.id, updatePayload);
 
       toast.success(
         `Abholzeit ${driverId ? 'und Fahrer ' : ''}für ${trip.client_name || 'Fahrt'} gesetzt.`

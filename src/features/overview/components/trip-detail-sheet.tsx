@@ -49,6 +49,7 @@ import {
 import { RecurringTripCancelDialog } from '@/features/trips/components/recurring-trip-cancel-dialog';
 import { copyTripToClipboard } from '@/features/trips/lib/share-utils';
 import { getCancelledPartnerLabel } from '@/features/trips/lib/trip-direction';
+import { getStatusWhenDriverChanges } from '@/features/trips/lib/trip-status';
 import {
   tripStatusBadge,
   tripStatusLabels,
@@ -94,17 +95,27 @@ export function TripDetailSheet({
     setIsUpdatingDriver(true);
     const supabase = createClient();
     try {
+      const newDriverId = driverId === 'unassigned' ? null : driverId;
+      const payload: { driver_id: string | null; status?: string } = {
+        driver_id: newDriverId
+      };
+      const derivedStatus = getStatusWhenDriverChanges(
+        trip.status,
+        newDriverId
+      );
+      if (derivedStatus) payload.status = derivedStatus;
+
       if (trip.group_id) {
         const { error } = await supabase
           .from('trips')
-          .update({ driver_id: driverId === 'unassigned' ? null : driverId })
+          .update(payload)
           .eq('group_id', trip.group_id);
         if (error) throw error;
         toast.success(`Fahrer für die gesamte Gruppe aktualisiert`);
       } else {
         const { error } = await supabase
           .from('trips')
-          .update({ driver_id: driverId === 'unassigned' ? null : driverId })
+          .update(payload)
           .eq('id', trip.id);
         if (error) throw error;
         toast.success('Fahrer aktualisiert');
