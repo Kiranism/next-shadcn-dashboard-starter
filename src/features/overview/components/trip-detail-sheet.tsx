@@ -444,7 +444,7 @@ export function TripDetailSheet({
               </div>
             </div>
 
-            <SheetFooter className='bg-background mt-auto flex items-center justify-between gap-3 border-t'>
+            <SheetFooter className='bg-background mt-auto flex items-center justify-between gap-3 border-t px-6 py-4'>
               <div className='text-muted-foreground flex flex-col text-[11px] leading-snug'>
                 <span className='font-semibold'>
                   Fahrt-ID:{' '}

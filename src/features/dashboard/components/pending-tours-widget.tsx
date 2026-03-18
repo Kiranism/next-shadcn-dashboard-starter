@@ -200,55 +200,49 @@ function UnplannedTripRow({
     : null;
 
   return (
-    <div className='flex flex-col gap-2 rounded-lg border p-3'>
-      {/* Header row: name + badges */}
-      <div className='flex items-start justify-between gap-2'>
-        <div className='min-w-0 flex-1'>
-          <div className='flex flex-wrap items-center gap-1.5'>
-            <span className='text-sm font-semibold'>
-              {trip.client_name || 'Unbekannt'}
-            </span>
-            {isReturnTrip && (
-              <Badge variant='secondary' className='gap-1 px-1.5 py-0 text-xs'>
-                <ArrowLeftRight className='h-3 w-3' />
-                Rückfahrt
-              </Badge>
-            )}
-            {linkedPartnerCancelled && (
-              <Badge
-                variant='destructive'
-                className='gap-1 px-1.5 py-0 text-xs'
-              >
-                <AlertTriangle className='h-3 w-3' />
-                {cancelledPartnerLabel}
-              </Badge>
-            )}
-            {trip.requested_date && !isReturnTrip && (
-              <Badge variant='outline' className='gap-1 px-1.5 py-0 text-xs'>
-                <Calendar className='h-3 w-3' />
-                Termin:{' '}
-                {format(new Date(trip.requested_date), 'dd.MM.', {
-                  locale: de
-                })}
-              </Badge>
-            )}
-          </div>
-          {trip.pickup_address && (
-            <p className='text-muted-foreground line-clamp-1 text-xs'>
-              {trip.pickup_address.split(',')[0]} →{' '}
-              {trip.dropoff_address?.split(',')[0] || '—'}
-            </p>
+    <div className='flex items-center justify-between gap-4 rounded-lg border p-3'>
+      {/* Trip Information (Left) */}
+      <div className='min-w-0 flex-1'>
+        <div className='flex flex-wrap items-center gap-1.5'>
+          <span className='text-sm font-semibold'>
+            {trip.client_name || 'Unbekannt'}
+          </span>
+          {isReturnTrip && (
+            <Badge variant='secondary' className='gap-1 px-1.5 py-0 text-xs'>
+              <ArrowLeftRight className='h-3 w-3' />
+              Rückfahrt
+            </Badge>
           )}
-          {isReturnTrip && linkedOutboundTime && (
-            <p className='text-muted-foreground mt-0.5 text-xs'>
-              Hinfahrt: {linkedOutboundTime}
-            </p>
+          {linkedPartnerCancelled && (
+            <Badge variant='destructive' className='gap-1 px-1.5 py-0 text-xs'>
+              <AlertTriangle className='h-3 w-3' />
+              {cancelledPartnerLabel}
+            </Badge>
+          )}
+          {trip.requested_date && !isReturnTrip && (
+            <Badge variant='outline' className='gap-1 px-1.5 py-0 text-xs'>
+              <Calendar className='h-3 w-3' />
+              Termin:{' '}
+              {format(new Date(trip.requested_date), 'dd.MM.', {
+                locale: de
+              })}
+            </Badge>
           )}
         </div>
+        {trip.pickup_address && (
+          <p className='text-muted-foreground line-clamp-1 text-xs'>
+            {trip.pickup_address.split(',')[0]} →{' '}
+            {trip.dropoff_address?.split(',')[0] || '—'}
+          </p>
+        )}
+        {isReturnTrip && linkedOutboundTime && (
+          <p className='text-muted-foreground mt-0.5 text-xs'>
+            Hinfahrt: {linkedOutboundTime}
+          </p>
+        )}
       </div>
-
-      {/* Scheduling controls */}
-      <div className='flex flex-wrap items-center gap-2'>
+      {/* Scheduling controls (Right) */}
+      <div className='flex flex-shrink-0 items-center gap-2'>
         <div className='flex items-center gap-2'>
           <Input
             type='date'
