@@ -176,7 +176,11 @@ export async function GET(request: Request) {
             dropoff_address: dropoffAddress,
             scheduled_at: scheduledAt,
             status: 'pending',
-            rule_id: rule.id
+            rule_id: rule.id,
+            // 'return' marks this as the Rückfahrt so direction can be read
+            // directly from the trip row without querying the rule or partner.
+            // null means this is the Hinfahrt (outbound leg).
+            link_type: isReturnTrip ? 'return' : null
           });
         };
 

@@ -868,6 +868,9 @@ export function CreateTripForm({
             dropoff_lng: pickupGroup.lng || null,
             dropoff_station: null,
             group_id: null,
+            // link_type marks this as the Rückfahrt so the direction can be
+            // determined from the trip row alone, without joining the partner.
+            link_type: 'return',
             linked_trip_id: outbound.id,
             driving_distance_km: returnDrivingDistanceKm,
             driving_duration_seconds: returnDrivingDurationSeconds
@@ -981,6 +984,9 @@ export function CreateTripForm({
                   dropoff_lng: pickupGroup?.lng || null,
                   dropoff_station: p.pickup_station || null,
                   group_id: null,
+                  // link_type marks this as the Rückfahrt so the direction can
+                  // be determined from the trip row alone without joining partner.
+                  link_type: 'return',
                   linked_trip_id: outbound.id,
                   driving_distance_km: drivingDistanceKm,
                   driving_duration_seconds: drivingDurationSeconds

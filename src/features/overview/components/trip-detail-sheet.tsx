@@ -48,6 +48,7 @@ import {
 } from '@/features/trips/api/recurring-exceptions.actions';
 import { RecurringTripCancelDialog } from '@/features/trips/components/recurring-trip-cancel-dialog';
 import { copyTripToClipboard } from '@/features/trips/lib/share-utils';
+import { getCancelledPartnerLabel } from '@/features/trips/lib/trip-direction';
 
 interface TripDetailSheetProps {
   tripId: string | null;
@@ -227,9 +228,9 @@ export function TripDetailSheet({
                       className='gap-1 px-2 py-0.5 text-[10px] font-bold'
                     >
                       <AlertTriangle className='h-3 w-3' />
-                      {linkedPartner.link_type === 'return'
-                        ? 'Rückfahrt storniert'
-                        : 'Hinfahrt storniert'}
+                      {/* We pass the CURRENT trip (not the cancelled partner) so
+                          getCancelledPartnerLabel can return the partner's label. */}
+                      {getCancelledPartnerLabel(trip as Trip)}
                     </Badge>
                   )}
                 </div>

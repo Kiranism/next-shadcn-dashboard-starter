@@ -28,6 +28,10 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import type { UnplannedTrip } from '@/features/dashboard/hooks/use-unplanned-trips';
+import {
+  getCancelledPartnerLabel,
+  getTripDirection
+} from '@/features/trips/lib/trip-direction';
 import { createClient } from '@/lib/supabase/client';
 import {
   Select,
@@ -135,11 +139,11 @@ function UnplannedTripRow({
   drivers: any[];
   onScheduled: () => void;
 }) {
-  const isReturnTrip = trip.link_type === 'return';
+  // Use the direction utility so legacy rows without link_type are handled via
+  // the linked_trip_id fallback (see src/features/trips/lib/trip-direction.ts).
+  const isReturnTrip = getTripDirection(trip) === 'rueckfahrt';
   const linkedPartnerCancelled = trip.linked_trip?.status === 'cancelled';
-  const cancelledPartnerLabel = isReturnTrip
-    ? 'Hinfahrt storniert'
-    : 'Rückfahrt storniert';
+  const cancelledPartnerLabel = getCancelledPartnerLabel(trip);
 
   // Pre-fill date from requested_date (CSV date-only import) or outbound
   // trip's scheduled_at (return trip context), falling back to today.

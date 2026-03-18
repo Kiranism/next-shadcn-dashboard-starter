@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Users, Share2, AlertTriangle } from 'lucide-react';
 import { copyTripToClipboard } from '@/features/trips/lib/share-utils';
+import { getCancelledPartnerLabel } from '@/features/trips/lib/trip-direction';
 import { toast } from 'sonner';
 
 interface TripRowProps {
@@ -157,9 +158,7 @@ export function TripRow({
         {trip.linked_partner_status === 'cancelled' && (
           <div className='flex items-center gap-0.5 rounded border border-red-200 bg-red-50 px-1.5 py-0.5 text-[9px] font-bold whitespace-nowrap text-red-600'>
             <AlertTriangle className='h-2.5 w-2.5' />
-            {trip.link_type === 'return'
-              ? 'Hinfahrt storniert'
-              : 'Rückfahrt storniert'}
+            {getCancelledPartnerLabel(trip)}
           </div>
         )}
         <p className='text-muted-foreground text-[10px] font-bold tracking-wider whitespace-nowrap uppercase'>
