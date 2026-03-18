@@ -161,7 +161,8 @@ export const columns: ColumnDef<any>[] = [
           </span>
         )}
       </div>
-    )
+    ),
+    meta: { label: 'Abholung' }
   },
   {
     accessorKey: 'dropoff_address',
@@ -179,7 +180,8 @@ export const columns: ColumnDef<any>[] = [
           </span>
         )}
       </div>
-    )
+    ),
+    meta: { label: 'Ziel' }
   },
   {
     id: 'driver_id',
@@ -188,7 +190,8 @@ export const columns: ColumnDef<any>[] = [
       <DataTableColumnHeader column={column} title='Fahrer' />
     ),
     cell: ({ row }) => <DriverSelectCell trip={row.original} />,
-    enableColumnFilter: false
+    enableColumnFilter: false,
+    meta: { label: 'Fahrer' }
   },
   {
     id: 'status',
@@ -217,7 +220,8 @@ export const columns: ColumnDef<any>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Kostenträger' />
     ),
-    cell: ({ row }) => <div>{row.original.payer?.name || '-'}</div>
+    cell: ({ row }) => <div>{row.original.payer?.name || '-'}</div>,
+    meta: { label: 'Kostenträger' }
   },
   {
     id: 'billing_type',

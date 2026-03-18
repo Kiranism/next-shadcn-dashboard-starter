@@ -1,6 +1,6 @@
 ## Trips Filters Bar – Architecture & Reuse Guide
 
-This document explains how the `TripsFiltersBar` works, why it’s designed this way, and how to recreate the same pattern for other pages (e.g. clients, invoices, vehicles) while staying aligned with best practices for high-end dispatch dashboards.
+This document explains how the `TripsFiltersBar` works, why it's designed this way, and how to recreate the same pattern for other pages (e.g. clients, invoices, vehicles) while staying aligned with best practices for high-end dispatch dashboards.
 
 ---
 
@@ -8,29 +8,31 @@ This document explains how the `TripsFiltersBar` works, why it’s designed this
 
 - **Single source of truth** for filters:
   - Filters are applied **on the server** via `searchParamsCache` + Supabase query.
-  - All views (list, calendar, kanban) share the same filtered dataset.
+  - All views (list, kanban) share the same filtered dataset.
 - **URL as state**:
   - Filters live in the query string (e.g. `?status=pending&driver_id=...`).
   - Links are shareable and restorable; browser back/forward works.
 - **Navigation-driven updates**:
   - Filter changes trigger **Next.js navigations** (`router.replace`) instead of ad‑hoc history changes.
-  - This guarantees that `searchParams` in the server component always match what’s in the URL.
+  - This guarantees that `searchParams` in the server component always match what's in the URL.
 - **Dispatch-friendly UX**:
   - No hard refresh needed; everything updates automatically.
-  - Pagination resets to page 1 on filter changes to avoid “empty page” confusion.
+  - Pagination resets to page 1 on filter changes to avoid "empty page" confusion.
 
 ---
 
 ### 2. Data flow overview
 
-Relevant pieces:
+Relevant files:
 
 - `src/app/dashboard/trips/page.tsx`
 - `src/lib/searchparams.ts`
 - `src/features/trips/components/trips-listing.tsx`
 - `src/features/trips/components/trips-filters-bar.tsx`
+- `src/features/trips/components/trips-view-toggle.tsx`
 - `src/features/trips/components/trips-kanban-board.tsx`
 - `src/features/trips/components/trips-tables/index.tsx`
+- `src/features/trips/stores/use-trips-table-store.ts`
 
 **Request/response flow:**
 
@@ -42,9 +44,8 @@ Relevant pieces:
 3. **Server component** (`TripsListingPage`):
    - Uses `searchParamsCache.get('status' | 'driver_id' | 'payer_id' | ...)` to read filters.
    - Builds a Supabase query and applies filters on the server.
-   - Passes filtered `trips` and `totalTrips` to:
+   - Renders `TripsFiltersBar` (shared across views) and then the active view:
      - List view (`TripsTable`),
-     - Calendar view (`TripsCalendar`),
      - Kanban view (`TripsKanbanBoard`).
 4. **Client filter bar** (`TripsFiltersBar`):
    - Reads current filter values from `useSearchParams()`.
@@ -63,30 +64,34 @@ Core hooks:
 
 - `useRouter`, `usePathname`, `useSearchParams` from `next/navigation`.
 - `useTripFormData(payerId)` to fetch drivers, payers, billing types client-side.
+- `useTripsTableStore` to read the active TanStack `table` instance and its column visibility state.
 
 Filter values are read from the URL:
 
 ```tsx
-const router = useRouter();
-const pathname = usePathname();
-const searchParams = useSearchParams();
-
 const name = searchParams.get('name') ?? '';
 const driverId = searchParams.get('driver_id') ?? 'all';
 const status = searchParams.get('status') ?? 'all';
 const payerId = searchParams.get('payer_id') ?? 'all';
 const billingTypeId = searchParams.get('billing_type_id') ?? 'all';
 const scheduledAt = searchParams.get('scheduled_at') ?? '';
+const currentView = searchParams.get('view') ?? 'list';
 ```
 
-UI is a set of inputs bound to these values:
+UI controls (left side of the bar):
 
 - Text input for passenger/address (`name`).
-- Date picker (`scheduled_at`).
-- Driver select (`driver_id`).
+- Date picker with quick-select week shortcuts (`scheduled_at`).
+- Driver select (`driver_id`) — includes "Alle Fahrer" and "Nicht zugewiesen".
 - Status select (`status`).
 - Payer select (`payer_id`).
-- Billing type select (`billing_type_id`) dependent on payer.
+- Billing type select (`billing_type_id`) — only visible when a payer is selected and billing types exist.
+- **Column visibility dropdown** (`Spalten`) — only visible when `view === 'list'`. See section 5.
+
+Right side of the bar:
+
+- Total trip count (`{totalItems} Fahrten`).
+- "Filter zurücksetzen" button — bulk-resets all filter keys to null.
 
 ---
 
@@ -115,7 +120,9 @@ const updateFilters = (updates: Record<string, string | null>) => {
   params.set('page', '1');
 
   const next = `${pathname}?${params.toString()}`;
-  router.replace(next, { scroll: false });
+  startTransition(() => {
+    router.replace(next, { scroll: false });
+  });
 };
 ```
 
@@ -140,13 +147,13 @@ Each UI control simply expresses its change as a call to `updateFilters`:
 
 // Date picker
 <Calendar
-  selected={selectedDate}
-  onSelect={(date) => {
-    if (!date) {
+  selected={selectedDateRange}
+  onSelect={(range) => {
+    if (!range?.from) {
       updateFilters({ scheduled_at: null });
       return;
     }
-    updateFilters({ scheduled_at: String(date.getTime()) });
+    updateFilters({ scheduled_at: String(range.from.getTime()) });
   }}
 />
 ```
@@ -168,7 +175,118 @@ This pattern is what you should copy when adding filter bars for other pages.
 
 ---
 
-### 5. Server-side filter application
+### 5. Column visibility dropdown ("Spalten")
+
+The filter bar embeds a column visibility control that lets users show/hide table columns inline, styled identically to the other filter dropdowns.
+
+#### Architecture: why a Zustand store?
+
+`TripsFiltersBar` and `TripsTable` are **siblings** rendered from the server component `TripsListingPage` — there is no shared parent client component to lift state into. The column visibility control requires a TanStack `table` instance, which is created inside `TripsTable`. A small Zustand store bridges the gap:
+
+```
+TripsListingPage (server)
+  → <TripsFiltersBar>  ← reads table from store
+  → <TripsTable>       ← writes table to store on mount
+```
+
+**Store file:** `src/features/trips/stores/use-trips-table-store.ts`
+
+```ts
+interface TripsTableStore {
+  table: Table<any> | null;
+  columnVisibility: VisibilityState;
+  setTable: (table: Table<any> | null) => void;
+  setColumnVisibility: (visibility: VisibilityState) => void;
+}
+```
+
+#### `TripsTable` side
+
+After `useDataTable`, two effects keep the store in sync:
+
+```tsx
+// Publish the table instance
+const setTable = useTripsTableStore((s) => s.setTable);
+React.useEffect(() => {
+  setTable(table as any);
+  return () => setTable(null); // clean up on unmount
+}, [table, setTable]);
+
+// Publish column visibility changes so TripsFiltersBar re-renders reactively
+const setColumnVisibility = useTripsTableStore((s) => s.setColumnVisibility);
+const columnVisibility = table.getState().columnVisibility;
+React.useEffect(() => {
+  setColumnVisibility(columnVisibility);
+}, [columnVisibility, setColumnVisibility]);
+```
+
+The standalone `DataTableViewOptions` dropdown that is normally rendered inside `DataTableToolbar` is suppressed on the trips table by passing `showViewOptions={false}`:
+
+```tsx
+<DataTableToolbar table={table} showViewOptions={false} />
+```
+
+#### `TripsFiltersBar` side
+
+The bar subscribes to both `table` and `columnVisibility` from the store:
+
+```tsx
+const table = useTripsTableStore((s) => s.table);
+const columnVisibility = useTripsTableStore((s) => s.columnVisibility);
+
+const hidableColumns = useMemo(() => {
+  if (!table) return [];
+  return table
+    .getAllColumns()
+    .filter((col) => typeof col.accessorFn !== 'undefined' && col.getCanHide());
+}, [table, columnVisibility]); // columnVisibility as dep triggers re-render on toggle
+```
+
+The dropdown is conditionally rendered only in list view:
+
+```tsx
+{currentView === 'list' && table && (
+  <Popover>
+    <PopoverTrigger asChild>
+      <Button variant='outline' size='sm' className='h-8 flex-shrink-0 ...'>
+        <Settings2 /> Spalten <CaretSortIcon />
+      </Button>
+    </PopoverTrigger>
+    <PopoverContent>
+      <Command>
+        {hidableColumns.map((column) => (
+          <CommandItem onSelect={() => column.toggleVisibility(!column.getIsVisible())}>
+            {column.columnDef.meta?.label ?? column.id}
+            <CheckIcon className={column.getIsVisible() ? 'opacity-100' : 'opacity-0'} />
+          </CommandItem>
+        ))}
+      </Command>
+    </PopoverContent>
+  </Popover>
+)}
+```
+
+#### Column labels (`meta.label`)
+
+The dropdown uses `column.columnDef.meta?.label` for display names. All hidable columns in `columns.tsx` must define this to show human-readable German names instead of raw accessor IDs:
+
+| Column `id` / `accessorKey` | `meta.label` |
+|---|---|
+| `scheduled_at` | `Datum` |
+| `time` | `Zeit` |
+| `name` (client_name) | `Fahrgast` |
+| `pickup_address` | `Abholung` |
+| `dropoff_address` | `Ziel` |
+| `driver_id` | `Fahrer` |
+| `status` | `Status` |
+| `payer_name` | `Kostenträger` |
+| `billing_type` | `Abrechnung` |
+
+When adding a new column, always include `meta: { label: 'German label' }`.
+
+---
+
+### 6. Server-side filter application
 
 File: `src/features/trips/components/trips-listing.tsx`
 
@@ -190,7 +308,12 @@ Then applied to Supabase:
 - `payer_id`: `eq('payer_id', payerId)`.
 - `billing_type_id`: `eq('billing_type_id', billingTypeId)`.
 - `name`: `ilike('client_name', %name%)`.
-- `scheduled_at`: range or single-day filter based on timestamps.
+- `scheduled_at`: range or single-day filter based on Unix timestamps.
+
+The `view` param controls query limits:
+
+- `view=kanban` → `query.limit(2000)` (all trips, no pagination).
+- `view=list` (default) → standard `range(from, to)` pagination.
 
 When you add a new filter:
 
@@ -201,69 +324,68 @@ When you add a new filter:
 
 ---
 
-### 6. Pagination and views
+### 7. Pagination and views
 
-- Pagination (`page`, `perPage`) is also URL-driven and handled by the shared `useDataTable` hook.
-- The filter bar always sets `page=1` when filters change, so:
-  - You don’t end up on page 5 with zero results after narrowing filters.
-  - This mirrors how professional dispatch tools behave.
-- Because all views (list, calendar, kanban) are downstream of the same `TripsListingPage` query, they **all respect the same filters** without extra work.
+- Pagination (`page`, `perPage`) is URL-driven and handled by the shared `useDataTable` hook.
+- The filter bar always sets `page=1` when filters change.
+- The available views are **List** and **Kanban**, toggled via `TripsViewToggle` (`src/features/trips/components/trips-view-toggle.tsx`). The view is stored as `?view=list|kanban` in the URL.
+- Because both views are downstream of the same `TripsListingPage` query, they **all respect the same filters** without extra work.
 
 ---
 
-### 7. How to recreate this pattern on another page
+### 8. How to recreate this pattern on another page
 
-When adding a similar filter bar for a new resource (e.g. “Clients”, “Drivers”, “Invoices”), follow this checklist:
+When adding a similar filter bar for a new resource (e.g. "Clients", "Drivers", "Invoices"), follow this checklist:
 
 1. **Define search params schema**
-   - In `src/lib/searchparams.ts`, add new keys under a section for that page if needed (or reuse generic ones like `page`, `perPage`, `name`, `status`).
+   - In `src/lib/searchparams.ts`, add new keys for that page.
 
 2. **Update the page route**
    - In `src/app/dashboard/<resource>/page.tsx`:
      - Accept `searchParams: Promise<SearchParams>`.
      - Call `searchParamsCache.parse(searchParams)`.
-     - If you need fully dynamic behavior (like trips), consider `export const dynamic = 'force-dynamic';`.
 
 3. **Server component for listing**
    - Create a `<Resource>ListingPage` server component:
      - Read filters via `searchParamsCache.get`.
-     - Apply them to your data query (Supabase or other).
-     - Pass filtered data + total count to the different views (table, kanban, chart, etc.).
+     - Apply them to your Supabase query.
+     - Pass filtered data + total count to the different views.
 
 4. **Client filter bar**
    - Create `src/features/<resource>/components/<resource>-filters-bar.tsx`.
    - Use the **same structure** as `TripsFiltersBar`:
      - `useRouter`, `usePathname`, `useSearchParams`.
-     - An `updateFilters` helper that:
-       - Starts from current `searchParams`.
-       - Applies updates.
-       - Resets `page` to `1`.
-       - Calls `router.replace(nextUrl, { scroll: false })`.
-     - UI controls that just call `updateFilters` with the right key/value.
+     - An `updateFilters` helper (resets `page` to `1`, calls `router.replace`).
+     - UI controls that call `updateFilters` with the right key/value.
 
 5. **Wire it into the page**
-   - In your listing layout, render the new filter bar above the views:
+   - In your listing layout, render the filter bar above the views:
 
    ```tsx
    <ResourceFiltersBar totalItems={totalItems} />
-   <ResourceViewToggle currentView={view} />
    {/* views depending on `view` and filtered data */}
    ```
 
-6. **Avoid duplicating filter UIs**
-   - Don’t add additional filter dropdowns in table toolbars for the same fields.
-   - If you use column filters, keep them for **secondary filters** only, or ensure they sync with the same URL contract.
+6. **Column visibility (if the page has a DataTable)**
+   - Create a `use-<resource>-table-store.ts` Zustand store with `table` and `columnVisibility`.
+   - In your table component, sync both to the store via `useEffect`.
+   - In your filter bar, subscribe to the store and render the `Spalten` popover when `view === 'list'`.
+   - Pass `showViewOptions={false}` to `DataTableToolbar` to remove the standalone dropdown.
+   - Ensure all columns in `columns.tsx` have `meta: { label: 'German name' }`.
+
+7. **Avoid duplicating filter UIs**
+   - Don't add filter dropdowns in table toolbars for the same fields already in the filter bar.
 
 ---
 
-### 8. Dispatch-industry best practices reflected here
+### 9. Dispatch-industry best practices reflected here
 
 This design encodes patterns commonly seen in high-end dispatch / TMS / fleet products:
 
-- **Global filters first**: A single filter bar that controls date, status, driver, payer, billing profile, etc., across all views.
-- **Server-centric truth**: All views show the **same subset** of trips; you never have a Kanban and table out of sync.
-- **URL-driven workflows**: Dispatchers can bookmark “Today, pending, unassigned, payer=X” and return to it or share with colleagues.
-- **Predictable pagination**: Filtering always starts the dispatcher at page 1 of the new result set.
+- **Global filters first**: A single filter bar that controls date, status, driver, payer, billing profile, and column visibility across all views.
+- **Server-centric truth**: All views show the **same subset** of trips; Kanban and table are never out of sync.
+- **URL-driven workflows**: Dispatchers can bookmark "Today, pending, unassigned, payer=X" and return to it or share with colleagues.
+- **Predictable pagination**: Filtering always starts at page 1 of the new result set.
+- **Column control in context**: The column visibility dropdown only appears in list view where columns are relevant, avoiding UI noise in Kanban.
 
-Use this pattern as the template whenever you add new filtered views. It balances strong UX, debuggability (filters are always visible in the URL), and maintainability (one source of truth for how filters are applied).
-
+Use this pattern as the template whenever you add new filtered views.
