@@ -158,11 +158,17 @@ export function ClientTripsPanel({
                 selectedTrip && hasPair
                   ? (reason) => {
                       // eslint-disable-next-line @typescript-eslint/no-floating-promises
-                      cancelTrip(selectedTrip, 'skip-occurrence-and-paired', {
-                        source:
-                          'Manually cancelled (Hin/Rück) via Client Trips Panel',
-                        reason
-                      }).then(() => setSelectedTrip(null));
+                      cancelTrip(
+                        selectedTrip,
+                        selectedTrip.rule_id
+                          ? 'skip-occurrence-and-paired'
+                          : 'cancel-nonrecurring-and-paired',
+                        {
+                          source:
+                            'Manually cancelled (Hin/Rück) via Client Trips Panel',
+                          reason
+                        }
+                      ).then(() => setSelectedTrip(null));
                     }
                   : undefined
               }
@@ -181,7 +187,9 @@ export function ClientTripsPanel({
               singleLabel={
                 selectedTrip && selectedTrip.rule_id
                   ? 'Nur diese Fahrt stornieren (Aussetzen)'
-                  : 'Fahrt stornieren'
+                  : hasPair
+                    ? 'Nur diese Fahrt stornieren'
+                    : 'Fahrt stornieren'
               }
               pairLabel='Diese Fahrt & Rückfahrt stornieren'
               seriesLabel='Gesamte Serie beenden'

@@ -3,6 +3,7 @@ import type { Trip } from '@/features/trips/api/trips.service';
 
 export type TripCancelMode =
   | 'single-nonrecurring'
+  | 'cancel-nonrecurring-and-paired'
   | 'skip-occurrence'
   | 'skip-occurrence-and-paired'
   | 'cancel-series';
@@ -27,7 +28,7 @@ function deriveOccurrenceKey(trip: Trip): OccurrenceKey | null {
   return { dateStr, timeStr };
 }
 
-async function findPairedTrip(trip: Trip): Promise<Trip | null> {
+export async function findPairedTrip(trip: Trip): Promise<Trip | null> {
   const supabase = createClient();
 
   // 1) Prefer explicit linking via linked_trip_id when available
@@ -102,6 +103,23 @@ export async function cancelNonRecurringTrip(
   }
 
   return { ok: true };
+}
+
+export async function cancelNonRecurringTripAndPaired(
+  trip: Trip,
+  reason?: string
+): Promise<CancelResult> {
+  const primaryResult = await cancelNonRecurringTrip(trip, reason);
+  if (!primaryResult.ok) {
+    return primaryResult;
+  }
+
+  const pairedTrip = await findPairedTrip(trip);
+  if (!pairedTrip) {
+    return { ok: true };
+  }
+
+  return cancelNonRecurringTrip(pairedTrip, reason);
 }
 
 export async function skipRecurringOccurrence(

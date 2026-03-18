@@ -136,13 +136,19 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
           ).finally(() => setIsDeleteDialogOpen(false));
         }}
         onConfirmWithPair={
-          isRecurring && hasPair
+          hasPair
             ? (reason) => {
                 // eslint-disable-next-line @typescript-eslint/no-floating-promises
-                cancelTrip(data, 'skip-occurrence-and-paired', {
-                  source: 'Manually cancelled (Hin/Rück) via Trips Table',
-                  reason
-                }).finally(() => setIsDeleteDialogOpen(false));
+                cancelTrip(
+                  data,
+                  isRecurring
+                    ? 'skip-occurrence-and-paired'
+                    : 'cancel-nonrecurring-and-paired',
+                  {
+                    source: 'Manually cancelled (Hin/Rück) via Trips Table',
+                    reason
+                  }
+                ).finally(() => setIsDeleteDialogOpen(false));
               }
             : undefined
         }
@@ -158,7 +164,11 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
             : undefined
         }
         singleLabel={
-          isRecurring ? 'Nur diese Fahrt stornieren (Aussetzen)' : 'Löschen'
+          isRecurring
+            ? 'Nur diese Fahrt stornieren (Aussetzen)'
+            : hasPair
+              ? 'Nur diese Fahrt stornieren'
+              : 'Löschen'
         }
         pairLabel='Diese Fahrt & Rückfahrt stornieren'
         seriesLabel='Gesamte Serie beenden'

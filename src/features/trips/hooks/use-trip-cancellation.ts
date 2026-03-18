@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import type { Trip } from '@/features/trips/api/trips.service';
 import {
   cancelNonRecurringTrip,
+  cancelNonRecurringTripAndPaired,
   cancelRecurringSeries,
   skipRecurringOccurrence,
   skipRecurringOccurrenceAndPaired,
@@ -29,29 +30,23 @@ export function useTripCancellation() {
 
       let result: CancelResult;
 
-      if (!trip.rule_id) {
-        // Non-recurring trips always use the single-nonrecurring path.
-        result = await cancelNonRecurringTrip(trip, reason);
-      } else {
-        switch (mode) {
-          case 'skip-occurrence':
-            result = await skipRecurringOccurrence(trip, source, reason);
-            break;
-          case 'skip-occurrence-and-paired':
-            result = await skipRecurringOccurrenceAndPaired(
-              trip,
-              source,
-              reason
-            );
-            break;
-          case 'cancel-series':
-            result = await cancelRecurringSeries(trip, reason);
-            break;
-          case 'single-nonrecurring':
-          default:
-            result = await cancelNonRecurringTrip(trip, reason);
-            break;
-        }
+      switch (mode) {
+        case 'cancel-nonrecurring-and-paired':
+          result = await cancelNonRecurringTripAndPaired(trip, reason);
+          break;
+        case 'skip-occurrence':
+          result = await skipRecurringOccurrence(trip, source, reason);
+          break;
+        case 'skip-occurrence-and-paired':
+          result = await skipRecurringOccurrenceAndPaired(trip, source, reason);
+          break;
+        case 'cancel-series':
+          result = await cancelRecurringSeries(trip, reason);
+          break;
+        case 'single-nonrecurring':
+        default:
+          result = await cancelNonRecurringTrip(trip, reason);
+          break;
       }
 
       if (!result.ok) {
@@ -62,28 +57,27 @@ export function useTripCancellation() {
         return;
       }
 
-      if (!trip.rule_id) {
-        toast.success('Fahrt wurde erfolgreich storniert.');
-      } else {
-        switch (mode) {
-          case 'skip-occurrence':
-            toast.success(
-              'Wiederkehrende Fahrt wurde für dieses Datum storniert.'
-            );
-            break;
-          case 'skip-occurrence-and-paired':
-            toast.success(
-              'Hin- und Rückfahrt wurden für dieses Datum storniert.'
-            );
-            break;
-          case 'cancel-series':
-            toast.success(
-              'Wiederkehrende Serie wurde beendet und zukünftige Fahrten storniert.'
-            );
-            break;
-          default:
-            toast.success('Fahrt wurde erfolgreich storniert.');
-        }
+      switch (mode) {
+        case 'cancel-nonrecurring-and-paired':
+          toast.success('Hin- und Rückfahrt wurden storniert.');
+          break;
+        case 'skip-occurrence':
+          toast.success(
+            'Wiederkehrende Fahrt wurde für dieses Datum storniert.'
+          );
+          break;
+        case 'skip-occurrence-and-paired':
+          toast.success(
+            'Hin- und Rückfahrt wurden für dieses Datum storniert.'
+          );
+          break;
+        case 'cancel-series':
+          toast.success(
+            'Wiederkehrende Serie wurde beendet und zukünftige Fahrten storniert.'
+          );
+          break;
+        default:
+          toast.success('Fahrt wurde erfolgreich storniert.');
       }
 
       router.refresh();
