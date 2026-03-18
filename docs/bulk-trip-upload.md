@@ -132,7 +132,7 @@ kostentraeger,abrechnungsart,date,time,firstname,lastname,phone,greeting_style,p
   Rechnungsfahrt,...,10.03.26,15:00,...,CH1
   ```
 
-  Nach dem Import erhalten beide Fahrten eine bidirektionale Verknüpfung (`linked_trip_id`) und die spätere Fahrt wird als Rückfahrt markiert (`link_type = 'return'`). Das System bestimmt automatisch, welche Fahrt die Hinfahrt und welche die Rückfahrt ist:
+  Nach dem Import erhalten beide Fahrten eine bidirektionale Verknüpfung (`linked_trip_id`). Die frühere Fahrt wird als Hinfahrt markiert (`link_type = 'outbound'`) und die spätere als Rückfahrt (`link_type = 'return'`). Das System bestimmt automatisch, welche Fahrt die Hinfahrt und welche die Rückfahrt ist:
 
   | Situation | Regel |
   |---|---|
@@ -222,7 +222,7 @@ Wenn eine Abrechnungsart ein konfiguriertes `behavior_profile` hat, werden diese
 | `lockPickup` + Standard-Abholadresse | CSV-Abholadresse wird mit der konfigurierten Standardadresse **überschrieben** |
 | `lockDropoff` + Standard-Zieladresse | CSV-Zieladresse wird mit der konfigurierten Standardadresse **überschrieben** |
 | `prefillDropoffFromPickup` | Zieladresse wird von der (ggf. überschriebenen) Abholadresse kopiert |
-| `returnPolicy = 'time_tbd'` oder `'exact'` | Eine **Rückfahrt** wird automatisch angelegt: Adressen werden getauscht, `scheduled_at = NULL`, `link_type = 'return'`. Die Rückfahrt erscheint im **Offene Touren**-Widget. |
+| `returnPolicy = 'time_tbd'` oder `'exact'` | Eine **Rückfahrt** wird automatisch angelegt: Adressen werden getauscht, `scheduled_at = NULL`, `link_type = 'return'`. Die Hinfahrt erhält `link_type = 'outbound'`. Beide erhalten eine bidirektionale Verknüpfung (`linked_trip_id`). Die Rückfahrt erscheint im **Offene Touren**-Widget. |
 | `returnPolicy = 'none'` | Keine Rückfahrt wird angelegt |
 
 **Hinweis:** Bei `returnPolicy = 'exact'` kann die exakte Zeit aus einer CSV nicht ermittelt werden – die Rückfahrt wird daher analog zu `time_tbd` behandelt und muss im Widget nachgeplant werden.

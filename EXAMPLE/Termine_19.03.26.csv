@@ -1,0 +1,36 @@
+kostentraeger,abrechnungsart,date,time,greeting_style,lastname,firstname,phone,pickup_street,pickup_zip,pickup_city,pickup_station,dropoff_street,dropoff_zip,dropoff_city,dropoff_station,is_wheelchair,notes,group_id,driver_name,requested_date,pair_id
+RZO,Abreise,19.03.26,,Herr,Arntjen,Uwe,,Brandenburger Straße 31,,Oldenburg,HP,Mozartstr. 57,26419,Schortens,,FALSE,,,,,
+RZO,,19.03.26,08:00,Herr,Benkens,Hans-Dieter,,Krusenweg 17,26135,Oldenburg,HP,Brandenburger Str. 31,26133,Oldenburg,HP,FALSE,,,,,1
+RZO,,19.03.26,14:30,Herr,Benkens,Hans-Dieter,,Brandenburger Str. 31,26133,Oldenburg,HP,Krusenweg 17,26135,Oldenburg,,FALSE,,,,,1
+RZO,Konsil,19.03.26,09:00,Herr,Blassert,,,Brandenburger Straße 31,,Oldenburg,E,Cloppenburger Str. 296,,Oldenburg,,FALSE,,,,,
+RZO,Konsil,19.03.26,10:00,Frau,Bolling,Sophie,,Brandenburger Straße 31,,Oldenburg,E,Klinikum Oldenburg,,Oldenburg,Unfallchirugie,FALSE,,,,,
+Selbstzahler,,19.03.26,12:30,Frau,Borchers,Sigrid,,Kirchhofstraße 9,26121,Oldenburg,,Brandenburgerstraße 31,26133,Oldenburg,HP,TRUE,,,,,2
+Selbstzahler,,19.03.26,17:00,Frau,Borchers,Sigrid,,Brandenburgerstraße 31,26133,Oldenburg,C,Kirchhofstraße 9,26121,Oldenburg,,TRUE,,,,,2
+RZO,Abreise ,19.03.26,,Frau,Cohrssen,Gerda,,Brandenburger Straße 31,,Oldenburg,HP,Dudenstraße 1,28844,Weyhe,,FALSE,,,,,
+ARZO,,19.03.26,07:00,Frau,Erfeling,Anja,,Hermann-Oncken-Weg 10,,Oldenburg,C,Brandenburger Str. 31,26133,Oldenburg,C,FALSE,,,,,3
+ARZO,,19.03.26,13:00,Frau,Erfeling,Anja,,Brandenburger Str. 31,26133,Oldenburg,C,Hermann-Oncken-Weg 10,,Oldenburg,,FALSE,,,,,3
+Selbstzahler,,19.03.26,09:05,Frau,Gebhardt,Kornelia,,Dwobäkenhof 28,26160,Bad Zwischenahn,,Alexanderstr. 137 (Physio Gerdes),,Oldenburg,,FALSE,,,,,4
+Selbstzahler,,19.03.26,10:45,Frau,Gebhardt,Kornelia,,Alexanderstr. Physio Gerdes,,Oldenburg,,Dwobäkenhof 28,26160,Bad Zwischenahn,,FALSE,,,,,4
+RZO,Abreise,19.03.26,,Herr,Geschele,Viktor,,Brandenburger Straße 31,,Oldenburg,HP,Kleine Str. 32,49661,Cloppenburg,,FALSE,,,,,
+Selbstzahler,,19.03.26,06:45,Frau,Herbers,Kira,,Herrenweg 163 B,26135,Oldenburg,,Hohenacker 14,26188,Edewecht,,FALSE,,,,,5
+Selbstzahler,,19.03.26,14:30,Frau,Herbers,Kira,,Hohenacker 14,26188,Edewecht,,Herrenweg 163 B,26135,Oldenburg,,FALSE,,,,,5
+RZO,Abreise,19.03.26,,Herr,Köberlein,Jürgen,,Brandenburger Straße 31,,Oldenburg,HP,Schwachhausen 130,27257,Affinghausen,,FALSE,,,,,
+Selbstzahler,,19.03.26,07:40,Kind,Kolwitz,Louis-Lestat,,Nedderend 51,26121,Oldenburg,,Gertrudenstraße 25 (Röwekamp Grundschule),26121,Oldenburg,,FALSE,,,,,6
+Selbstzahler,,19.03.26,12:45,Kind,Kolwitz,Louis-Lestat,,Gertrudenstraße 25 (Röwekamp Grundschule),26121,Oldenburg,,Nedderend 51,26121,Oldenburg,,FALSE,,,,,6
+ARZO,,19.03.26,07:30,Frau,Krebs,Ute,,Eßkamp 58,26127,Oldenburg,C,Brandenburger Straße 31,,Oldenburg,C,FALSE,,,,,7
+ARZO,,19.03.26,15:00,Frau,Krebs,Ute,,Brandenburger Straße 31,,Oldenburg,C,Eßkamp 58,26127,Oldenburg,,FALSE,,,,,7
+KTS,,19.03.26,09:00,Frau,Kriete,,,Fürstenwalder Str. 25 (HANSA Seniorenstift),,Oldenburg,,Cloppenburgerstr. 417,,Oldenburg,,TRUE,,,,,8
+KTS,,19.03.26,,Frau,Kriete,,,Cloppenburgerstr. 417,,Oldenburg,,Fürstenwalder Str. 25 (HANSA Seniorenstift),,Oldenburg,,TRUE,,,,,8
+RZO,Konsil,19.03.26,10:00,Herr,Kronshagen,Klaus,,Brandenburger Straße 31,,Oldenburg,E,Klinikum,,Oldenburg,,FALSE,,,,,
+KTS,,19.03.26,09:30,Frau,Lange,Heike,,Schramperweg 108,,Oldenburg,,Alexanderstr. 293,,Oldenburg,,FALSE,,,,,9
+KTS,,19.03.26,,Frau,Lange,Heike,,Alexanderstr. 293,,Oldenburg,,Schramperweg 108,,Oldenburg,,FALSE,,,,,9
+RZO,Abreise,19.03.26,,Frau,Olbrich,Karin,,Brandenburger Straße 31,,Oldenburg,HP/E,Wiesenweg 21,26446,Friedeburg,,FALSE,,,,,
+RZO,Abreise,19.03.26,09:00,Frau,Reisauer,,,Brandenburger Straße 31,,Oldenburg,E,Marderweg 9 A,,Hatten,,TRUE,,,,,
+Selbstzahler,,19.03.26,22:00,Herr,Staudacher,Oliver,,Flughafen Bremen,,Bremen,,Taubenstraße 17,,Oldenburg,,FALSE,,,,,
+RZO,Abreise,19.03.26,,Herr,Suchow,Alexander,,Brandenburger Straße 31,,Oldenburg,HP,Kanalstr. 18,26759,Hinte,,FALSE,,,,,
+KTS,,19.03.26,10:00,Frau,Walker-Docter,,,Schramperweg 108,,Oldenburg,,Bloherfelder Str. 132 A,,Oldenburg,,FALSE,,,,,
+KTS,,19.03.26,,Frau,Walker-Docter,,,Bloherfelder Str. 132 A,,Oldenburg,,Schramperweg 108,,Oldenburg,,FALSE,,,,,
+Eispert,,19.03.26,07:15,Kinder,,Henri / Maria / Shan,,Wilkenweg 31 A / Eschstr. 14 / Lindenstr. 14,26123,Oldenburg,,Stedinger Str. 20-24,26135,Oldenburg,,FALSE,,,,,
+Eispert,,19.03.26,07:30,Kind,,Birk,,Dannenbuschweg 2,26131,Oldenburg,,Marschweg 38,26122,Oldenburg,,FALSE,,,,,
+Eispert,,19.03.26,15:45,Kind,,Birk,,Marschweg 38,26122,Oldenburg,,Dannenbuschweg 2,26131,Oldenburg,,FALSE,,,,,
+Eispert,,19.03.26,15:45,Kinder,,Frieda / Paulina,,Marschweg 38,26129,Oldenburg,,Im Brook 14 A / Karuschenweg 11,26127,Oldenburg,,FALSE,,,,,

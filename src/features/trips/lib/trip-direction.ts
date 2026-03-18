@@ -44,8 +44,15 @@ export function getTripDirection(
   // Primary signal: explicitly tagged as the return leg.
   if (trip.link_type === 'return') return 'rueckfahrt';
 
-  // Fallback for form-created legacy rows: unidirectional link means this is
-  // the return leg (the Hinfahrt never gets linked_trip_id in that path).
+  // Explicit outbound signal: set by bulk-upload on both the auto-return and
+  // pair_id Hinfahrt legs. Without this guard the `linked_trip_id` fallback
+  // below would incorrectly classify these bidirectional Hinfahrt rows as
+  // Rückfahrts (both legs carry linked_trip_id in bulk-upload pairs).
+  if (trip.link_type === 'outbound') return 'hinfahrt';
+
+  // Fallback for legacy form-created rows only: in those unidirectional pairs
+  // the Rückfahrt is the only leg that ever received linked_trip_id, so the
+  // presence of that field still reliably signals the return leg.
   if (trip.linked_trip_id) return 'rueckfahrt';
 
   // No signals — could be a Hinfahrt, a cron-generated leg, or a standalone trip.

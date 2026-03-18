@@ -956,12 +956,19 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
               returnTripsCreated = createdReturn.length;
 
               // ── Pass 3: Backfill linked_trip_id on outbound trips ───────────
+              // Also stamp link_type = 'outbound' so getTripDirection() can
+              // identify this leg as the Hinfahrt. Without it the fallback in
+              // getTripDirection would misread the linked_trip_id as a signal
+              // that this trip is the Rückfahrt.
               const supabaseForLinks = createSupabaseClient();
               await Promise.all(
                 returnToOutboundMap.map(({ returnIdx, outboundId }) =>
                   supabaseForLinks
                     .from('trips')
-                    .update({ linked_trip_id: createdReturn[returnIdx].id })
+                    .update({
+                      linked_trip_id: createdReturn[returnIdx].id,
+                      link_type: 'outbound'
+                    })
                     .eq('id', outboundId)
                 )
               );
@@ -1050,10 +1057,15 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
                   );
 
                   await Promise.all([
-                    // Hinfahrt: link_type stays null, linked_trip_id → Rückfahrt
+                    // Hinfahrt: link_type = 'outbound' so getTripDirection()
+                    // identifies this leg correctly. Without this the fallback
+                    // would misread linked_trip_id as a Rückfahrt signal.
                     supabaseForPairs
                       .from('trips')
-                      .update({ linked_trip_id: rueckfahrt.insertedId })
+                      .update({
+                        linked_trip_id: rueckfahrt.insertedId,
+                        link_type: 'outbound'
+                      })
                       .eq('id', hinfahrt.insertedId),
                     // Rückfahrt: link_type = 'return', linked_trip_id → Hinfahrt
                     supabaseForPairs

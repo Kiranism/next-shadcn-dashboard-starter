@@ -34,16 +34,18 @@ const direction = getTripDirection(trip);
 
 ### Resolution order inside `getTripDirection`
 
-1. **`link_type === 'return'`** → `'rueckfahrt'` *(primary signal, always set going forward)*
-2. **`linked_trip_id` is set** → `'rueckfahrt'` *(fallback for legacy rows created before the form fix landed — in unidirectional pairs the only leg with `linked_trip_id` is the Rückfahrt)*
-3. **Neither is set** → `'hinfahrt'` *(Hinfahrt or standalone; callers that need to distinguish those two should check whether a partner exists separately)*
+1. **`link_type === 'return'`** → `'rueckfahrt'` *(primary signal, always set on the Rückfahrt)*
+2. **`link_type === 'outbound'`** → `'hinfahrt'` *(explicit Hinfahrt signal, set by bulk-upload on both auto-return and pair_id outbound legs)*
+3. **`linked_trip_id` is set** → `'rueckfahrt'` *(legacy fallback — only reached by form-created rows created before the link_type fix landed)*
+4. **None of the above** → `'hinfahrt'` *(Hinfahrt or standalone)*
 
-### Why the fallback is safe
+### Why the legacy fallback is safe (and limited)
 
-Bulk-upload creates bidirectional links (both legs get `linked_trip_id`), but
-bulk-upload also always sets `link_type = 'return'` on the Rückfahrt. So rule 1
-fires before rule 2 ever runs for bulk-upload rows. Rule 2 is only reached by
-old form-created rows — where only the Rückfahrt has `linked_trip_id`.
+Bulk-upload creates **bidirectional** links — both legs receive `linked_trip_id`. If
+direction were inferred from `linked_trip_id` alone, the Hinfahrt leg would be
+misidentified as a Rückfahrt. This is why `link_type = 'outbound'` (rule 2) is
+stamped on every bulk-upload Hinfahrt; rule 3 is therefore only reached by old
+form-created rows, where only the Rückfahrt ever received `linked_trip_id`.
 
 ---
 
@@ -90,8 +92,8 @@ linked bidirectionally.
 
 | Leg | `link_type` | `linked_trip_id` |
 |-----|-------------|-----------------|
-| Hinfahrt | `null` | → return's `id` (backfilled in pass 3) |
-| Rückfahrt | `'return'` | → outbound's `id` |
+| Hinfahrt | `'outbound'` ✅ (stamped in pass 3) | → return's `id` |
+| Rückfahrt | `'return'` ✅ | → outbound's `id` |
 
 ---
 
@@ -112,8 +114,8 @@ After import (Pass 4 of the insert flow):
 
 | Leg | `link_type` | `linked_trip_id` |
 |-----|-------------|-----------------|
-| Hinfahrt (earlier time) | `null` | → Rückfahrt's `id` |
-| Rückfahrt (later time) | `'return'` | → Hinfahrt's `id` |
+| Hinfahrt (earlier time) | `'outbound'` ✅ | → Rückfahrt's `id` |
+| Rückfahrt (later time) | `'return'` ✅ | → Hinfahrt's `id` |
 
 #### Direction resolution order (within a pair)
 
@@ -221,11 +223,27 @@ Legacy rows in the database that predate the `link_type` fix:
 | Bulk upload — auto-return | Always had `link_type = 'return'` | No migration needed |
 | Bulk upload — `pair_id` | New feature (no legacy rows) | N/A |
 
-If you want to retroactively fix old rows, run:
+If you want to retroactively fix rows imported before the `link_type = 'outbound'`
+fix landed, run these two statements in order:
 
 ```sql
--- Fix form-created return trips: if linked_trip_id is set and link_type is null,
--- it is a legacy Rückfahrt. Only safe because bulk-upload always sets link_type.
+-- Step 1: Stamp 'outbound' on all Hinfahrt legs from bulk-upload pairs.
+-- Safe predicate: only updates trips whose partner already carries link_type = 'return',
+-- which unambiguously identifies them as the outbound leg. Legacy form-created rows
+-- (where both legs have link_type = null) are left untouched.
+UPDATE trips t
+SET link_type = 'outbound'
+WHERE t.link_type IS NULL
+  AND t.linked_trip_id IS NOT NULL
+  AND EXISTS (
+    SELECT 1 FROM trips partner
+    WHERE partner.id = t.linked_trip_id
+      AND partner.link_type = 'return'
+  );
+
+-- Step 2 (optional): Fix legacy form-created Rückfahrt rows that pre-date the
+-- link_type fix. After Step 1, any remaining row with link_type IS NULL and
+-- linked_trip_id IS NOT NULL and rule_id IS NULL is a legacy form Rückfahrt.
 UPDATE trips
 SET link_type = 'return'
 WHERE linked_trip_id IS NOT NULL
@@ -238,3 +256,8 @@ WHERE linked_trip_id IS NOT NULL
 -- Run carefully and verify against recurring_rules.return_time first.
 -- (No auto-migration provided — requires manual review per rule.)
 ```
+
+> **Important**: Step 1 MUST run before Step 2. Running Step 2 first (as the old
+> version of this doc suggested) would incorrectly mark bulk-upload Hinfahrt legs
+> as `'return'`, because they share the same predicate (`linked_trip_id IS NOT NULL,
+> link_type IS NULL, rule_id IS NULL`) as legacy form Rückfahrts.
