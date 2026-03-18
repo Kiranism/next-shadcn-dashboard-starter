@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Check, ChevronsUpDown, Loader2, MapPin } from 'lucide-react';
+import { Building2, Loader2, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +22,10 @@ import { useDebounce } from '@/hooks/use-debounce';
 
 export interface AddressResult {
   address: string;
+  // For establishment results (hospitals, stations, etc.) `name` holds the
+  // place name shown in the input after selection. `street` is left empty
+  // until place-details resolves the actual street from the placeId.
+  name?: string;
   street?: string;
   street_number?: string;
   zip_code?: string;
@@ -86,7 +90,7 @@ export function AddressAutocomplete({
           .map((item: any) => {
             const p = item.placePrediction ?? item;
 
-            // Try multiple shapes for structured formatting
+            // Support both Google Places API v1 (structuredFormat) and legacy (structured_formatting)
             const mainText =
               p.structuredFormat?.mainText?.text ??
               p.structured_formatting?.main_text ??
@@ -104,12 +108,31 @@ export function AddressAutocomplete({
               p.description ??
               [mainText, secondaryText].filter(Boolean).join(', ');
 
+            // Determine if this is a named place (establishment, POI) rather than
+            // a pure address. For establishments, mainText is the PLACE NAME and
+            // secondaryText is the street address — so we must not assign mainText
+            // to `street`. We detect this by checking the absence of address-only
+            // types; if types is empty we fall back to treating it as an address.
+            const types: string[] = p.types ?? [];
+            const isEstablishment =
+              types.length > 0 &&
+              !types.includes('route') &&
+              !types.includes('street_address') &&
+              !types.includes('geocode') &&
+              !types.includes('premise');
+
             return {
               address: addressText,
-              street: mainText,
+              // Place name shown in the input after selecting an establishment
+              name: isEstablishment ? mainText : undefined,
+              // For addresses mainText IS the street; for establishments the street
+              // is unknown until place-details resolves it from the placeId.
+              street: isEstablishment ? undefined : mainText,
+              // secondaryText for establishments already contains the readable address
+              // hint (e.g. "Rahel-Straus-Straße 10, Oldenburg") — keep it in city
+              // so the dropdown can display it as a location hint below the name.
               city: secondaryText,
               placeId: p.placeId ?? p.place_id,
-              // Google Places autocomplete can include distanceMeters from the bias center
               distance:
                 typeof p.distanceMeters === 'number'
                   ? p.distanceMeters
@@ -126,31 +149,33 @@ export function AddressAutocomplete({
           return;
         }
 
-        // Keep only results that resolved to a usable street field.
-        // The Google Places API returns both 'route' and 'street_address' types;
-        // both map street into mainText so this filter stays safe either way.
-        const streetResults =
-          rawSuggestions.filter((r) => !!r.street) ?? rawSuggestions;
+        // Keep results that have either a street (address types) or a name
+        // (establishment types). Both are actionable for dispatch — establishments
+        // get their street resolved later via place-details on selection.
+        const validResults = rawSuggestions.filter(
+          (r) => !!r.street || !!r.name
+        );
 
         // Split into two buckets:
-        //   1. Oldenburg results  — matched by the city secondary text
+        //   1. Oldenburg results  — city secondary text includes "oldenburg"
         //   2. Everything else    — fallback when locationBias found no local match
-        // This mirrors what the API already does (bias, not restrict), but lets us
-        // guarantee the visual ordering even if Google mixes the two in its response.
-        const oldenburgResults = streetResults.filter((r) =>
+        // For establishments, `city` holds the secondary address hint from Google
+        // (e.g. "Rahel-Straus-Straße 10, Oldenburg") so the check still works.
+        const oldenburgResults = validResults.filter((r) =>
           (r.city || '').toLowerCase().includes('oldenburg')
         );
 
-        const nearbyResults = streetResults.filter(
+        const nearbyResults = validResults.filter(
           (r) => !oldenburgResults.includes(r)
         );
 
-        // Within Oldenburg: alphabetical by street name, then by house number.
-        // Alphabetical is more useful than distance here because dispatchers
-        // typically know the street name and scan visually.
+        // Within Oldenburg: alphabetical by display label (place name or street).
+        // Establishments sort by name; address results sort by street + house number.
         oldenburgResults.sort((a, b) => {
-          const streetCompare = (a.street || '').localeCompare(b.street || '');
-          if (streetCompare !== 0) return streetCompare;
+          const labelA = a.name || a.street || '';
+          const labelB = b.name || b.street || '';
+          const labelCompare = labelA.localeCompare(labelB);
+          if (labelCompare !== 0) return labelCompare;
           return (a.street_number || '').localeCompare(b.street_number || '');
         });
 
@@ -192,9 +217,13 @@ export function AddressAutocomplete({
 
         const finalResult = {
           ...result,
+          // For establishments the input should show the place name, not the
+          // raw Google address string. For regular addresses keep the full text.
+          address: result.name ?? result.address,
           lat: details.lat,
           lng: details.lng,
           zip_code: details.zip_code,
+          // place-details resolves the actual street for establishments
           street: details.street || result.street,
           street_number: details.street_number,
           city: details.city || result.city
@@ -245,29 +274,50 @@ export function AddressAutocomplete({
           >
             <CommandEmpty>Keine Adresse gefunden.</CommandEmpty>
             <CommandGroup>
-              {suggestions.map((s, i) => (
-                <CommandItem
-                  key={i}
-                  value={s.address}
-                  onSelect={() => handleSelect(s)}
-                  className='flex flex-col items-start gap-1 py-3'
-                >
-                  <div className='flex w-full items-center justify-between'>
-                    <div className='text-xs font-medium'>
-                      {s.street} {s.street_number}
+              {suggestions.map((s, i) =>
+                s.name ? (
+                  // Establishment / named place result
+                  <CommandItem
+                    key={i}
+                    value={s.address}
+                    onSelect={() => handleSelect(s)}
+                    className='flex flex-col items-start gap-1 py-3'
+                  >
+                    <div className='flex w-full items-center gap-1.5'>
+                      <Building2 className='text-muted-foreground h-3 w-3 shrink-0' />
+                      <span className='text-xs font-medium'>{s.name}</span>
                     </div>
-                    {s.zip_code && (
-                      <div className='text-muted-foreground bg-muted rounded px-1.5 py-0.5 text-[10px]'>
-                        {s.zip_code}
+                    {s.city && (
+                      <div className='text-muted-foreground line-clamp-1 pl-[18px] text-[10px]'>
+                        {s.city}
                       </div>
                     )}
-                  </div>
-                  <div className='text-muted-foreground line-clamp-1 text-[10px]'>
-                    {s.city}
-                    {s.address.split(',').slice(2).join(',')}
-                  </div>
-                </CommandItem>
-              ))}
+                  </CommandItem>
+                ) : (
+                  // Street / address result
+                  <CommandItem
+                    key={i}
+                    value={s.address}
+                    onSelect={() => handleSelect(s)}
+                    className='flex flex-col items-start gap-1 py-3'
+                  >
+                    <div className='flex w-full items-center justify-between'>
+                      <div className='text-xs font-medium'>
+                        {s.street} {s.street_number}
+                      </div>
+                      {s.zip_code && (
+                        <div className='text-muted-foreground bg-muted rounded px-1.5 py-0.5 text-[10px]'>
+                          {s.zip_code}
+                        </div>
+                      )}
+                    </div>
+                    <div className='text-muted-foreground line-clamp-1 text-[10px]'>
+                      {s.city}
+                      {s.address.split(',').slice(2).join(',')}
+                    </div>
+                  </CommandItem>
+                )
+              )}
             </CommandGroup>
           </CommandList>
         </Command>

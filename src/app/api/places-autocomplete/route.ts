@@ -26,10 +26,13 @@ export async function POST(req: NextRequest) {
               radius: 15000 // 15 km — covers the entire Oldenburg urban area
             }
           },
-          // Include both route (street name only) and street_address (street +
-          // house number) so dispatchers can enter precise pickup/dropoff points
-          // like "Alexanderstraße 14" without the filter blocking them.
-          includedPrimaryTypes: ['route', 'street_address'],
+          // Three result types cover all dispatcher input patterns:
+          //   route          — street name only ("Alexanderstraße")
+          //   street_address — full address with house number ("Alexanderstraße 14")
+          //   establishment  — named place ("Klinikum Oldenburg", "Hauptbahnhof")
+          // Google Places API v1 (New) allows mixing address and establishment types
+          // in the same request, unlike the legacy Places API.
+          includedPrimaryTypes: ['route', 'street_address', 'establishment'],
           includedRegionCodes: ['de'],
           languageCode: 'de'
         })

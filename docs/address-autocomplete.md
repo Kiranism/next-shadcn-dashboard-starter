@@ -73,12 +73,26 @@ The bias is centred on Oldenburg city centre (53.1435°N, 8.2147°E) with a 15 k
 
 ## `includedPrimaryTypes`
 
-The autocomplete route specifies `['route', 'street_address']`:
+The autocomplete route specifies `['route', 'street_address', 'establishment']`:
 
 - **`route`** — a named street without a house number (e.g. "Alexanderstraße, Oldenburg"). Useful for general area references.
 - **`street_address`** — a full address including house number (e.g. "Alexanderstraße 14, Oldenburg"). Required for precise pickup and dropoff points.
+- **`establishment`** — a named place (e.g. "Klinikum Oldenburg", "Hauptbahnhof Oldenburg"). The address is unknown at autocomplete time and is resolved from the placeId via `/api/place-details` on selection.
 
-Using only `route` (the original setting) blocked all house-number searches, making it impossible to enter precise addresses.
+Google Places API v1 (New) allows mixing address types (`route`, `street_address`) and establishment types in the same `includedPrimaryTypes` array. This was not possible in the legacy Places API.
+
+## Establishment vs. Address Result Shape
+
+The Google Places API returns a different `structuredFormat` shape for each type:
+
+| Type | `mainText` | `secondaryText` |
+|------|-----------|----------------|
+| `route` / `street_address` | Street name or full address | City / region |
+| `establishment` | **Place name** | Street address + city |
+
+For establishments, `mainText` is the place name — not a street. The component detects this via `p.types` and routes `mainText → name` instead of `street`. The `name` field drives both the dropdown label and the input value after selection. The actual `street`, `street_number`, `zip_code`, and coordinates are resolved on selection via `/api/place-details`.
+
+The `AddressResult.name` field is the signal used throughout: if `name` is set, the result is an establishment.
 
 ---
 
