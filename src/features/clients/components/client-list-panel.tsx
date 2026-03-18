@@ -21,7 +21,7 @@
  *   onNewClient      — called when "+ Neuer Fahrgast" is clicked
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useDebounce } from '@/hooks/use-debounce';
 import { PanelList } from '@/components/panels';
 import { clientsService, Client } from '../api/clients.service';
@@ -43,6 +43,9 @@ export function ClientListPanel({
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Guards the one-time auto-select so it never fires again after the first load
+  const autoSelectDone = useRef(false);
+
   // Debounce search to avoid a Supabase query on every keystroke
   const debouncedSearch = useDebounce(searchTerm, 250);
 
@@ -53,7 +56,10 @@ export function ClientListPanel({
         search: search || undefined,
         limit: 200
       });
-      setClients(data);
+      // Client-side sort so companies (null last_name) are interleaved
+      // alphabetically by company_name rather than appended at the end.
+      const sorted = sortClientsAlphabetically(data);
+      setClients(sorted);
     } catch (err: any) {
       toast.error('Fehler beim Laden der Fahrgäste: ' + err.message);
     } finally {
@@ -64,6 +70,21 @@ export function ClientListPanel({
   useEffect(() => {
     fetchClients(debouncedSearch);
   }, [debouncedSearch, fetchClients]);
+
+  // Auto-select the first client when the view opens with no client in the URL.
+  // The ref ensures this fires at most once per mount — it does not re-trigger
+  // when the search input changes or when a different client is selected later.
+  useEffect(() => {
+    if (
+      !autoSelectDone.current &&
+      !selectedClientId &&
+      clients.length > 0 &&
+      !loading
+    ) {
+      autoSelectDone.current = true;
+      onSelectClient(clients[0].id);
+    }
+  }, [clients, loading, selectedClientId, onSelectClient]);
 
   // Expose a refresh function so ClientDetailPanel can trigger a re-fetch
   // after saving a new client (the list needs to show the newly created entry).
@@ -151,6 +172,35 @@ function ClientListItem({ client, isSelected }: ClientListItemProps) {
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
+
+/**
+ * Sorts clients alphabetically by their "primary name":
+ *   - Persons  → last_name (then first_name as tiebreaker)
+ *   - Companies → company_name
+ * Using German locale so ä/ö/ü sort correctly (Ä after A, etc.)
+ */
+function sortClientsAlphabetically(data: Client[]): Client[] {
+  return [...data].sort((a, b) => {
+    const aKey = (
+      a.last_name ??
+      a.company_name ??
+      a.first_name ??
+      ''
+    ).toLowerCase();
+    const bKey = (
+      b.last_name ??
+      b.company_name ??
+      b.first_name ??
+      ''
+    ).toLowerCase();
+    const primary = aKey.localeCompare(bKey, 'de');
+    if (primary !== 0) return primary;
+    // Tiebreaker for persons sharing the same last name
+    const aFirst = (a.first_name ?? '').toLowerCase();
+    const bFirst = (b.first_name ?? '').toLowerCase();
+    return aFirst.localeCompare(bFirst, 'de');
+  });
+}
 
 function getClientDisplayName(client: Client): string {
   if (client.company_name) return client.company_name;

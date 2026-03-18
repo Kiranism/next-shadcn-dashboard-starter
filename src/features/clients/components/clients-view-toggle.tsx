@@ -25,14 +25,14 @@ import {
 import { cn } from '@/lib/utils';
 
 export function ClientsViewToggle() {
-  // 'table' is the default — matches existing behaviour when no param is present.
+  // 'columns' is the default — no ?view param in the URL = Spaltenansicht.
   // shallow: false is required so that changing the view triggers a server
   // component re-render in page.tsx (which reads ?view server-side to decide
   // which layout to render). Without this, nuqs updates the URL client-side only
   // and page.tsx never sees the new value — nothing appears to change visually.
   const [view, setView] = useQueryState(
     'view',
-    parseAsString.withDefault('table').withOptions({ shallow: false })
+    parseAsString.withDefault('columns').withOptions({ shallow: false })
   );
 
   const isColumns = view === 'columns';

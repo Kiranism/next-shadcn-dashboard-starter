@@ -28,7 +28,13 @@ export const clientsService = {
       query = query.range(from, to);
     }
 
-    query = query.order('created_at', { ascending: false });
+    // Primary sort: last_name A-Z (nulls last = companies appear after persons).
+    // Secondary sorts are applied client-side in client-list-panel.tsx so that
+    // companies (null last_name) are correctly interleaved by company_name.
+    query = query
+      .order('last_name', { ascending: true, nullsFirst: false })
+      .order('first_name', { ascending: true, nullsFirst: false })
+      .order('company_name', { ascending: true, nullsFirst: false });
 
     const { data, count, error } = await query;
 

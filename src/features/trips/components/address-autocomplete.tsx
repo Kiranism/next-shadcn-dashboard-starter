@@ -58,12 +58,20 @@ export function AddressAutocomplete({
   const [isLoading, setIsLoading] = React.useState(false);
   const debouncedQuery = useDebounce(value, 300);
 
+  // Only fetch when the user is actively typing. Without this, a pre-filled
+  // value (page reload, panel reopen) would trigger the dropdown immediately.
+  const userIsTypingRef = React.useRef(false);
+
   React.useEffect(() => {
     const fetchSuggestions = async () => {
       if (!debouncedQuery || debouncedQuery.length < 3) {
         setSuggestions([]);
         return;
       }
+
+      // Skip API call if the value change came from a prop update (pre-filled
+      // form, page reload) rather than from the user typing in the field.
+      if (!userIsTypingRef.current) return;
 
       setIsLoading(true);
       try {
@@ -209,6 +217,9 @@ export function AddressAutocomplete({
   }, [debouncedQuery]);
 
   const handleSelect = async (result: AddressResult) => {
+    // Mark typing as done so the resolved value doesn't re-trigger the dropdown
+    userIsTypingRef.current = false;
+
     if (result.placeId) {
       setIsLoading(true);
       try {
@@ -249,7 +260,10 @@ export function AddressAutocomplete({
         <div className='relative w-full'>
           <Input
             value={value}
-            onChange={(e) => onChange({ address: e.target.value })}
+            onChange={(e) => {
+              userIsTypingRef.current = true;
+              onChange({ address: e.target.value });
+            }}
             placeholder={placeholder}
             disabled={disabled}
             className={cn('h-8 text-[11px]', className)}

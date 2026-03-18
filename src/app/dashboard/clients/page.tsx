@@ -25,7 +25,7 @@ export default async function Page(props: PageProps) {
 
   // Read the view param server-side to conditionally render the correct view.
   // 'table' is the default — existing behaviour is unchanged when no param present.
-  const view = (searchParams.view as string) ?? 'table';
+  const view = (searchParams.view as string) ?? 'columns';
   const isColumnView = view === 'columns';
 
   return (
