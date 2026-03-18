@@ -68,8 +68,12 @@ export default function PageContainer({
       </div>
     </ScrollArea>
   ) : (
-    <div className='flex flex-1 flex-col p-4 md:px-6'>
-      <div className='mb-4 flex items-start justify-between'>
+    // h-[calc(100dvh-52px)]: caps the container at viewport-minus-header, matching
+    // the scrollable=true path. Without this, SidebarProvider's `min-h-svh` lets
+    // the layout grow past the viewport and the whole page scrolls.
+    // overflow-hidden: ensures child panels (not this container) own their scroll.
+    <div className='flex h-[calc(100dvh-52px)] flex-col overflow-hidden p-4 md:px-6'>
+      <div className='mb-4 flex shrink-0 items-start justify-between'>
         <Heading
           title={pageTitle ?? ''}
           description={pageDescription ?? ''}
