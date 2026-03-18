@@ -22,8 +22,10 @@ Wichtig: **Alle gültigen Fahrten werden immer zuerst erstellt.** Der Wizard die
 Verwenden Sie diese exakte Kopfzeile (Reihenfolge ist wichtig):
 
 ```text
-kostentraeger,abrechnungsart,date,time,firstname,lastname,phone,greeting_style,pickup_street,pickup_zip,pickup_city,pickup_station,dropoff_street,dropoff_zip,dropoff_city,dropoff_station,is_wheelchair,notes,group_id,driver_name
+kostentraeger,abrechnungsart,date,time,firstname,lastname,phone,greeting_style,pickup_street,pickup_zip,pickup_city,pickup_station,dropoff_street,dropoff_zip,dropoff_city,dropoff_station,is_wheelchair,notes,group_id,driver_name,pair_id
 ```
+
+> **Hinweis:** `pair_id` ist neu und optional. Bestehende CSVs ohne diese Spalte funktionieren weiterhin ohne Änderungen.
 
 ### 3. Column Details
 
@@ -121,6 +123,33 @@ kostentraeger,abrechnungsart,date,time,firstname,lastname,phone,greeting_style,p
   - Gedacht zum Matchen auf `users.name` mit `role = 'driver'` und `is_active = true` (case-insensitiv).
   - Wenn ein Match gefunden wird, kann die Fahrt später automatisch dem richtigen Fahrer zugeordnet werden.
 
+- **pair_id** (optional)  
+  Verknüpft zwei Zeilen derselben CSV als **Hin/Rückfahrt-Paar**. Beide Zeilen müssen denselben (nicht leeren) Wert in dieser Spalte haben.
+
+  ```csv
+  kostentraeger,...,date,time,...,pair_id
+  Rechnungsfahrt,...,10.03.26,07:30,...,CH1
+  Rechnungsfahrt,...,10.03.26,15:00,...,CH1
+  ```
+
+  Nach dem Import erhalten beide Fahrten eine bidirektionale Verknüpfung (`linked_trip_id`) und die spätere Fahrt wird als Rückfahrt markiert (`link_type = 'return'`). Das System bestimmt automatisch, welche Fahrt die Hinfahrt und welche die Rückfahrt ist:
+
+  | Situation | Regel |
+  |---|---|
+  | Beide Zeilen haben eine Uhrzeit | Frühere Uhrzeit = Hinfahrt |
+  | Nur eine Zeile hat eine Uhrzeit | Zeile mit Uhrzeit = Hinfahrt |
+  | Keine Zeile hat eine Uhrzeit | Reihenfolge im CSV (erste Zeile = Hinfahrt) |
+
+  **Effekt in der App:**
+  - Der Stornierungsdialog fragt bei jeder Fahrt automatisch, ob auch die zugehörige Rückfahrt storniert werden soll.
+  - Wenn eine Fahrt storniert wird, zeigt die andere Fahrt ein rotes Hinweis-Badge (z. B. „Hinfahrt storniert").
+
+  **Regeln & Besonderheiten:**
+  - Der Wert ist ein lokaler CSV-Schlüssel — er wird **nicht** in der Datenbank gespeichert.
+  - Genau 2 Zeilen müssen den gleichen `pair_id`-Wert haben. Wenn 3 oder mehr Zeilen denselben Wert tragen, werden nur die ersten zwei verknüpft; die restlichen erhalten eine Warnung.
+  - Eine einzelne Zeile mit `pair_id` (ohne passende zweite Zeile) wird als normale Einzelfahrt erstellt.
+  - Wenn die Abrechnungsart eine automatische Rückfahrt erstellt (`returnPolicy`), wird diese Automatik für Zeilen mit `pair_id` unterdrückt — da beide Fahrten bereits explizit vorhanden sind.
+
 ### 4. Validierung & Matching im Upload
 
 Während des Uploads wird jede Zeile in eine interne Struktur `ValidatedTripRow` überführt. Dabei laufen u. a. folgende Prüfungen:
@@ -199,7 +228,8 @@ Wenn eine Abrechnungsart ein konfiguriertes `behavior_profile` hat, werden diese
 **Hinweis:** Bei `returnPolicy = 'exact'` kann die exakte Zeit aus einer CSV nicht ermittelt werden – die Rückfahrt wird daher analog zu `time_tbd` behandelt und muss im Widget nachgeplant werden.
 
 Die Import-Zusammenfassung im Dialog zeigt nach dem Upload:
-- Anzahl automatisch erstellter Rückfahrten
+- Anzahl automatisch erstellter Rückfahrten (durch Abrechnungsart-Regel)
+- Anzahl verknüpfter Hin/Rückfahrt-Paare (durch `pair_id`)
 - Anzahl durch Regeln überschriebener Adressen
 
 Weitere Details: siehe [`docs/bulk-upload-behavior-rules.md`](./bulk-upload-behavior-rules.md).

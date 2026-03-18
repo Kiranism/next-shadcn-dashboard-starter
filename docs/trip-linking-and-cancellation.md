@@ -82,14 +82,65 @@ direction can only be inferred by comparing `scheduled_at` times (earlier = Hinf
 
 ---
 
-### 3c. Bulk Upload (`src/features/trips/components/bulk-upload-dialog.tsx`)
+### 3c. Bulk Upload — Auto-return trips (`src/features/trips/components/bulk-upload-dialog.tsx`)
 
-Bulk upload has always been the most complete: it sets both fields bidirectionally.
+When a billing type has `returnPolicy = 'time_tbd'` or `'exact'`, the upload
+automatically generates a return trip for every outbound row. Both legs are
+linked bidirectionally.
 
 | Leg | `link_type` | `linked_trip_id` |
 |-----|-------------|-----------------|
 | Hinfahrt | `null` | → return's `id` (backfilled in pass 3) |
 | Rückfahrt | `'return'` | → outbound's `id` |
+
+---
+
+### 3d. Bulk Upload — Explicit `pair_id` pairs
+
+Dispatchers can link two explicitly-timed rows as a Hin/Rückfahrt pair by giving
+them the same value in the optional `pair_id` CSV column. This is the preferred
+approach when both legs already have real departure times — use it instead of
+relying on the billing-type auto-return.
+
+```csv
+kostentraeger,...,date,time,...,pair_id
+Rechnungsfahrt,...,10.03.26,07:30,...,CH1   ← Hinfahrt
+Rechnungsfahrt,...,10.03.26,15:00,...,CH1   ← Rückfahrt
+```
+
+After import (Pass 4 of the insert flow):
+
+| Leg | `link_type` | `linked_trip_id` |
+|-----|-------------|-----------------|
+| Hinfahrt (earlier time) | `null` | → Rückfahrt's `id` |
+| Rückfahrt (later time) | `'return'` | → Hinfahrt's `id` |
+
+#### Direction resolution order (within a pair)
+
+1. Both rows have `scheduled_at` → earlier = Hinfahrt, later = Rückfahrt
+2. One has time, one doesn't → timed row = Hinfahrt, timeless row = Rückfahrt
+3. Both have no time (or identical times) → CSV row order (first = Hinfahrt)
+
+#### Conflict guard
+
+If a row carries a `pair_id` **and** the billing type has `returnPolicy = 'time_tbd'`
+or `'exact'`, the automatic return-trip generation is suppressed. The dispatcher
+has explicitly provided both legs — creating a third auto-generated trip would
+be incorrect.
+
+#### Validation
+
+- `pair_id` groups with fewer than 2 matching rows are silently skipped — the
+  trip is still created as a standalone (lone key, no link is made).
+- `pair_id` groups with 3+ rows produce a non-blocking `pair_id_ambiguous`
+  validation warning. Only the first two members (by direction resolution order)
+  are linked; extra rows are created as standalone trips.
+
+#### `pair_id` in code
+
+The `pair_id` value is a **local CSV key only** — it is never stored on the
+`trips` row. The field is read, used for linking, and then discarded. After
+Pass 4 the two trips are indistinguishable from any other bidirectional pair.
 
 ---
 
@@ -167,7 +218,8 @@ Legacy rows in the database that predate the `link_type` fix:
 |---|---|---|
 | Create-trip form | `link_type = null` on Rückfahrt | `getTripDirection` fallback (rule 2: `linked_trip_id`) |
 | Cron | `link_type = null` on both legs | Direction unknown from trip row alone; badge conservatively shows "Rückfahrt storniert" for trips without `linked_trip_id` (i.e., the Hinfahrt). Cancellation still works via the rule_id + same-day fallback. |
-| Bulk upload | Always had `link_type = 'return'` | No migration needed |
+| Bulk upload — auto-return | Always had `link_type = 'return'` | No migration needed |
+| Bulk upload — `pair_id` | New feature (no legacy rows) | N/A |
 
 If you want to retroactively fix old rows, run:
 

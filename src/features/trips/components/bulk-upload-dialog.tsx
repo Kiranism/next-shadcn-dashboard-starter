@@ -94,6 +94,8 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
     rows: ValidatedTripRow[];
     returnTripsCreated: number;
     addressOverrides: number;
+    /** Number of pair_id groups that were successfully linked as Hin/Rückfahrt pairs. */
+    linkedPairsCount: number;
   } | null>(null);
   const [mode, setMode] = React.useState<
     'upload' | 'resume_prompt' | 'resume_loading' | 'resolve_clients' | 'done'
@@ -773,6 +775,17 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
             }
           }
 
+          // Read the explicit pair_id pairing key from the CSV.
+          // A non-empty value means this row is one half of a manually-specified
+          // Hin/Rückfahrt pair. Pass 4 will link both trips after insert.
+          const pairId = parsedRow.pair_id?.trim() || null;
+
+          // Conflict guard: if the user provided both legs explicitly via pair_id,
+          // suppress the billing-type auto-return so we don't create a third trip.
+          if (pairId && rowNeedsReturnTrip) {
+            rowNeedsReturnTrip = false;
+          }
+
           const matchedClientId: string | null = matchedClient?.id ?? null;
 
           validatedRows.push({
@@ -782,7 +795,9 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
             issues,
             clientId: matchedClientId,
             needsReturnTrip: rowNeedsReturnTrip,
-            addressOverrideApplied: rowHasAddressOverride
+            addressOverrideApplied: rowHasAddressOverride,
+            pairId,
+            pairRowIndex: i
           });
         }
 
@@ -952,6 +967,109 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
               );
             }
 
+            // ── Pass 4: Link explicit pair_id pairs ─────────────────────────
+            //
+            // Collect all successful rows that carried a pair_id into a map keyed
+            // by that value. Each group must have exactly 2 members to be linked.
+            //
+            // Direction is resolved by scheduled_at (earlier = Hinfahrt). When
+            // both timestamps are equal or absent, CSV row order determines it
+            // (lower pairRowIndex = Hinfahrt).
+            //
+            // The resulting links are bidirectional: both trips get linked_trip_id,
+            // and the Rückfahrt also receives link_type = 'return' so that
+            // getTripDirection() and all badge/cancel-dialog logic works correctly.
+            let linkedPairsCount = 0;
+
+            type PairMember = {
+              insertedId: string;
+              scheduledAt: string | null;
+              rowIndex: number;
+            };
+
+            const pairGroups = new Map<string, PairMember[]>();
+
+            successfulRows.forEach((row, i) => {
+              if (!row.pairId) return;
+              const insertedId = (createdOutbound[i] as any)?.id as
+                | string
+                | undefined;
+              if (!insertedId) return;
+              const existing = pairGroups.get(row.pairId) ?? [];
+              existing.push({
+                insertedId,
+                scheduledAt: row.trip?.scheduled_at ?? null,
+                rowIndex: row.pairRowIndex ?? i
+              });
+              pairGroups.set(row.pairId, existing);
+            });
+
+            /**
+             * Sorts a pair of PairMembers so that index 0 is the Hinfahrt and
+             * index 1 is the Rückfahrt, using the direction-resolution rules:
+             *   1. Both have scheduled_at → earlier is Hinfahrt
+             *   2. One has time, one doesn't → timed = Hinfahrt
+             *   3. Both absent or equal → lower rowIndex = Hinfahrt
+             */
+            const sortPairMembers = (
+              members: PairMember[]
+            ): [PairMember, PairMember] => {
+              const [a, b] = members;
+              const aMs = a.scheduledAt
+                ? new Date(a.scheduledAt).getTime()
+                : null;
+              const bMs = b.scheduledAt
+                ? new Date(b.scheduledAt).getTime()
+                : null;
+
+              if (aMs !== null && bMs !== null) {
+                return aMs <= bMs ? [a, b] : [b, a];
+              }
+              if (aMs !== null) return [a, b]; // a has time → a is Hinfahrt
+              if (bMs !== null) return [b, a]; // b has time → b is Hinfahrt
+              return a.rowIndex <= b.rowIndex ? [a, b] : [b, a]; // row order
+            };
+
+            const supabaseForPairs = createSupabaseClient();
+
+            await Promise.all(
+              Array.from(pairGroups.entries()).map(
+                async ([pairKey, members]) => {
+                  if (members.length < 2) return; // lone key — skip silently
+
+                  if (members.length > 2) {
+                    // Non-blocking warning — trips are created but extra rows are
+                    // not linked. The issue is surfaced in the results summary.
+                    errors.push(
+                      `pair_id "${pairKey}": ${members.length} Zeilen gefunden, nur die ersten 2 werden verknüpft.`
+                    );
+                  }
+
+                  const [hinfahrt, rueckfahrt] = sortPairMembers(
+                    members.slice(0, 2)
+                  );
+
+                  await Promise.all([
+                    // Hinfahrt: link_type stays null, linked_trip_id → Rückfahrt
+                    supabaseForPairs
+                      .from('trips')
+                      .update({ linked_trip_id: rueckfahrt.insertedId })
+                      .eq('id', hinfahrt.insertedId),
+                    // Rückfahrt: link_type = 'return', linked_trip_id → Hinfahrt
+                    supabaseForPairs
+                      .from('trips')
+                      .update({
+                        linked_trip_id: hinfahrt.insertedId,
+                        link_type: 'return'
+                      })
+                      .eq('id', rueckfahrt.insertedId)
+                  ]);
+
+                  linkedPairsCount++;
+                }
+              )
+            );
+
             // Build wizard rows from unresolved outbound trips only.
             const unresolvedCreated = createdOutbound
               .map((trip: any, idx: number) => ({
@@ -966,17 +1084,29 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
               );
 
             const totalCreated = outboundTrips.length + returnTripsCreated;
-            toast.success(
-              returnTripsCreated > 0
-                ? `${outboundTrips.length} Fahrten + ${returnTripsCreated} Rückfahrten erfolgreich hochgeladen!`
-                : `${outboundTrips.length} Fahrten erfolgreich hochgeladen!`
+
+            // Build a context-aware success toast that mentions pairs when relevant.
+            const toastParts: string[] = [];
+            toastParts.push(
+              `${outboundTrips.length} Fahrt${outboundTrips.length !== 1 ? 'en' : ''}`
             );
+            if (returnTripsCreated > 0)
+              toastParts.push(
+                `${returnTripsCreated} Rückfahrt${returnTripsCreated !== 1 ? 'en' : ''}`
+              );
+            if (linkedPairsCount > 0)
+              toastParts.push(
+                `${linkedPairsCount} Paar${linkedPairsCount !== 1 ? 'e' : ''} verknüpft`
+              );
+            toast.success(`${toastParts.join(' + ')} erfolgreich hochgeladen!`);
+
             setResults({
               success: totalCreated,
               errors: [],
               rows: validatedRows,
               returnTripsCreated,
-              addressOverrides
+              addressOverrides,
+              linkedPairsCount
             });
             onSuccess?.();
             router.refresh();
@@ -1019,7 +1149,8 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
               errors,
               rows: validatedRows,
               returnTripsCreated: 0,
-              addressOverrides: 0
+              addressOverrides: 0,
+              linkedPairsCount: 0
             });
           }
         } else {
@@ -1039,7 +1170,8 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
             errors: combinedErrors,
             rows: validatedRows,
             returnTripsCreated: 0,
-            addressOverrides
+            addressOverrides,
+            linkedPairsCount: 0
           });
           setMode('done');
         }
@@ -1237,6 +1369,12 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
                           {results.returnTripsCreated} Rückfahrt
                           {results.returnTripsCreated !== 1 ? 'en' : ''}{' '}
                           automatisch angelegt
+                        </li>
+                      )}
+                      {results.linkedPairsCount > 0 && (
+                        <li>
+                          {results.linkedPairsCount} Hin/Rückfahrt-Paar
+                          {results.linkedPairsCount !== 1 ? 'e' : ''} verknüpft
                         </li>
                       )}
                       {results.addressOverrides > 0 && (
