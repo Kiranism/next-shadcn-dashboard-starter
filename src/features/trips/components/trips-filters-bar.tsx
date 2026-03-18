@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { format, startOfWeek, endOfWeek, subWeeks, addWeeks } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Settings2 } from 'lucide-react';
+import { CheckIcon, CaretSortIcon } from '@radix-ui/react-icons';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,9 +21,19 @@ import {
   PopoverContent,
   PopoverTrigger
 } from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList
+} from '@/components/ui/command';
 import { Calendar } from '@/components/ui/calendar';
 import type { DateRange } from 'react-day-picker';
 import { useTripFormData } from '@/features/trips/hooks/use-trip-form-data';
+import { useTripsTableStore } from '@/features/trips/stores/use-trips-table-store';
+import { cn } from '@/lib/utils';
 
 interface TripsFiltersBarProps {
   totalItems: number;
@@ -40,6 +51,21 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
   const payerId = searchParams.get('payer_id') ?? 'all';
   const billingTypeId = searchParams.get('billing_type_id') ?? 'all';
   const scheduledAt = searchParams.get('scheduled_at') ?? '';
+  const currentView = searchParams.get('view') ?? 'list';
+
+  const table = useTripsTableStore((s) => s.table);
+  const columnVisibility = useTripsTableStore((s) => s.columnVisibility);
+
+  const hidableColumns = useMemo(() => {
+    if (!table) return [];
+    return table
+      .getAllColumns()
+      .filter(
+        (col) => typeof col.accessorFn !== 'undefined' && col.getCanHide()
+      );
+    // columnVisibility in deps ensures re-render (and fresh getIsVisible()) on every toggle
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [table, columnVisibility]);
 
   const hasSetDefaultDate = useRef(false);
 
@@ -318,6 +344,56 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
               ))}
             </SelectContent>
           </Select>
+        )}
+
+        {currentView === 'list' && table && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant='outline'
+                size='sm'
+                className='h-8 flex-shrink-0 justify-between gap-1.5 text-xs font-normal'
+              >
+                <Settings2 className='h-3.5 w-3.5 shrink-0' />
+                <span>Spalten</span>
+                <CaretSortIcon className='ml-1 h-3.5 w-3.5 shrink-0 opacity-50' />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align='start' className='w-48 p-0'>
+              <Command>
+                <CommandInput
+                  placeholder='Spalte suchen...'
+                  className='h-8 text-xs'
+                />
+                <CommandList>
+                  <CommandEmpty className='py-2 text-center text-xs'>
+                    Keine Spalten gefunden.
+                  </CommandEmpty>
+                  <CommandGroup>
+                    {hidableColumns.map((column) => (
+                      <CommandItem
+                        key={column.id}
+                        onSelect={() =>
+                          column.toggleVisibility(!column.getIsVisible())
+                        }
+                        className='text-xs'
+                      >
+                        <span className='truncate'>
+                          {(column.columnDef.meta as any)?.label ?? column.id}
+                        </span>
+                        <CheckIcon
+                          className={cn(
+                            'ml-auto size-3.5 shrink-0',
+                            column.getIsVisible() ? 'opacity-100' : 'opacity-0'
+                          )}
+                        />
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         )}
       </div>
       <div className='flex items-center gap-3'>

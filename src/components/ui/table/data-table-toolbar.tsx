@@ -14,12 +14,14 @@ import { Cross2Icon } from '@radix-ui/react-icons';
 
 interface DataTableToolbarProps<TData> extends React.ComponentProps<'div'> {
   table: Table<TData>;
+  showViewOptions?: boolean;
 }
 
 export function DataTableToolbar<TData>({
   table,
   children,
   className,
+  showViewOptions = true,
   ...props
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0;
@@ -62,7 +64,7 @@ export function DataTableToolbar<TData>({
       </div>
       <div className='flex items-center gap-2'>
         {children}
-        <DataTableViewOptions table={table} />
+        {showViewOptions && <DataTableViewOptions table={table} />}
       </div>
     </div>
   );

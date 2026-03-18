@@ -8,6 +8,7 @@ import * as React from 'react';
 import { ColumnDef } from '@tanstack/react-table';
 import { parseAsInteger, useQueryState } from 'nuqs';
 import { columns } from './columns';
+import { useTripsTableStore } from '@/features/trips/stores/use-trips-table-store';
 
 export { columns };
 
@@ -32,6 +33,19 @@ export function TripsTable<TData, TValue>({
     shallow: false,
     debounceMs: 500
   });
+
+  const setTable = useTripsTableStore((s) => s.setTable);
+  const setColumnVisibility = useTripsTableStore((s) => s.setColumnVisibility);
+
+  React.useEffect(() => {
+    setTable(table as any);
+    return () => setTable(null);
+  }, [table, setTable]);
+
+  const columnVisibility = table.getState().columnVisibility;
+  React.useEffect(() => {
+    setColumnVisibility(columnVisibility);
+  }, [columnVisibility, setColumnVisibility]);
 
   // Calculate groups for visual indicators
   const groupCounts = React.useMemo(() => {
@@ -89,7 +103,7 @@ export function TripsTable<TData, TValue>({
         return cn(classes);
       }}
     >
-      <DataTableToolbar table={table} />
+      <DataTableToolbar table={table} showViewOptions={false} />
     </DataTable>
   );
 }
