@@ -89,7 +89,17 @@ export function PendingToursWidget() {
       <CardHeader>
         <CardTitle>Offene Touren</CardTitle>
         <CardDescription>
-          {trips.length} Fahrt{trips.length === 1 ? '' : 'en'} ohne Abholzeit
+          {(() => {
+            const noTime = trips.filter((t) => !t.scheduled_at).length;
+            const noDriver = trips.filter(
+              (t) => t.scheduled_at && !t.driver_id
+            ).length;
+            const parts: string[] = [];
+            if (noTime > 0) parts.push(`${noTime} ohne Zeit`);
+            if (noDriver > 0) parts.push(`${noDriver} ohne Fahrer`);
+            if (parts.length === 0) return 'Alle Fahrten geplant';
+            return parts.join(' · ');
+          })()}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -146,18 +156,27 @@ function UnplannedTripRow({
   const linkedPartnerCancelled = trip.linked_trip?.status === 'cancelled';
   const cancelledPartnerLabel = getCancelledPartnerLabel(trip);
 
-  // Pre-fill date from requested_date (CSV date-only import) or outbound
-  // trip's scheduled_at (return trip context), falling back to today.
+  // Pre-fill date/time: own scheduled_at takes priority (trip has time but no
+  // driver), then requested_date (CSV import), then linked outbound trip time,
+  // then today as fallback.
   const initialDate = (() => {
+    if (trip.scheduled_at)
+      return new Date(trip.scheduled_at).toISOString().slice(0, 10);
     if (trip.requested_date) return trip.requested_date;
     const linkedAt = trip.linked_trip?.scheduled_at;
     if (linkedAt) return new Date(linkedAt).toISOString().slice(0, 10);
     return new Date().toISOString().slice(0, 10);
   })();
 
+  const initialTime = trip.scheduled_at
+    ? format(new Date(trip.scheduled_at), 'HH:mm')
+    : '';
+
   const [dateStr, setDateStr] = useState(initialDate);
-  const [time, setTime] = useState('');
-  const [driverId, setDriverId] = useState<string | null>(null);
+  const [time, setTime] = useState(initialTime);
+  const [driverId, setDriverId] = useState<string | null>(
+    trip.driver_id ?? null
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSetTime = async () => {

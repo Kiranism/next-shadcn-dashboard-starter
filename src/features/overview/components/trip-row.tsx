@@ -99,6 +99,17 @@ export function TripRow({
       </div>
       <div className='ml-4 flex flex-col items-end gap-1.5'>
         <div className='flex items-center gap-1.5'>
+          {trip.linked_partner_status === 'cancelled' && (
+            <div
+              className={cn(
+                tripStatusBadge({ status: 'cancelled' }),
+                'flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-bold whitespace-nowrap'
+              )}
+            >
+              <AlertTriangle className='h-2.5 w-2.5' />
+              {getCancelledPartnerLabel(trip)}
+            </div>
+          )}
           <Badge
             className={cn(
               tripStatusBadge({ status: tripStatus }),
@@ -124,17 +135,6 @@ export function TripRow({
             <Share2 className='h-3.5 w-3.5' />
           </button>
         </div>
-        {trip.linked_partner_status === 'cancelled' && (
-          <div
-            className={cn(
-              tripStatusBadge({ status: 'cancelled' }),
-              'flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-bold whitespace-nowrap'
-            )}
-          >
-            <AlertTriangle className='h-2.5 w-2.5' />
-            {getCancelledPartnerLabel(trip)}
-          </div>
-        )}
         <p className='text-muted-foreground text-[10px] font-bold tracking-wider whitespace-nowrap uppercase'>
           Fahrer:{' '}
           <span className='text-foreground font-medium'>

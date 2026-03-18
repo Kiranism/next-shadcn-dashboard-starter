@@ -44,7 +44,7 @@ export function useUnplannedTrips(filter: UnplannedFilter) {
       const { data: unplannedRows, error: fetchError } = await supabase
         .from('trips')
         .select('*, requested_date')
-        .is('scheduled_at', null)
+        .or('scheduled_at.is.null,driver_id.is.null')
         .not('status', 'in', '("cancelled","completed")')
         .order('created_at', { ascending: false });
 
@@ -95,8 +95,9 @@ export function useUnplannedTrips(filter: UnplannedFilter) {
         filter === 'all'
           ? withLinked
           : withLinked.filter((trip) => {
-              // Priority: linked outbound trip's confirmed time → requested_date from CSV → exclude
+              // Priority: own scheduled_at → linked outbound trip's confirmed time → requested_date → exclude
               const dateStr =
+                trip.scheduled_at ??
                 trip.linked_trip?.scheduled_at ??
                 (trip.requested_date
                   ? `${trip.requested_date}T12:00:00`
