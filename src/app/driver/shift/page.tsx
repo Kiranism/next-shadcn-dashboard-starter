@@ -1,4 +1,4 @@
-import { ShiftTracker } from '@/features/drivers/components/shift-tracker';
+import { ShiftTracker } from '@/features/driver-portal/components/shift-tracker';
 
 export default function DriverShiftPage() {
   return (

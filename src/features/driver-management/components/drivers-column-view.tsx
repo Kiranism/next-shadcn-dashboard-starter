@@ -2,7 +2,9 @@
 
 /**
  * DriversColumnView — Orchestrator for the Fahrer Miller Columns layout.
- * Two columns: list + detail. Columns view is the primary layout per panel-layout-system.
+ *
+ * Two columns: list + detail. Columns view is the primary layout per
+ * panel-layout-system. Used at /dashboard/drivers when view=columns.
  */
 
 import {

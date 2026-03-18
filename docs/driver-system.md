@@ -86,6 +86,8 @@ Each action writes to `shift_events` and updates `shifts.status`. Optional GPS v
 
 ## File Structure
 
+Drivers are split into two features by audience. See [feature-folder-structure.md](feature-folder-structure.md).
+
 ```
 src/
 ├── app/
@@ -95,19 +97,15 @@ src/
 │       ├── layout.tsx
 │       ├── page.tsx
 │       └── shift/page.tsx
-├── features/drivers/
-│   ├── api/
-│   │   ├── drivers.service.ts
-│   │   └── shifts.service.ts
-│   ├── components/
-│   │   ├── driver-form.tsx
-│   │   ├── drivers-listing.tsx
-│   │   ├── drivers-table/
-│   │   │   ├── columns.tsx
-│   │   │   ├── cell-action.tsx
-│   │   │   └── index.tsx
-│   │   └── shift-tracker.tsx
-│   ├── stores/use-driver-form-store.ts
-│   └── types.ts
+├── features/
+│   ├── driver-management/     # Admin: /dashboard/drivers
+│   │   ├── api/drivers.service.ts
+│   │   ├── components/       # driver-form, drivers-column-view, drivers-table, etc.
+│   │   ├── stores/use-driver-form-store.ts
+│   │   └── types.ts
+│   └── driver-portal/         # Driver: /driver/*
+│       ├── api/shifts.service.ts
+│       ├── components/       # driver-header, shift-tracker
+│       └── types.ts
 └── proxy.ts  # Route protection for /driver and /dashboard
 ```

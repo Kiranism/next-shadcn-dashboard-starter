@@ -1,13 +1,15 @@
 /**
  * DriverTableListing — Server component for table view.
+ *
  * Fetches drivers with pagination and passes to DriverTable.
  * Uses searchParamsCache (populated by page) for page, perPage, name.
+ * Rendered at /dashboard/drivers when view=table.
  */
 
 import { searchParamsCache } from '@/lib/searchparams';
 import { createClient } from '@/lib/supabase/server';
 import { DriverTable } from './drivers-table';
-import type { DriverWithProfile } from '@/features/drivers/types';
+import type { DriverWithProfile } from '@/features/driver-management/types';
 import { getSortingStateParser } from '@/lib/parsers';
 
 const SORTABLE_COLUMNS = new Set([

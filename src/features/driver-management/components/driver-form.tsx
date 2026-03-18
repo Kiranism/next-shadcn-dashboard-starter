@@ -2,8 +2,10 @@
 
 /**
  * Driver create/edit form in a sheet (table view).
- * Uses DriverFormBody for shared fields. Create: POST /api/drivers/create.
- * Edit: driversService.updateDriver + upsertDriverProfile.
+ *
+ * Used only in table view; columns view uses DriverDetailPanel.
+ * Uses DriverFormBody for shared fields.
+ * Create: POST /api/drivers/create. Edit: driversService.updateDriver + upsertDriverProfile.
  */
 
 import { Button } from '@/components/ui/button';
@@ -13,7 +15,7 @@ import {
   SheetHeader,
   SheetTitle
 } from '@/components/ui/sheet';
-import { useDriverFormStore } from '@/features/drivers/stores/use-driver-form-store';
+import { useDriverFormStore } from '@/features/driver-management/stores/use-driver-form-store';
 import { useRouter } from 'next/navigation';
 import { useRef } from 'react';
 import { DriverFormBody } from './driver-form-body';

@@ -2,10 +2,11 @@
 
 /**
  * TanStack Table column definitions for the drivers listing.
+ * Used by DriverTable in table view at /dashboard/drivers.
  */
 
 import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-header';
-import type { DriverWithProfile } from '@/features/drivers/types';
+import type { DriverWithProfile } from '@/features/driver-management/types';
 import { Column, ColumnDef } from '@tanstack/react-table';
 import { CellAction } from './cell-action';
 

@@ -2,14 +2,16 @@
 
 /**
  * DriverListPanel — Column 1 of the Fahrer Miller Columns view.
- * Fetches drivers, renders list with search. Exposes __refreshDriverList for sibling panels.
+ *
+ * Fetches drivers, renders list with search. Exposes __refreshDriverList
+ * for sibling panels (DriverDetailPanel) to trigger refetch after create.
  */
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useDebounce } from '@/hooks/use-debounce';
 import { PanelList } from '@/components/panels';
-import { driversService } from '@/features/drivers/api/drivers.service';
-import type { DriverWithProfile } from '@/features/drivers/types';
+import { driversService } from '@/features/driver-management/api/drivers.service';
+import type { DriverWithProfile } from '@/features/driver-management/types';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 

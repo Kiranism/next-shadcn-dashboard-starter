@@ -1,11 +1,12 @@
 'use client';
 
 /**
- * "Neuer Fahrer" button for table view header — opens the driver form sheet.
+ * "Neuer Fahrer" button for table view header.
+ * Opens the driver form sheet in create mode.
  */
 
 import { buttonVariants } from '@/components/ui/button';
-import { useDriverFormStore } from '@/features/drivers/stores/use-driver-form-store';
+import { useDriverFormStore } from '@/features/driver-management/stores/use-driver-form-store';
 import { IconPlus } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
 

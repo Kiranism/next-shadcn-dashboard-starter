@@ -2,7 +2,9 @@
 
 /**
  * Shift tracker — Start / Pause (break) / End shift.
- * State machine: idle → active → on_break → active → ended
+ *
+ * Used at /driver/shift by drivers. State machine:
+ * idle → active → on_break → active → ended
  */
 
 import { Button } from '@/components/ui/button';
@@ -15,9 +17,9 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { createClient } from '@/lib/supabase/client';
-import { shiftsService } from '@/features/drivers/api/shifts.service';
-import { SHIFT_STATUSES, BREAK_REASONS } from '@/features/drivers/types';
-import type { Shift } from '@/features/drivers/types';
+import { shiftsService } from '@/features/driver-portal/api/shifts.service';
+import { SHIFT_STATUSES, BREAK_REASONS } from '@/features/driver-portal/types';
+import type { Shift } from '@/features/driver-portal/types';
 import {
   IconPlayerPause,
   IconPlayerPlay,

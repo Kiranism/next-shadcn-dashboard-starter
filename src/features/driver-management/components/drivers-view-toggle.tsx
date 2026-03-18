@@ -1,10 +1,9 @@
 'use client';
 
 /**
- * DriversViewToggle
+ * DriversViewToggle — Switches between Miller Columns and table view.
  *
- * Switches between Miller Columns view (Spaltenansicht) and table view (Tabellenansicht).
- * Columns view is the default (primary); table view is secondary.
+ * Columns view (Spaltenansicht) is the default; table view (Tabellenansicht) secondary.
  * Uses nuqs with shallow: false so the server component page re-renders on view change.
  */
 

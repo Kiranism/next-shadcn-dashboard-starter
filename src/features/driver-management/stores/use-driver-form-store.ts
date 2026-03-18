@@ -1,6 +1,8 @@
 /**
  * Zustand store for driver form sheet state.
- * Used by drivers-listing (to show sheet) and cell-action (to open edit).
+ *
+ * Used by driver-management: table view (cell-action opens edit),
+ * create button (opens create), DriverForm sheet.
  */
 
 import type { DriverWithProfile } from '../types';

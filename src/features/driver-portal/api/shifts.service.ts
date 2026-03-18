@@ -1,8 +1,8 @@
 /**
- * Shifts service — shift and shift_events operations for the driver shift tracker.
+ * Shifts service — shift and shift_events operations.
  *
- * Uses standardized event types (SHIFT_EVENT_TYPES) and statuses (SHIFT_STATUSES)
- * from ../types.
+ * Used by driver-portal (shift tracker at /driver/shift).
+ * Uses standardized event types and statuses from ../types.
  */
 
 import { createClient } from '@/lib/supabase/client';

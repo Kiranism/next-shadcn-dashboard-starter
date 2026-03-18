@@ -1,10 +1,10 @@
 import PageContainer from '@/components/layout/page-container';
 import { DataTableSkeleton } from '@/components/ui/table/data-table-skeleton';
-import DriverTableListing from '@/features/drivers/components/driver-table-listing';
-import { DriverCreateButton } from '@/features/drivers/components/driver-create-button';
-import { DriversColumnView } from '@/features/drivers/components/drivers-column-view';
-import { DriversViewToggle } from '@/features/drivers/components/drivers-view-toggle';
-import { DriverForm } from '@/features/drivers/components/driver-form';
+import DriverTableListing from '@/features/driver-management/components/driver-table-listing';
+import { DriverCreateButton } from '@/features/driver-management/components/driver-create-button';
+import { DriversColumnView } from '@/features/driver-management/components/drivers-column-view';
+import { DriversViewToggle } from '@/features/driver-management/components/drivers-view-toggle';
+import { DriverForm } from '@/features/driver-management/components/driver-form';
 import { searchParamsCache } from '@/lib/searchparams';
 import { SearchParams } from 'nuqs/server';
 import { Suspense } from 'react';

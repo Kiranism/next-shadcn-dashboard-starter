@@ -4,7 +4,7 @@
  * Redirects admins to dashboard (driver routes are for drivers only).
  */
 
-import { DriverHeader } from '@/features/drivers/components/driver-header';
+import { DriverHeader } from '@/features/driver-portal/components/driver-header';
 import { createClient } from '@/lib/supabase/server';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';

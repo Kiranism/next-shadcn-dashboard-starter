@@ -2,7 +2,9 @@
 
 /**
  * Driver app header — burger menu with logout.
- * Mobile-first, minimal UI.
+ *
+ * Used in /driver/* layout. Mobile-first, minimal UI.
+ * No sidebar; drivers get a compact header with sign-out.
  */
 
 import { Button } from '@/components/ui/button';

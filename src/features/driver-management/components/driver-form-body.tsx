@@ -2,7 +2,8 @@
 
 /**
  * Driver form body — shared form fields for create/edit.
- * Used in DriverForm (sheet) and DriverDetailPanel (panel).
+ *
+ * Used in DriverForm (sheet, table view) and DriverDetailPanel (columns view).
  * Exposes submit via forwardRef and onDirtyChange for header button.
  *
  * Fields: first_name, last_name, email (create/edit display), phone, role,
@@ -30,7 +31,7 @@ import {
   AddressAutocomplete,
   type AddressResult
 } from '@/features/trips/components/address-autocomplete';
-import type { DriverWithProfile } from '@/features/drivers/types';
+import type { DriverWithProfile } from '@/features/driver-management/types';
 import { createClient } from '@/lib/supabase/client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {

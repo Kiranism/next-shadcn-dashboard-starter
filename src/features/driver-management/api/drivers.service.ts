@@ -1,8 +1,9 @@
 /**
- * Drivers service — CRUD for users with role='driver'.
+ * Drivers service — CRUD for accounts with role='driver'.
  *
- * Driver creation (auth + users + driver_profiles) is handled by
- * POST /api/drivers/create using Supabase service role.
+ * Used by driver-management (admin Fahrer page). Driver creation
+ * (auth + accounts + driver_profiles) is handled by POST /api/drivers/create
+ * using Supabase service role.
  */
 
 import { createClient } from '@/lib/supabase/client';
@@ -21,7 +22,7 @@ type GetDriversFilters = {
 
 export const driversService = {
   /**
-   * Fetch drivers (users with role='driver'), optionally with driver_profiles.
+   * Fetch drivers (accounts with role='driver'), optionally with driver_profiles.
    * For list view, omit driver_profiles join to avoid RLS/join issues.
    */
   async getDrivers(filters?: GetDriversFilters): Promise<{
@@ -72,8 +73,8 @@ export const driversService = {
   },
 
   /**
-   * Fetch a single user by id with driver_profile. Used for edit form.
-   * Fetches user and driver_profiles separately to avoid "Cannot coerce to single
+   * Fetch a single account by id with driver_profile. Used for edit form.
+   * Fetches account and driver_profiles separately to avoid "Cannot coerce to single
    * JSON object" when a user has multiple driver_profiles rows.
    */
   async getDriverById(id: string): Promise<DriverWithProfile | null> {
@@ -95,7 +96,7 @@ export const driversService = {
   },
 
   /**
-   * Update driver (users table). Used for edit form.
+   * Update driver (accounts table). Used for edit form.
    */
   async updateDriver(
     id: string,

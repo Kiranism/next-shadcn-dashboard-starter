@@ -2,6 +2,7 @@
 
 /**
  * Row action dropdown for driver table: Edit, Deactivate.
+ * Edit opens the DriverForm sheet via useDriverFormStore.
  */
 
 import { AlertModal } from '@/components/modal/alert-modal';
@@ -13,9 +14,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { driversService } from '@/features/drivers/api/drivers.service';
-import { useDriverFormStore } from '@/features/drivers/stores/use-driver-form-store';
-import type { DriverWithProfile } from '@/features/drivers/types';
+import { driversService } from '@/features/driver-management/api/drivers.service';
+import { useDriverFormStore } from '@/features/driver-management/stores/use-driver-form-store';
+import type { DriverWithProfile } from '@/features/driver-management/types';
 import { IconDotsVertical, IconEdit, IconUserOff } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';

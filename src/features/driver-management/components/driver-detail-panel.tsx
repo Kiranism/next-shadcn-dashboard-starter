@@ -2,18 +2,16 @@
 
 /**
  * DriverDetailPanel — Column 2 of the Fahrer Miller Columns view.
- * Create (driverId='new') or edit driver. Uses DriverFormBody for fields.
+ *
+ * Create (driverId='new') or edit driver. Uses DriverFormBody for shared form fields.
  */
 
 import { useEffect, useState, useRef } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Panel, PanelHeader, PanelBody } from '@/components/panels';
-import {
-  driversService,
-  type UpdateUser
-} from '@/features/drivers/api/drivers.service';
-import type { DriverWithProfile } from '@/features/drivers/types';
+import { driversService } from '@/features/driver-management/api/drivers.service';
+import type { DriverWithProfile } from '@/features/driver-management/types';
 import { toast } from 'sonner';
 import { DriverFormBody } from './driver-form-body';
 

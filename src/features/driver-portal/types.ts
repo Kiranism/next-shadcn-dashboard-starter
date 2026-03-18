@@ -1,9 +1,9 @@
 /**
- * Driver and shift type definitions.
+ * Driver portal types — shift and shift_events.
  *
- * DB Schema alignment:
- * - shift_events.event_type: stored as string in DB; we standardize allowed values in code.
- * - shifts.status: stored as string in DB; we standardize allowed values in code.
+ * Used by driver-portal (shift tracker at /driver/shift).
+ * DB schema alignment: event_type and status stored as strings;
+ * we standardize allowed values in code.
  */
 
 import type { Database } from '@/types/database.types';
@@ -38,20 +38,8 @@ export const BREAK_REASONS = {
 
 export type BreakReason = (typeof BREAK_REASONS)[keyof typeof BREAK_REASONS];
 
-/** User row from DB (users table). */
-export type User = Database['public']['Tables']['accounts']['Row'];
-
-/** Driver profile row (driver_profiles table). */
-export type DriverProfile =
-  Database['public']['Tables']['driver_profiles']['Row'];
-
 /** Shift row from DB. */
 export type Shift = Database['public']['Tables']['shifts']['Row'];
 
 /** Shift event row from DB. */
 export type ShiftEvent = Database['public']['Tables']['shift_events']['Row'];
-
-/** User with optional driver_profile joined. Used in admin driver listing. */
-export interface DriverWithProfile extends User {
-  driver_profiles?: DriverProfile | DriverProfile[] | null;
-}
