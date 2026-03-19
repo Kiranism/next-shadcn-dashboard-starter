@@ -1240,16 +1240,22 @@ function TripCard({
       >
         <div className='flex items-center justify-between gap-2'>
           <div
-            className='flex min-w-0 items-center justify-center font-semibold'
+            className='bg-muted/70 hover:bg-muted/40 grid h-6 w-14 shrink-0 place-items-center rounded transition-colors'
             onClick={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
           >
-            <Input
+            <input
               type='time'
               value={timeValue}
               onChange={handleTimeChange}
               onBlur={handleTimeBlur}
-              className='hover:bg-muted/40 h-6 w-14 rounded border-0 bg-transparent p-0 text-center text-xs leading-6 font-semibold shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 [&::-webkit-datetime-edit]:text-center [&::-webkit-datetime-edit-fields-wrapper]:inline-flex [&::-webkit-datetime-edit-fields-wrapper]:justify-center'
+              className={cn(
+                'hover:bg-muted/40 h-6 w-14 rounded border-0 bg-transparent p-0 text-center text-xs font-semibold outline-none',
+                '[&::-webkit-calendar-picker-indicator]:hidden',
+                '[&::-webkit-datetime-edit]:m-0 [&::-webkit-datetime-edit]:flex [&::-webkit-datetime-edit]:h-full [&::-webkit-datetime-edit]:w-full [&::-webkit-datetime-edit]:items-center [&::-webkit-datetime-edit]:justify-center',
+                '[&::-webkit-datetime-edit-fields-wrapper]:flex [&::-webkit-datetime-edit-fields-wrapper]:justify-center',
+                'focus-visible:ring-0'
+              )}
             />
           </div>
           {trip.status && (
