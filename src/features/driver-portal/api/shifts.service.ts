@@ -310,7 +310,10 @@ export const shiftsService = {
   },
 
   /**
-   * Start a break. Creates break_start event and updates shift status.
+   * Start a break.
+   * Inserts a break_start shift_event AND updates shifts.status → 'on_break'.
+   * Requires the shifts_status_check DB constraint to allow 'on_break'.
+   * Run migration 20260320000000_fix_shifts_status_check.sql if not yet applied.
    */
   async startBreak(params: {
     shiftId: string;
@@ -340,7 +343,9 @@ export const shiftsService = {
   },
 
   /**
-   * End a break. Creates break_end event and updates shift status to active.
+   * End a break.
+   * Inserts a break_end shift_event AND updates shifts.status → 'active'.
+   * Requires the shifts_status_check DB constraint to allow 'on_break'.
    */
   async endBreak(params: {
     shiftId: string;

@@ -3,6 +3,7 @@ import { cva } from 'class-variance-authority';
 export type TripStatus =
   | 'completed'
   | 'assigned'
+  | 'scheduled'
   | 'in_progress'
   | 'driving'
   | 'cancelled'
@@ -26,6 +27,8 @@ export const tripStatusBadge = cva('border font-medium', {
         'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-800',
       assigned:
         'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800',
+      scheduled:
+        'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800',
       in_progress:
         'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800',
       driving:
@@ -48,6 +51,7 @@ export const tripStatusRow = cva('', {
     status: {
       completed: 'border-l-green-500 bg-green-50/30 dark:bg-green-950/10',
       assigned: 'border-l-blue-500 bg-blue-50/30 dark:bg-blue-950/10',
+      scheduled: 'border-l-blue-500 bg-blue-50/30 dark:bg-blue-950/10',
       in_progress: 'border-l-amber-500 bg-amber-50/30 dark:bg-amber-950/10',
       driving: 'border-l-amber-500 bg-amber-50/30 dark:bg-amber-950/10',
       cancelled: 'border-l-red-500 bg-red-50/20 dark:bg-red-950/10',
@@ -61,6 +65,7 @@ export const tripStatusRow = cva('', {
 export const tripStatusLabels: Record<TripStatus, string> = {
   completed: 'Erledigt',
   assigned: 'Zugewiesen',
+  scheduled: 'Geplant',
   in_progress: 'Unterwegs',
   driving: 'Unterwegs',
   cancelled: 'Storniert',
