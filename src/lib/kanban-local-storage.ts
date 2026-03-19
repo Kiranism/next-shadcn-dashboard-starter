@@ -6,6 +6,8 @@
  * SSR-safe access, and a Zustand persist storage adapter.
  */
 
+import { createJSONStorage } from 'zustand/middleware';
+
 /** All localStorage keys used by the Kanban board. Add new keys here. */
 export const STORAGE_KEYS = {
   /** Kanban pending changes (assignments, grouping, time); staged until Speichern. */
@@ -64,32 +66,41 @@ export function removeItem(key: StorageKey): void {
 }
 
 /**
- * Storage adapter for Zustand persist middleware.
- * Use with: persist(..., { name: STORAGE_KEYS.X, storage: localStorageAdapter })
+ * Low-level storage (string in/out) for Zustand persist.
+ * createJSONStorage wraps this to produce a PersistStorage (StorageValue in/out).
  */
-export const localStorageAdapter = {
-  getItem: (name: string): string | null => {
-    if (!isAvailable()) return null;
-    try {
-      return localStorage.getItem(name);
-    } catch {
-      return null;
+function getStateStorage() {
+  return {
+    getItem: (name: string): string | null => {
+      if (!isAvailable()) return null;
+      try {
+        return localStorage.getItem(name);
+      } catch {
+        return null;
+      }
+    },
+    setItem: (name: string, value: string): void => {
+      if (!isAvailable()) return;
+      try {
+        localStorage.setItem(name, value);
+      } catch {
+        // Ignore
+      }
+    },
+    removeItem: (name: string): void => {
+      if (!isAvailable()) return;
+      try {
+        localStorage.removeItem(name);
+      } catch {
+        // Ignore
+      }
     }
-  },
-  setItem: (name: string, value: string): void => {
-    if (!isAvailable()) return;
-    try {
-      localStorage.setItem(name, value);
-    } catch {
-      // Ignore
-    }
-  },
-  removeItem: (name: string): void => {
-    if (!isAvailable()) return;
-    try {
-      localStorage.removeItem(name);
-    } catch {
-      // Ignore
-    }
-  }
-};
+  };
+}
+
+/**
+ * Storage adapter for Zustand persist middleware.
+ * createJSONStorage converts our string-based storage to the StorageValue
+ * format (parsed { state, version }) that persist expects.
+ */
+export const localStorageAdapter = createJSONStorage(getStateStorage);
