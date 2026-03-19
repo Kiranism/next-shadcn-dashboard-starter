@@ -839,7 +839,7 @@ function KanbanDragPreview({
     const groupTrips = effectiveTrips.filter((t) => t.group_id === groupId);
     if (groupTrips.length === 0) return null;
     return (
-      <div className='border-primary/25 bg-primary/5 flex w-72 flex-shrink-0 flex-col gap-1.5 rounded-lg border-2 p-1.5 shadow-lg'>
+      <div className='border-primary/25 bg-primary/5 flex w-72 flex-shrink-0 flex-col gap-1.5 rounded-lg border-2 p-1.5'>
         <div className='text-muted-foreground px-1.5 py-0.5 text-[10px] font-medium uppercase'>
           {groupLabels[groupId] ?? 'Gruppe'}
         </div>
@@ -881,7 +881,7 @@ function KanbanDragPreview({
   return (
     <Card
       style={style}
-      className='bg-background flex w-72 flex-shrink-0 flex-col gap-1 rounded-md border p-2 text-xs shadow-lg'
+      className='bg-background flex w-72 flex-shrink-0 flex-col gap-1 rounded-md border p-2 text-xs shadow-none'
     >
       <div className='font-semibold'>
         {trip.scheduled_at
@@ -1204,7 +1204,7 @@ function TripCard({
     debounceRef.current = setTimeout(() => {
       debounceRef.current = null;
       commitTimeToStore(next);
-    }, 900);
+    }, 900); // 900ms debounce
   };
 
   const handleTimeBlur = () => {
