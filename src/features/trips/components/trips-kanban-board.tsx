@@ -681,7 +681,13 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
       >
         <div
           className='inline-flex min-h-[260px] min-w-max gap-3 p-3'
-          style={{ zoom }}
+          style={{
+            transform: `scale(${zoom})`,
+            transformOrigin: 'top left',
+            // Use inline-block so the scaled content still drives the scroll width.
+            // The wrapper div handles overflow-auto.
+            width: `${100 / zoom}%`
+          }}
         >
           {effectiveColumns.map((column) => {
             const items = itemsByColumn[column.id] ?? [];
@@ -699,7 +705,15 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
             );
           })}
         </div>
-        <DragOverlay dropAnimation={null}>
+        {/*
+         * DragOverlay renders outside the zoomed container via a portal,
+         * so we compensate with the same scale so the overlay card matches
+         * the card size the user grabbed.
+         */}
+        <DragOverlay
+          dropAnimation={null}
+          style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' }}
+        >
           {activeDragId ? (
             <KanbanDragPreview
               activeId={activeDragId}
@@ -938,7 +952,7 @@ function KanbanDragPreview({
     const groupTrips = effectiveTrips.filter((t) => t.group_id === groupId);
     if (groupTrips.length === 0) return null;
     return (
-      <div className='border-primary/25 bg-primary/5 flex w-72 flex-shrink-0 flex-col gap-1.5 rounded-lg border-2 p-1.5'>
+      <div className='border-primary/25 bg-primary/5 flex w-72 flex-shrink-0 flex-col gap-1.5 rounded-lg border-2 p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.18)]'>
         <div className='text-muted-foreground px-1.5 py-0.5 text-[10px] font-medium uppercase'>
           {groupLabels[groupId] ?? 'Gruppe'}
         </div>
@@ -980,7 +994,7 @@ function KanbanDragPreview({
   return (
     <Card
       style={style}
-      className='bg-background flex w-72 flex-shrink-0 flex-col gap-1 rounded-md border p-2 text-xs shadow-none'
+      className='bg-background flex w-72 flex-shrink-0 flex-col gap-1 rounded-md border p-2 text-xs shadow-[0_8px_24px_rgba(0,0,0,0.18)]'
     >
       <div className='font-semibold'>
         {trip.scheduled_at
@@ -1033,9 +1047,11 @@ function GroupedTripsContainer({
     data: { groupId, tripIds: trips.map((t) => t.id) }
   });
 
+  // opacity: 0 while dragging — the DragOverlay is the only visible card;
+  // keeping the element in the DOM maintains the column layout as a placeholder.
   const dragStyle = {
     transform: CSS.Translate.toString(transform),
-    opacity: isDragging ? 0.6 : 1
+    opacity: isDragging ? 0 : 1
   };
 
   return (
@@ -1141,7 +1157,9 @@ function KanbanColumnView({
     transform && isDragging
       ? {
           transform: CSS.Translate.toString(transform),
-          opacity: 0.9,
+          // Columns use a softer fade (not full invisible) so the layout
+          // makes it obvious which column slot is being reordered.
+          opacity: 0.3,
           zIndex: 50
         }
       : undefined;
@@ -1294,7 +1312,8 @@ function TripCard({
     ? {}
     : {
         transform: CSS.Translate.toString(transform),
-        opacity: isDragging ? 0.6 : 1
+        // opacity: 0 → invisible DOM placeholder while DragOverlay is shown.
+        opacity: isDragging ? 0 : 1
       };
 
   const payerName = trip.payer?.name;
