@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import {
   DndContext,
   type DragEndEvent,
+  type DragStartEvent,
+  DragOverlay,
   useDraggable,
   useDroppable
 } from '@dnd-kit/core';
@@ -43,17 +45,18 @@ import {
 import { Button } from '@/components/ui/button';
 import type { Trip } from '../api/trips.service';
 import { tripsService } from '../api/trips.service';
+import { useKanbanPendingStore } from '@/features/trips/stores/use-kanban-pending-store';
 import { useTripFormData } from '@/features/trips/hooks/use-trip-form-data';
 import { getStatusWhenDriverChanges } from '@/features/trips/lib/trip-status';
-import { createClient } from '@/lib/supabase/client';
 import {
   tripStatusBadge,
   tripStatusLabels,
   type TripStatus
 } from '@/lib/trip-status';
 import { cn } from '@/lib/utils';
+import { getItem, setItem, STORAGE_KEYS } from '@/lib/kanban-local-storage';
 
-/** Pending change for a single trip; staged until Save is clicked. */
+/** Pending change for a single trip. Assignments/grouping persist on drop; scheduled_at etc. via Save. */
 type PendingChange = {
   driver_id?: string | null;
   status?: string;
@@ -77,9 +80,6 @@ interface TripsKanbanBoardProps {
 
 type GroupByMode = 'driver' | 'status' | 'payer';
 
-/** localStorage key for persisting column order per group-by mode. */
-const KANBAN_COLUMN_ORDER_KEY = 'taxigo-kanban-column-order';
-
 type KanbanColumn = {
   id: string;
   title: string;
@@ -88,57 +88,42 @@ type KanbanColumn = {
 
 /**
  * Kanban board for managing trips. Groups trips by driver, status, or payer.
- * Supports:
- * - Drag trips between columns (assign driver/status/payer)
- * - Group trips by dropping one onto another
- * - Drag entire group via group header; drag single card to remove from group
- * - Reorder columns by dragging column headers
- * - Zoom in/out; sticky column headers when scrolling
- * - Column order persisted in localStorage per page reload
+ *
+ * All changes (assignments, grouping, time edits) are staged in localStorage
+ * until the user clicks "Speichern". "Verwerfen" clears pending changes.
+ *
+ * Reliability: useKanbanPendingStore persists to localStorage; beforeunload
+ * warns on unsaved changes; orphan columns and loading state prevent cards
+ * from disappearing; DragOverlay avoids DnD glitches.
  */
 export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
   const router = useRouter();
-  const { drivers } = useTripFormData();
+  const { drivers, isLoading: isFormDataLoading } = useTripFormData();
+  const { pendingChanges, setPendingChanges, clearPendingChanges } =
+    useKanbanPendingStore();
   const [groupBy, setGroupBy] = useState<GroupByMode>('driver');
-  const [pendingChanges, setPendingChanges] = useState<
-    Record<string, PendingChange>
-  >({});
   const [isSaving, setIsSaving] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [columnOrderByMode, setColumnOrderByMode] = useState<
     Partial<Record<GroupByMode, string[]>>
   >({});
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
   /** Restore column order from localStorage on mount. */
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const raw = localStorage.getItem(KANBAN_COLUMN_ORDER_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as Partial<
-        Record<GroupByMode, string[]>
-      > | null;
-      if (parsed && typeof parsed === 'object') {
-        setColumnOrderByMode(parsed);
-      }
-    } catch {
-      // Ignore invalid JSON or access errors
+    const stored = getItem<Partial<Record<GroupByMode, string[]>>>(
+      STORAGE_KEYS.KANBAN_COLUMN_ORDER
+    );
+    if (stored && typeof stored === 'object') {
+      setColumnOrderByMode(stored);
     }
   }, []);
 
   /** Persist column order to localStorage whenever it changes. */
   useEffect(() => {
-    if (typeof window === 'undefined') return;
     if (Object.keys(columnOrderByMode).length === 0) return;
-    try {
-      localStorage.setItem(
-        KANBAN_COLUMN_ORDER_KEY,
-        JSON.stringify(columnOrderByMode)
-      );
-    } catch {
-      // Ignore quota exceeded or access errors
-    }
+    setItem(STORAGE_KEYS.KANBAN_COLUMN_ORDER, columnOrderByMode);
   }, [columnOrderByMode]);
 
   const zoomIn = useCallback(
@@ -191,6 +176,17 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
     };
   }, [isExpanded]);
 
+  /** Warn before closing/refreshing when there are unsaved changes. */
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (Object.keys(pendingChanges).length > 0) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [pendingChanges]);
+
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: { distance: 5 }
@@ -213,41 +209,25 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
     [trips, pendingChanges]
   );
 
-  /** Callback to dissolve a group; ungroups all trips in the group, persisted immediately. */
+  /** Callback to dissolve a group; stages group_id=null, stop_order=null in localStorage. Save persists. */
   const onUngroup = useCallback(
-    async (groupId: string) => {
-      try {
-        const supabase = createClient();
-        const { error } = await supabase
-          .from('trips')
-          .update({ group_id: null, stop_order: null })
-          .eq('group_id', groupId);
+    (groupId: string) => {
+      const tripIdsInGroup = effectiveTrips
+        .filter((t) => t.group_id === groupId)
+        .map((t) => t.id);
 
-        if (error) throw error;
-
-        const tripIdsInGroup = effectiveTrips
-          .filter((t) => t.group_id === groupId)
-          .map((t) => t.id);
-        setPendingChanges((prev) => {
-          const next = { ...prev };
-          for (const id of tripIdsInGroup) {
-            const current = next[id];
-            if (!current) continue;
-            const { group_id, stop_order, ...rest } = current;
-            if (Object.keys(rest).length === 0) delete next[id];
-            else next[id] = rest;
-          }
-          return next;
-        });
-        toast.success('Gruppe aufgelöst');
-        router.refresh();
-      } catch (err) {
-        toast.error(
-          `Fehler beim Auflösen: ${err instanceof Error ? err.message : 'Unbekannt'}`
-        );
-      }
+      setPendingChanges((prev) => {
+        const next = { ...prev };
+        for (const id of tripIdsInGroup) {
+          const current = next[id] ?? {};
+          const { group_id, stop_order, ...rest } = current;
+          next[id] = { ...rest, group_id: null, stop_order: null };
+        }
+        return next;
+      });
+      toast.success('Gruppe zum Auflösen vorgemerkt');
     },
-    [router, effectiveTrips]
+    [effectiveTrips]
   );
 
   /** Column definitions (driver/status/payer) from current groupBy mode. */
@@ -298,15 +278,20 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
     return map;
   }, [effectiveTrips]);
 
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveDragId(String(event.active.id));
+  }, []);
+
   /**
-   * Handles all drag-and-drop end events on the Kanban board.
-   * Branches by dragged item type:
-   * 1. Column → reorder columns (drop column A on column B to move A to B's position)
-   * 2. Trip onto trip → group trips (dragged joins target's group)
-   * 3. Trip/group onto column → update driver/status/payer; ungroup if single trip leaving group
+   * Handles all drag-and-drop end events. All changes staged in localStorage.
+   * 1. Column reorder: update columnOrderByMode only.
+   * 2. Trip onto trip (grouping): stage group_id, stop_order in pendingChanges.
+   * 3. Trip/group onto column (assignment): stage driver/status/payer in pendingChanges.
+   * User clicks "Speichern" to persist all to DB.
    */
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
+      setActiveDragId(null);
       const { active, over } = event;
       if (!over) return;
 
@@ -334,7 +319,7 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
         }
       }
 
-      // 2. Drop trip onto another trip card → group trips (dragged joins target's group)
+      // 2. Drop trip onto another trip card → group trips (dragged joins target's group). Staged in localStorage.
       if (!isDraggingGroup && overStr.startsWith('trip-')) {
         const targetId = overStr.replace(/^trip-/, '');
         if (targetId === draggedId) return;
@@ -345,7 +330,6 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
 
         const targetGroupId = targetTrip.group_id ?? crypto.randomUUID();
 
-        // Max stop_order in target's group; if new group, target gets 1, dragged gets 2
         const groupTrips = effectiveTrips.filter(
           (t) =>
             (t.group_id ?? (t.id === targetId ? targetGroupId : null)) ===
@@ -358,27 +342,22 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
 
         setPendingChanges((prev) => {
           const next = { ...prev };
-
-          // Dragged trip joins the group
           const draggedChange = next[draggedId] ?? {};
           draggedChange.group_id = targetGroupId;
           draggedChange.stop_order = newStopOrder;
           next[draggedId] = draggedChange;
-
-          // If target had no group, assign it the new group too
           if (!targetTrip.group_id) {
             const targetChange = next[targetId] ?? {};
             targetChange.group_id = targetGroupId;
             targetChange.stop_order = 1;
             next[targetId] = targetChange;
           }
-
           return next;
         });
         return;
       }
 
-      // 3. Drop trip or group onto column → update driver/status/payer
+      // 3. Drop trip or group onto column → update driver/status/payer. Staged in localStorage.
       const targetColumnId = overStr;
       const tripIdsToUpdate = isDraggingGroup
         ? effectiveTrips
@@ -390,19 +369,19 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
       const isSingleTripLeavingGroup =
         !isDraggingGroup && !!draggedTrip?.group_id;
 
+      const value =
+        groupBy === 'driver'
+          ? targetColumnId === 'unassigned'
+            ? null
+            : targetColumnId
+          : groupBy === 'status'
+            ? targetColumnId
+            : targetColumnId === 'no_payer'
+              ? null
+              : targetColumnId;
+
       setPendingChanges((prev) => {
         const next = { ...prev };
-        const value =
-          groupBy === 'driver'
-            ? targetColumnId === 'unassigned'
-              ? null
-              : targetColumnId
-            : groupBy === 'status'
-              ? targetColumnId
-              : targetColumnId === 'no_payer'
-                ? null
-                : targetColumnId;
-
         for (const id of tripIdsToUpdate) {
           const current = next[id] ?? {};
           if (groupBy === 'driver') {
@@ -425,8 +404,8 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
   );
 
   const handleReset = useCallback(() => {
-    setPendingChanges({});
-  }, []);
+    clearPendingChanges();
+  }, [clearPendingChanges]);
 
   const handleSave = useCallback(async () => {
     if (Object.keys(pendingChanges).length === 0) return;
@@ -462,12 +441,12 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
         })
       );
 
-      setPendingChanges({});
+      clearPendingChanges();
       router.refresh();
     } finally {
       setIsSaving(false);
     }
-  }, [pendingChanges, router, trips]);
+  }, [pendingChanges, router, trips, clearPendingChanges]);
 
   const hasPendingChanges = Object.keys(pendingChanges).length > 0;
 
@@ -588,12 +567,17 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
     </div>
   );
 
-  const boardArea = (
+  const boardArea = isFormDataLoading ? (
+    <div className='text-muted-foreground flex min-h-[260px] min-w-0 flex-1 items-center justify-center'>
+      Laden…
+    </div>
+  ) : (
     <div className='min-h-0 min-w-0 flex-1 overflow-auto'>
       {/* pointerWithin prefers smaller droppables (trip cards) over columns when overlapping. */}
       <DndContext
         sensors={sensors}
         collisionDetection={pointerWithin}
+        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
         <div
@@ -615,15 +599,30 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
             );
           })}
         </div>
+        <DragOverlay dropAnimation={null}>
+          {activeDragId ? (
+            <KanbanDragPreview
+              activeId={activeDragId}
+              effectiveTrips={effectiveTrips}
+              groupLabels={groupLabels}
+            />
+          ) : null}
+        </DragOverlay>
       </DndContext>
     </div>
+  );
+
+  const boardContent = (
+    <>
+      {headerBar}
+      {boardArea}
+    </>
   );
 
   if (isExpanded && typeof document !== 'undefined') {
     return createPortal(
       <div className='bg-background fixed inset-[2.5%] z-40 flex flex-col overflow-hidden rounded-lg border shadow-2xl'>
-        {headerBar}
-        {boardArea}
+        {boardContent}
       </div>,
       document.body
     );
@@ -631,35 +630,52 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
 
   return (
     <div className='bg-background flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border'>
-      {headerBar}
-      {boardArea}
+      {boardContent}
     </div>
   );
 }
 
+/**
+ * Builds column definitions for the Kanban board. Ensures every trip bucket has a column:
+ * - Driver: known drivers + any driver_id in trips not in the list (orphan → "Fahrer (unbekannt)")
+ * - Status: fixed list + any status in trips not in the list (orphan → "Status (unbekannt)")
+ * - Payer: known payers + any payer_id in trips not in the list (orphan → "Kostenträger (unbekannt)")
+ */
 function buildColumns(
   trips: TripsKanbanBoardProps['trips'],
   groupBy: GroupByMode,
   drivers: { id: string; name: string }[]
 ): KanbanColumn[] {
   if (groupBy === 'driver') {
+    const driverIds = new Set(drivers.map((d) => d.id));
     const driverColumns: KanbanColumn[] = drivers
-      .map((driver) => ({
-        id: driver.id,
-        title: driver.name
-      }))
+      .map((driver) => ({ id: driver.id, title: driver.name }))
       .sort((a, b) => a.title.localeCompare(b.title, 'de'));
 
+    const orphanDriverIds = [
+      ...new Set(trips.map((t) => t.driver_id).filter(Boolean))
+    ].filter((id): id is string => !!id && !driverIds.has(id));
+
+    const orphanColumns: KanbanColumn[] = orphanDriverIds.map((id) => ({
+      id,
+      title: 'Fahrer (unbekannt)'
+    }));
+
     return [
-      {
-        id: 'unassigned',
-        title: 'Nicht zugewiesen'
-      },
-      ...driverColumns
+      { id: 'unassigned', title: 'Nicht zugewiesen' },
+      ...driverColumns,
+      ...orphanColumns
     ];
   }
 
   if (groupBy === 'status') {
+    const knownStatuses = new Set([
+      'pending',
+      'assigned',
+      'in_progress',
+      'completed',
+      'cancelled'
+    ]);
     const statusOrder: { id: string; title: string }[] = [
       { id: 'pending', title: 'Offen' },
       { id: 'assigned', title: 'Zugewiesen' },
@@ -668,12 +684,20 @@ function buildColumns(
       { id: 'cancelled', title: 'Storniert' }
     ];
 
-    return statusOrder;
+    const orphanStatuses = [
+      ...new Set(trips.map((t) => t.status).filter(Boolean))
+    ].filter((s): s is string => !!s && !knownStatuses.has(s));
+
+    const orphanStatusColumns = orphanStatuses.map((id) => ({
+      id,
+      title: 'Status (unbekannt)'
+    }));
+
+    return [...statusOrder, ...orphanStatusColumns];
   }
 
   if (groupBy === 'payer') {
     const payerNames = new Map<string, string>();
-
     for (const trip of trips) {
       const payerId = trip.payer_id;
       const name = trip.payer?.name;
@@ -683,20 +707,24 @@ function buildColumns(
     }
 
     const payerColumns: KanbanColumn[] = Array.from(payerNames.entries()).map(
-      ([id, name]) => ({
-        id,
-        title: name
-      })
+      ([id, name]) => ({ id, title: name })
     );
-
     payerColumns.sort((a, b) => a.title.localeCompare(b.title, 'de'));
 
+    const knownPayerIds = new Set(payerNames.keys());
+    const orphanPayerIds = [
+      ...new Set(trips.map((t) => t.payer_id).filter(Boolean))
+    ].filter((id): id is string => !!id && !knownPayerIds.has(id));
+
+    const orphanPayerColumns = orphanPayerIds.map((id) => ({
+      id,
+      title: 'Kostenträger (unbekannt)'
+    }));
+
     return [
-      {
-        id: 'no_payer',
-        title: 'Ohne Kostenträger'
-      },
-      ...payerColumns
+      { id: 'no_payer', title: 'Ohne Kostenträger' },
+      ...payerColumns,
+      ...orphanPayerColumns
     ];
   }
 
@@ -792,6 +820,86 @@ function buildItemsByColumn(
   });
 
   return itemsByColumn;
+}
+
+/** Lightweight preview for DragOverlay; no hooks to avoid conflicting with active draggable. */
+function KanbanDragPreview({
+  activeId,
+  effectiveTrips,
+  groupLabels
+}: {
+  activeId: string;
+  effectiveTrips: TripsKanbanBoardProps['trips'];
+  groupLabels: Record<string, string>;
+}) {
+  const isGroup = activeId.startsWith('group-');
+  if (isGroup) {
+    const groupId = activeId.replace('group-', '');
+    const groupTrips = effectiveTrips.filter((t) => t.group_id === groupId);
+    if (groupTrips.length === 0) return null;
+    return (
+      <div className='border-primary/25 bg-primary/5 flex w-72 flex-shrink-0 flex-col gap-1.5 rounded-lg border-2 p-1.5 shadow-lg'>
+        <div className='text-muted-foreground px-1.5 py-0.5 text-[10px] font-medium uppercase'>
+          {groupLabels[groupId] ?? 'Gruppe'}
+        </div>
+        {groupTrips.slice(0, 2).map((trip) => (
+          <div
+            key={trip.id}
+            className='bg-background rounded border p-2 text-xs'
+          >
+            <div className='font-medium'>
+              {trip.scheduled_at
+                ? format(new Date(trip.scheduled_at), 'HH:mm')
+                : '--:--'}
+            </div>
+            <div className='line-clamp-1 text-[11px]'>
+              {trip.client_name || 'Unbekannter Fahrgast'}
+            </div>
+          </div>
+        ))}
+        {groupTrips.length > 2 && (
+          <div className='text-muted-foreground px-2 py-1 text-[10px]'>
+            +{groupTrips.length - 2} weitere
+          </div>
+        )}
+      </div>
+    );
+  }
+  const trip = effectiveTrips.find((t) => t.id === activeId);
+  if (!trip) return null;
+  const payerName = trip.payer?.name;
+  const billing = trip.billing_type;
+  const cardColor = billing?.color || 'transparent';
+  const style =
+    cardColor !== 'transparent'
+      ? {
+          backgroundColor: `color-mix(in srgb, ${cardColor}, var(--background) 88%)`,
+          borderLeft: `3px solid ${cardColor}`
+        }
+      : {};
+  return (
+    <Card
+      style={style}
+      className='bg-background flex w-72 flex-shrink-0 flex-col gap-1 rounded-md border p-2 text-xs shadow-lg'
+    >
+      <div className='font-semibold'>
+        {trip.scheduled_at
+          ? format(new Date(trip.scheduled_at), 'HH:mm')
+          : '--:--'}
+      </div>
+      <div className='line-clamp-1 text-[11px] font-medium'>
+        {trip.client_name || 'Unbekannter Fahrgast'}
+      </div>
+      <div className='text-muted-foreground line-clamp-2 text-[11px]'>
+        {trip.pickup_address} → {trip.dropoff_address}
+      </div>
+      {payerName && (
+        <Badge variant='outline' className='mt-1 px-1.5 py-0 text-[10px]'>
+          {payerName}
+        </Badge>
+      )}
+    </Card>
+  );
 }
 
 interface GroupedTripsContainerProps {
