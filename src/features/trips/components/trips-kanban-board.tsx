@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import {
@@ -23,6 +23,7 @@ import {
   GripVertical,
   Maximize2,
   Minimize2,
+  Plus,
   Users,
   X,
   ZoomIn,
@@ -1076,6 +1077,12 @@ function KanbanColumnView({
             : undefined
         }
       >
+        <div
+          className='text-muted-foreground/60 hover:text-muted-foreground flex shrink-0 items-center justify-center rounded border border-dashed py-1.5 text-xs transition-colors'
+          aria-hidden
+        >
+          <Plus className='h-4 w-4' />
+        </div>
         {items.length === 0 ? (
           <div className='text-muted-foreground flex flex-1 items-center justify-center text-xs'>
             Keine Fahrten
@@ -1126,10 +1133,17 @@ function TripCard({
   const [timeValue, setTimeValue] = useState(() =>
     scheduledAt ? format(new Date(scheduledAt), 'HH:mm') : ''
   );
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setTimeValue(scheduledAt ? format(new Date(scheduledAt), 'HH:mm') : '');
   }, [scheduledAt]);
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({
     id: `trip-${trip.id}`
@@ -1160,23 +1174,45 @@ function TripCard({
   const cardColor = billing?.color || 'transparent';
   const isGrouped = !!trip.group_id;
 
+  const commitTimeToStore = useCallback(
+    (value: string) => {
+      if (!value) return;
+      const [hh, mm] = value.split(':').map(Number);
+      const baseDate = scheduledAt
+        ? new Date(scheduledAt)
+        : trip.requested_date
+          ? new Date(trip.requested_date + 'T12:00:00')
+          : new Date();
+      const scheduledDate = set(baseDate, {
+        hours: Number.isNaN(hh) ? 8 : hh,
+        minutes: Number.isNaN(mm) ? 0 : mm,
+        seconds: 0,
+        milliseconds: 0
+      });
+      onTimeChange(trip.id, scheduledDate.toISOString());
+    },
+    [scheduledAt, trip.id, trip.requested_date, onTimeChange]
+  );
+
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const next = e.target.value;
     setTimeValue(next);
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     if (!next) return;
-    const [hh, mm] = next.split(':').map(Number);
-    const baseDate = scheduledAt
-      ? new Date(scheduledAt)
-      : trip.requested_date
-        ? new Date(trip.requested_date + 'T12:00:00')
-        : new Date();
-    const scheduledDate = set(baseDate, {
-      hours: isNaN(hh) ? 8 : hh,
-      minutes: isNaN(mm) ? 0 : mm,
-      seconds: 0,
-      milliseconds: 0
-    });
-    onTimeChange(trip.id, scheduledDate.toISOString());
+
+    debounceRef.current = setTimeout(() => {
+      debounceRef.current = null;
+      commitTimeToStore(next);
+    }, 900);
+  };
+
+  const handleTimeBlur = () => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+    if (timeValue) commitTimeToStore(timeValue);
   };
 
   const style =
@@ -1212,6 +1248,7 @@ function TripCard({
               type='time'
               value={timeValue}
               onChange={handleTimeChange}
+              onBlur={handleTimeBlur}
               className='hover:bg-muted/40 h-6 w-14 rounded border-0 bg-transparent p-0 text-center text-xs leading-6 font-semibold shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 [&::-webkit-datetime-edit]:text-center [&::-webkit-datetime-edit-fields-wrapper]:inline-flex [&::-webkit-datetime-edit-fields-wrapper]:justify-center'
             />
           </div>
