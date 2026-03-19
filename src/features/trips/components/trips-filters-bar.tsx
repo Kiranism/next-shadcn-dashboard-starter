@@ -162,6 +162,8 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
     const next = `${pathname}?${params.toString()}`;
     startTransition(() => {
       router.replace(next, { scroll: false });
+      /** Soft navigation can reuse a stale RSC payload; refresh loads trips for the new URL. */
+      router.refresh();
     });
   };
 

@@ -64,7 +64,8 @@ export function useTripFormData(payerId?: string | null) {
   }, []);
 
   useEffect(() => {
-    if (!payerId) {
+    // 'all' is the URL sentinel for “every payer”, not a real UUID — never query eq('payer_id', 'all').
+    if (!payerId || payerId === 'all') {
       setBillingTypes([]);
       return;
     }

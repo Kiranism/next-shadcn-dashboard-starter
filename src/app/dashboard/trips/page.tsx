@@ -24,8 +24,8 @@ type pageProps = {
 };
 
 export default async function Page(props: pageProps) {
-  const searchParams = await props.searchParams;
-  searchParamsCache.parse(searchParams);
+  /** Ensure nuqs cache is tied to this navigation (Promise must be parsed here for RSC). */
+  await searchParamsCache.parse(props.searchParams);
 
   return (
     <PageContainer

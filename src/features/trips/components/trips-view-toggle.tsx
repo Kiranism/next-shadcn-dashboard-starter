@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Kanban, List } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback } from 'react';
+import { useCallback, useTransition } from 'react';
 
 interface TripsViewToggleProps {
   currentView: string;
@@ -13,6 +13,7 @@ export function TripsViewToggle({ currentView }: TripsViewToggleProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [, startTransition] = useTransition();
 
   const createQueryString = useCallback(
     (name: string, value: string) => {
@@ -28,9 +29,12 @@ export function TripsViewToggle({ currentView }: TripsViewToggleProps) {
       <Button
         variant={currentView === 'list' ? 'secondary' : 'ghost'}
         size='sm'
-        onClick={() =>
-          router.push(pathname + '?' + createQueryString('view', 'list'))
-        }
+        onClick={() => {
+          startTransition(() => {
+            router.push(pathname + '?' + createQueryString('view', 'list'));
+            router.refresh();
+          });
+        }}
         className='h-8 shadow-none'
       >
         <List className='mr-2 h-4 w-4' />
@@ -39,9 +43,12 @@ export function TripsViewToggle({ currentView }: TripsViewToggleProps) {
       <Button
         variant={currentView === 'kanban' ? 'secondary' : 'ghost'}
         size='sm'
-        onClick={() =>
-          router.push(pathname + '?' + createQueryString('view', 'kanban'))
-        }
+        onClick={() => {
+          startTransition(() => {
+            router.push(pathname + '?' + createQueryString('view', 'kanban'));
+            router.refresh();
+          });
+        }}
         className='h-8 shadow-none'
       >
         <Kanban className='mr-2 h-4 w-4' />

@@ -52,6 +52,11 @@ export const useKanbanPendingStore = create<KanbanPendingState>()(
 
       clearPendingChanges: () => set({ pendingChanges: {} })
     }),
-    { name: STORAGE_KEYS.KANBAN_PENDING, storage: localStorageAdapter }
+    {
+      name: STORAGE_KEYS.KANBAN_PENDING,
+      storage: localStorageAdapter,
+      /** Only persist serializable slice (not action functions). */
+      partialize: (state) => ({ pendingChanges: state.pendingChanges })
+    }
   )
 );

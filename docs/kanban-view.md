@@ -16,11 +16,16 @@ The Kanban view lets dispatchers move trips between columns (driver, status, pay
 
 When a date filter is active (including the default "today"), the server query includes:
 
-- Trips with `scheduled_at` in the selected date range
-- Trips with `scheduled_at IS NULL` (unscheduled)
+- Trips with `scheduled_at` in the selected date range (or day / week range).
+- Unscheduled trips (`scheduled_at IS NULL`) **only if** they belong to that window:
+  - `requested_date` matches the selected calendar day or falls inside the selected range.
+  - On the **server’s** “today” for that same calendar day, trips with both `scheduled_at` and `requested_date` null still appear (backlog).
 
-**Implementation:** `trips-listing.tsx` uses Supabase `.or()` so the filter is  
-`(scheduled_at in range) OR (scheduled_at.is.null)`.
+**Why:** Previously, `(scheduled_at in range) OR (scheduled_at.is.null)` returned **every** unscheduled trip on **every** day, so cards looked “stuck” when changing the date.
+
+**Implementation:** `trips-listing.tsx` builds a Supabase `.or()` across scheduled rows and scoped unscheduled rows as above.
+
+**Full write-up (symptom vs root cause, URL shapes, fields):** [trips-date-filter.md](./trips-date-filter.md).
 
 ---
 
@@ -43,7 +48,8 @@ Each trip card displays an inline time input; no extra click or pencil icon. Cha
 - **Stage:** Drag to column, drop on trip (group), edit time, or ungroup → updates `pendingChanges` in the store. No API calls.
 - **Speichern:** Click "Speichern" → batch update all pending trips via `tripsService.updateTrip`, then clear store and refresh.
 - **Verwerfen:** Clears all pending changes without persisting.
-- **beforeunload:** Warns user before closing/refreshing if there are unsaved changes.
+- **Prune on list change / rehydrate:** Pending keys that are not in the current server trip list (e.g. after changing the date filter or when localStorage rehydrates) are dropped automatically so stale edits do not block seeing the correct trips.
+- **beforeunload:** Warns user before closing/refreshing if there are unsaved changes (set `returnValue` for browser compatibility).
 
 ---
 

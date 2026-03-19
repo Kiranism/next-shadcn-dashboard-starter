@@ -1,3 +1,9 @@
+/**
+ * Server component: loads trips for `/dashboard/trips` (Liste + Kanban).
+ *
+ * Date filtering is easy to get wrong: see `docs/trips-date-filter.md` for the
+ * “stuck cards” incident (global `scheduled_at IS NULL` vs scoped unscheduled).
+ */
 import { searchParamsCache } from '@/lib/searchparams';
 import { createClient } from '@/lib/supabase/server';
 import { TripsTable, columns } from './trips-tables/index';
@@ -6,14 +12,30 @@ import { getSortingStateParser } from '@/lib/parsers';
 import { TripsViewToggle } from './trips-view-toggle';
 import { TripsKanbanBoard } from './trips-kanban-board';
 import { TripsFiltersBar } from './trips-filters-bar';
+import type { SearchParams } from 'nuqs/server';
+
+/**
+ * Formats a calendar day as `YYYY-MM-DD` for `requested_date` filters.
+ * Uses `getFullYear` / `getMonth` / `getDate` on the same `Date` instances
+ * as the `scheduled_at` day bounds so both branches stay consistent.
+ */
+function ymdFromCalendarDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 
 type TripsListingPageProps = {
-  searchParams?: any;
+  /** Same Promise as `page.tsx` — must be parsed in this async tree so filters match the URL. */
+  searchParams: Promise<SearchParams>;
 };
 
 export default async function TripsListingPage({
   searchParams
 }: TripsListingPageProps) {
+  await searchParamsCache.parse(searchParams);
+
   const view = searchParamsCache.get('view') || 'list';
   const page = searchParamsCache.get('page');
   const pageLimit = searchParamsCache.get('perPage');
@@ -52,7 +74,7 @@ export default async function TripsListingPage({
       query = query.eq('driver_id', driverId);
     }
   }
-  if (payerId) {
+  if (payerId && payerId !== 'all') {
     query = query.eq('payer_id', payerId);
   }
   if (billingTypeId) {
@@ -64,31 +86,63 @@ export default async function TripsListingPage({
       `client_name.ilike.%${term}%,pickup_address.ilike.%${term}%,dropoff_address.ilike.%${term}%`
     );
   }
-  // Date filter: include trips in range OR unscheduled (scheduled_at IS NULL).
-  // Ensures Kanban shows both scheduled and unscheduled trips for the selected date(s).
+  /**
+   * --- Date filter (`scheduled_at` URL param) ---
+   *
+   * We need BOTH:
+   * - Trips with a real time (`scheduled_at` in the user’s selected day or range).
+   * - Trips without a time yet (`scheduled_at` NULL) that still “belong” to that day.
+   *
+   * Anti-pattern (old behaviour): OR-ing plain `scheduled_at.is.null` matched EVERY
+   * unscheduled trip in the DB on EVERY date → Kanban looked like old cards were
+   * “stuck” when changing the calendar. See `docs/trips-date-filter.md`.
+   *
+   * Current pattern: unscheduled rows must also match `requested_date` (or the
+   * narrow “fully undated backlog” branch for server-“today” only).
+   */
   if (scheduledAt) {
     const parts = scheduledAt.split(',');
 
     if (parts.length === 2) {
-      // Range filter: "from,to" – show scheduled in range + all unscheduled
       const [from, to] = parts;
       if (from && to) {
-        const startISO = new Date(Number(from)).toISOString();
-        const endISO = new Date(Number(to)).toISOString();
+        // Calendar range from filters bar: "fromTs,toTs" (inclusive-ish via timestamps).
+        const fromMs = Number(from);
+        const toMs = Number(to);
+        const startISO = new Date(fromMs).toISOString();
+        const endISO = new Date(toMs).toISOString();
+        const fromYmd = ymdFromCalendarDate(new Date(fromMs));
+        const toYmd = ymdFromCalendarDate(new Date(toMs));
         query = query.or(
-          `and(scheduled_at.gte.${startISO},scheduled_at.lte.${endISO}),scheduled_at.is.null`
+          [
+            // Scheduled: timestamp window
+            `and(scheduled_at.gte.${startISO},scheduled_at.lte.${endISO})`,
+            // Unscheduled: same intent-day window on `requested_date` (date column)
+            `and(scheduled_at.is.null,requested_date.gte.${fromYmd},requested_date.lte.${toYmd})`
+          ].join(',')
         );
       } else if (from) {
+        // Open-ended: from this instant onward (scheduled) or requested_date >= that day.
+        const fromMs = Number(from);
+        const fromYmd = ymdFromCalendarDate(new Date(fromMs));
         query = query.or(
-          `scheduled_at.gte.${new Date(Number(from)).toISOString()},scheduled_at.is.null`
+          [
+            `scheduled_at.gte.${new Date(fromMs).toISOString()}`,
+            `and(scheduled_at.is.null,requested_date.gte.${fromYmd})`
+          ].join(',')
         );
       } else if (to) {
+        const toMs = Number(to);
+        const toYmd = ymdFromCalendarDate(new Date(toMs));
         query = query.or(
-          `scheduled_at.lte.${new Date(Number(to)).toISOString()},scheduled_at.is.null`
+          [
+            `scheduled_at.lte.${new Date(toMs).toISOString()}`,
+            `and(scheduled_at.is.null,requested_date.lte.${toYmd})`
+          ].join(',')
         );
       }
     } else if (parts.length === 1 && parts[0]) {
-      // Single-day filter: constrain to calendar day (local time) + unscheduled
+      // Single-day picker: one timestamp (typically local midnight for that day).
       const timestamp = Number(parts[0]);
       if (!Number.isNaN(timestamp)) {
         const day = new Date(timestamp);
@@ -104,9 +158,17 @@ export default async function TripsListingPage({
         );
         const startISO = startOfDay.toISOString();
         const endISO = endOfDay.toISOString();
-        query = query.or(
-          `and(scheduled_at.gte.${startISO},scheduled_at.lt.${endISO}),scheduled_at.is.null`
-        );
+        const dayStr = ymdFromCalendarDate(day);
+        const branches = [
+          `and(scheduled_at.gte.${startISO},scheduled_at.lt.${endISO})`,
+          `and(scheduled_at.is.null,requested_date.eq.${dayStr})`
+        ];
+        // Imports / drafts with neither time nor requested day: show only when the
+        // selected filter day is the server’s current calendar day (small backlog).
+        if (ymdFromCalendarDate(new Date()) === dayStr) {
+          branches.push(`and(scheduled_at.is.null,requested_date.is.null)`);
+        }
+        query = query.or(branches.join(','));
       }
     }
   }
@@ -162,6 +224,21 @@ export default async function TripsListingPage({
   const trips = data as any[]; // Use any for joined data
   const totalTrips = count || 0;
 
+  /**
+   * Forces `TripsKanbanBoard` to remount when any query-driving param changes so
+   * client state (DnD, zoom, etc.) does not pair with a stale `trips` prop if the
+   * RSC payload lags behind the URL after `router.replace` / `router.refresh`.
+   */
+  const kanbanKey = [
+    view,
+    scheduledAt ?? '',
+    driverId ?? '',
+    payerId ?? '',
+    status ?? '',
+    search ?? '',
+    billingTypeId ?? ''
+  ].join('|');
+
   return (
     <div className='flex min-h-0 min-w-0 flex-1 flex-col space-y-4 overflow-hidden'>
       <div className='flex flex-wrap items-center gap-3'>
@@ -171,7 +248,11 @@ export default async function TripsListingPage({
         </div>
       </div>
       {view === 'kanban' && (
-        <TripsKanbanBoard trips={trips as Trip[]} totalItems={totalTrips} />
+        <TripsKanbanBoard
+          key={kanbanKey}
+          trips={trips as Trip[]}
+          totalItems={totalTrips}
+        />
       )}
       {view !== 'kanban' && (
         <TripsTable data={trips} totalItems={totalTrips} columns={columns} />

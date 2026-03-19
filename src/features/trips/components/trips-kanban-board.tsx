@@ -67,6 +67,25 @@ type PendingChange = {
   stop_order?: number | null;
 };
 
+/**
+ * Derives status for a trip given an in-progress pending change and server rows.
+ * Used at drag-end so the badge reflects the final state without waiting for Save.
+ */
+function deriveStatusForPending(
+  tripId: string,
+  newDriverId: string | null | undefined,
+  pendingChanges: Record<string, PendingChange>,
+  serverTrips: TripsKanbanBoardProps['trips']
+): string | undefined {
+  if (newDriverId === undefined) return undefined;
+  const serverStatus =
+    serverTrips.find((t) => t.id === tripId)?.status ?? 'pending';
+  const currentStatus = pendingChanges[tripId]?.status ?? serverStatus;
+  return (
+    getStatusWhenDriverChanges(currentStatus, newDriverId) ?? currentStatus
+  );
+}
+
 interface TripsKanbanBoardProps {
   trips: (Trip & {
     payer?: { name?: string | null } | null;
@@ -163,6 +182,17 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
     []
   );
 
+  /** Callback when stop_order is edited on a grouped card; stages the value for save. */
+  const onStopOrderChange = useCallback((tripId: string, order: number) => {
+    setPendingChanges((prev) => {
+      const next = { ...prev };
+      const current = next[tripId] ?? {};
+      current.stop_order = order;
+      next[tripId] = current;
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
     if (!isExpanded) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -177,12 +207,63 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
     };
   }, [isExpanded]);
 
+  /**
+   * Drop pending entries for trips that are not in the current server list.
+   * Otherwise localStorage keeps stale IDs from another day/filter and the board
+   * can behave oddly after changing the date or refreshing.
+   */
+  const visibleTripIdsKey = useMemo(
+    () => [...trips.map((t) => t.id)].sort().join(','),
+    [trips]
+  );
+
+  const tripsRef = useRef(trips);
+  tripsRef.current = trips;
+
+  const prunePendingToVisibleTrips = useCallback(() => {
+    const ids = new Set(tripsRef.current.map((t) => t.id));
+    setPendingChanges((prev) => {
+      const next: Record<string, PendingChange> = {};
+      for (const [id, change] of Object.entries(prev)) {
+        if (ids.has(id)) next[id] = change;
+      }
+      return Object.keys(next).length === Object.keys(prev).length
+        ? prev
+        : next;
+    });
+  }, [setPendingChanges]);
+
+  /** After Zustand rehydrates from localStorage, prune stale trip IDs (same as date change). */
+  useEffect(() => {
+    const persistApi = (
+      useKanbanPendingStore as unknown as {
+        persist: {
+          onFinishHydration: (fn: () => void) => () => void;
+          hasHydrated: () => boolean;
+        };
+      }
+    ).persist;
+    if (!persistApi) return undefined;
+    const unsub = persistApi.onFinishHydration(() => {
+      prunePendingToVisibleTrips();
+    });
+    if (persistApi.hasHydrated()) {
+      prunePendingToVisibleTrips();
+    }
+    return unsub;
+  }, [prunePendingToVisibleTrips]);
+
+  /** When the server trip list changes (e.g. new date), drop pending for trips no longer shown. */
+  useEffect(() => {
+    prunePendingToVisibleTrips();
+  }, [visibleTripIdsKey, prunePendingToVisibleTrips]);
+
   /** Warn before closing/refreshing when there are unsaved changes. */
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
-      if (Object.keys(pendingChanges).length > 0) {
-        e.preventDefault();
-      }
+      if (Object.keys(pendingChanges).length === 0) return;
+      e.preventDefault();
+      e.returnValue = '';
     };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
@@ -386,7 +467,17 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
         for (const id of tripIdsToUpdate) {
           const current = next[id] ?? {};
           if (groupBy === 'driver') {
-            current.driver_id = value as string | null;
+            const newDriverId = value as string | null;
+            current.driver_id = newDriverId;
+            // Stage derived status immediately so the badge reflects truth
+            // without waiting for Save + router.refresh().
+            const derivedStatus = deriveStatusForPending(
+              id,
+              newDriverId,
+              prev,
+              trips
+            );
+            if (derivedStatus !== undefined) current.status = derivedStatus;
           } else if (groupBy === 'status') {
             current.status = value as string;
           } else if (groupBy === 'payer') {
@@ -406,7 +497,9 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
 
   const handleReset = useCallback(() => {
     clearPendingChanges();
-  }, [clearPendingChanges]);
+    /** Re-fetch server trips so the board matches DB after discarding local staging. */
+    router.refresh();
+  }, [clearPendingChanges, router]);
 
   const handleSave = useCallback(async () => {
     if (Object.keys(pendingChanges).length === 0) return;
@@ -418,17 +511,19 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
       await Promise.all(
         updates.map(([id, change]) => {
           const trip = trips.find((t) => t.id === id);
+          // status is already staged at drag-end, but fall back to derivation
+          // in case an older pending entry only has driver_id (backwards compat).
           const status =
             change.status ??
             getStatusWhenDriverChanges(
               trip?.status ?? 'pending',
-              change.driver_id ?? null
+              change.driver_id !== undefined ? change.driver_id : null
             );
-          const payload: Parameters<typeof tripsService.updateTrip>[1] = {
-            driver_id: change.driver_id,
-            status,
-            payer_id: change.payer_id
-          };
+          const payload: Parameters<typeof tripsService.updateTrip>[1] = {};
+          if (change.driver_id !== undefined)
+            payload.driver_id = change.driver_id;
+          if (status !== undefined) payload.status = status;
+          if (change.payer_id !== undefined) payload.payer_id = change.payer_id;
           if (change.scheduled_at !== undefined) {
             payload.scheduled_at = change.scheduled_at;
           }
@@ -442,8 +537,11 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
         })
       );
 
+      // Clear pending changes AFTER refresh so the board never shows
+      // a stale server snapshot (the server row will already be up-to-date
+      // once router.refresh() resolves, so clearing here is safe).
+      await router.refresh();
       clearPendingChanges();
-      router.refresh();
     } finally {
       setIsSaving(false);
     }
@@ -595,6 +693,7 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
                 groupBy={groupBy}
                 groupLabels={groupLabels}
                 onTimeChange={onTimeChange}
+                onStopOrderChange={onStopOrderChange}
                 onUngroup={onUngroup}
               />
             );
@@ -908,6 +1007,7 @@ interface GroupedTripsContainerProps {
   groupLabel?: string;
   columnId: string;
   onTimeChange: (tripId: string, scheduledAt: string | null) => void;
+  onStopOrderChange: (tripId: string, order: number) => void;
   onUngroup: (groupId: string) => void;
 }
 
@@ -916,6 +1016,7 @@ function GroupedTripsContainer({
   groupLabel,
   columnId,
   onTimeChange,
+  onStopOrderChange,
   onUngroup
 }: GroupedTripsContainerProps) {
   const groupId = trips[0]?.group_id;
@@ -941,7 +1042,10 @@ function GroupedTripsContainer({
     <div
       ref={setDraggableRef}
       style={dragStyle}
-      className='border-primary/25 bg-primary/5 flex flex-col gap-1.5 rounded-lg border-2 p-1.5'
+      className={cn(
+        'border-primary/25 bg-primary/5 flex flex-col gap-1.5 rounded-lg border-2 p-1.5',
+        isDragging && 'shadow-none'
+      )}
     >
       <div
         className='flex cursor-grab items-center justify-between gap-2 px-1.5 py-0.5 active:cursor-grabbing'
@@ -973,6 +1077,7 @@ function GroupedTripsContainer({
           groupLabel={groupLabel}
           hideGroupBadge
           onTimeChange={onTimeChange}
+          onStopOrderChange={onStopOrderChange}
           onUngroup={onUngroup}
         />
       ))}
@@ -987,6 +1092,8 @@ interface TripCardProps {
   hideGroupBadge?: boolean;
   disableDrag?: boolean;
   onTimeChange: (tripId: string, scheduledAt: string | null) => void;
+  /** Called when the user edits stop_order on a grouped card. Only rendered when isGrouped. */
+  onStopOrderChange: (tripId: string, order: number) => void;
   onUngroup: (groupId: string) => void;
 }
 
@@ -996,6 +1103,7 @@ function KanbanColumnView({
   groupBy,
   groupLabels,
   onTimeChange,
+  onStopOrderChange,
   onUngroup
 }: {
   column: KanbanColumn;
@@ -1003,6 +1111,7 @@ function KanbanColumnView({
   groupBy: GroupByMode;
   groupLabels: Record<string, string>;
   onTimeChange: (tripId: string, scheduledAt: string | null) => void;
+  onStopOrderChange: (tripId: string, order: number) => void;
   onUngroup: (groupId: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({
@@ -1096,6 +1205,7 @@ function KanbanColumnView({
                 columnId={column.id}
                 groupLabel={undefined}
                 onTimeChange={onTimeChange}
+                onStopOrderChange={onStopOrderChange}
                 onUngroup={onUngroup}
               />
             ) : (
@@ -1109,6 +1219,7 @@ function KanbanColumnView({
                 }
                 columnId={column.id}
                 onTimeChange={onTimeChange}
+                onStopOrderChange={onStopOrderChange}
                 onUngroup={onUngroup}
               />
             )
@@ -1126,6 +1237,7 @@ function TripCard({
   hideGroupBadge = false,
   disableDrag = false,
   onTimeChange,
+  onStopOrderChange,
   onUngroup
 }: TripCardProps) {
   const scheduledAt = trip.scheduled_at;
@@ -1135,13 +1247,29 @@ function TripCard({
   );
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Stop-order local state: initialise from the effective trip value.
+  const [stopOrderValue, setStopOrderValue] = useState<string>(
+    trip.stop_order != null ? String(trip.stop_order) : ''
+  );
+  const stopOrderDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+
   useEffect(() => {
     setTimeValue(scheduledAt ? format(new Date(scheduledAt), 'HH:mm') : '');
   }, [scheduledAt]);
 
+  // Keep stop-order input in sync when effective value changes from outside
+  // (e.g. after save + refresh, or when another card updates the same group).
+  useEffect(() => {
+    setStopOrderValue(trip.stop_order != null ? String(trip.stop_order) : '');
+  }, [trip.stop_order]);
+
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (stopOrderDebounceRef.current)
+        clearTimeout(stopOrderDebounceRef.current);
     };
   }, []);
 
@@ -1173,6 +1301,31 @@ function TripCard({
   const billing = trip.billing_type;
   const cardColor = billing?.color || 'transparent';
   const isGrouped = !!trip.group_id;
+
+  const handleStopOrderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    setStopOrderValue(raw);
+    if (stopOrderDebounceRef.current)
+      clearTimeout(stopOrderDebounceRef.current);
+    const parsed = parseInt(raw, 10);
+    if (!Number.isNaN(parsed) && parsed >= 1) {
+      stopOrderDebounceRef.current = setTimeout(() => {
+        stopOrderDebounceRef.current = null;
+        onStopOrderChange(trip.id, parsed);
+      }, 900);
+    }
+  };
+
+  const handleStopOrderBlur = () => {
+    if (stopOrderDebounceRef.current) {
+      clearTimeout(stopOrderDebounceRef.current);
+      stopOrderDebounceRef.current = null;
+    }
+    const parsed = parseInt(stopOrderValue, 10);
+    if (!Number.isNaN(parsed) && parsed >= 1) {
+      onStopOrderChange(trip.id, parsed);
+    }
+  };
 
   const commitTimeToStore = useCallback(
     (value: string) => {
@@ -1233,7 +1386,7 @@ function TripCard({
         ref={disableDrag ? undefined : setDraggableRef}
         style={style}
         className={cn(
-          'bg-background flex flex-col gap-1 rounded-md border p-2 text-xs shadow-sm',
+          'bg-background flex flex-col gap-1 rounded-md border p-2 text-xs shadow-none',
           !disableDrag && 'cursor-grab active:cursor-grabbing'
         )}
         {...(!disableDrag ? { ...listeners, ...attributes } : {})}
@@ -1258,6 +1411,29 @@ function TripCard({
               )}
             />
           </div>
+          {/* Stop-order input: only rendered when the card is inside a group */}
+          {isGrouped && (
+            <div
+              className='ml-auto flex items-center'
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <input
+                type='number'
+                min={1}
+                value={stopOrderValue}
+                onChange={handleStopOrderChange}
+                onBlur={handleStopOrderBlur}
+                placeholder='–'
+                title='Reihenfolge in der Gruppe'
+                aria-label='Reihenfolge'
+                className={cn(
+                  'bg-muted/70 hover:bg-muted/40 focus:bg-muted/40 h-6 w-8 rounded border-0 p-0 text-center text-xs font-semibold outline-none focus-visible:ring-1 focus-visible:ring-offset-0',
+                  '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none'
+                )}
+              />
+            </div>
+          )}
           {trip.status && (
             <Badge
               className={cn(

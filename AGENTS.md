@@ -118,7 +118,9 @@ The project follows a feature-based folder structure designed for scalability in
 /docs                      # Documentation
 │   ├── clerk_setup.md     # Clerk configuration guide
 │   ├── nav-rbac.md        # Navigation RBAC documentation
-│   └── themes.md          # Theme customization guide
+│   ├── themes.md          # Theme customization guide
+│   ├── kanban-view.md     # Kanban trips board behaviour
+│   └── trips-date-filter.md # Fahrten date query + “stuck cards” fix
 
 /__CLEANUP__               # Feature removal scripts
     ├── scripts/           # Cleanup automation
