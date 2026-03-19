@@ -1,10 +1,13 @@
 'use client';
 
 /**
+ * @deprecated Replaced by ShiftTimeForm (manual time entry).
  * Shift tracker — Start / Pause (break) / End shift.
  *
- * Used at /driver/shift by drivers. State machine:
+ * Previously used at /driver/shift. State machine:
  * idle → active → on_break → active → ended
+ *
+ * Kept for reference only. Use ShiftTimeForm instead.
  */
 
 import { Button } from '@/components/ui/button';

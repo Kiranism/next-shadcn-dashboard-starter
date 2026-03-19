@@ -1,12 +1,12 @@
-import { ShiftTracker } from '@/features/driver-portal/components/shift-tracker';
+import { DriverShiftPageContent } from '@/features/driver-portal/components/driver-shift-page-content';
 
 export default function DriverShiftPage() {
   return (
-    <div className='flex flex-1 flex-col p-4'>
-      <h1 className='text-foreground mb-6 text-xl font-semibold'>
+    <div className='flex flex-1 flex-col gap-6 p-4'>
+      <h1 className='text-foreground mb-2 text-xl font-semibold'>
         Meine Schicht
       </h1>
-      <ShiftTracker />
+      <DriverShiftPageContent />
     </div>
   );
 }
