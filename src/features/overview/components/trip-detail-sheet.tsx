@@ -610,14 +610,6 @@ export function TripDetailSheet({
                 )}
                 <Button
                   type='button'
-                  variant='outline'
-                  size='sm'
-                  onClick={() => onOpenChange(false)}
-                >
-                  Schließen
-                </Button>
-                <Button
-                  type='button'
                   variant='destructive'
                   size='sm'
                   disabled={isCancelling}
