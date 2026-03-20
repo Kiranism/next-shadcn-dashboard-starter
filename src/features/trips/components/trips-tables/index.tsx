@@ -9,6 +9,8 @@ import { ColumnDef } from '@tanstack/react-table';
 import { parseAsInteger, useQueryState } from 'nuqs';
 import { columns } from './columns';
 import { useTripsTableStore } from '@/features/trips/stores/use-trips-table-store';
+import { getUrgencyLevel } from '@/features/trips/lib/urgency-logic';
+import { URGENCY_STYLES } from '@/features/trips/constants/urgency-config';
 
 export { columns };
 
@@ -96,24 +98,27 @@ export function TripsTable<TData, TValue>({
       getRowClassName={(row: any) => {
         const classes: string[] = [];
 
-        const scheduledAt = row.scheduled_at
-          ? new Date(row.scheduled_at)
-          : undefined;
+        const scheduledAt = row.scheduled_at;
+        const status = row.status;
+        const urgency = getUrgencyLevel(scheduledAt, status);
+        const style = URGENCY_STYLES[urgency];
 
+        // 1. Group Highlight (highest priority side border)
         if (row.group_id && groupCounts[row.group_id] > 1) {
           classes.push(
-            'border-l-4 border-l-green-500 bg-green-50/30 dark:bg-green-950/10'
+            'border-l-4 border-l-green-500 bg-green-50/10 dark:bg-green-950/5'
           );
+        } else if (style && style.rowClass) {
+          // 2. Urgency Highlight
+          classes.push(style.rowClass);
         }
 
-        if (scheduledAt && isToday(scheduledAt)) {
-          classes.push('bg-muted/40');
-        }
-
-        if (scheduledAt && isNowWindow(scheduledAt)) {
-          classes.push(
-            'border-l-4 border-l-primary bg-primary/5 dark:bg-primary/10'
-          );
+        // 3. Base Today Highlight (lowest priority background)
+        if (scheduledAt) {
+          const date = new Date(scheduledAt);
+          if (isToday(date)) {
+            classes.push('bg-muted/10');
+          }
         }
 
         return cn(classes);

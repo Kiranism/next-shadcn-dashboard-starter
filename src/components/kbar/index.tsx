@@ -17,7 +17,13 @@ import { useMemo, useState, useEffect } from 'react';
 import RenderResults from './render-result';
 import useThemeSwitching from './use-theme-switching';
 
-export default function KBar({ children }: { children: React.ReactNode }) {
+export default function KBar({
+  children,
+  docSearchData = []
+}: {
+  children: React.ReactNode;
+  docSearchData?: any[];
+}) {
   const router = useRouter();
   const filteredItems = useFilteredNavItems(navItems);
 
@@ -83,8 +89,18 @@ export default function KBar({ children }: { children: React.ReactNode }) {
       }
     };
 
-    return [newTripAction, passengerSearchAction, ...navigateActions];
-  }, [router, filteredItems]);
+    const docSearchActions = docSearchData.map((data) => ({
+      ...data,
+      perform: () => router.push(data.url)
+    }));
+
+    return [
+      newTripAction,
+      passengerSearchAction,
+      ...navigateActions,
+      ...docSearchActions
+    ];
+  }, [router, filteredItems, docSearchData]);
 
   return (
     <KBarProvider actions={actions}>

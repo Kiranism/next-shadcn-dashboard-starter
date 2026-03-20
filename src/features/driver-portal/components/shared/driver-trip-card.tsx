@@ -44,6 +44,7 @@ import {
 } from '@/lib/trip-status';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
+import { UrgencyIndicator } from '@/features/trips/components/urgency-indicator';
 import {
   IconAccessible,
   IconArrowDown,
@@ -221,6 +222,12 @@ export function DriverTripCard({
                 <span className='text-foreground shrink-0 font-mono text-lg font-bold tabular-nums'>
                   {formatTime(trip.scheduled_at)}
                 </span>
+                <UrgencyIndicator
+                  scheduledAt={trip.scheduled_at}
+                  status={trip.status as TripStatus}
+                  variant='badge'
+                  className='ml-1'
+                />
                 {trip.is_wheelchair && (
                   <IconAccessible
                     className='text-muted-foreground h-4 w-4 shrink-0'

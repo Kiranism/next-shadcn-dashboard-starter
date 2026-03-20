@@ -15,6 +15,7 @@ import {
   tripStatusLabels,
   type TripStatus
 } from '@/lib/trip-status';
+import { UrgencyIndicator } from '../urgency-indicator';
 
 function parseAddress(raw: string | null | undefined): {
   street: string | null;
@@ -105,26 +106,18 @@ export const columns: ColumnDef<any>[] = [
       }
       const isRecurring = !!row.original.rule_id;
 
-      const today = new Date();
-      const isSameDay =
-        date.getFullYear() === today.getFullYear() &&
-        date.getMonth() === today.getMonth() &&
-        date.getDate() === today.getDate();
-      const diffMinutes =
-        Math.abs(date.getTime() - today.getTime()) / (1000 * 60);
-      const isNowWindow = isSameDay && diffMinutes <= 30;
-
       return (
-        <div className='flex items-center gap-2'>
+        <div className='flex items-center'>
+          <div className='flex w-4 shrink-0 items-center justify-center'>
+            <UrgencyIndicator
+              scheduledAt={raw}
+              status={row.original.status}
+              variant='dot'
+            />
+          </div>
           <span className='font-medium'>{format(date, 'HH:mm')}</span>
           {isRecurring && (
-            <RepeatIcon className='h-3 w-3 text-blue-500 dark:text-blue-400' />
-          )}
-          {isNowWindow && (
-            <span
-              className='bg-primary h-2 w-2 rounded-full shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary),transparent_80%)]'
-              aria-label='Aktuelle Fahrt'
-            />
+            <RepeatIcon className='ml-2 h-3 w-3 text-blue-500 dark:text-blue-400' />
           )}
         </div>
       );

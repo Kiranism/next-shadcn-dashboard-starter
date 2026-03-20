@@ -1,4 +1,12 @@
-# Kanban View – Features & Behavior
+---
+title: "Kanban-Ansicht"
+category: "Fahrten"
+icon: "kanban"
+description: "Erklärung der Kanban-Tafel für die Fahrtenverwaltung."
+order: 1
+---
+
+# Kanban-Ansicht
 
 This document describes the Kanban view for trips in the dispatch dashboard: behavior, UX patterns, and implementation details.
 

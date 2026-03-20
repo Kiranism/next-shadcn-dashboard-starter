@@ -12,6 +12,7 @@ import {
   tripStatusLabels,
   type TripStatus
 } from '@/lib/trip-status';
+import { UrgencyIndicator } from '@/features/trips/components/urgency-indicator';
 
 interface TripRowProps {
   trip: any;
@@ -53,26 +54,35 @@ export function TripRow({
       }}
     >
       <div className='flex min-w-[56px] flex-col'>
-        <div
-          className={cn(
-            'text-primary leading-tight font-bold',
-            compact ? 'text-sm' : 'text-lg'
-          )}
-        >
-          {scheduledTime}
+        <div className='flex items-center'>
+          <div className='flex w-4 shrink-0 items-center justify-center'>
+            <UrgencyIndicator
+              scheduledAt={trip.scheduled_at}
+              status={trip.status}
+              variant='dot'
+            />
+          </div>
+          <div
+            className={cn(
+              'text-primary leading-tight font-bold',
+              compact ? 'text-sm' : 'text-lg'
+            )}
+          >
+            {scheduledTime}
+          </div>
         </div>
         {showDate && trip.scheduled_at && (
-          <div className='text-muted-foreground mt-0.5 text-[10px] font-medium'>
+          <div className='text-muted-foreground mt-0.5 pl-4 text-[10px] font-medium'>
             {format(new Date(trip.scheduled_at), 'dd.MM.yy')}
           </div>
         )}
         {billingType?.name && (
-          <span className='text-muted-foreground truncate text-[10px] font-medium uppercase'>
+          <span className='text-muted-foreground truncate pl-4 text-[10px] font-medium uppercase'>
             {billingType.name}
           </span>
         )}
         {trip.is_wheelchair && (
-          <span className='truncate text-[10px] font-bold text-rose-600 uppercase dark:text-rose-400'>
+          <span className='truncate pl-4 text-[10px] font-bold text-rose-600 uppercase dark:text-rose-400'>
             Rollstuhl
           </span>
         )}

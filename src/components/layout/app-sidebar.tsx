@@ -39,6 +39,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import * as React from 'react';
 import { Icons } from '../icons';
+import { UserNav } from './user-nav';
+import { ThemeModeToggle } from '../themes/theme-mode-toggle';
+import { ThemeSelector } from '../themes/theme-selector';
 
 export default function AppSidebar() {
   const pathname = usePathname();
@@ -132,16 +135,16 @@ export default function AppSidebar() {
                 align='end'
                 sideOffset={4}
               >
-                <DropdownMenuLabel className='p-0 font-normal'>
-                  <div className='text-muted-foreground px-1 py-1.5 text-sm'>
-                    Sign in to manage your account
+                <div className='space-y-2 p-2'>
+                  <div className='flex items-center justify-between gap-2'>
+                    <ThemeModeToggle />
+                    <ThemeSelector />
                   </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <IconBell className='mr-2 h-4 w-4' />
-                  Notifications
-                </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <div className='flex justify-end'>
+                    <UserNav />
+                  </div>
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>

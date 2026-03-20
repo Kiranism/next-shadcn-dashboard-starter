@@ -25,6 +25,7 @@ import {
   type TripStatus
 } from '@/lib/trip-status';
 import { cn } from '@/lib/utils';
+import { UrgencyIndicator } from '../urgency-indicator';
 import type {
   KanbanTrip,
   OnTimeChange,
@@ -232,6 +233,11 @@ export function TripCard({
               )}
             />
           </div>
+          <UrgencyIndicator
+            scheduledAt={trip.scheduled_at}
+            status={trip.status as TripStatus}
+            variant='dot'
+          />
 
           {/* Stop-order input – only when inside a group */}
           {isGrouped && (

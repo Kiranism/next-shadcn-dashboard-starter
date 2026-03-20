@@ -1,4 +1,5 @@
 import KBar from '@/components/kbar';
+import { getDocSearchData } from '@/lib/documentation';
 import AppSidebar from '@/components/layout/app-sidebar';
 import Header from '@/components/layout/header';
 import { InfoSidebar } from '@/components/layout/info-sidebar';
@@ -25,8 +26,10 @@ export default async function DashboardLayout({
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get('sidebar_state')?.value === 'true';
 
+  const docSearchData = getDocSearchData();
+
   return (
-    <KBar>
+    <KBar docSearchData={docSearchData}>
       <SidebarProvider defaultOpen={defaultOpen}>
         <InfobarProvider defaultOpen={false}>
           <AppSidebar />
