@@ -31,7 +31,6 @@ import {
   Phone,
   User2,
   Briefcase,
-  Clock,
   AlertCircle,
   AlertTriangle,
   CreditCard,
@@ -51,6 +50,7 @@ import { copyTripToClipboard } from '@/features/trips/lib/share-utils';
 import { getCancelledPartnerLabel } from '@/features/trips/lib/trip-direction';
 import { shouldShowCreateReturnTripButton } from '@/features/trips/lib/can-create-linked-return';
 import { CreateReturnTripDialog } from '@/features/trips/components/return-trip';
+import { tripsService } from '@/features/trips/api/trips.service';
 import { getStatusWhenDriverChanges } from '@/features/trips/lib/trip-status';
 import {
   tripStatusBadge,
@@ -78,7 +78,28 @@ export function TripDetailSheet({
   const [hasPair, setHasPair] = useState(false);
   const [linkedPartner, setLinkedPartner] = useState<Trip | null>(null);
   const [isCreateReturnOpen, setIsCreateReturnOpen] = useState(false);
+  /** `HH:mm` for inline time edit; only used when `trip.scheduled_at` is set */
+  const [timeDraft, setTimeDraft] = useState('');
+  const [isSavingTime, setIsSavingTime] = useState(false);
   const { cancelTrip, isLoading: isCancelling } = useTripCancellation();
+
+  // Time draft: only treat as "live" while the sheet is open. Closing discards
+  // unsaved edits by resetting from `trip.scheduled_at` (server / cache).
+  useEffect(() => {
+    if (!isOpen) {
+      if (trip?.scheduled_at) {
+        setTimeDraft(format(new Date(trip.scheduled_at), 'HH:mm'));
+      } else {
+        setTimeDraft('');
+      }
+      return;
+    }
+    if (!trip?.scheduled_at) {
+      setTimeDraft('');
+      return;
+    }
+    setTimeDraft(format(new Date(trip.scheduled_at), 'HH:mm'));
+  }, [isOpen, trip?.id, trip?.scheduled_at]);
 
   useEffect(() => {
     const fetchDrivers = async () => {
@@ -199,6 +220,32 @@ export function TripDetailSheet({
     };
   };
 
+  const timeDirty =
+    isOpen &&
+    !!trip?.scheduled_at &&
+    !!timeDraft &&
+    (() => {
+      const next = applyTimeToScheduledDate(trip.scheduled_at, timeDraft);
+      return next.toISOString() !== new Date(trip.scheduled_at).toISOString();
+    })();
+
+  const handleSaveTime = async () => {
+    if (!isOpen || !trip?.scheduled_at || !timeDraft) return;
+    setIsSavingTime(true);
+    try {
+      const next = applyTimeToScheduledDate(trip.scheduled_at, timeDraft);
+      await tripsService.updateTrip(trip.id, {
+        scheduled_at: next.toISOString()
+      });
+      toast.success('Zeit aktualisiert');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(`Speichern fehlgeschlagen: ${message}`);
+    } finally {
+      setIsSavingTime(false);
+    }
+  };
+
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent className='flex w-full flex-col border-l p-0 sm:max-w-xl'>
@@ -254,24 +301,57 @@ export function TripDetailSheet({
                   {trip.client_name || 'Unbekannter Kunde'}
                 </SheetTitle>
                 <div className='flex w-full min-w-0 items-center justify-between gap-2'>
-                  <SheetDescription className='text-foreground flex min-w-0 flex-1 items-center gap-2 font-medium'>
-                    <Clock className='text-primary h-4 w-4 shrink-0' />
-                    <span className='min-w-0'>
-                      {trip.scheduled_at
-                        ? (() => {
-                            const d = new Date(trip.scheduled_at);
-                            return `${format(d, 'PPPP', { locale: de })} · ${format(d, 'HH:mm')}`;
-                          })()
-                        : 'Keine Zeit'}
-                    </span>
+                  <SheetDescription className='text-foreground flex min-w-0 flex-1 flex-wrap items-center gap-x-1 gap-y-1 font-medium'>
+                    {trip.scheduled_at ? (
+                      <>
+                        <span className='min-w-0'>
+                          {format(new Date(trip.scheduled_at), 'PPPP', {
+                            locale: de
+                          })}
+                        </span>
+                        <span className='text-muted-foreground' aria-hidden>
+                          ·
+                        </span>
+                        {/* Match kanban-trip-card time chip: muted surface + centered digits (`span` = valid inside `<p>` description) */}
+                        <span
+                          className={cn(
+                            'border-border/80 inline-grid h-8 min-w-[4.75rem] shrink-0 place-items-center rounded-md border align-middle',
+                            'bg-muted/80 hover:bg-muted transition-colors',
+                            (isSavingTime || !isOpen) &&
+                              'pointer-events-none opacity-70'
+                          )}
+                        >
+                          <input
+                            type='time'
+                            step={60}
+                            value={timeDraft}
+                            onChange={(e) => setTimeDraft(e.target.value)}
+                            disabled={isSavingTime || !isOpen}
+                            title='Zeit bearbeiten'
+                            aria-label='Geplante Uhrzeit bearbeiten'
+                            className={cn(
+                              'h-8 w-full min-w-[4.75rem] cursor-text rounded-md border-0 bg-transparent px-1.5',
+                              'text-foreground text-center text-sm font-semibold outline-none',
+                              '[&::-webkit-calendar-picker-indicator]:hidden',
+                              '[&::-webkit-datetime-edit]:m-0 [&::-webkit-datetime-edit]:flex [&::-webkit-datetime-edit]:h-full [&::-webkit-datetime-edit]:w-full [&::-webkit-datetime-edit]:items-center [&::-webkit-datetime-edit]:justify-center',
+                              '[&::-webkit-datetime-edit-fields-wrapper]:flex [&::-webkit-datetime-edit-fields-wrapper]:justify-center',
+                              '[&::-moz-calendar-picker-indicator]:hidden',
+                              'focus-visible:ring-ring focus-visible:ring-offset-background focus-visible:ring-2 focus-visible:ring-offset-2'
+                            )}
+                          />
+                        </span>
+                      </>
+                    ) : (
+                      <span>Keine Zeit</span>
+                    )}
                   </SheetDescription>
                   <Button
                     type='button'
-                    variant='ghost'
-                    size='icon'
-                    className='text-muted-foreground hover:text-primary h-8 w-8 shrink-0'
-                    title='Details kopieren (QuickShare)'
-                    aria-label='Details kopieren (QuickShare)'
+                    variant='default'
+                    size='sm'
+                    className='h-8 shrink-0 gap-1.5 px-3'
+                    title='Details in die Zwischenablage kopieren'
+                    aria-label='Teilen: Details kopieren'
                     onClick={async () => {
                       const success = await copyTripToClipboard(trip as Trip);
                       if (success) {
@@ -281,7 +361,8 @@ export function TripDetailSheet({
                       }
                     }}
                   >
-                    <Share2 className='h-4 w-4' />
+                    <Share2 className='h-4 w-4 shrink-0' />
+                    <span className='text-xs font-medium'>Teilen</span>
                   </Button>
                 </div>
               </SheetHeader>
@@ -503,6 +584,18 @@ export function TripDetailSheet({
                 </div>
               )}
               <div className='flex items-center gap-2'>
+                {timeDirty && (
+                  <Button
+                    type='button'
+                    size='sm'
+                    disabled={isSavingTime}
+                    onClick={() => {
+                      void handleSaveTime();
+                    }}
+                  >
+                    {isSavingTime ? 'Wird gespeichert…' : 'Aktualisieren'}
+                  </Button>
+                )}
                 {showCreateReturnButton && (
                   <Button
                     type='button'
@@ -623,6 +716,19 @@ export function TripDetailSheet({
       </SheetContent>
     </Sheet>
   );
+}
+
+/** Keeps calendar day from `scheduledIso`, replaces clock time with `HH:mm`. */
+function applyTimeToScheduledDate(
+  scheduledIso: string,
+  timeHHmm: string
+): Date {
+  const d = new Date(scheduledIso);
+  const [hStr, mStr] = timeHHmm.split(':');
+  const h = parseInt(hStr ?? '0', 10);
+  const m = parseInt(mStr ?? '0', 10);
+  d.setHours(Number.isFinite(h) ? h : 0, Number.isFinite(m) ? m : 0, 0, 0);
+  return d;
 }
 
 function TimelineItem({

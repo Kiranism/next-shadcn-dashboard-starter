@@ -106,7 +106,7 @@ export function RecurringTripCancelDialog({
               <AlertDialogAction
                 disabled={isLoading}
                 onClick={() => onConfirmSingle(reason)}
-                className='w-full bg-amber-500 hover:bg-amber-600 sm:w-full'
+                className='bg-destructive text-destructive-foreground hover:bg-destructive/90 w-full sm:w-full'
               >
                 {singleLabel}
               </AlertDialogAction>
@@ -114,7 +114,7 @@ export function RecurringTripCancelDialog({
                 <AlertDialogAction
                   disabled={isLoading}
                   onClick={() => onConfirmWithPair(reason)}
-                  className='w-full bg-amber-500/90 text-amber-950 hover:bg-amber-600 sm:w-full'
+                  className='bg-destructive text-destructive-foreground hover:bg-destructive/90 w-full sm:w-full'
                 >
                   {pairLabel}
                 </AlertDialogAction>
