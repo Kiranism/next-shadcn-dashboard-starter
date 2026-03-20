@@ -11,7 +11,8 @@ import { Suspense } from 'react';
 import { CreateTripDialogButton } from '@/features/trips/components/create-trip-dialog-button';
 import { BulkUploadDialog } from '@/features/trips/components/bulk-upload-dialog';
 import { PrintTripsButton } from '@/features/trips/components/print-trips-button';
-import { PendingDriverAssignmentsPanel } from '@/features/trips/components/pending-driver-assignments-panel';
+import { PendingAssignmentsPopover } from '@/features/trips/components/pending-assignments/pending-assignments-popover';
+import { TripsRealtimeSync } from '@/features/trips/components/trips-realtime-sync';
 
 export const metadata = {
   title: 'Dashboard: Fahrten'
@@ -37,6 +38,7 @@ export default async function Page(props: pageProps) {
           <PrintTripsButton />
           <BulkUploadDialog />
           <CreateTripDialogButton />
+          <PendingAssignmentsPopover />
         </div>
       }
     >
@@ -47,7 +49,7 @@ export default async function Page(props: pageProps) {
       >
         <TripsListingPage searchParams={props.searchParams} />
       </Suspense>
-      <PendingDriverAssignmentsPanel />
+      <TripsRealtimeSync />
     </PageContainer>
   );
 }

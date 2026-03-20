@@ -164,7 +164,8 @@ export default async function TripsListingPage({
           `and(scheduled_at.is.null,requested_date.eq.${dayStr})`
         ];
         // Imports / drafts with neither time nor requested day: show only when the
-        // selected filter day is the server’s current calendar day (small backlog).
+        // selected filter day is the server's current calendar day (small backlog).
+        // See docs/trips-date-filter.md — "Backlog: both scheduled_at and requested_date are NULL".
         if (ymdFromCalendarDate(new Date()) === dayStr) {
           branches.push(`and(scheduled_at.is.null,requested_date.is.null)`);
         }
@@ -221,7 +222,7 @@ export default async function TripsListingPage({
   const { data, count, error } = await query;
   if (error) throw error;
 
-  const trips = data as any[]; // Use any for joined data
+  const trips = data as any[];
   const totalTrips = count || 0;
 
   /**

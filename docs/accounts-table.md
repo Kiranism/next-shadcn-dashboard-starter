@@ -86,7 +86,7 @@ type UpdateUser = Database['public']['Tables']['accounts']['Update'];
 
 | Area          | Files |
 |---------------|-------|
-| Trips         | `trips.service.ts`, `trips-listing.tsx`, `client-trips-panel.tsx`, `print-trips-button.tsx`, `create-trip-form.tsx`, `use-trip-form-data.ts`, `pending-driver-assignments-panel.tsx`, `bulk-upload-dialog.tsx`, `resolve-clients-step.tsx` |
+| Trips         | `trips.service.ts`, `trips-listing.tsx`, `client-trips-panel.tsx`, `print-trips-button.tsx` ([print export](./print-trips-export.md)), `create-trip-form.tsx`, `use-trip-form-data.ts`, `pending-driver-assignments-panel.tsx`, `bulk-upload-dialog.tsx`, `resolve-clients-step.tsx` |
 | Overview      | `trip-detail-sheet.tsx` |
 | Drivers       | `drivers.service.ts`, `driver-table-listing.tsx`, `shift-tracker.tsx`, `types.ts` |
 | Dashboard     | `pending-tours-widget.tsx` |

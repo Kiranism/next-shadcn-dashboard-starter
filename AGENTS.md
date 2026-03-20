@@ -120,6 +120,7 @@ The project follows a feature-based folder structure designed for scalability in
 │   ├── nav-rbac.md        # Navigation RBAC documentation
 │   ├── themes.md          # Theme customization guide
 │   ├── kanban-view.md     # Kanban trips board behaviour
+│   ├── print-trips-export.md # Fahrten drucken ZIP (PDF + JPEG overviews)
 │   └── trips-date-filter.md # Fahrten date query + “stuck cards” fix
 
 /__CLEANUP__               # Feature removal scripts

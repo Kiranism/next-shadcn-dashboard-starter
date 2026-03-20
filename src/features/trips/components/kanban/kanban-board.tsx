@@ -30,7 +30,10 @@ import {
 import { toast } from 'sonner';
 
 import { tripsService } from '../../api/trips.service';
-import { useKanbanPendingStore } from '@/features/trips/stores/use-kanban-pending-store';
+import {
+  useKanbanPendingStore,
+  syncTripIds
+} from '@/features/trips/stores/use-kanban-pending-store';
 import { useTripFormData } from '@/features/trips/hooks/use-trip-form-data';
 import { getStatusWhenDriverChanges } from '@/features/trips/lib/trip-status';
 import { getItem, setItem, STORAGE_KEYS } from '@/lib/kanban-local-storage';
@@ -74,8 +77,22 @@ interface TripsKanbanBoardProps {
 export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
   const router = useRouter();
   const { drivers, isLoading: isFormDataLoading } = useTripFormData();
-  const { pendingChanges, setPendingChanges, clearPendingChanges } =
+  const { pendingChanges, setPendingChanges, clearPendingChanges, pruneToIds } =
     useKanbanPendingStore();
+
+  // ── Synchronous ID sync — must happen before any useMemo that reads pendingChanges ─
+  // syncTripIds keeps the module-level ref up to date so the Zustand
+  // onRehydrateStorage callback can prune stale entries synchronously.
+  // pruneToIds is also called here to cover the case where rehydration
+  // already finished by the time this render runs.
+  const currentTripIds = useMemo(
+    () => new Set(trips.map((t) => t.id)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [trips]
+  );
+  syncTripIds(currentTripIds);
+  // Prune inline (safe to call on every render — it's a no-op when nothing changed).
+  pruneToIds(currentTripIds);
 
   // ── UI state ────────────────────────────────────────────────────────────────
   const [groupBy, setGroupBy] = useState<GroupByMode>('driver');
@@ -136,48 +153,7 @@ export function TripsKanbanBoard({ trips }: TripsKanbanBoardProps) {
     setZoomInput(null);
   }, []);
 
-  // ── Prune stale pending entries ─────────────────────────────────────────────
-  const visibleTripIdsKey = useMemo(
-    () => [...trips.map((t) => t.id)].sort().join(','),
-    [trips]
-  );
-  const tripsRef = useRef(trips);
-  tripsRef.current = trips;
-
-  const prunePendingToVisibleTrips = useCallback(() => {
-    const ids = new Set(tripsRef.current.map((t) => t.id));
-    setPendingChanges((prev) => {
-      const next: Record<string, PendingChange> = {};
-      for (const [id, change] of Object.entries(prev)) {
-        if (ids.has(id)) next[id] = change;
-      }
-      return Object.keys(next).length === Object.keys(prev).length
-        ? prev
-        : next;
-    });
-  }, [setPendingChanges]);
-
-  /** After Zustand rehydrates from localStorage, prune stale IDs. */
-  useEffect(() => {
-    const persistApi = (
-      useKanbanPendingStore as unknown as {
-        persist: {
-          onFinishHydration: (fn: () => void) => () => void;
-          hasHydrated: () => boolean;
-        };
-      }
-    ).persist;
-    if (!persistApi) return undefined;
-    const unsub = persistApi.onFinishHydration(prunePendingToVisibleTrips);
-    if (persistApi.hasHydrated()) prunePendingToVisibleTrips();
-    return unsub;
-  }, [prunePendingToVisibleTrips]);
-
-  useEffect(() => {
-    prunePendingToVisibleTrips();
-  }, [visibleTripIdsKey, prunePendingToVisibleTrips]);
-
-  // ── beforeunload guard ──────────────────────────────────────────────────────
+  // ── beforeunload guard ──────────────────────────────────────────────────────────────
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
       if (Object.keys(pendingChanges).length === 0) return;

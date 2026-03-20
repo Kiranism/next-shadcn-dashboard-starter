@@ -15,8 +15,21 @@ import { format, startOfDay, endOfDay } from 'date-fns';
 import { toJpeg } from 'html-to-image';
 import JSZip from 'jszip';
 import { jsPDF } from 'jspdf';
-import { MobilePrintTemplate } from './mobile-print-template';
+import {
+  buildColumns,
+  buildItemsByColumn
+} from '@/features/trips/lib/kanban-columns';
+import type { KanbanTrip } from '@/features/trips/lib/kanban-types';
+import { BoardLandscapeOnlyPrintTemplate } from './board-landscape-only-print-template';
+import { BoardOverviewPrintTemplate } from './board-overview-print-template';
+import { MobilePrintTemplate, type TripData } from './mobile-print-template';
 import { createRoot } from 'react-dom/client';
+
+function dataUrlBase64Payload(dataUrl: string): string {
+  const marker = 'base64,';
+  const i = dataUrl.indexOf(marker);
+  return i >= 0 ? dataUrl.slice(i + marker.length) : dataUrl;
+}
 
 export function PrintTripsButton() {
   const [isGenerating, setIsGenerating] = React.useState(false);
@@ -37,9 +50,9 @@ export function PrintTripsButton() {
       const start = startOfDay(date).toISOString();
       const end = endOfDay(date).toISOString();
 
-      // 2. Fetch all trips for that day (includes notes for print template)
       toast.info(`Lade Fahrten für den ${format(date, 'dd.MM.yyyy')}...`);
-      const { data: trips, error } = await supabase
+
+      const tripsQuery = supabase
         .from('trips')
         .select(
           `
@@ -52,11 +65,48 @@ export function PrintTripsButton() {
         .lte('scheduled_at', end)
         .order('scheduled_at', { ascending: true });
 
+      const driversQuery = supabase
+        .from('accounts')
+        .select('id, name')
+        .eq('role', 'driver')
+        .eq('is_active', true)
+        .order('name');
+
+      const [{ data: trips, error }, { data: drivers, error: driversError }] =
+        await Promise.all([tripsQuery, driversQuery]);
+
       if (error) throw error;
+      if (driversError) throw driversError;
+
       if (!trips || trips.length === 0) {
         toast.error('Keine Fahrten für diesen Tag gefunden.');
         setIsGenerating(false);
         return;
+      }
+
+      const dateStr = format(date, 'dd.MM.yy');
+      const zip = new JSZip();
+
+      const columnsAll = buildColumns(
+        trips as KanbanTrip[],
+        'driver',
+        drivers ?? []
+      );
+      const itemsByColumn = buildItemsByColumn(
+        trips as KanbanTrip[],
+        columnsAll,
+        'driver'
+      );
+
+      /** Nur Fahrer mit mindestens einer Fahrt; ohne „Nicht zugewiesen“. */
+      const overviewColumns = columnsAll.filter(
+        (c) => c.id !== 'unassigned' && (itemsByColumn[c.id]?.length ?? 0) > 0
+      );
+
+      const overviewItems: Record<string, TripData[]> = {};
+      for (const col of overviewColumns) {
+        const list = itemsByColumn[col.id];
+        if (list?.length) overviewItems[col.id] = list as TripData[];
       }
 
       // 3. Group trips by driver
@@ -67,16 +117,113 @@ export function PrintTripsButton() {
         groups[driverName].push(trip);
       });
 
-      // 4. Generate images and PDFs for each group
-      toast.info(`Generiere ${Object.keys(groups).length} Druckvorlagen...`);
-      const zip = new JSZip();
-      const dateStr = format(date, 'dd.MM.yy');
+      toast.info(
+        `Generiere ${Object.keys(groups).length} Druckvorlagen${
+          overviewColumns.length > 0 ? ' + 2 Übersichten' : ''
+        }...`
+      );
 
       const offscreenContainer = document.createElement('div');
       offscreenContainer.style.position = 'absolute';
       offscreenContainer.style.left = '-9999px';
       offscreenContainer.style.top = '0';
       document.body.appendChild(offscreenContainer);
+
+      if (overviewColumns.length > 0) {
+        const imageOptionsStrip = {
+          pixelRatio: 2,
+          cacheBust: true,
+          backgroundColor: '#f1f5f9'
+        } as const;
+
+        const imageOptionsLandscape = {
+          pixelRatio: 2,
+          cacheBust: true,
+          backgroundColor: '#f8fafc'
+        } as const;
+
+        const addOverviewJpegToZip = async (
+          el: HTMLElement,
+          opts: {
+            pixelRatio: number;
+            cacheBust: boolean;
+            backgroundColor: string;
+          },
+          jpegName: string
+        ) => {
+          const jpegDataUrl = await toJpeg(el, {
+            ...opts,
+            quality: 0.88
+          });
+          zip.file(jpegName, dataUrlBase64Payload(jpegDataUrl), {
+            base64: true
+          });
+        };
+
+        /* Hochformat: Kanban-Spalten nebeneinander (typisch schmal/hoch) */
+        {
+          const overviewDiv = document.createElement('div');
+          offscreenContainer.appendChild(overviewDiv);
+          const overviewRoot = createRoot(overviewDiv);
+          try {
+            overviewRoot.render(
+              <BoardOverviewPrintTemplate
+                date={date}
+                columns={overviewColumns}
+                itemsByColumn={overviewItems}
+              />
+            );
+            await new Promise((resolve) => setTimeout(resolve, 900));
+            const overviewEl =
+              overviewDiv.firstElementChild as HTMLElement | null;
+            if (!overviewEl) {
+              throw new Error(
+                'Übersicht (Hochformat) konnte nicht gerendert werden.'
+              );
+            }
+            await addOverviewJpegToZip(
+              overviewEl,
+              imageOptionsStrip,
+              'fahrtenplan_uebersicht.jpg'
+            );
+          } finally {
+            overviewRoot.unmount();
+            offscreenContainer.removeChild(overviewDiv);
+          }
+        }
+
+        /* Querformat: eigene Ansicht — Fahrer als Zeilen, Fahrten waagerecht */
+        {
+          const overviewDiv = document.createElement('div');
+          offscreenContainer.appendChild(overviewDiv);
+          const overviewRoot = createRoot(overviewDiv);
+          try {
+            overviewRoot.render(
+              <BoardLandscapeOnlyPrintTemplate
+                date={date}
+                columns={overviewColumns}
+                itemsByColumn={overviewItems}
+              />
+            );
+            await new Promise((resolve) => setTimeout(resolve, 900));
+            const overviewEl =
+              overviewDiv.firstElementChild as HTMLElement | null;
+            if (!overviewEl) {
+              throw new Error(
+                'Übersicht (Querformat) konnte nicht gerendert werden.'
+              );
+            }
+            await addOverviewJpegToZip(
+              overviewEl,
+              imageOptionsLandscape,
+              'fahrtenplan_uebersicht_handy_querformat.jpg'
+            );
+          } finally {
+            overviewRoot.unmount();
+            offscreenContainer.removeChild(overviewDiv);
+          }
+        }
+      }
 
       for (const driverName of Object.keys(groups)) {
         const driverTrips = groups[driverName];
@@ -162,7 +309,11 @@ export function PrintTripsButton() {
       link.click();
 
       document.body.removeChild(offscreenContainer);
-      toast.success('Druckvorlagen und PDFs erfolgreich generiert!');
+      toast.success(
+        overviewColumns.length > 0
+          ? 'ZIP mit PDFs und zwei JPEG-Übersichten wurde erstellt.'
+          : 'ZIP mit PDFs wurde erstellt.'
+      );
     } catch (err: any) {
       console.error('Print generation error:', err);
       toast.error('Fehler beim Generieren der Druckvorlagen: ' + err.message);
@@ -189,7 +340,7 @@ export function PrintTripsButton() {
             Druckdatum wählen
           </h4>
           <p className='text-muted-foreground text-[10px]'>
-            Fahrten für diesen Tag werden exportiert.
+            ZIP:Trips Übersicht für Fahrer
           </p>
         </div>
         <Calendar
@@ -199,14 +350,14 @@ export function PrintTripsButton() {
           initialFocus
           disabled={(date) => isGenerating}
         />
-        <div className='bg-muted flex justify-end border-t p-3'>
+        <div className='bg-muted flex justify-center border-t p-3'>
           <Button
             size='sm'
             onClick={generatePrintouts}
             disabled={isGenerating || !date}
-            className='bg-primary hover:bg-primary/90 w-full'
+            className='bg-primary hover:bg-primary/90 w-fit'
           >
-            {isGenerating ? 'Generiere...' : 'ZIP Generieren'}
+            {isGenerating ? 'Generiere...' : 'ZIP generieren'}
           </Button>
         </div>
       </PopoverContent>
