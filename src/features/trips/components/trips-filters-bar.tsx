@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { format, startOfWeek, endOfWeek, subWeeks, addWeeks } from 'date-fns';
+import { format, startOfWeek, subWeeks, addWeeks } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { CalendarIcon, Settings2 } from 'lucide-react';
 import { CheckIcon, CaretSortIcon } from '@radix-ui/react-icons';
@@ -30,7 +30,6 @@ import {
   CommandList
 } from '@/components/ui/command';
 import { Calendar } from '@/components/ui/calendar';
-import type { DateRange } from 'react-day-picker';
 import { useTripFormData } from '@/features/trips/hooks/use-trip-form-data';
 import { useTripsTableStore } from '@/features/trips/stores/use-trips-table-store';
 import { cn } from '@/lib/utils';
@@ -75,12 +74,9 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
     setLocalSearch(search);
   }, [search]);
 
-  const hasSetDefaultDate = useRef(false);
-
+  // On first mount only: if no date is in the URL, default to today.
   useEffect(() => {
-    if (hasSetDefaultDate.current) return;
-    if (scheduledAt !== '') return;
-    hasSetDefaultDate.current = true;
+    if (searchParams.get('scheduled_at')) return;
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
     const params = new URLSearchParams(searchParams.toString());
@@ -90,34 +86,26 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
     startTransition(() => {
       router.replace(next, { scroll: false });
     });
-  }, [scheduledAt, pathname, searchParams, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const { drivers, payers, billingTypes } = useTripFormData(payerId ?? null);
 
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
 
-  const selectedDateRange = useMemo((): DateRange | undefined => {
+  const selectedDate = useMemo((): Date | undefined => {
     if (!scheduledAt) return undefined;
-    const parts = scheduledAt.split(',');
-    const fromTs = parts[0] ? Number(parts[0]) : NaN;
-    const toTs = parts[1] ? Number(parts[1]) : fromTs;
-    if (Number.isNaN(fromTs)) return undefined;
-    const from = new Date(fromTs);
-    if (Number.isNaN(from.getTime())) return undefined;
-    const to = Number.isNaN(toTs) ? from : new Date(toTs);
-    if (Number.isNaN(to.getTime())) return { from };
-    return { from, to: from.getTime() === to.getTime() ? from : to };
+    // Only use the first part (ignore any legacy range suffix)
+    const ts = Number(scheduledAt.split(',')[0]);
+    if (Number.isNaN(ts)) return undefined;
+    const d = new Date(ts);
+    return Number.isNaN(d.getTime()) ? undefined : d;
   }, [scheduledAt]);
 
   const dateButtonLabel = useMemo(() => {
-    if (!selectedDateRange?.from) return 'Heute wählen';
-    const from = selectedDateRange.from;
-    const to = selectedDateRange.to;
-    if (!to || from.getTime() === to.getTime()) {
-      return format(from, 'dd.MM.yyyy', { locale: de });
-    }
-    return `${format(from, 'dd.MM.yyyy', { locale: de })} – ${format(to, 'dd.MM.yyyy', { locale: de })}`;
-  }, [selectedDateRange]);
+    if (!selectedDate) return 'Heute';
+    return format(selectedDate, 'dd.MM.yyyy', { locale: de });
+  }, [selectedDate]);
 
   const driverOptions = useMemo(
     () => [
@@ -136,12 +124,10 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
     { label: 'Abgeschlossen', value: 'completed' },
     { label: 'Storniert', value: 'cancelled' }
   ];
-  const setWeekRange = (anchor: Date) => {
+  const jumpToWeekStart = (anchor: Date) => {
     const weekStart = startOfWeek(anchor, { weekStartsOn: 1 });
-    const weekEnd = endOfWeek(anchor, { weekStartsOn: 1 });
-    const fromTs = weekStart.getTime();
-    const toTs = weekEnd.getTime();
-    updateFilters({ scheduled_at: `${fromTs},${toTs}` });
+    weekStart.setHours(0, 0, 0, 0);
+    updateFilters({ scheduled_at: String(weekStart.getTime()) });
     setDatePopoverOpen(false);
   };
 
@@ -206,7 +192,7 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
                 variant='outline'
                 size='sm'
                 className='h-7 text-xs'
-                onClick={() => setWeekRange(subWeeks(new Date(), 1))}
+                onClick={() => jumpToWeekStart(subWeeks(new Date(), 1))}
               >
                 Letzte Woche
               </Button>
@@ -215,7 +201,7 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
                 variant='outline'
                 size='sm'
                 className='h-7 text-xs'
-                onClick={() => setWeekRange(new Date())}
+                onClick={() => jumpToWeekStart(new Date())}
               >
                 Diese Woche
               </Button>
@@ -224,38 +210,24 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
                 variant='outline'
                 size='sm'
                 className='h-7 text-xs'
-                onClick={() => setWeekRange(addWeeks(new Date(), 1))}
+                onClick={() => jumpToWeekStart(addWeeks(new Date(), 1))}
               >
                 Nächste Woche
               </Button>
             </div>
             <div className='w-full min-w-0 shrink-0'>
               <Calendar
-                mode='range'
-                selected={selectedDateRange}
-                onSelect={(range: DateRange | undefined) => {
-                  if (!range?.from) {
+                mode='single'
+                selected={selectedDate}
+                onSelect={(day: Date | undefined) => {
+                  if (!day) {
                     updateFilters({ scheduled_at: null });
                     return;
                   }
-                  const startOfDay = (d: Date) => {
-                    const x = new Date(d);
-                    x.setHours(0, 0, 0, 0);
-                    return x.getTime();
-                  };
-                  const endOfDay = (d: Date) => {
-                    const x = new Date(d);
-                    x.setHours(23, 59, 59, 999);
-                    return x.getTime();
-                  };
-                  const fromTs = startOfDay(range.from);
-                  const toTs = range.to
-                    ? endOfDay(range.to)
-                    : startOfDay(range.from);
-                  const value =
-                    fromTs === toTs ? String(fromTs) : `${fromTs},${toTs}`;
-                  updateFilters({ scheduled_at: value });
-                  if (range.from && range.to) setDatePopoverOpen(false);
+                  const d = new Date(day);
+                  d.setHours(0, 0, 0, 0);
+                  updateFilters({ scheduled_at: String(d.getTime()) });
+                  setDatePopoverOpen(false);
                 }}
                 numberOfMonths={1}
                 initialFocus
