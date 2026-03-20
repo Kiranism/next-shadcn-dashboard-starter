@@ -247,6 +247,7 @@ export function UpcomingTrips() {
         tripId={selectedTripId}
         isOpen={isSheetOpen}
         onOpenChange={setIsSheetOpen}
+        onNavigateToTrip={(id) => setSelectedTripId(id)}
       />
     </Card>
   );

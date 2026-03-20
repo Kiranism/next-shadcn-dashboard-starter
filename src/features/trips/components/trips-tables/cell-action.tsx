@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Edit, MoreHorizontal, Eye, Trash, Share2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TripDetailSheet } from '@/features/overview/components/trip-detail-sheet';
 import { useRouter } from 'next/navigation';
 import type { Trip } from '@/features/trips/api/trips.service';
@@ -25,6 +25,11 @@ interface CellActionProps {
 
 export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [detailTripId, setDetailTripId] = useState(data.id);
+
+  useEffect(() => {
+    if (isDetailOpen) setDetailTripId(data.id);
+  }, [isDetailOpen, data.id]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [hasPair, setHasPair] = useState(false);
   const router = useRouter();
@@ -113,7 +118,8 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
       <TripDetailSheet
         isOpen={isDetailOpen}
         onOpenChange={setIsDetailOpen}
-        tripId={data.id}
+        tripId={detailTripId}
+        onNavigateToTrip={setDetailTripId}
       />
 
       <RecurringTripCancelDialog
