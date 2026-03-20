@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { getUrgencyLevel, type UrgencyLevel } from '../lib/urgency-logic';
 import { type TripStatus } from '@/lib/trip-status';
 import { URGENCY_STYLES } from '../constants/urgency-config';
+import { getUrgencyTranslation } from '../lib/urgency-translations';
 import {
   Tooltip,
   TooltipContent,
@@ -126,14 +127,11 @@ export function UrgencyIndicator({
   const isOverdue = level === 'overdue';
   const isDue = level === 'due';
 
+  // Use the translation helper for localized text (defaults to German)
+  const { label, description } = getUrgencyTranslation(level);
+
   // Omit motion-clashing props
   const { onDrag, onDragStart, onDragEnd, ...safeProps } = props as any;
-
-  const urgencyInfo = URGENCY_STYLES[level as keyof typeof URGENCY_STYLES];
-  const description =
-    urgencyInfo && 'description' in urgencyInfo
-      ? (urgencyInfo as any).description
-      : '';
 
   return (
     <Tooltip delayDuration={0}>
@@ -160,15 +158,13 @@ export function UrgencyIndicator({
             )}
             {...safeProps}
           >
-            {variant === 'badge' && levelLabels[level]}
+            {variant === 'badge' && label}
           </motion.div>
         </div>
       </TooltipTrigger>
-      {description && (
-        <TooltipContent side='bottom' align='center' sideOffset={8}>
-          {description}
-        </TooltipContent>
-      )}
+      <TooltipContent side='bottom' align='center' sideOffset={8}>
+        {label}
+      </TooltipContent>
     </Tooltip>
   );
 }

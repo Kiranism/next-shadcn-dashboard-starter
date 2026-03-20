@@ -28,7 +28,7 @@ The indicator calculates an `UrgencyLevel` based on the difference (in minutes) 
 > Urgency is automatically hidden for trips with status `completed` or `cancelled`, or if the trip is more than **10 minutes overdue**.
 
 > [!NOTE]
-> **Code Synchronization**: The visuals and labels above are rendered dynamically from `src/features/trips/constants/urgency-config.ts`. Any styling changes in the code reflect here automatically.
+> **Localization Architecture**: The visual styling is defined in English in `urgency-config.ts`. User-facing labels (used in both badges and tooltips) are managed in `src/features/trips/lib/urgency-translations.ts`.
 
 ## Project Structure
 
