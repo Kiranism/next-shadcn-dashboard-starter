@@ -1,5 +1,11 @@
 'use client';
 
+/**
+ * Address search for dispatch forms: Google Places Autocomplete (New) → optional Place Details on select.
+ *
+ * Suggestions come from `/api/places-autocomplete` (debounced). Structured fields (PLZ, house number,
+ * coordinates) are filled only after `/api/place-details` runs — see `docs/address-autocomplete.md`.
+ */
 import * as React from 'react';
 import { Building2, Loader2, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -81,7 +87,6 @@ export function AddressAutocomplete({
           body: JSON.stringify({ query: debouncedQuery })
         });
         const data = await response.json();
-        console.log('DEBUG: Autocomplete Suggestions:', data);
 
         // Google Places v1 usually returns `suggestions`, but be defensive and
         // also support `predictions` or a direct array response.
@@ -224,10 +229,13 @@ export function AddressAutocomplete({
     if (result.placeId) {
       setIsLoading(true);
       try {
-        const res = await fetch(`/api/place-details?placeId=${result.placeId}`);
+        // Encode so ids containing `/` (e.g. `places/ChIJ…`) survive the query string intact server-side.
+        const res = await fetch(
+          `/api/place-details?placeId=${encodeURIComponent(result.placeId)}`
+        );
         const details = await res.json();
-        console.log('DEBUG: Place Details fetched:', details);
 
+        // Merge server-resolved geometry + address; establishment rows still use `name` for the input label.
         const finalResult = {
           ...result,
           // For establishments the input should show the place name, not the
@@ -321,6 +329,7 @@ export function AddressAutocomplete({
                       <div className='text-xs font-medium'>
                         {s.street} {s.street_number}
                       </div>
+                      {/* PLZ is normally unset here — it is applied after place-details; badge is for edge cases */}
                       {s.zip_code && (
                         <div className='text-muted-foreground bg-muted rounded px-1.5 py-0.5 text-[10px]'>
                           {s.zip_code}

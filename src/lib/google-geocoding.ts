@@ -107,3 +107,61 @@ export async function geocodeStructuredAddressToLatLng(params: {
     return null;
   }
 }
+
+/**
+ * Reverse-geocode coordinates to a postal code (Geocoding API).
+ * Used when Places Details returns an incomplete `postal_code` (e.g. some route centroids).
+ * Requires `GOOGLE_MAPS_API_KEY` and Geocoding API enabled on the GCP project.
+ */
+export async function reverseGeocodeLatLngToPostalCode(params: {
+  lat: number;
+  lng: number;
+}): Promise<string | null> {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey) {
+    return null;
+  }
+
+  const url = new URL(GEOCODE_ENDPOINT);
+  url.searchParams.set('latlng', `${params.lat},${params.lng}`);
+  url.searchParams.set('key', apiKey);
+  // Prefer German component labels; does not override geometry, only formatting of address_components.
+  url.searchParams.set('language', 'de');
+
+  try {
+    const res = await fetch(url.toString());
+    if (!res.ok) {
+      console.error('Reverse geocode HTTP error', res.status, res.statusText);
+      return null;
+    }
+
+    const data = await res.json();
+
+    if (
+      data.status !== 'OK' ||
+      !Array.isArray(data.results) ||
+      !data.results[0]
+    ) {
+      return null;
+    }
+
+    const components: Array<{
+      long_name: string;
+      types: string[];
+    }> = Array.isArray(data.results[0].address_components)
+      ? data.results[0].address_components
+      : [];
+
+    // Match `geocodeStructuredAddressToLatLng`: use `long_name` for postal_code, not `short_name`.
+    for (const component of components) {
+      if (component.types.includes('postal_code')) {
+        return component.long_name?.trim() || null;
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error in reverse geocode', error);
+    return null;
+  }
+}
