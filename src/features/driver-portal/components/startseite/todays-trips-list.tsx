@@ -20,9 +20,14 @@ import { useCallback, useEffect, useState } from 'react';
 
 interface TodaysTripsListProps {
   driverId: string;
+  /** Whether the driver currently has an active shift — gates Tour starten */
+  shiftActive: boolean;
 }
 
-export function TodaysTripsList({ driverId }: TodaysTripsListProps) {
+export function TodaysTripsList({
+  driverId,
+  shiftActive
+}: TodaysTripsListProps) {
   const [trips, setTrips] = useState<DriverTrip[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -113,6 +118,7 @@ export function TodaysTripsList({ driverId }: TodaysTripsListProps) {
         <DriverTripCard
           key={trip.id}
           trip={trip}
+          shiftActive={shiftActive}
           onStatusChange={handleStatusChange}
         />
       ))}

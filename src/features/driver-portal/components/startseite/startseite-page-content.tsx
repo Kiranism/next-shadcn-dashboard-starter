@@ -37,6 +37,12 @@ function formatTodayHeader(): string {
 export function StartseitePageContent() {
   const [driverId, setDriverId] = useState<string | null>(null);
   const [driverName, setDriverName] = useState<string | null>(null);
+  /**
+   * Tracks whether the driver has an active (non-ended, non-idle) shift.
+   * Updated via the onShiftStateChange callback from ShiftStatusCard.
+   * Used to gate "Tour starten" in TodaysTripsList.
+   */
+  const [shiftActive, setShiftActive] = useState(false);
 
   // Load current user's ID + display name once on mount
   useEffect(() => {
@@ -78,7 +84,11 @@ export function StartseitePageContent() {
 
       {/* Compact shift status + controls */}
       <section aria-label='Schichtstatus'>
-        <ShiftStatusCard />
+        <ShiftStatusCard
+          onShiftStateChange={(state) =>
+            setShiftActive(state === 'active' || state === 'on_break')
+          }
+        />
       </section>
 
       {/* Today's scheduled trips */}
@@ -87,7 +97,7 @@ export function StartseitePageContent() {
           Meine Touren heute
         </h2>
         {driverId ? (
-          <TodaysTripsList driverId={driverId} />
+          <TodaysTripsList driverId={driverId} shiftActive={shiftActive} />
         ) : (
           <div className='flex flex-col gap-3'>
             {[1, 2].map((i) => (

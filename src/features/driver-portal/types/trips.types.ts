@@ -49,6 +49,14 @@ export interface DriverTrip {
   stop_order: number | null;
   linked_trip_id: string | null;
   link_type: string | null;
+  /** FK → shifts.id — written when the driver taps "Tour starten". NULL if not yet started by the driver. */
+  shift_id: string | null;
+  /** Preferred greeting/salutation for this trip, e.g. "Herr Müller" or "Frau Schmidt". From bulk CSV or client form. */
+  greeting_style: string | null;
+  /** Optional pickup station / stop name shown as a badge next to the pickup address. */
+  pickup_station: string | null;
+  /** Optional drop-off station / stop name shown as a badge next to the drop-off address. */
+  dropoff_station: string | null;
 }
 
 // ---------------------------------------------------------------------------

@@ -1,5 +1,33 @@
+/**
+ * trip-status.ts — centralised trip status color and label utilities.
+ *
+ * Rule (docs/color-system.md): ALL status color logic lives here.
+ * Components must never define their own status color classes.
+ *
+ * Usage:
+ *   import { tripStatusBadge, tripStatusRow, tripStatusLabels, type TripStatus }
+ *     from '@/lib/trip-status';
+ *
+ * To add a new status: extend TripStatus, tripStatusBadge, tripStatusRow,
+ * and tripStatusLabels — every component that imports these gets the new
+ * color automatically.
+ */
+
 import { cva } from 'class-variance-authority';
 
+/**
+ * All possible trip status values.
+ *
+ * Kept in sync with the DB `trips.status` column.
+ *   assigned   – dispatcher has assigned a driver (admin flow)
+ *   scheduled  – trip is planned but not yet active (driver portal flow)
+ *   in_progress – driver has tapped "Tour starten"; trip is underway
+ *   driving    – alias for in_progress (legacy; kept for backward compat)
+ *   completed  – driver has tapped "Tour beenden"
+ *   cancelled  – driver or admin has cancelled; reason stored in notes
+ *   pending    – created, no driver yet (admin kanban "Offen")
+ *   open       – alias for pending (legacy; kept for backward compat)
+ */
 export type TripStatus =
   | 'completed'
   | 'assigned'

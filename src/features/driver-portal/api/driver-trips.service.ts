@@ -1,12 +1,18 @@
 /**
- * Driver Trips Service — read and update trips for the driver-portal.
+ * driver-trips.service.ts — read and write trips for the driver portal.
  *
- * Drivers can:
- *  - View trips assigned to them (today's list, historical list with filters)
- *  - Start a trip (updates status → 'in_progress')
+ * ### Read
+ *   - `getTodaysTrips(driverId)`      — today's trips ordered by time (Startseite)
+ *   - `getDriverTrips(driverId, opts)` — all trips with search / status / date filter (Touren)
  *
- * All writes are limited to fields the driver is allowed to touch.
- * Full trip editing remains admin-only.
+ * ### Write (driver-scoped — only touches fields the driver is allowed to change)
+ *   - `startTrip(tripId, shiftId?)`       — status → in_progress; links trip to active shift
+ *   - `completeTrip(tripId)`              — status → completed
+ *   - `cancelTrip(tripId, reason, notes)` — status → cancelled; appends reason to notes
+ *
+ * Full trip editing (price, billing_type, driver assignment, etc.) remains admin-only.
+ *
+ * See docs/driver-portal.md → "Trip Lifecycle" for the full state machine.
  */
 
 import { createClient } from '@/lib/supabase/client';
@@ -39,7 +45,7 @@ export async function getTodaysTrips(driverId: string): Promise<DriverTrip[]> {
   const { data, error } = await supabase
     .from('trips')
     .select(
-      'id, scheduled_at, status, client_name, client_phone, pickup_address, dropoff_address, is_wheelchair, note, notes, stop_order, linked_trip_id, link_type'
+      'id, scheduled_at, status, client_name, client_phone, pickup_address, dropoff_address, is_wheelchair, note, notes, stop_order, linked_trip_id, link_type, shift_id, greeting_style, pickup_station, dropoff_station'
     )
     .eq('driver_id', driverId)
     .gte('scheduled_at', dayStart)
@@ -74,7 +80,7 @@ export async function getDriverTrips(
   let query = supabase
     .from('trips')
     .select(
-      'id, scheduled_at, status, client_name, client_phone, pickup_address, dropoff_address, is_wheelchair, note, notes, stop_order, linked_trip_id, link_type'
+      'id, scheduled_at, status, client_name, client_phone, pickup_address, dropoff_address, is_wheelchair, note, notes, stop_order, linked_trip_id, link_type, shift_id, greeting_style, pickup_station, dropoff_station'
     )
     .eq('driver_id', driverId)
     .order('scheduled_at', { ascending: false });
@@ -132,10 +138,13 @@ export async function startTrip(
 ): Promise<void> {
   const supabase = createClient();
 
-  // 1. Always update status — this is the critical write
+  // 1. Always update status + record actual pickup time — this is the critical write
   const { error: statusError } = await supabase
     .from('trips')
-    .update({ status: 'in_progress' })
+    .update({
+      status: 'in_progress',
+      actual_pickup_at: new Date().toISOString()
+    })
     .eq('id', tripId);
 
   if (statusError) throw statusError;
@@ -199,7 +208,10 @@ export async function completeTrip(tripId: string): Promise<void> {
 
   const { error } = await supabase
     .from('trips')
-    .update({ status: 'completed' })
+    .update({
+      status: 'completed',
+      actual_dropoff_at: new Date().toISOString()
+    })
     .eq('id', tripId);
 
   if (error) throw error;

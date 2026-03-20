@@ -18,6 +18,7 @@ import { DriverTripCard } from '@/features/driver-portal/components/shared/drive
 import { TourenFilterBar } from '@/features/driver-portal/components/touren/touren-filter-bar';
 import { TourenSearchBar } from '@/features/driver-portal/components/touren/touren-search-bar';
 import { getDriverTrips } from '@/features/driver-portal/api/driver-trips.service';
+import { shiftsService } from '@/features/driver-portal/api/shifts.service';
 import type {
   DriverTrip,
   TripStatusFilter
@@ -28,6 +29,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 export function TourenPageContent() {
   const [driverId, setDriverId] = useState<string | null>(null);
+  const [shiftActive, setShiftActive] = useState(false);
   const [trips, setTrips] = useState<DriverTrip[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,14 +39,24 @@ export function TourenPageContent() {
   const [statusFilter, setStatusFilter] = useState<TripStatusFilter>('all');
   const [date, setDate] = useState('');
 
-  // Load driver ID once on mount
+  // Load driver ID + check for active shift once on mount
   useEffect(() => {
     const init = async () => {
       const supabase = createClient();
       const {
         data: { user }
       } = await supabase.auth.getUser();
-      if (user) setDriverId(user.id);
+      if (!user) return;
+      setDriverId(user.id);
+      // Check for active shift to gate Tour starten
+      try {
+        const shift = await shiftsService.getActiveShift(user.id);
+        setShiftActive(
+          !!shift && (shift.status === 'active' || shift.status === 'on_break')
+        );
+      } catch {
+        setShiftActive(false);
+      }
     };
     void init();
   }, []);
@@ -141,6 +153,7 @@ export function TourenPageContent() {
               key={trip.id}
               trip={trip}
               showNotes
+              shiftActive={shiftActive}
               onStatusChange={handleStatusChange}
             />
           ))}

@@ -75,7 +75,16 @@ type TrackerState = 'loading' | 'idle' | 'active' | 'on_break' | 'ended';
 // Component
 // ---------------------------------------------------------------------------
 
-export function ShiftStatusCard() {
+interface ShiftStatusCardProps {
+  /**
+   * Called whenever the shift state changes.
+   * The parent uses this to gate "Tour starten" in TodaysTripsList:
+   * only 'active' and 'on_break' mean the driver has a running shift.
+   */
+  onShiftStateChange?: (state: TrackerState) => void;
+}
+
+export function ShiftStatusCard({ onShiftStateChange }: ShiftStatusCardProps) {
   const [state, setState] = useState<TrackerState>('loading');
   const [shift, setShift] = useState<Shift | null>(null);
   const [driverId, setDriverId] = useState<string | null>(null);
@@ -129,6 +138,11 @@ export function ShiftStatusCard() {
     };
     void init();
   }, []);
+
+  // Notify parent whenever shift state changes (used to gate Tour starten)
+  useEffect(() => {
+    onShiftStateChange?.(state);
+  }, [state, onShiftStateChange]);
 
   // Tick timer every second while active or on break
   useEffect(() => {

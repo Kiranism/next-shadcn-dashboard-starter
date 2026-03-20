@@ -84,6 +84,13 @@ export interface DriverTripCardProps {
   trip: DriverTrip;
   onStatusChange?: (tripId: string, newStatus: string) => void;
   showNotes?: boolean;
+  /**
+   * Whether the driver has an active shift.
+   * When false, "Tour starten" is disabled — a trip cannot be started
+   * without a running shift because the trip needs a shift_id to link to.
+   * Defaults to true to stay non-breaking for usages without shift context.
+   */
+  shiftActive?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -93,7 +100,8 @@ export interface DriverTripCardProps {
 export function DriverTripCard({
   trip,
   onStatusChange,
-  showNotes = false
+  showNotes = false,
+  shiftActive = true
 }: DriverTripCardProps) {
   const [currentStatus, setCurrentStatus] = useState(trip.status);
   const [currentNotes, setCurrentNotes] = useState(
@@ -205,18 +213,37 @@ export function DriverTripCard({
         )}
       >
         <div className='flex flex-1 flex-col gap-3 p-4'>
-          {/* Time + status badge */}
+          {/* Time + passenger name + status badge */}
           <div className='flex items-start justify-between gap-2'>
-            <div className='flex items-center gap-2'>
-              <span className='text-foreground font-mono text-lg font-bold tabular-nums'>
-                {formatTime(trip.scheduled_at)}
-              </span>
-              {trip.is_wheelchair && (
-                <IconAccessible
-                  className='text-muted-foreground h-4 w-4 shrink-0'
-                  aria-label='Rollstuhlfahrer'
-                />
-              )}
+            {/* Left: time · wheelchair icon · greeting + name */}
+            <div className='flex min-w-0 flex-1 flex-col gap-0.5'>
+              <div className='flex items-center gap-2'>
+                <span className='text-foreground shrink-0 font-mono text-lg font-bold tabular-nums'>
+                  {formatTime(trip.scheduled_at)}
+                </span>
+                {trip.is_wheelchair && (
+                  <IconAccessible
+                    className='text-muted-foreground h-4 w-4 shrink-0'
+                    aria-label='Rollstuhlfahrer'
+                  />
+                )}
+                {trip.client_name && (
+                  <span
+                    className='text-foreground min-w-0 leading-tight font-medium'
+                    style={{
+                      fontSize: 'clamp(0.7rem, 2.5vw, 0.875rem)',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    {[trip.greeting_style, trip.client_name]
+                      .filter(Boolean)
+                      .join(' ')}
+                  </span>
+                )}
+              </div>
             </div>
             <Badge
               variant='outline'
@@ -229,29 +256,36 @@ export function DriverTripCard({
             </Badge>
           </div>
 
-          {/* Passenger name */}
-          {trip.client_name && (
-            <p className='text-foreground text-sm leading-tight font-medium'>
-              {trip.client_name}
-            </p>
-          )}
-
           {/* Route */}
           <div className='flex flex-col gap-1.5'>
             <div className='flex items-start gap-2'>
               <IconMapPin className='text-muted-foreground mt-0.5 h-3.5 w-3.5 shrink-0' />
-              <span className='text-muted-foreground line-clamp-2 text-xs leading-snug'>
-                {trip.pickup_address ?? '—'}
-              </span>
+              <div className='flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5'>
+                <span className='text-muted-foreground line-clamp-2 text-xs leading-snug'>
+                  {trip.pickup_address ?? '—'}
+                </span>
+                {trip.pickup_station && (
+                  <span className='bg-muted text-muted-foreground shrink-0 rounded px-1 py-0 text-[10px] leading-4 font-medium'>
+                    {trip.pickup_station}
+                  </span>
+                )}
+              </div>
             </div>
             <div className='pl-1'>
               <IconArrowDown className='text-muted-foreground h-3 w-3' />
             </div>
             <div className='flex items-start gap-2'>
               <IconMapPin className='text-primary mt-0.5 h-3.5 w-3.5 shrink-0' />
-              <span className='text-muted-foreground line-clamp-2 text-xs leading-snug'>
-                {trip.dropoff_address ?? '—'}
-              </span>
+              <div className='flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5'>
+                <span className='text-muted-foreground line-clamp-2 text-xs leading-snug'>
+                  {trip.dropoff_address ?? '—'}
+                </span>
+                {trip.dropoff_station && (
+                  <span className='bg-muted text-muted-foreground shrink-0 rounded px-1 py-0 text-[10px] leading-4 font-medium'>
+                    {trip.dropoff_station}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -267,15 +301,22 @@ export function DriverTripCard({
           {(canStart || canComplete || canCancel) && (
             <div className='flex gap-2 pt-1'>
               {canStart && (
-                <Button
-                  size='sm'
+                <div
                   className='flex-1'
-                  onClick={() => setStartDialogOpen(true)}
-                  disabled={isSubmitting}
+                  title={
+                    !shiftActive ? 'Bitte zuerst Schicht starten' : undefined
+                  }
                 >
-                  <IconPlayerPlay className='mr-2 h-4 w-4' />
-                  Tour starten
-                </Button>
+                  <Button
+                    size='sm'
+                    className='w-full'
+                    onClick={() => setStartDialogOpen(true)}
+                    disabled={isSubmitting || !shiftActive}
+                  >
+                    <IconPlayerPlay className='mr-2 h-4 w-4' />
+                    {shiftActive ? 'Tour starten' : 'Schicht starten ↑'}
+                  </Button>
+                </div>
               )}
               {canComplete && (
                 <Button
