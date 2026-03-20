@@ -30,14 +30,17 @@ export default async function DashboardLayout({
 
   return (
     <KBar docSearchData={docSearchData}>
-      <SidebarProvider defaultOpen={defaultOpen}>
+      <SidebarProvider
+        defaultOpen={defaultOpen}
+        className='h-svh max-h-svh overflow-hidden'
+      >
         <InfobarProvider defaultOpen={false}>
           <AppSidebar />
           <SidebarInset>
             <Header />
-            {/* page main content */}
-            {children}
-            {/* page main content ends */}
+            <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
+              {children}
+            </div>
           </SidebarInset>
           <InfoSidebar side='right' />
         </InfobarProvider>

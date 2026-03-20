@@ -37,7 +37,7 @@ export default async function DocumentationArticlePage({
   const toc = getDocToc(doc.content);
 
   return (
-    <div className='flex h-[calc(100vh-4rem)] overflow-hidden'>
+    <div className='flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row'>
       {/* Sidebar for navigation */}
       <aside className='bg-muted/10 hidden w-64 overflow-hidden border-r lg:block'>
         <ScrollArea className='h-full px-4 py-6'>

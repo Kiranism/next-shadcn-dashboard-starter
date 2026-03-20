@@ -81,6 +81,7 @@ export function AddressAutocomplete({
           body: JSON.stringify({ query: debouncedQuery })
         });
         const data = await response.json();
+        console.log('DEBUG: Autocomplete Suggestions:', data);
 
         // Google Places v1 usually returns `suggestions`, but be defensive and
         // also support `predictions` or a direct array response.
@@ -225,6 +226,7 @@ export function AddressAutocomplete({
       try {
         const res = await fetch(`/api/place-details?placeId=${result.placeId}`);
         const details = await res.json();
+        console.log('DEBUG: Place Details fetched:', details);
 
         const finalResult = {
           ...result,

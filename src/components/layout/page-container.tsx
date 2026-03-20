@@ -41,7 +41,7 @@ export default function PageContainer({
 }) {
   if (!access) {
     return (
-      <div className='flex flex-1 items-center justify-center p-4 md:px-6'>
+      <div className='flex min-h-0 flex-1 items-center justify-center p-4 md:px-6'>
         {accessFallback ?? (
           <div className='text-muted-foreground text-center text-lg'>
             You do not have access to this page.
@@ -54,7 +54,7 @@ export default function PageContainer({
   const content = isloading ? <PageSkeleton /> : children;
 
   return scrollable ? (
-    <ScrollArea className='h-[calc(100dvh-52px)]'>
+    <ScrollArea className='min-h-0 flex-1'>
       <div className='flex flex-1 flex-col p-4 md:px-6'>
         <div className='mb-4 flex items-start justify-between'>
           <Heading
@@ -68,11 +68,9 @@ export default function PageContainer({
       </div>
     </ScrollArea>
   ) : (
-    // h-[calc(100dvh-52px)]: caps the container at viewport-minus-header, matching
-    // the scrollable=true path. Without this, SidebarProvider's `min-h-svh` lets
-    // the layout grow past the viewport and the whole page scrolls.
-    // overflow-hidden: ensures child panels (not this container) own their scroll.
-    <div className='flex h-[calc(100dvh-52px)] flex-col overflow-hidden p-4 md:px-6'>
+    // Fills SidebarInset below Header via flex-1 min-h-0 (dashboard layout wrapper).
+    // overflow-hidden: child panels own their scroll.
+    <div className='flex min-h-0 flex-1 flex-col overflow-hidden p-4 md:px-6'>
       <div className='mb-4 flex shrink-0 items-start justify-between'>
         <Heading
           title={pageTitle ?? ''}

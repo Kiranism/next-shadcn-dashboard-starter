@@ -53,26 +53,23 @@ src/
 ## Height Chain — Why Everything Must Be `flex-1 min-h-0`
 
 For each `PanelBody` to scroll independently (instead of the whole page scrolling),
-the layout must be **height-anchored** from root to leaf. The full chain:
+the panel stack must be **height-anchored**. This doc describes the chain **inside a panel page** only (from `PageContainer` downward). Global dashboard shell / header / sidebar layout belongs elsewhere.
 
 ```
-SidebarProvider  →  min-h-svh (minimum, can grow — this is why we anchor below)
-  SidebarInset   →  flex-1 flex-col overflow-hidden
-    Header       →  shrink-0 (52px)
-    PageContainer scrollable=false  →  h-[calc(100dvh-52px)] overflow-hidden  ← ANCHOR
-      page header row  →  shrink-0
-      YourColumnView   →  flex-1 min-h-0 overflow-hidden   ← fills remaining height
-        div wrapper    →  flex-1 min-h-0 overflow-hidden rounded-lg border
-          ResizablePanelGroup  →  h-full w-full
-            ResizablePanel     →  controlled by group
-              Panel            →  h-full flex-col
-                PanelHeader    →  shrink-0
-                PanelBody      →  flex-1 min-h-0 overflow-y-auto  ← scrolls here
-                PanelFooter    →  shrink-0  ← always visible
+PageContainer scrollable=false  →  flex flex-1 min-h-0 flex-col overflow-hidden  ← ANCHOR
+  page header row  →  shrink-0
+  YourColumnView   →  flex-1 min-h-0 overflow-hidden   ← fills remaining height
+    div wrapper    →  flex-1 min-h-0 overflow-hidden rounded-lg border
+      ResizablePanelGroup  →  h-full w-full
+        ResizablePanel     →  controlled by group
+          Panel            →  h-full flex-col
+            PanelHeader    →  shrink-0
+            PanelBody      →  flex-1 min-h-0 overflow-y-auto  ← scrolls here
+            PanelFooter    →  shrink-0  ← always visible
 ```
 
 **Key rules:**
-1. `PageContainer` with `scrollable={false}` sets `h-[calc(100dvh-52px)] overflow-hidden` — the height anchor.
+1. `PageContainer` with `scrollable={false}` is the page-level anchor: `flex flex-1 min-h-0 flex-col overflow-hidden`.
 2. Every wrapper in the chain uses `flex-1 min-h-0`. Without `min-h-0`, flex children ignore their parent's height cap.
 3. Only `PanelBody` has `overflow-y-auto`. Everything above it is `overflow-hidden`.
 
@@ -698,7 +695,7 @@ A gap between panels shows the page background color between columns, breaking t
 ## Common Pitfalls
 
 **Panel scroll not working (whole page scrolls instead):**
-`PageContainer` with `scrollable={false}` must provide the height anchor. Check that it renders `h-[calc(100dvh-52px)] overflow-hidden`. The `ResizablePanelGroup` inside the orchestrator must have `h-full w-full`, and its wrapper div must have `flex-1 min-h-0 overflow-hidden`. Without this chain, `overflow-y-auto` on `PanelBody` has no bounded height to overflow against.
+`PageContainer` with `scrollable={false}` must participate in the flex chain: `flex flex-1 min-h-0 overflow-hidden`. The `ResizablePanelGroup` inside the orchestrator must have `h-full w-full`, and its wrapper div must have `flex-1 min-h-0 overflow-hidden`. Without this chain, `overflow-y-auto` on `PanelBody` has no bounded height to overflow against.
 
 **Stale form values when switching entities:**
 `useForm` initialises from `defaultValues` only once at mount time. Switching from entity A to entity B (or to 'new') doesn't reset the form. Fix: always pass `key={entityId}` on the detail panel component in the orchestrator so React fully remounts it when the entity changes.

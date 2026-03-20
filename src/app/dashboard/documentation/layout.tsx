@@ -18,9 +18,8 @@ export default function DocumentationLayout({
   ];
 
   return (
-    <div className='flex h-full'>
-      {/* Optional: we could have a sidebar here too, but for now let's keep it simple or use the landing page as the main nav */}
-      <div className='flex-1 overflow-y-auto'>{children}</div>
+    <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
+      {children}
     </div>
   );
 }

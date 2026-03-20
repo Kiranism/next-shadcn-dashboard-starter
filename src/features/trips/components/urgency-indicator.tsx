@@ -7,6 +7,12 @@ import { cn } from '@/lib/utils';
 import { getUrgencyLevel, type UrgencyLevel } from '../lib/urgency-logic';
 import { type TripStatus } from '@/lib/trip-status';
 import { URGENCY_STYLES } from '../constants/urgency-config';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
 
 /**
  * Urgency Indicator Styles
@@ -123,31 +129,46 @@ export function UrgencyIndicator({
   // Omit motion-clashing props
   const { onDrag, onDragStart, onDragEnd, ...safeProps } = props as any;
 
+  const urgencyInfo = URGENCY_STYLES[level as keyof typeof URGENCY_STYLES];
+  const description =
+    urgencyInfo && 'description' in urgencyInfo
+      ? (urgencyInfo as any).description
+      : '';
+
   return (
-    <div className='flex items-center gap-1.5'>
-      <motion.div
-        animate={
-          isOverdue
-            ? { scale: [1, 1.2, 1], opacity: [1, 0.6, 1] }
-            : isDue
-              ? { scale: [1, 1.1, 1] }
-              : {}
-        }
-        transition={
-          isOverdue
-            ? { duration: 1.5, repeat: Infinity, ease: 'easeInOut' }
-            : isDue
-              ? { duration: 3, repeat: Infinity, ease: 'easeInOut' }
-              : {}
-        }
-        className={cn(
-          urgencyIndicatorVariants({ variant, level: level }),
-          className
-        )}
-        {...safeProps}
-      >
-        {variant === 'badge' && levelLabels[level]}
-      </motion.div>
-    </div>
+    <Tooltip delayDuration={0}>
+      <TooltipTrigger asChild>
+        <div className='flex items-center gap-1.5'>
+          <motion.div
+            animate={
+              isOverdue
+                ? { scale: [1, 1.2, 1], opacity: [1, 0.6, 1] }
+                : isDue
+                  ? { scale: [1, 1.1, 1] }
+                  : {}
+            }
+            transition={
+              isOverdue
+                ? { duration: 1.5, repeat: Infinity, ease: 'easeInOut' }
+                : isDue
+                  ? { duration: 3, repeat: Infinity, ease: 'easeInOut' }
+                  : {}
+            }
+            className={cn(
+              urgencyIndicatorVariants({ variant, level: level }),
+              className
+            )}
+            {...safeProps}
+          >
+            {variant === 'badge' && levelLabels[level]}
+          </motion.div>
+        </div>
+      </TooltipTrigger>
+      {description && (
+        <TooltipContent side='bottom' align='center' sideOffset={8}>
+          {description}
+        </TooltipContent>
+      )}
+    </Tooltip>
   );
 }
