@@ -121,7 +121,8 @@ The project follows a feature-based folder structure designed for scalability in
 │   ├── themes.md          # Theme customization guide
 │   ├── kanban-view.md     # Kanban trips board behaviour
 │   ├── print-trips-export.md # Fahrten drucken ZIP (PDF + JPEG overviews)
-│   └── trips-date-filter.md # Fahrten date query + “stuck cards” fix
+│   ├── trips-date-filter.md # Fahrten date query + “stuck cards” fix
+│   └── trips-rueckfahrt-detail-sheet.md # Rückfahrt-Button in Trip-Detailansicht
 
 /__CLEANUP__               # Feature removal scripts
     ├── scripts/           # Cleanup automation

@@ -23,21 +23,21 @@ import {
 import { useTrip } from '@/features/trips/hooks/use-trips';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { de } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import {
-  Flag,
   Navigation,
   Phone,
   User2,
   Briefcase,
-  History,
   Clock,
   AlertCircle,
   AlertTriangle,
   CreditCard,
   Trash2,
-  Share2
+  Share2,
+  ArrowLeftRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Trip } from '@/features/trips/api/trips.service';
@@ -49,6 +49,8 @@ import {
 import { RecurringTripCancelDialog } from '@/features/trips/components/recurring-trip-cancel-dialog';
 import { copyTripToClipboard } from '@/features/trips/lib/share-utils';
 import { getCancelledPartnerLabel } from '@/features/trips/lib/trip-direction';
+import { shouldShowCreateReturnTripButton } from '@/features/trips/lib/can-create-linked-return';
+import { CreateReturnTripDialog } from '@/features/trips/components/return-trip';
 import { getStatusWhenDriverChanges } from '@/features/trips/lib/trip-status';
 import {
   tripStatusBadge,
@@ -75,6 +77,7 @@ export function TripDetailSheet({
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [hasPair, setHasPair] = useState(false);
   const [linkedPartner, setLinkedPartner] = useState<Trip | null>(null);
+  const [isCreateReturnOpen, setIsCreateReturnOpen] = useState(false);
   const { cancelTrip, isLoading: isCancelling } = useTripCancellation();
 
   useEffect(() => {
@@ -157,6 +160,26 @@ export function TripDetailSheet({
 
   const isLoading = isTripLoading || isLoadingGroup;
 
+  /** Legs sharing `group_id`, or a single-element array for a non-grouped trip. */
+  const effectiveGroupTrips: Trip[] =
+    trip && trip.group_id && groupTrips.length > 0
+      ? (groupTrips as Trip[])
+      : trip
+        ? [trip as Trip]
+        : [];
+
+  const showCreateReturnButton = trip
+    ? shouldShowCreateReturnTripButton(
+        trip as Trip,
+        !!linkedPartner,
+        trip.billing_types
+      )
+    : false;
+
+  useEffect(() => {
+    if (!showCreateReturnButton) setIsCreateReturnOpen(false);
+  }, [showCreateReturnButton]);
+
   const handleOpenCancelDialog = async () => {
     if (!trip) return;
     setIsCancelDialogOpen(true);
@@ -210,34 +233,57 @@ export function TripDetailSheet({
                 className='absolute inset-y-0 left-0 w-1.5'
                 style={{ backgroundColor: trip.billing_types?.color }}
               />
-              <div className='mb-2 flex items-start justify-between'>
-                <div className='flex flex-wrap items-center gap-2'>
-                  <Badge className={getStatusInfo(trip.status).class}>
-                    {getStatusInfo(trip.status).label}
+              <div className='mb-2 flex flex-wrap items-center gap-2'>
+                <Badge className={getStatusInfo(trip.status).class}>
+                  {getStatusInfo(trip.status).label}
+                </Badge>
+                {linkedPartner?.status === 'cancelled' && (
+                  <Badge
+                    variant='destructive'
+                    className='gap-1 px-2 py-0.5 text-[10px] font-bold'
+                  >
+                    <AlertTriangle className='h-3 w-3' />
+                    {/* We pass the CURRENT trip (not the cancelled partner) so
+                        getCancelledPartnerLabel can return the partner's label. */}
+                    {getCancelledPartnerLabel(trip as Trip)}
                   </Badge>
-                  {linkedPartner?.status === 'cancelled' && (
-                    <Badge
-                      variant='destructive'
-                      className='gap-1 px-2 py-0.5 text-[10px] font-bold'
-                    >
-                      <AlertTriangle className='h-3 w-3' />
-                      {/* We pass the CURRENT trip (not the cancelled partner) so
-                          getCancelledPartnerLabel can return the partner's label. */}
-                      {getCancelledPartnerLabel(trip as Trip)}
-                    </Badge>
-                  )}
-                </div>
+                )}
               </div>
               <SheetHeader className='space-y-1 pl-3 text-left'>
                 <SheetTitle className='text-2xl font-bold tracking-tight'>
                   {trip.client_name || 'Unbekannter Kunde'}
                 </SheetTitle>
-                <SheetDescription className='text-foreground flex items-center gap-2 font-medium'>
-                  <Clock className='text-primary h-4 w-4' />
-                  {trip.scheduled_at
-                    ? format(new Date(trip.scheduled_at), 'PPPP p')
-                    : 'Keine Zeit'}
-                </SheetDescription>
+                <div className='flex w-full min-w-0 items-center justify-between gap-2'>
+                  <SheetDescription className='text-foreground flex min-w-0 flex-1 items-center gap-2 font-medium'>
+                    <Clock className='text-primary h-4 w-4 shrink-0' />
+                    <span className='min-w-0'>
+                      {trip.scheduled_at
+                        ? (() => {
+                            const d = new Date(trip.scheduled_at);
+                            return `${format(d, 'PPPP', { locale: de })} · ${format(d, 'HH:mm')}`;
+                          })()
+                        : 'Keine Zeit'}
+                    </span>
+                  </SheetDescription>
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    size='icon'
+                    className='text-muted-foreground hover:text-primary h-8 w-8 shrink-0'
+                    title='Details kopieren (QuickShare)'
+                    aria-label='Details kopieren (QuickShare)'
+                    onClick={async () => {
+                      const success = await copyTripToClipboard(trip as Trip);
+                      if (success) {
+                        toast.success('Details kopiert');
+                      } else {
+                        toast.error('Fehler beim Kopieren');
+                      }
+                    }}
+                  >
+                    <Share2 className='h-4 w-4' />
+                  </Button>
+                </div>
               </SheetHeader>
             </div>
 
@@ -275,6 +321,7 @@ export function TripDetailSheet({
                             address: t.pickup_address,
                             station: t.pickup_station,
                             name: t.client_name,
+                            passengerStation: t.pickup_station,
                             time: t.actual_pickup_at,
                             update: t.stop_updates?.[t.pickup_address]
                           });
@@ -303,6 +350,7 @@ export function TripDetailSheet({
                             address: t.dropoff_address,
                             station: t.dropoff_station,
                             name: t.client_name,
+                            passengerStation: t.dropoff_station,
                             time: t.actual_dropoff_at,
                             update: t.stop_updates?.[t.dropoff_address]
                           });
@@ -334,6 +382,7 @@ export function TripDetailSheet({
                               }
                               address={p.address}
                               name={p.name}
+                              passengerStation={p.passengerStation}
                               time={p.time}
                               station={p.station}
                               update={p.update}
@@ -352,6 +401,7 @@ export function TripDetailSheet({
                               }
                               address={d.address}
                               name={d.name}
+                              passengerStation={d.passengerStation}
                               time={d.time}
                               station={d.station}
                               update={d.update}
@@ -410,14 +460,18 @@ export function TripDetailSheet({
                     }
                   />
                   <DetailItem
-                    icon={<CreditCard className='h-3.5 w-3.5' />}
-                    label='Abrechnung'
-                    value={trip.billing_types?.name || 'Privat'}
-                  />
-                  <DetailItem
                     icon={<Briefcase className='h-3.5 w-3.5' />}
                     label='Kostenträger'
                     value={trip.payers?.name || '---'}
+                  />
+                  <DetailItem
+                    icon={<CreditCard className='h-3.5 w-3.5' />}
+                    label='Abrechnung'
+                    value={
+                      trip.billing_types?.name?.trim()
+                        ? trip.billing_types.name.trim()
+                        : '-'
+                    }
                   />
                   <DetailItem
                     icon={<Phone className='h-3.5 w-3.5' />}
@@ -439,40 +493,28 @@ export function TripDetailSheet({
               </div>
             </div>
 
-            <SheetFooter className='bg-background mt-auto flex items-center justify-between gap-3 border-t px-6 py-4'>
-              <div className='text-muted-foreground flex flex-col text-[11px] leading-snug'>
-                <span className='font-semibold'>
-                  Fahrt-ID:{' '}
-                  <span className='font-mono'>
-                    {trip.id.slice(0, 8)}
-                    {'…'}
-                  </span>
-                </span>
-                {trip.rule_id && (
+            <SheetFooter className='bg-background mt-auto flex flex-wrap items-center justify-end gap-3 border-t px-6 py-4'>
+              {trip.rule_id && (
+                <div className='text-muted-foreground mr-auto flex flex-col text-[11px] leading-snug'>
                   <span className='font-mono text-[10px]'>
                     Serie: {trip.rule_id.slice(0, 8)}
                     {'…'}
                   </span>
-                )}
-              </div>
+                </div>
+              )}
               <div className='flex items-center gap-2'>
-                <Button
-                  type='button'
-                  variant='outline'
-                  size='sm'
-                  className='text-primary hover:bg-primary/10 hover:text-primary'
-                  onClick={async () => {
-                    const success = await copyTripToClipboard(trip as Trip);
-                    if (success) {
-                      toast.success('Details kopiert');
-                    } else {
-                      toast.error('Fehler beim Kopieren');
-                    }
-                  }}
-                >
-                  <Share2 className='mr-1.5 h-3.5 w-3.5' />
-                  QuickShare
-                </Button>
+                {showCreateReturnButton && (
+                  <Button
+                    type='button'
+                    variant='outline'
+                    size='sm'
+                    className='text-primary hover:bg-primary/10 hover:text-primary'
+                    onClick={() => setIsCreateReturnOpen(true)}
+                  >
+                    <ArrowLeftRight className='mr-1.5 h-3.5 w-3.5' />
+                    Rückfahrt
+                  </Button>
+                )}
                 <Button
                   type='button'
                   variant='outline'
@@ -496,6 +538,22 @@ export function TripDetailSheet({
                 </Button>
               </div>
             </SheetFooter>
+
+            {trip && (
+              <CreateReturnTripDialog
+                open={isCreateReturnOpen}
+                onOpenChange={setIsCreateReturnOpen}
+                anchorTrip={trip as Trip}
+                groupTrips={effectiveGroupTrips}
+                drivers={drivers}
+                onSuccess={() => {
+                  // Realtime on `trips` will refetch; paired leg also triggers UPDATE on this row.
+                  void findPairedTrip(trip as Trip).then((p) =>
+                    setLinkedPartner(p ?? null)
+                  );
+                }}
+              />
+            )}
 
             <RecurringTripCancelDialog
               trip={trip as Trip}
@@ -572,6 +630,7 @@ function TimelineItem({
   title,
   address,
   name,
+  passengerStation,
   time,
   station,
   update,
@@ -583,16 +642,12 @@ function TimelineItem({
   return (
     <div className={`relative pb-8 pl-10 ${isLast ? 'pb-2' : ''}`}>
       <div className='absolute top-[10px] left-0 z-10'>
-        <div
-          className={cn(
-            'ring-background flex h-6 w-6 items-center justify-center rounded-full border-2 text-[10px] font-bold whitespace-nowrap shadow-sm ring-[4px]',
-            stopLabel?.startsWith('A')
-              ? 'border-green-600 bg-green-500 text-white dark:border-green-500 dark:bg-green-600'
-              : 'border-red-600 bg-red-500 text-white dark:border-red-500 dark:bg-red-600'
-          )}
+        <Badge
+          variant='outline'
+          className='border-border bg-muted/60 text-muted-foreground flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full px-1.5 text-[10px] font-bold tabular-nums'
         >
           {stopLabel}
-        </div>
+        </Badge>
       </div>
       <div className='flex flex-col gap-1'>
         <div className='flex items-center justify-between'>
@@ -609,16 +664,24 @@ function TimelineItem({
           className={`flex flex-col text-sm leading-snug font-semibold ${isCancelled ? 'line-through opacity-50' : ''}`}
         >
           {address}
-          {station && (
+          {station && !name && (
             <span className='text-muted-foreground text-xs font-normal'>
               ({station})
             </span>
           )}
         </div>
         {name && (
-          <span className='text-muted-foreground text-xs font-medium'>
-            Fahrgast: {name}
-          </span>
+          <div className='text-muted-foreground flex flex-wrap items-center gap-1.5 text-xs font-medium'>
+            <span>Fahrgast: {name}</span>
+            {passengerStation?.trim() ? (
+              <Badge
+                variant='outline'
+                className='border-border bg-muted/60 text-muted-foreground h-5 px-1.5 py-0 text-[10px] font-medium'
+              >
+                {passengerStation.trim()}
+              </Badge>
+            ) : null}
+          </div>
         )}
 
         {isCancelled && (
