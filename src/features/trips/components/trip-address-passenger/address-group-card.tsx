@@ -40,6 +40,11 @@ interface AddressGroupCardProps {
     value: string
   ) => void;
   onWheelchairChange: (passengerUid: string, value: boolean) => void;
+  onPassengerNameChange?: (
+    passengerUid: string,
+    field: 'first_name' | 'last_name',
+    value: string
+  ) => void;
   onAssignPassenger?: (passengerUid: string) => void;
   searchClients?: (query: string) => Promise<ClientOption[]>;
   onClientLinked?: (client: ClientOption | null) => void;
@@ -71,6 +76,7 @@ export function AddressGroupCard({
   onRemovePassenger,
   onStationChange,
   onWheelchairChange,
+  onPassengerNameChange,
   onAssignPassenger,
   searchClients,
   onClientLinked,
@@ -119,7 +125,7 @@ export function AddressGroupCard({
 
       <div className='flex flex-col md:grid md:grid-cols-3 md:divide-x'>
         {/* Passengers: full-width stack on small screens; first column on md+ */}
-        <div className='flex min-h-[7rem] flex-col gap-2 border-b p-3 md:col-span-1 md:min-h-[120px] md:border-b-0'>
+        <div className='flex min-h-0 flex-col gap-2 border-b p-3 md:col-span-1 md:border-b-0'>
           {/* Section title only on small screens — desktop relies on column width */}
           <div className='flex items-center gap-2 md:hidden'>
             <Icon className={cn('h-4 w-4 shrink-0', iconColor)} />
@@ -140,6 +146,18 @@ export function AddressGroupCard({
                   }
                   onWheelchairChange={(value) =>
                     onWheelchairChange(p.uid, value)
+                  }
+                  onFirstNameChange={
+                    onPassengerNameChange
+                      ? (value) =>
+                          onPassengerNameChange(p.uid, 'first_name', value)
+                      : undefined
+                  }
+                  onLastNameChange={
+                    onPassengerNameChange
+                      ? (value) =>
+                          onPassengerNameChange(p.uid, 'last_name', value)
+                      : undefined
                   }
                 />
               ))}
@@ -182,6 +200,18 @@ export function AddressGroupCard({
                   onStationChange(p.uid, stationField, value)
                 }
                 onWheelchairChange={(value) => onWheelchairChange(p.uid, value)}
+                onFirstNameChange={
+                  onPassengerNameChange
+                    ? (value) =>
+                        onPassengerNameChange(p.uid, 'first_name', value)
+                    : undefined
+                }
+                onLastNameChange={
+                  onPassengerNameChange
+                    ? (value) =>
+                        onPassengerNameChange(p.uid, 'last_name', value)
+                    : undefined
+                }
               />
             ))
           )}

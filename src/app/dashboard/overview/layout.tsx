@@ -68,16 +68,17 @@ export default function OverViewLayout({
   return (
     <PageContainer>
       <div className='flex flex-1 flex-col space-y-2'>
-        <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-          <h2 className='text-xl font-bold tracking-tight sm:text-2xl'>
+        <div className='flex flex-row items-center justify-between gap-2'>
+          <h2 className='min-w-0 flex-1 text-xl font-bold tracking-tight sm:text-2xl'>
             Hi, Willkommen zurück 👋
           </h2>
-          <div className='flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end'>
+          <div className='shrink-0'>
             <CreateTripDialogButton />
           </div>
         </div>
-        <div className='*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs md:grid-cols-2 lg:grid-cols-4'>
+        <div className='*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-2 gap-2 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs sm:gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-4'>
           <StatsCard
+            className='min-w-0'
             title='Fahrten heute'
             value={formatNumber(tripsToday.length)}
             trend={tripsTrend}
@@ -85,6 +86,7 @@ export default function OverViewLayout({
             isLoading={isLoading}
           />
           <StatsCard
+            className='min-w-0'
             title='Umsatz heute'
             value={formatCurrency(revenueToday)}
             trend={revenueTrend}
@@ -133,14 +135,18 @@ export default function OverViewLayout({
           </Card>
         </div>
         <div className='flex flex-col gap-4 lg:grid lg:grid-cols-7 lg:items-start'>
-          <div className='order-2 flex flex-col gap-4 lg:order-1 lg:col-span-4'>
+          <div className='flex flex-col gap-4 lg:col-span-4'>
             <PendingToursWidget />
-            {React.Children.toArray(bar_stats)}
-            {React.Children.toArray(area_stats)}
+            <div className='hidden gap-4 lg:flex lg:flex-col'>
+              {React.Children.toArray(bar_stats)}
+              {React.Children.toArray(area_stats)}
+            </div>
           </div>
-          <div className='order-1 flex flex-col gap-4 lg:order-2 lg:col-span-3'>
+          <div className='flex flex-col gap-4 lg:col-span-3'>
             {React.Children.toArray(sales)}
-            {React.Children.toArray(pie_stats)}
+            <div className='hidden lg:block'>
+              {React.Children.toArray(pie_stats)}
+            </div>
           </div>
         </div>
       </div>

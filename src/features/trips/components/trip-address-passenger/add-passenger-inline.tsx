@@ -1,14 +1,13 @@
 'use client';
 
 /**
- * Inline passenger entry — no popover.
- * - `first`: always visible (required first Fahrgast in a pickup group).
- * - `additional`: collapsed by default; expands to the same fields as the first row.
+ * Inline passenger entry — no nested card; sits in the AddressGroupCard column.
+ * - `first`: compact always-on block (required first Fahrgast).
+ * - `additional`: collapsible row for further passengers.
  */
 import * as React from 'react';
 import {
   Plus,
-  User,
   MapPin,
   Navigation,
   X,
@@ -18,7 +17,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import {
   Collapsible,
   CollapsibleContent,
@@ -28,6 +26,37 @@ import { ClientAutoSuggest } from '@/components/ui/client-auto-suggest';
 import { cn } from '@/lib/utils';
 import type { ClientOption } from '@/features/trips/hooks/use-trip-form-data';
 import type { PassengerEntry } from '@/features/trips/types';
+
+const compactInput = 'h-8 text-xs sm:h-7 sm:text-[11px] py-1 min-h-0';
+
+function WheelchairHeaderToggle({
+  isWheelchair,
+  onToggle,
+  disabled
+}: {
+  isWheelchair: boolean;
+  onToggle: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type='button'
+      onClick={onToggle}
+      disabled={disabled}
+      title='Rollstuhl'
+      aria-label='Rollstuhl'
+      aria-pressed={isWheelchair}
+      className={cn(
+        'focus-visible:ring-ring shrink-0 rounded-md p-1.5 transition-colors focus-visible:ring-2 focus-visible:outline-none',
+        isWheelchair
+          ? 'bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400'
+          : 'text-muted-foreground/50 hover:bg-muted/60 hover:text-rose-400'
+      )}
+    >
+      <Accessibility className='h-4 w-4 sm:h-3.5 sm:w-3.5' />
+    </button>
+  );
+}
 
 export interface AddPassengerInlineProps {
   variant: 'first' | 'additional';
@@ -63,7 +92,6 @@ export function AddPassengerInline({
   onAddressChoice,
   disabled = false
 }: AddPassengerInlineProps) {
-  /** Only used when `variant === 'additional'` (collapsible). */
   const [expanded, setExpanded] = React.useState(false);
   const [firstName, setFirstName] = React.useState('');
   const [lastName, setLastName] = React.useState('');
@@ -160,129 +188,117 @@ export function AddPassengerInline({
 
   const canAdd = firstName.trim().length > 0 || lastName.trim().length > 0;
 
+  const labelClass =
+    'text-muted-foreground mb-0.5 block text-[10px] leading-none';
+
   const formFields = (
-    <div className='flex flex-col gap-2'>
-      <div>
-        <Label className='text-muted-foreground mb-1 block text-[10px]'>
-          Vorname
-        </Label>
-        <ClientAutoSuggest
-          value={firstName}
-          onNameChange={(val) => {
-            setFirstName(val);
-            if (!val) setPendingAddress(null);
-          }}
-          onSelect={handleClientSelect}
-          searchClients={searchClients}
-          placeholder='Vorname suchen...'
-          getDisplayValue={(c) => c.first_name || c.company_name || ''}
-        />
-      </div>
-      <div>
-        <Label className='text-muted-foreground mb-1 block text-[10px]'>
-          Nachname
-        </Label>
-        <Input
-          value={lastName}
-          onChange={(e) => setLastName(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && canAdd && handleAdd()}
-          placeholder='Nachname...'
-          className='h-10 text-sm sm:h-8'
-        />
+    <div className='flex flex-col gap-1.5'>
+      <div className='grid grid-cols-1 gap-1.5 sm:grid-cols-2'>
+        <div className='min-w-0'>
+          <Label className={labelClass}>Vorname</Label>
+          <ClientAutoSuggest
+            value={firstName}
+            onNameChange={(val) => {
+              setFirstName(val);
+              if (!val) setPendingAddress(null);
+            }}
+            onSelect={handleClientSelect}
+            searchClients={searchClients}
+            placeholder='Suchen…'
+            getDisplayValue={(c) => c.first_name || c.company_name || ''}
+            inputClassName={compactInput}
+            widePopover
+          />
+        </div>
+        <div className='min-w-0'>
+          <Label className={labelClass}>Nachname</Label>
+          <Input
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && canAdd && handleAdd()}
+            placeholder='Nachname'
+            className={compactInput}
+          />
+        </div>
       </div>
 
       {pendingAddress && (
-        <>
-          <Separator />
-          <div className='bg-muted/40 rounded-md border p-2'>
-            <div className='mb-2 flex items-start justify-between gap-1'>
-              <p className='text-muted-foreground text-[10px] font-medium'>
-                Adresse übernehmen?
-              </p>
-              <button
-                type='button'
-                onClick={() => setPendingAddress(null)}
-                className='text-muted-foreground hover:text-foreground shrink-0'
-              >
-                <X className='h-3 w-3' />
-              </button>
-            </div>
-            <p className='text-foreground mb-2 truncate text-[10px]'>
-              {pendingAddress}
+        <div className='bg-muted/30 border-border/60 rounded-md border p-1.5'>
+          <div className='mb-1 flex items-start justify-between gap-1'>
+            <p className='text-muted-foreground text-[10px] font-medium'>
+              Adresse übernehmen?
             </p>
-            <div className='flex gap-1.5'>
-              <Button
-                type='button'
-                variant='outline'
-                size='sm'
-                className='h-9 flex-1 gap-1 text-[10px] sm:h-7'
-                onClick={() => handleAddressChoice('pickup')}
-              >
-                <MapPin className='h-3 w-3 text-emerald-500' />
-                Abholadresse
-              </Button>
-              <Button
-                type='button'
-                variant='outline'
-                size='sm'
-                className='h-9 flex-1 gap-1 text-[10px] sm:h-7'
-                onClick={() => handleAddressChoice('dropoff')}
-              >
-                <Navigation className='h-3 w-3 text-rose-500' />
-                Zieladresse
-              </Button>
-            </div>
+            <button
+              type='button'
+              onClick={() => setPendingAddress(null)}
+              className='text-muted-foreground hover:text-foreground shrink-0'
+            >
+              <X className='h-3 w-3' />
+            </button>
           </div>
-        </>
+          <p className='text-foreground mb-1.5 truncate text-[10px]'>
+            {pendingAddress}
+          </p>
+          <div className='flex gap-1'>
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              className='h-7 flex-1 gap-0.5 px-1.5 text-[10px] sm:h-6'
+              onClick={() => handleAddressChoice('pickup')}
+            >
+              <MapPin className='h-3 w-3 shrink-0 text-emerald-500' />
+              Abholadresse
+            </Button>
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              className='h-7 flex-1 gap-0.5 px-1.5 text-[10px] sm:h-6'
+              onClick={() => handleAddressChoice('dropoff')}
+            >
+              <Navigation className='h-3 w-3 shrink-0 text-rose-500' />
+              Zieladresse
+            </Button>
+          </div>
+        </div>
       )}
-
-      <button
-        type='button'
-        onClick={() => setIsWheelchair((v) => !v)}
-        className={cn(
-          'flex w-full items-center gap-2 rounded-md border px-3 py-2.5 text-xs transition-colors sm:py-2',
-          isWheelchair
-            ? 'border-rose-200 bg-rose-50 text-rose-600 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-400'
-            : 'text-muted-foreground hover:bg-muted/50'
-        )}
-      >
-        <Accessibility className='h-3.5 w-3.5 shrink-0' />
-        <span className='flex-1 text-left'>Rollstuhl</span>
-        <span
-          className={cn(
-            'text-[10px] font-medium',
-            isWheelchair ? 'text-rose-500' : 'text-muted-foreground'
-          )}
-        >
-          {isWheelchair ? 'Ja' : 'Nein'}
-        </span>
-      </button>
 
       <Button
         type='button'
         size='sm'
         onClick={handleAdd}
         disabled={!canAdd || disabled}
-        className='mt-1 h-10 text-sm sm:h-7 sm:text-xs'
+        className='h-8 w-full text-xs sm:h-7'
       >
         Hinzufügen
       </Button>
     </div>
   );
 
-  const shellClass =
-    'rounded-lg border border-border/80 bg-muted/20 p-3 shadow-sm';
+  const titleRow = (title: React.ReactNode, showRequired?: boolean) => (
+    <div className='flex items-center justify-between gap-2'>
+      <div className='text-muted-foreground min-w-0 text-[10px] font-medium'>
+        {title}
+        {showRequired ? <span className='text-destructive'> *</span> : null}
+      </div>
+      <WheelchairHeaderToggle
+        isWheelchair={isWheelchair}
+        onToggle={() => setIsWheelchair((v) => !v)}
+        disabled={disabled}
+      />
+    </div>
+  );
 
   if (variant === 'first') {
     return (
       <div
-        className={cn(shellClass, disabled && 'pointer-events-none opacity-50')}
+        className={cn(
+          'space-y-1.5',
+          disabled && 'pointer-events-none opacity-50'
+        )}
       >
-        <div className='mb-3 flex items-center gap-1.5'>
-          <User className='text-muted-foreground h-4 w-4' />
-          <span className='text-sm font-semibold'>Erster Fahrgast</span>
-          <span className='text-destructive text-xs font-normal'>*</span>
-        </div>
+        {titleRow('Erster Fahrgast', true)}
         {formFields}
       </div>
     );
@@ -302,15 +318,15 @@ export function AddPassengerInline({
           variant='outline'
           size='sm'
           disabled={disabled}
-          className='text-muted-foreground hover:text-foreground flex h-10 w-full items-center justify-between gap-2 text-sm sm:h-8 sm:text-xs'
+          className='text-muted-foreground hover:text-foreground flex h-8 w-full items-center justify-between gap-2 text-xs sm:h-7'
         >
-          <span className='flex items-center gap-2'>
-            <Plus className='h-4 w-4 shrink-0 sm:h-3.5 sm:w-3.5' />
-            Weiteren Fahrgast hinzufügen
+          <span className='flex min-w-0 items-center gap-1.5'>
+            <Plus className='h-3.5 w-3.5 shrink-0' />
+            <span className='truncate'>Weiteren Fahrgast hinzufügen</span>
           </span>
           <ChevronDown
             className={cn(
-              'h-4 w-4 shrink-0 transition-transform duration-200',
+              'h-3.5 w-3.5 shrink-0 transition-transform duration-200',
               expanded && 'rotate-180'
             )}
           />
@@ -319,15 +335,11 @@ export function AddPassengerInline({
       <CollapsibleContent className='data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0 overflow-hidden'>
         <div
           className={cn(
-            shellClass,
-            'mt-2',
+            'border-border/60 mt-1.5 space-y-1.5 border-t pt-2',
             disabled && 'pointer-events-none opacity-50'
           )}
         >
-          <div className='mb-3 flex items-center gap-1.5'>
-            <User className='text-muted-foreground h-3.5 w-3.5' />
-            <span className='text-xs font-semibold'>Weiterer Fahrgast</span>
-          </div>
+          {titleRow('Weiterer Fahrgast')}
           {formFields}
         </div>
       </CollapsibleContent>

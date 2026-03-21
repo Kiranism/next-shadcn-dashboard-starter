@@ -66,6 +66,11 @@ export interface TripFormSectionsContextType {
     value: string
   ) => void;
   updatePassengerWheelchair: (uid: string, value: boolean) => void;
+  updatePassengerName: (
+    uid: string,
+    field: 'first_name' | 'last_name',
+    value: string
+  ) => void;
   assignToDropoff: (passengerUid: string, dropoffGroupUid: string) => void;
   unassignFromDropoff: (passengerUid: string) => void;
   addPickupGroup: () => void;

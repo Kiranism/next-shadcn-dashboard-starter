@@ -30,7 +30,8 @@ export function CreateTripDropoffSection() {
     removeDropoffGroup,
     addDropoffGroup,
     updatePassengerStation,
-    updatePassengerWheelchair
+    updatePassengerWheelchair,
+    updatePassengerName
   } = useTripFormSections();
 
   return (
@@ -204,6 +205,7 @@ export function CreateTripDropoffSection() {
                 onRemovePassenger={unassignFromDropoff}
                 onStationChange={updatePassengerStation}
                 onWheelchairChange={updatePassengerWheelchair}
+                onPassengerNameChange={updatePassengerName}
                 onAssignPassenger={(passengerUid) =>
                   assignToDropoff(passengerUid, group.uid)
                 }

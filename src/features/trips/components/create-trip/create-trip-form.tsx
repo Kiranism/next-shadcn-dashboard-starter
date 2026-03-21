@@ -323,6 +323,15 @@ export function CreateTripForm({
     []
   );
 
+  const updatePassengerName = React.useCallback(
+    (uid: string, field: 'first_name' | 'last_name', value: string) => {
+      setPassengers((prev) =>
+        prev.map((p) => (p.uid === uid ? { ...p, [field]: value } : p))
+      );
+    },
+    []
+  );
+
   const assignToDropoff = React.useCallback(
     (passengerUid: string, dropoffGroupUid: string) => {
       setPassengers((prev) =>
@@ -972,6 +981,7 @@ export function CreateTripForm({
     removePassenger,
     updatePassengerStation,
     updatePassengerWheelchair,
+    updatePassengerName,
     assignToDropoff,
     unassignFromDropoff,
     addPickupGroup,

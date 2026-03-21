@@ -20,6 +20,13 @@ interface ClientAutoSuggestProps {
   placeholder?: string;
   disabled?: boolean;
   getDisplayValue?: (client: ClientOption) => string;
+  /** Merged onto the search input (e.g. compact height in stacked forms). */
+  inputClassName?: string;
+  /**
+   * When the trigger sits in a narrow column, matching its width makes the
+   * results list feel cramped. This uses a comfortable min width instead.
+   */
+  widePopover?: boolean;
 }
 
 export function ClientAutoSuggest({
@@ -29,7 +36,9 @@ export function ClientAutoSuggest({
   value = '',
   placeholder = 'Name eingeben...',
   disabled = false,
-  getDisplayValue
+  getDisplayValue,
+  inputClassName,
+  widePopover = false
 }: ClientAutoSuggestProps) {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState(value);
@@ -96,7 +105,7 @@ export function ClientAutoSuggest({
             onChange={handleInputChange}
             placeholder={placeholder}
             disabled={disabled}
-            className='pl-9'
+            className={cn('pl-9', inputClassName)}
             onFocus={() => results.length > 0 && setOpen(true)}
           />
           {selectedClient && (
@@ -105,11 +114,22 @@ export function ClientAutoSuggest({
         </div>
       </PopoverTrigger>
       <PopoverContent
-        className='w-[var(--radix-popover-trigger-width)] p-0'
+        className={cn(
+          'p-0',
+          widePopover
+            ? 'w-[min(22rem,calc(100vw-1.5rem))] max-w-[calc(100vw-1rem)]'
+            : 'w-[var(--radix-popover-trigger-width)]'
+        )}
         align='start'
+        sideOffset={4}
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <div className='max-h-64 overflow-y-auto py-1'>
+        <div
+          className={cn(
+            'overflow-y-auto py-1',
+            widePopover ? 'max-h-[min(24rem,50vh)]' : 'max-h-64'
+          )}
+        >
           {isSearching ? (
             <div className='text-muted-foreground py-4 text-center text-sm'>
               Suche...

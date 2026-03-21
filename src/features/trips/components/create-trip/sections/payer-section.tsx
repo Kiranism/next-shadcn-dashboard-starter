@@ -44,7 +44,7 @@ export function CreateTripPayerSection() {
             <FormItem
               className={cn(
                 'min-w-0',
-                watchedPayerId && billingTypes.length === 0 && 'col-span-2'
+                (!watchedPayerId || billingTypes.length === 0) && 'col-span-2'
               )}
             >
               <FormLabel className='text-xs'>Kostenträger *</FormLabel>
@@ -70,25 +70,17 @@ export function CreateTripPayerSection() {
             </FormItem>
           )}
         />
-        {(!watchedPayerId || billingTypes.length > 0) && (
+        {watchedPayerId && billingTypes.length > 0 && (
           <FormField
             control={form.control as any}
             name='billing_type_id'
             render={({ field }) => (
               <FormItem className='min-w-0'>
                 <FormLabel className='text-xs'>Abrechnungsart</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                  disabled={!watchedPayerId}
-                >
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger className='h-9 w-full min-w-0'>
-                      <SelectValue
-                        placeholder={
-                          !watchedPayerId ? 'Kostenträger wählen' : 'Wählen...'
-                        }
-                      />
+                      <SelectValue placeholder='Wählen...' />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>

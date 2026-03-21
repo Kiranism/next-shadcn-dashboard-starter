@@ -26,6 +26,7 @@ export function CreateTripPickupSection() {
     removePassenger,
     updatePassengerStation,
     updatePassengerWheelchair,
+    updatePassengerName,
     searchClients,
     onClientSelect,
     handleAddressChoice,
@@ -181,6 +182,7 @@ export function CreateTripPickupSection() {
               onRemovePassenger={removePassenger}
               onStationChange={updatePassengerStation}
               onWheelchairChange={updatePassengerWheelchair}
+              onPassengerNameChange={updatePassengerName}
               searchClients={searchClients}
               onClientLinked={onClientSelect}
               onAddressChoice={handleAddressChoice}
