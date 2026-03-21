@@ -117,7 +117,7 @@ export function ClientAutoSuggest({
         className={cn(
           'p-0',
           widePopover
-            ? 'w-[min(22rem,calc(100vw-1.5rem))] max-w-[calc(100vw-1rem)]'
+            ? 'w-[var(--radix-popover-trigger-width)] sm:w-[min(22rem,calc(100vw-1.5rem))] sm:max-w-[calc(100vw-1rem)]'
             : 'w-[var(--radix-popover-trigger-width)]'
         )}
         align='start'

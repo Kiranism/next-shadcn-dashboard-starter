@@ -31,21 +31,6 @@ export function TripsTable<TData, TValue>({
   const [pageSize] = useQueryState('perPage', parseAsInteger.withDefault(50));
   const pageCount = Math.ceil(totalItems / pageSize);
 
-  // Compute the row id to auto-scroll to: first trip >= now-15min, or last row.
-  const anchorRowId = React.useMemo(() => {
-    if (!data.length) return null;
-    const cutoff = Date.now() - 15 * 60 * 1000;
-    const idx = (data as any[]).findIndex((trip) => {
-      const ts = trip.scheduled_at
-        ? new Date(trip.scheduled_at).getTime()
-        : null;
-      return ts !== null && ts >= cutoff;
-    });
-    // If no future/recent trip found, anchor to the last row.
-    const anchorIdx = idx === -1 ? data.length - 1 : idx;
-    return String(anchorIdx);
-  }, [data]);
-
   const { table } = useDataTable({
     data,
     columns,
@@ -124,11 +109,7 @@ export function TripsTable<TData, TValue>({
     return (
       <div className='flex min-h-0 flex-1 flex-col space-y-4'>
         <DataTableToolbar table={table} showViewOptions={false} />
-        <TripsMobileCardList
-          table={table}
-          getRowClassName={getRowClassName}
-          scrollAnchorRowId={anchorRowId}
-        />
+        <TripsMobileCardList table={table} getRowClassName={getRowClassName} />
       </div>
     );
   }
@@ -136,7 +117,6 @@ export function TripsTable<TData, TValue>({
   return (
     <DataTable
       table={table}
-      scrollAnchorRowId={anchorRowId}
       tableClassName='min-w-[720px]'
       getRowClassName={getRowClassName}
     >

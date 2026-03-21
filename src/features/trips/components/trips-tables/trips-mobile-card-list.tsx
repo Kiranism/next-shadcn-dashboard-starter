@@ -2,8 +2,7 @@
 
 /**
  * Trips “list” on narrow viewports: card stack instead of `DataTable` (see `TripsTable`
- * + `useIsNarrowScreen(768)`). The scroll container below owns vertical overflow; optional
- * `scrollAnchorRowId` scrolls the first relevant row into view after load.
+ * + `useIsNarrowScreen(768)`). The scroll container below owns vertical overflow.
  */
 import * as React from 'react';
 import { format } from 'date-fns';
@@ -26,7 +25,6 @@ import type { Table as TanstackTable } from '@tanstack/react-table';
 interface TripsMobileCardListProps<TData> {
   table: TanstackTable<TData>;
   getRowClassName?: (row: TData) => string;
-  scrollAnchorRowId?: string | null;
 }
 
 function parseAddress(raw: string | null | undefined): {
@@ -46,34 +44,15 @@ function parseAddress(raw: string | null | undefined): {
 
 export function TripsMobileCardList<TData>({
   table,
-  getRowClassName,
-  scrollAnchorRowId
+  getRowClassName
 }: TripsMobileCardListProps<TData>) {
-  const containerRef = React.useRef<HTMLDivElement>(null);
   const rows = table.getRowModel().rows;
-
-  React.useEffect(() => {
-    if (!scrollAnchorRowId || !containerRef.current) return;
-    const timer = setTimeout(() => {
-      const anchor = containerRef.current?.querySelector(
-        '[data-scroll-anchor="true"]'
-      ) as HTMLElement | null;
-      if (anchor) {
-        anchor.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      }
-    }, 80);
-    return () => clearTimeout(timer);
-  }, [scrollAnchorRowId, rows.length]);
 
   return (
     <div className='flex min-h-0 flex-1 flex-col gap-3'>
-      <div
-        ref={containerRef}
-        className='flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pb-2'
-      >
+      <div className='flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pb-2'>
         {rows.map((tableRow) => {
           const trip = tableRow.original as unknown as Trip;
-          const rowId = tableRow.id;
           const scheduled = trip.scheduled_at
             ? new Date(trip.scheduled_at)
             : null;
@@ -89,9 +68,6 @@ export function TripsMobileCardList<TData>({
           return (
             <Card
               key={trip.id}
-              data-scroll-anchor={
-                scrollAnchorRowId === rowId ? 'true' : undefined
-              }
               className={cn(
                 // shrink-0: scroll column is flex; default shrink would clip card content at the bottom.
                 'shrink-0 gap-0 py-0 shadow-sm',

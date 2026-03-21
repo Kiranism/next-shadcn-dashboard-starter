@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type MouseEvent } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import {
   Sheet,
@@ -36,7 +36,8 @@ import {
   CreditCard,
   Trash2,
   Share2,
-  ArrowLeftRight
+  ArrowLeftRight,
+  Copy
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -945,6 +946,10 @@ function LinkedPartnerCallout({
   );
 }
 
+function googleMapsSearchUrl(query: string): string {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
+
 /** Keeps calendar day from `scheduledIso`, replaces clock time with `HH:mm`. */
 function applyTimeToScheduledDate(
   scheduledIso: string,
@@ -971,6 +976,25 @@ function TimelineItem({
   isLast
 }: any) {
   const isCancelled = update?.status === 'not_present';
+  const mapQuery =
+    typeof address === 'string' && address.trim().length > 0
+      ? [address.trim(), station ? String(station).trim() : '']
+          .filter(Boolean)
+          .join(', ')
+      : '';
+  const mapsHref = mapQuery ? googleMapsSearchUrl(mapQuery) : undefined;
+
+  const handleCopyAddress = async (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!mapQuery) return;
+    try {
+      await navigator.clipboard.writeText(mapQuery);
+      toast.success('Adresse kopiert');
+    } catch {
+      toast.error('Kopieren fehlgeschlagen');
+    }
+  };
 
   return (
     <div className={`relative pb-8 pl-10 ${isLast ? 'pb-2' : ''}`}>
@@ -994,11 +1018,60 @@ function TimelineItem({
           )}
         </div>
         <div
-          className={`flex flex-col text-sm leading-snug font-semibold ${isCancelled ? 'line-through opacity-50' : ''}`}
+          className={cn(
+            'flex flex-col text-sm leading-snug font-semibold',
+            isCancelled && 'opacity-50'
+          )}
         >
-          {address}
+          <div className='flex min-w-0 items-start gap-0.5'>
+            <div className='flex min-w-0 flex-1 flex-col'>
+              {mapsHref ? (
+                <a
+                  href={mapsHref}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className={cn(
+                    'text-primary min-w-0 underline-offset-2 hover:underline',
+                    isCancelled && 'line-through'
+                  )}
+                  title='In Google Maps öffnen'
+                  aria-label={`Adresse in Google Maps öffnen: ${address}`}
+                >
+                  {address}
+                </a>
+              ) : (
+                <span className={cn('min-w-0', isCancelled && 'line-through')}>
+                  {address}
+                </span>
+              )}
+              <div
+                className='border-muted-foreground/30 mt-2 w-full border-b [border-bottom-width:1pt] border-dashed'
+                aria-hidden
+              />
+            </div>
+            {mapQuery ? (
+              <Button
+                type='button'
+                variant='ghost'
+                size='icon'
+                className='text-muted-foreground hover:text-foreground -mr-1 h-7 w-7 shrink-0 self-start'
+                title='Adresse kopieren'
+                aria-label='Adresse kopieren'
+                onClick={(e) => {
+                  void handleCopyAddress(e);
+                }}
+              >
+                <Copy className='h-3.5 w-3.5' />
+              </Button>
+            ) : null}
+          </div>
           {station && !name && (
-            <span className='text-muted-foreground text-xs font-normal'>
+            <span
+              className={cn(
+                'text-muted-foreground text-xs font-normal',
+                isCancelled && 'line-through'
+              )}
+            >
               ({station})
             </span>
           )}

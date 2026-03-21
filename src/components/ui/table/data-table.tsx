@@ -34,8 +34,6 @@ interface DataTableProps<TData> extends React.ComponentProps<'div'> {
   table: TanstackTable<TData>;
   actionBar?: React.ReactNode;
   getRowClassName?: (row: any) => string;
-  /** Row id (from TanStack `row.id`) to auto-scroll into view after render. */
-  scrollAnchorRowId?: string | null;
   /** Applied to the inner `<table>` (e.g. `min-w-[720px]` for horizontal scroll). */
   tableClassName?: string;
 }
@@ -44,12 +42,10 @@ export function DataTable<TData>({
   table,
   actionBar,
   getRowClassName,
-  scrollAnchorRowId,
   tableClassName,
   children
 }: DataTableProps<TData>) {
   const dndId = React.useId();
-  const containerRef = React.useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(
     useSensor(MouseSensor),
@@ -67,23 +63,8 @@ export function DataTable<TData>({
     }
   }
 
-  // Scroll the anchor row into view whenever the anchor id or data changes.
-  React.useEffect(() => {
-    if (!scrollAnchorRowId || !containerRef.current) return;
-    const timer = setTimeout(() => {
-      const anchor = containerRef.current?.querySelector(
-        '[data-scroll-anchor="true"]'
-      ) as HTMLElement | null;
-      if (anchor) {
-        anchor.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      }
-    }, 80);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scrollAnchorRowId, table.getRowModel().rows.length]);
-
   return (
-    <div className='flex flex-1 flex-col space-y-4' ref={containerRef}>
+    <div className='flex flex-1 flex-col space-y-4'>
       {children}
       <div className='relative flex flex-1'>
         <div className='absolute inset-0 flex overflow-hidden rounded-lg border'>
@@ -119,9 +100,6 @@ export function DataTable<TData>({
                       <TableRow
                         key={row.id}
                         data-state={row.getIsSelected() && 'selected'}
-                        data-scroll-anchor={
-                          scrollAnchorRowId === row.id ? 'true' : undefined
-                        }
                         className={getRowClassName?.(row.original)}
                       >
                         {row.getVisibleCells().map((cell) => (

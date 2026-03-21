@@ -29,7 +29,8 @@ import { cn } from '@/lib/utils';
 import type { ClientOption } from '@/features/trips/hooks/use-trip-form-data';
 import type { PassengerEntry } from '@/features/trips/types';
 
-const compactInput = 'h-8 text-xs sm:h-7 sm:text-[11px] py-1 min-h-0';
+const compactInput =
+  'h-9 min-h-9 text-base py-2 min-w-0 sm:h-7 sm:min-h-0 sm:text-[11px] sm:py-1';
 
 function WheelchairHeaderToggle({
   isWheelchair,
