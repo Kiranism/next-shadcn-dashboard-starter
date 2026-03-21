@@ -1,11 +1,7 @@
 import PageContainer from '@/components/layout/page-container';
-import { buttonVariants } from '@/components/ui/button';
 import { DataTableSkeleton } from '@/components/ui/table/data-table-skeleton';
 import TripsListingPage from '@/features/trips/components/trips-listing';
 import { searchParamsCache } from '@/lib/searchparams';
-import { cn } from '@/lib/utils';
-import { IconPlus } from '@tabler/icons-react';
-import Link from 'next/link';
 import { SearchParams } from 'nuqs/server';
 import { Suspense } from 'react';
 import { CreateTripDialogButton } from '@/features/trips/components/create-trip-dialog-button';
@@ -33,7 +29,7 @@ export default async function Page(props: pageProps) {
       pageTitle='Fahrten'
       pageDescription='Alle Fahrten auf einen Blick verwalten.'
       pageHeaderAction={
-        <div className='flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto'>
+        <div className='flex shrink-0 flex-nowrap items-center justify-end gap-2'>
           <PrintTripsButton />
           <BulkUploadDialog />
           <CreateTripDialogButton />

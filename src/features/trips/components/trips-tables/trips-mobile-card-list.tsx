@@ -1,5 +1,10 @@
 'use client';
 
+/**
+ * Trips “list” on narrow viewports: card stack instead of `DataTable` (see `TripsTable`
+ * + `useIsNarrowScreen(768)`). The scroll container below owns vertical overflow; optional
+ * `scrollAnchorRowId` scrolls the first relevant row into view after load.
+ */
 import * as React from 'react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -87,57 +92,76 @@ export function TripsMobileCardList<TData>({
               data-scroll-anchor={
                 scrollAnchorRowId === rowId ? 'true' : undefined
               }
-              className={cn('overflow-hidden py-0 shadow-sm', rowClass)}
+              className={cn(
+                // shrink-0: scroll column is flex; default shrink would clip card content at the bottom.
+                'shrink-0 gap-0 py-0 shadow-sm',
+                rowClass
+              )}
             >
-              <CardContent className='flex flex-col gap-2 p-3'>
-                <div className='flex items-start justify-between gap-2'>
-                  <div className='min-w-0 flex-1'>
-                    <div className='flex flex-wrap items-center gap-2'>
-                      {valid && (
-                        <span className='flex items-center gap-1.5 text-sm font-semibold'>
+              <CardContent className='flex flex-col gap-3 px-3 pt-3 pb-4'>
+                {/* Title block: time + date read as one unit; looser gap only before addresses */}
+                <div className='flex flex-col gap-0.5'>
+                  {/* Row 1: time → greeting → name | status → menu */}
+                  <div className='flex min-w-0 items-center justify-between gap-2'>
+                    <div className='flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2'>
+                      {valid ? (
+                        <span className='flex shrink-0 items-center gap-1.5 text-sm font-semibold tabular-nums'>
                           <UrgencyIndicator
                             scheduledAt={trip.scheduled_at!}
                             status={trip.status}
                             variant='dot'
                           />
                           {format(scheduled!, 'HH:mm', { locale: de })}
-                          <span className='text-muted-foreground font-normal'>
-                            {format(scheduled!, 'dd.MM.', { locale: de })}
-                          </span>
                         </span>
-                      )}
-                      {!valid && (
-                        <span className='text-muted-foreground text-sm'>
+                      ) : (
+                        <span className='text-muted-foreground shrink-0 text-sm'>
                           Keine Zeit
                         </span>
                       )}
+                      {trip.greeting_style ? (
+                        <span className='text-muted-foreground shrink-0 text-sm'>
+                          {trip.greeting_style}
+                        </span>
+                      ) : null}
+                      <p className='min-w-0 truncate text-sm font-medium'>
+                        {trip.client_name || '—'}
+                      </p>
+                    </div>
+                    <div className='flex shrink-0 items-center gap-1'>
                       <Badge
-                        className={cn('text-xs', tripStatusBadge({ status }))}
+                        className={cn(
+                          'max-w-[7rem] truncate text-xs sm:max-w-none',
+                          tripStatusBadge({ status })
+                        )}
                       >
                         {tripStatusLabels[status] ?? status}
                       </Badge>
+                      <CellAction data={trip} />
                     </div>
-                    <p className='mt-1 truncate text-sm font-medium'>
-                      {trip.client_name || '—'}
-                    </p>
+                  </div>
+                  {/* Row 2: date + wheelchair (tight under row 1) */}
+                  <div className='text-muted-foreground flex items-center gap-2 text-xs leading-tight'>
+                    {valid ? (
+                      <span className='tabular-nums'>
+                        {format(scheduled!, 'dd.MM.yyyy', { locale: de })}
+                      </span>
+                    ) : (
+                      <span>—</span>
+                    )}
                     {trip.is_wheelchair && (
-                      <Badge
-                        variant='outline'
-                        className='mt-1 w-fit scale-90 text-[10px]'
-                      >
-                        <Accessibility className='mr-1 h-3 w-3' />
-                        Rollstuhl
-                      </Badge>
+                      <Accessibility
+                        className='text-foreground h-4 w-4 shrink-0'
+                        aria-label='Rollstuhl'
+                      />
                     )}
                   </div>
-                  <CellAction data={trip} />
                 </div>
-                <div className='text-muted-foreground space-y-1 border-t pt-2 text-xs'>
-                  <p className='line-clamp-2'>
+                <div className='text-muted-foreground border-border/60 space-y-1.5 border-t pt-2.5 text-xs'>
+                  <p className='break-words'>
                     <span className='text-foreground font-medium'>Ab: </span>
                     {pickup.street || trip.pickup_address || '—'}
                   </p>
-                  <p className='line-clamp-2'>
+                  <p className='break-words'>
                     <span className='text-foreground font-medium'>Nach: </span>
                     {dropoff.street || trip.dropoff_address || '—'}
                   </p>
@@ -147,7 +171,7 @@ export function TripsMobileCardList<TData>({
           );
         })}
       </div>
-      <DataTablePagination table={table} />
+      <DataTablePagination table={table} className='pb-1' />
     </div>
   );
 }

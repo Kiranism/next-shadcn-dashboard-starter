@@ -242,9 +242,18 @@ export default async function TripsListingPage({
 
   return (
     <div className='flex min-h-0 min-w-0 flex-1 flex-col space-y-4 overflow-hidden'>
-      <div className='flex flex-wrap items-center gap-3'>
+      {/*
+        Stack toggle + filters on narrow viewports; row from md up. Parent uses
+        PageContainer scrollable={false} with overflow-hidden — keep min-w-0 so
+        the filters bar can shrink without clipping horizontally.
+      */}
+      <div className='flex min-w-0 shrink-0 flex-col gap-3 md:flex-row md:items-start md:gap-3'>
         <TripsViewToggle currentView={view} />
-        <div className='min-w-0 flex-1'>
+        {/*
+          `flex-1` on mobile in a column flex + auto-height parent collapses this block to
+          zero — filters/header area disappear. Use natural height on narrow; grow only from md.
+        */}
+        <div className='w-full min-w-0 shrink-0 md:min-w-0 md:flex-1'>
           <TripsFiltersBar totalItems={totalTrips} />
         </div>
       </div>

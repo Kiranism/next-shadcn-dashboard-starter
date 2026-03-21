@@ -17,9 +17,8 @@ export function CreateTripPickupSection() {
   const {
     formErrors,
     pickupGroups,
-    requirePassenger,
+    billingBehavior,
     isPayerSelected,
-    isPickupLocked,
     updatePickupAddress,
     handleManualAddressFieldChange,
     addPassenger,
@@ -34,6 +33,10 @@ export function CreateTripPickupSection() {
     addPickupGroup,
     getPickupGroupPassengers
   } = useTripFormSections();
+
+  const requirePassenger = billingBehavior.requirePassenger;
+  const isPickupLocked = billingBehavior.lockPickup;
+  const isDropoffLocked = billingBehavior.lockDropoff;
 
   return (
     <div
@@ -195,6 +198,8 @@ export function CreateTripPickupSection() {
                 )
               }
               isLocked={isPickupLocked}
+              applyClientAddressPickupLocked={isPickupLocked}
+              applyClientAddressDropoffLocked={isDropoffLocked}
               groupLabel={
                 pickupGroups.length > 1 ? `Abholadresse ${idx + 1}` : undefined
               }

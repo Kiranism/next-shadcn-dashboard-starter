@@ -4,6 +4,8 @@
  * Inline passenger entry — no nested card; sits in the AddressGroupCard column.
  * - `first`: compact always-on block (required first Fahrgast).
  * - `additional`: collapsible row for further passengers.
+ * Address apply-from-client (Abhol-/Zieladresse) is gated separately from passenger entry
+ * via `disableApplyClientAddressToPickup` / `disableApplyClientAddressToDropoff`.
  */
 import * as React from 'react';
 import {
@@ -81,6 +83,10 @@ export interface AddPassengerInlineProps {
     pickupGroupUid: string
   ) => void;
   disabled?: boolean;
+  /** When true, hide "Abholadresse" in the client-address apply row (pickup fixed by rule). */
+  disableApplyClientAddressToPickup?: boolean;
+  /** When true, hide "Zieladresse" in the client-address apply row (dropoff fixed by rule). */
+  disableApplyClientAddressToDropoff?: boolean;
 }
 
 export function AddPassengerInline({
@@ -90,7 +96,9 @@ export function AddPassengerInline({
   onAdd,
   onClientLinked,
   onAddressChoice,
-  disabled = false
+  disabled = false,
+  disableApplyClientAddressToPickup = false,
+  disableApplyClientAddressToDropoff = false
 }: AddPassengerInlineProps) {
   const [expanded, setExpanded] = React.useState(false);
   const [firstName, setFirstName] = React.useState('');
@@ -155,6 +163,8 @@ export function AddPassengerInline({
   };
 
   const handleAddressChoice = (type: 'pickup' | 'dropoff') => {
+    if (type === 'pickup' && disableApplyClientAddressToPickup) return;
+    if (type === 'dropoff' && disableApplyClientAddressToDropoff) return;
     if (pendingAddress && selectedClient && onAddressChoice) {
       const trimmedFirst = (selectedClient.first_name || '').trim();
       const trimmedLast = (selectedClient.last_name || '').trim();
@@ -239,28 +249,40 @@ export function AddPassengerInline({
           <p className='text-foreground mb-1.5 truncate text-[10px]'>
             {pendingAddress}
           </p>
-          <div className='flex gap-1'>
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              className='h-7 flex-1 gap-0.5 px-1.5 text-[10px] sm:h-6'
-              onClick={() => handleAddressChoice('pickup')}
-            >
-              <MapPin className='h-3 w-3 shrink-0 text-emerald-500' />
-              Abholadresse
-            </Button>
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              className='h-7 flex-1 gap-0.5 px-1.5 text-[10px] sm:h-6'
-              onClick={() => handleAddressChoice('dropoff')}
-            >
-              <Navigation className='h-3 w-3 shrink-0 text-rose-500' />
-              Zieladresse
-            </Button>
-          </div>
+          {disableApplyClientAddressToPickup &&
+          disableApplyClientAddressToDropoff ? (
+            <p className='text-muted-foreground text-[10px] leading-snug'>
+              Abhol- und Zieladresse sind festgelegt — Kundenadresse wird nicht
+              übernommen.
+            </p>
+          ) : (
+            <div className='flex gap-1'>
+              {!disableApplyClientAddressToPickup && (
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  className='h-7 flex-1 gap-0.5 px-1.5 text-[10px] sm:h-6'
+                  onClick={() => handleAddressChoice('pickup')}
+                >
+                  <MapPin className='h-3 w-3 shrink-0 text-emerald-500' />
+                  Abholadresse
+                </Button>
+              )}
+              {!disableApplyClientAddressToDropoff && (
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  className='h-7 flex-1 gap-0.5 px-1.5 text-[10px] sm:h-6'
+                  onClick={() => handleAddressChoice('dropoff')}
+                >
+                  <Navigation className='h-3 w-3 shrink-0 text-rose-500' />
+                  Zieladresse
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       )}
 

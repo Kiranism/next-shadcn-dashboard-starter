@@ -25,6 +25,10 @@ import { CreateTripDropoffSection } from './sections/dropoff-section';
 import { CreateTripScheduleSection } from './sections/schedule-section';
 import { CreateTripExtrasSection } from './sections/extras-section';
 import { CreateTripFormFooter } from './form-footer';
+import {
+  normalizeBillingTypeBehavior,
+  parseBehaviorProfileRaw
+} from '@/features/trips/lib/normalize-billing-type-behavior-profile';
 
 export interface CreateTripFormProps {
   onSuccess?: () => void;
@@ -45,6 +49,7 @@ export function CreateTripForm({
 }: CreateTripFormProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const hasInitializedReturnDateRef = React.useRef(false);
+  const lastSyncedPanelClientIdRef = React.useRef<string | null>(null);
 
   // Dynamic multi-passenger state
   const [passengers, setPassengers] = React.useState<PassengerEntry[]>([]);
@@ -54,6 +59,12 @@ export function CreateTripForm({
   const [dropoffGroups, setDropoffGroups] = React.useState<AddressGroupEntry[]>(
     [{ uid: crypto.randomUUID(), address: '' }]
   );
+
+  const pickupGroupsRef = React.useRef(pickupGroups);
+  const dropoffGroupsRef = React.useRef(dropoffGroups);
+  pickupGroupsRef.current = pickupGroups;
+  dropoffGroupsRef.current = dropoffGroups;
+  const prevBillingTypeIdRef = React.useRef<string | undefined>(undefined);
 
   // Validation error state
   const [formErrors, setFormErrors] = React.useState<{
@@ -93,27 +104,45 @@ export function CreateTripForm({
     searchClientsById
   } = useTripFormData(watchedPayerId || null);
 
-  // When preselectedClientId is provided (e.g. from Cmd+K),
-  // resolve it to a ClientOption once on mount and notify the parent.
+  // ClientTripsPanel (parent): show trips for the active linked client, or the Cmd+K
+  // preset when no passenger carries a client_id; clear when all linked passengers are removed.
   React.useEffect(() => {
-    if (!preselectedClientId || !onClientSelect) return;
+    if (!onClientSelect) return;
 
-    let isActive = true;
+    const firstLinkedId =
+      passengers.find((p) => p.client_id)?.client_id ?? null;
 
-    const resolveClient = async () => {
-      const client = await searchClientsById(preselectedClientId);
-      if (client && isActive) {
+    if (firstLinkedId) {
+      if (firstLinkedId === lastSyncedPanelClientIdRef.current) return;
+      let cancelled = false;
+      void searchClientsById(firstLinkedId).then((client) => {
+        if (cancelled || !client) return;
+        lastSyncedPanelClientIdRef.current = firstLinkedId;
         onClientSelect(client);
-      }
-    };
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
 
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    resolveClient();
+    if (preselectedClientId) {
+      if (lastSyncedPanelClientIdRef.current === preselectedClientId) return;
+      let cancelled = false;
+      void searchClientsById(preselectedClientId).then((client) => {
+        if (cancelled || !client) return;
+        lastSyncedPanelClientIdRef.current = preselectedClientId;
+        onClientSelect(client);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
 
-    return () => {
-      isActive = false;
-    };
-  }, [preselectedClientId, onClientSelect, searchClientsById]);
+    if (lastSyncedPanelClientIdRef.current !== null) {
+      lastSyncedPanelClientIdRef.current = null;
+      onClientSelect(null);
+    }
+  }, [passengers, preselectedClientId, onClientSelect, searchClientsById]);
 
   // Reset billing type when payer changes
   React.useEffect(() => {
@@ -124,10 +153,47 @@ export function CreateTripForm({
     (bt) => bt.id === watchedBillingTypeId
   );
 
+  // When Abrechnungsart changes, clear address rows (then the next effect applies new defaults).
+  // Passengers, schedule, notes, etc. stay; station strings reset with addresses.
+  React.useEffect(() => {
+    const current = watchedBillingTypeId || '';
+    const prev = prevBillingTypeIdRef.current;
+
+    if (prev !== undefined && prev !== current) {
+      const pickupFirstUid =
+        pickupGroupsRef.current[0]?.uid ?? crypto.randomUUID();
+      const dropFirstUid =
+        dropoffGroupsRef.current[0]?.uid ?? crypto.randomUUID();
+
+      setPickupGroups([{ uid: pickupFirstUid, address: '' }]);
+      setDropoffGroups([{ uid: dropFirstUid, address: '' }]);
+      setPassengers((p) =>
+        p.map((row) => ({
+          ...row,
+          pickup_group_uid: pickupFirstUid,
+          pickup_station: '',
+          dropoff_group_uid:
+            row.dropoff_group_uid != null ? dropFirstUid : null,
+          dropoff_station: ''
+        }))
+      );
+      setFormErrors((e) => ({
+        ...e,
+        pickupGroups: undefined,
+        dropoffGroups: undefined,
+        unassigned: undefined
+      }));
+    }
+
+    prevBillingTypeIdRef.current = current;
+  }, [watchedBillingTypeId]);
+
   // Apply all behavior profile rules when billing type changes
   React.useEffect(() => {
-    if (!selectedBillingType?.behavior_profile) return;
-    const b = selectedBillingType.behavior_profile as any;
+    if (!selectedBillingType) return;
+    const b = parseBehaviorProfileRaw(
+      selectedBillingType.behavior_profile
+    ) as Record<string, any>;
 
     // Address defaults
     const defaultPickup = b.defaultPickup ?? b.default_pickup;
@@ -241,30 +307,12 @@ export function CreateTripForm({
     hasInitializedReturnDateRef.current = true;
   }, [watchedReturnMode, watchedScheduledAt, form]);
 
-  // Normalise behavior profile with backward compat for legacy field names
-  const behavior = React.useMemo(() => {
-    const b = (selectedBillingType?.behavior_profile || {}) as any;
-    const legacyShowPickup = b.showPickupPassenger ?? b.show_pickup_passenger;
-    const legacyShowDropoff =
-      b.showDropoffPassenger ?? b.show_dropoff_passenger;
-    const rawPolicy: string | null = b.returnPolicy ?? b.return_policy ?? null;
-    return {
-      returnPolicy: rawPolicy as 'none' | 'time_tbd' | 'exact' | null,
-      lockPickup: !!(b.lockPickup ?? b.lock_pickup ?? false),
-      lockDropoff: !!(b.lockDropoff ?? b.lock_dropoff ?? false),
-      // lockReturnMode is also implicitly true when returnPolicy === 'none'
-      lockReturnMode: !!(b.lockReturnMode ?? b.lock_return_mode ?? false),
-      prefillDropoffFromPickup: !!(
-        b.prefillDropoffFromPickup ??
-        b.prefill_dropoff_from_pickup ??
-        false
-      ),
-      requirePassenger:
-        b.requirePassenger !== undefined
-          ? !!b.requirePassenger
-          : legacyShowPickup !== false && legacyShowDropoff !== false
-    };
-  }, [selectedBillingType]);
+  const billingBehavior = React.useMemo(
+    () => normalizeBillingTypeBehavior(selectedBillingType?.behavior_profile),
+    [selectedBillingType]
+  );
+
+  const behavior = billingBehavior;
 
   const isPickupLocked = behavior.lockPickup;
   const isDropoffLocked = behavior.lockDropoff;
@@ -272,7 +320,7 @@ export function CreateTripForm({
   const isReturnModeLocked =
     behavior.lockReturnMode ||
     (selectedBillingType != null && behavior.returnPolicy === 'none');
-  const requirePassenger = behavior.requirePassenger;
+  const requirePassenger = billingBehavior.requirePassenger;
 
   // ── Passenger helpers ──────────────────────────────────────────────────────
 
@@ -969,6 +1017,7 @@ export function CreateTripForm({
     pickupGroups,
     dropoffGroups,
     formErrors,
+    billingBehavior,
     requirePassenger,
     isPickupLocked,
     isDropoffLocked,

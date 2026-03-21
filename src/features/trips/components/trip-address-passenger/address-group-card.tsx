@@ -60,7 +60,14 @@ interface AddressGroupCardProps {
     pickupGroupUid: string
   ) => void;
   onManualFieldChange?: (field: keyof AddressGroupEntry, value: string) => void;
+  /** When true, only the **address** fields are read-only (billing rule). Fahrgast UI stays usable. */
   isLocked?: boolean;
+  /**
+   * Pickup mode only: billing locks for "Kundenadresse übernehmen" in AddPassengerInline.
+   * Independent of `isLocked` so Abholadresse can be fixed while Ziel (or vice versa) stays editable.
+   */
+  applyClientAddressPickupLocked?: boolean;
+  applyClientAddressDropoffLocked?: boolean;
   groupLabel?: string;
   hasError?: boolean;
 }
@@ -83,6 +90,8 @@ export function AddressGroupCard({
   onAddressChoice,
   onManualFieldChange,
   isLocked = false,
+  applyClientAddressPickupLocked,
+  applyClientAddressDropoffLocked,
   groupLabel,
   hasError = false
 }: AddressGroupCardProps) {
@@ -96,6 +105,10 @@ export function AddressGroupCard({
   const emptyLabel = isPickup
     ? 'Noch kein Fahrgast'
     : 'Noch kein Fahrgast zugewiesen';
+
+  const disableApplyPickup =
+    applyClientAddressPickupLocked ?? (isPickup ? isLocked : false);
+  const disableApplyDropoff = applyClientAddressDropoffLocked ?? false;
 
   return (
     <div
@@ -169,7 +182,8 @@ export function AddressGroupCard({
                   onAdd={onAddPassenger}
                   onClientLinked={onClientLinked}
                   onAddressChoice={onAddressChoice}
-                  disabled={isLocked}
+                  disableApplyClientAddressToPickup={disableApplyPickup}
+                  disableApplyClientAddressToDropoff={disableApplyDropoff}
                 />
               ) : (
                 <AddPassengerInline
@@ -179,7 +193,8 @@ export function AddressGroupCard({
                   onAdd={onAddPassenger}
                   onClientLinked={onClientLinked}
                   onAddressChoice={onAddressChoice}
-                  disabled={isLocked}
+                  disableApplyClientAddressToPickup={disableApplyPickup}
+                  disableApplyClientAddressToDropoff={disableApplyDropoff}
                 />
               )}
             </>

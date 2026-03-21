@@ -17,9 +17,8 @@ export function CreateTripDropoffSection() {
   const {
     formErrors,
     dropoffGroups,
-    requirePassenger,
+    billingBehavior,
     isPayerSelected,
-    isDropoffLocked,
     unassignedPassengers,
     passengers,
     updateDropoffAddress,
@@ -33,6 +32,9 @@ export function CreateTripDropoffSection() {
     updatePassengerWheelchair,
     updatePassengerName
   } = useTripFormSections();
+
+  const requirePassenger = billingBehavior.requirePassenger;
+  const isDropoffLocked = billingBehavior.lockDropoff;
 
   return (
     <div

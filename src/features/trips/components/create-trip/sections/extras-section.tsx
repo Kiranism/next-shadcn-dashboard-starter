@@ -21,8 +21,10 @@ import { cn } from '@/lib/utils';
 import { useTripFormSections } from '../trip-form-sections-context';
 
 export function CreateTripExtrasSection() {
-  const { form, drivers, requirePassenger, watchedIsWheelchair } =
+  const { form, drivers, billingBehavior, watchedIsWheelchair } =
     useTripFormSections();
+
+  const requirePassenger = billingBehavior.requirePassenger;
 
   return (
     <div className='px-6 py-4'>

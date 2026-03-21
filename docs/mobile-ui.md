@@ -26,16 +26,19 @@ Shared UI lives under [`src/features/trips/components/trip-address-passenger/`](
 - **`AddressAutocomplete`**, **`PassengerBadge`**, **`AddPassengerPopover`**, **`PassengerAssignPopover`** — Taller controls and full-width triggers on narrow viewports where it helps touch use.
 - **Backward compatibility**: [`address-autocomplete.tsx`](../src/features/trips/components/address-autocomplete.tsx) (and siblings) in `components/` re-export from this folder so existing imports keep working.
 
-## Trips list
+## Trips list (`/dashboard/trips`)
 
 | Piece | Behaviour |
 | --- | --- |
-| Header actions | [`PageContainer`](../src/components/layout/page-container.tsx) stacks title and actions on small screens; trips actions use icon-first buttons with `aria-label` / `title` where the label is `hidden sm:inline`. |
-| Table vs cards | [`TripsTable`](../src/features/trips/components/trips-tables/index.tsx): below 768px renders [`TripsMobileCardList`](../src/features/trips/components/trips-tables/trips-mobile-card-list.tsx) plus the same toolbar; desktop keeps [`DataTable`](../src/components/ui/table/data-table.tsx) with `tableClassName="min-w-[720px]"` for predictable horizontal scroll. |
+| Page shell | [`/dashboard/trips/page.tsx`](../src/app/dashboard/trips/page.tsx) uses [`PageContainer`](../src/components/layout/page-container.tsx) with **`scrollable={false}`** so the trips panel can manage its own vertical scroll (card list + table). Header actions still stack on small screens; icon-first actions use `aria-label` / `title` where the label is `hidden sm:inline`. |
+| Listing layout | [`trips-listing.tsx`](../src/features/trips/components/trips-listing.tsx) stacks **`TripsViewToggle`** and **`TripsFiltersBar`** in a column below **`md`**, row from **`md`** up (`min-w-0` on the filters wrapper avoids horizontal clipping inside the overflow-hidden dashboard column). |
+| View toggle | [`trips-view-toggle.tsx`](../src/features/trips/components/trips-view-toggle.tsx): **full-width** segmented control on small screens (`flex-1` buttons, taller touch targets), **`md:w-fit`** on desktop. |
+| Filters (URL-driven) | [`trips-filters-bar.tsx`](../src/features/trips/components/trips-filters-bar.tsx): below **`md`**, search is full-width with taller controls (`min-h-10`); **date** and **Spalten** (list view only) share a row; **Fahrer / Status / Kostenträger / Abrechnung** sit in a **1-column (`sm`: 2-column) grid**; from **`md`** up, controls return to a single wrapping row (`md:contents` lifts selects into that row). **Count + “Filter zurücksetzen”** sit in a full-width row under the filters on mobile (border separator), inline with the bar on desktop. Query params (`search`, `scheduled_at`, `driver_id`, `status`, `payer_id`, `billing_type_id`, `page`, …) stay the single source of truth; `router.replace` + `router.refresh()` reload the server list. |
+| Table vs cards | [`TripsTable`](../src/features/trips/components/trips-tables/index.tsx): below **768px** (`useIsNarrowScreen`) renders [`TripsMobileCardList`](../src/features/trips/components/trips-tables/trips-mobile-card-list.tsx) plus [`DataTableToolbar`](../src/components/ui/table/data-table-toolbar.tsx); desktop uses [`DataTable`](../src/components/ui/table/data-table.tsx) with `tableClassName="min-w-[720px]"` for horizontal scroll inside the panel. |
 
 ## Dashboard overview
 
-[`src/app/dashboard/overview/layout.tsx`](../src/app/dashboard/overview/layout.tsx): placeholder stat cards are `hidden md:block` to reduce noise on phones; the main two-column block uses `order-*` so **sales / pie** appear **before** the pending-tours + chart column on small screens (`lg` restores the original order).
+[`src/app/dashboard/overview/layout.tsx`](../src/app/dashboard/overview/layout.tsx): on viewports **below `md`**, the two main KPIs use stacked **[`StatsRowCard`](../src/features/dashboard/components/stats-card.tsx)** rows (compact row layout); **charts are hidden below `lg`**. From **`lg`**, the usual grid returns (including placeholder stat cards). Below **`lg`**, the main content order is **stats → Offene Touren → Nächste Fahrten**; the **`lg`** grid restores the wider two-column layout with charts.
 
 ## Adding a new mobile-specific behaviour
 

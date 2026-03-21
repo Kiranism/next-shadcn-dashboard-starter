@@ -25,7 +25,11 @@ export function TripsViewToggle({ currentView }: TripsViewToggleProps) {
   );
 
   return (
-    <div className='bg-muted/50 flex w-fit items-center gap-2 rounded-lg p-1'>
+    <div
+      className='bg-muted/50 flex w-full items-center gap-1 rounded-lg p-1 md:w-fit md:gap-2'
+      role='group'
+      aria-label='Ansicht wechseln'
+    >
       <Button
         variant={currentView === 'list' ? 'secondary' : 'ghost'}
         size='sm'
@@ -35,9 +39,9 @@ export function TripsViewToggle({ currentView }: TripsViewToggleProps) {
             router.refresh();
           });
         }}
-        className='h-8 shadow-none'
+        className='h-10 min-h-10 flex-1 shadow-none md:h-8 md:min-h-0 md:flex-initial'
       >
-        <List className='mr-2 h-4 w-4' />
+        <List className='mr-2 h-4 w-4 shrink-0' />
         Liste
       </Button>
       <Button
@@ -49,9 +53,9 @@ export function TripsViewToggle({ currentView }: TripsViewToggleProps) {
             router.refresh();
           });
         }}
-        className='h-8 shadow-none'
+        className='h-10 min-h-10 flex-1 shadow-none md:h-8 md:min-h-0 md:flex-initial'
       >
-        <Kanban className='mr-2 h-4 w-4' />
+        <Kanban className='mr-2 h-4 w-4 shrink-0' />
         Kanban
       </Button>
     </div>

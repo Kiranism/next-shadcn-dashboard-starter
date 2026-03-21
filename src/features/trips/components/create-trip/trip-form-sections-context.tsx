@@ -15,6 +15,7 @@ import type {
   DriverOption,
   PayerOption
 } from '@/features/trips/hooks/use-trip-form-data';
+import type { NormalizedBillingTypeBehavior } from '@/features/trips/lib/normalize-billing-type-behavior-profile';
 
 export interface TripFormErrorsState {
   passengers?: string;
@@ -45,6 +46,8 @@ export interface TripFormSectionsContextType {
   pickupGroups: AddressGroupEntry[];
   dropoffGroups: AddressGroupEntry[];
   formErrors: TripFormErrorsState;
+  /** Normalised from `billing_types.behavior_profile` (same rules as Kostenträger dialog). */
+  billingBehavior: NormalizedBillingTypeBehavior;
   requirePassenger: boolean;
   isPickupLocked: boolean;
   isDropoffLocked: boolean;
