@@ -36,6 +36,8 @@ interface DataTableProps<TData> extends React.ComponentProps<'div'> {
   getRowClassName?: (row: any) => string;
   /** Row id (from TanStack `row.id`) to auto-scroll into view after render. */
   scrollAnchorRowId?: string | null;
+  /** Applied to the inner `<table>` (e.g. `min-w-[720px]` for horizontal scroll). */
+  tableClassName?: string;
 }
 
 export function DataTable<TData>({
@@ -43,6 +45,7 @@ export function DataTable<TData>({
   actionBar,
   getRowClassName,
   scrollAnchorRowId,
+  tableClassName,
   children
 }: DataTableProps<TData>) {
   const dndId = React.useId();
@@ -92,7 +95,7 @@ export function DataTable<TData>({
               onDragEnd={handleDragEnd}
               sensors={sensors}
             >
-              <Table>
+              <Table className={tableClassName}>
                 <TableHeader className='bg-muted sticky top-0 z-10'>
                   {table.getHeaderGroups().map((headerGroup) => (
                     <TableRow key={headerGroup.id}>

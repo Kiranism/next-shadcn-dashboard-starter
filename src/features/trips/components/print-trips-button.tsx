@@ -325,13 +325,19 @@ export function PrintTripsButton() {
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <Button variant='outline' disabled={isGenerating} className='gap-2'>
+        <Button
+          variant='outline'
+          disabled={isGenerating}
+          className='gap-2'
+          aria-label='Fahrten drucken'
+          title='Fahrten drucken'
+        >
           {isGenerating ? (
             <Loader2 className='h-4 w-4 animate-spin' />
           ) : (
-            <Printer className='h-4 w-4' />
+            <Printer className='h-4 w-4 shrink-0' />
           )}
-          Fahrten drucken
+          <span className='hidden sm:inline'>Fahrten drucken</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className='w-auto p-0' align='end'>

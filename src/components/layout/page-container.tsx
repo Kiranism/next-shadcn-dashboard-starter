@@ -56,13 +56,17 @@ export default function PageContainer({
   return scrollable ? (
     <ScrollArea className='min-h-0 flex-1'>
       <div className='flex flex-1 flex-col p-4 md:px-6'>
-        <div className='mb-4 flex items-start justify-between'>
+        <div className='mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4'>
           <Heading
             title={pageTitle ?? ''}
             description={pageDescription ?? ''}
             infoContent={infoContent}
           />
-          {pageHeaderAction && <div>{pageHeaderAction}</div>}
+          {pageHeaderAction && (
+            <div className='flex shrink-0 flex-wrap items-center gap-2 sm:justify-end'>
+              {pageHeaderAction}
+            </div>
+          )}
         </div>
         {content}
       </div>
@@ -71,13 +75,17 @@ export default function PageContainer({
     // Fills SidebarInset below Header via flex-1 min-h-0 (dashboard layout wrapper).
     // overflow-hidden: child panels own their scroll.
     <div className='flex min-h-0 flex-1 flex-col overflow-hidden p-4 md:px-6'>
-      <div className='mb-4 flex shrink-0 items-start justify-between'>
+      <div className='mb-4 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4'>
         <Heading
           title={pageTitle ?? ''}
           description={pageDescription ?? ''}
           infoContent={infoContent}
         />
-        {pageHeaderAction && <div>{pageHeaderAction}</div>}
+        {pageHeaderAction && (
+          <div className='flex shrink-0 flex-wrap items-center gap-2 sm:justify-end'>
+            {pageHeaderAction}
+          </div>
+        )}
       </div>
       {content}
     </div>

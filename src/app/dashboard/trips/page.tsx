@@ -33,7 +33,7 @@ export default async function Page(props: pageProps) {
       pageTitle='Fahrten'
       pageDescription='Alle Fahrten auf einen Blick verwalten.'
       pageHeaderAction={
-        <div className='flex items-center gap-2'>
+        <div className='flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto'>
           <PrintTripsButton />
           <BulkUploadDialog />
           <CreateTripDialogButton />

@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import PageContainer from '@/components/layout/page-container';
-import { Button } from '@/components/ui/button';
 import {
   Card,
   CardHeader,
@@ -69,11 +68,11 @@ export default function OverViewLayout({
   return (
     <PageContainer>
       <div className='flex flex-1 flex-col space-y-2'>
-        <div className='flex items-center justify-between space-y-2'>
-          <h2 className='text-2xl font-bold tracking-tight'>
+        <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+          <h2 className='text-xl font-bold tracking-tight sm:text-2xl'>
             Hi, Willkommen zurück 👋
           </h2>
-          <div className='hidden items-center space-x-2 md:flex'>
+          <div className='flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end'>
             <CreateTripDialogButton />
           </div>
         </div>
@@ -92,7 +91,7 @@ export default function OverViewLayout({
             description='Gesamtumsatz der heutigen Fahrten'
             isLoading={isLoading}
           />
-          <Card className='@container/card'>
+          <Card className='@container/card hidden md:block'>
             <CardHeader>
               <CardDescription>Platzhalter</CardDescription>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
@@ -112,7 +111,7 @@ export default function OverViewLayout({
               <div className='text-muted-foreground'>Platzhalter</div>
             </CardFooter>
           </Card>
-          <Card className='@container/card'>
+          <Card className='@container/card hidden md:block'>
             <CardHeader>
               <CardDescription>Wachstumsrate</CardDescription>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
@@ -134,12 +133,12 @@ export default function OverViewLayout({
           </Card>
         </div>
         <div className='flex flex-col gap-4 lg:grid lg:grid-cols-7 lg:items-start'>
-          <div className='flex flex-col gap-4 lg:col-span-4'>
+          <div className='order-2 flex flex-col gap-4 lg:order-1 lg:col-span-4'>
             <PendingToursWidget />
             {React.Children.toArray(bar_stats)}
             {React.Children.toArray(area_stats)}
           </div>
-          <div className='flex flex-col gap-4 lg:col-span-3'>
+          <div className='order-1 flex flex-col gap-4 lg:order-2 lg:col-span-3'>
             {React.Children.toArray(sales)}
             {React.Children.toArray(pie_stats)}
           </div>

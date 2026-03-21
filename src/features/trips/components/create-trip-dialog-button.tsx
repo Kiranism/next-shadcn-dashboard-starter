@@ -10,9 +10,15 @@ export function CreateTripDialogButton() {
 
   return (
     <>
-      <Button onClick={() => setOpen(true)} className='gap-2'>
-        <Plus className='h-4 w-4' />
-        Fahrt erstellen
+      <Button
+        type='button'
+        onClick={() => setOpen(true)}
+        className='gap-2'
+        aria-label='Fahrt erstellen'
+        title='Fahrt erstellen'
+      >
+        <Plus className='h-4 w-4 shrink-0' />
+        <span className='hidden sm:inline'>Fahrt erstellen</span>
       </Button>
       <CreateTripDialog open={open} onOpenChange={setOpen} />
     </>

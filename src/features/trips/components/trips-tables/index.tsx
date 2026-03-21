@@ -11,6 +11,8 @@ import { columns } from './columns';
 import { useTripsTableStore } from '@/features/trips/stores/use-trips-table-store';
 import { getUrgencyLevel } from '@/features/trips/lib/urgency-logic';
 import { URGENCY_STYLES } from '@/features/trips/constants/urgency-config';
+import { useIsNarrowScreen } from '@/hooks/use-is-narrow-screen';
+import { TripsMobileCardList } from './trips-mobile-card-list';
 
 export { columns };
 
@@ -25,6 +27,7 @@ export function TripsTable<TData, TValue>({
   totalItems,
   columns
 }: TripsTableParams<TData, TValue>) {
+  const isNarrow = useIsNarrowScreen(768);
   const [pageSize] = useQueryState('perPage', parseAsInteger.withDefault(50));
   const pageCount = Math.ceil(totalItems / pageSize);
 
@@ -91,38 +94,51 @@ export function TripsTable<TData, TValue>({
     return diffMinutes <= windowMinutes;
   };
 
+  const getRowClassName = (row: any) => {
+    const classes: string[] = [];
+
+    const scheduledAt = row.scheduled_at;
+    const status = row.status;
+    const urgency = getUrgencyLevel(scheduledAt, status);
+    const style = URGENCY_STYLES[urgency];
+
+    if (row.group_id && groupCounts[row.group_id] > 1) {
+      classes.push(
+        'border-l-4 border-l-green-500 bg-green-50/10 dark:bg-green-950/5'
+      );
+    } else if (style && style.rowClass) {
+      classes.push(style.rowClass);
+    }
+
+    if (scheduledAt) {
+      const date = new Date(scheduledAt);
+      if (isToday(date)) {
+        classes.push('bg-muted/10');
+      }
+    }
+
+    return cn(classes);
+  };
+
+  if (isNarrow) {
+    return (
+      <div className='flex min-h-0 flex-1 flex-col space-y-4'>
+        <DataTableToolbar table={table} showViewOptions={false} />
+        <TripsMobileCardList
+          table={table}
+          getRowClassName={getRowClassName}
+          scrollAnchorRowId={anchorRowId}
+        />
+      </div>
+    );
+  }
+
   return (
     <DataTable
       table={table}
       scrollAnchorRowId={anchorRowId}
-      getRowClassName={(row: any) => {
-        const classes: string[] = [];
-
-        const scheduledAt = row.scheduled_at;
-        const status = row.status;
-        const urgency = getUrgencyLevel(scheduledAt, status);
-        const style = URGENCY_STYLES[urgency];
-
-        // 1. Group Highlight (highest priority side border)
-        if (row.group_id && groupCounts[row.group_id] > 1) {
-          classes.push(
-            'border-l-4 border-l-green-500 bg-green-50/10 dark:bg-green-950/5'
-          );
-        } else if (style && style.rowClass) {
-          // 2. Urgency Highlight
-          classes.push(style.rowClass);
-        }
-
-        // 3. Base Today Highlight (lowest priority background)
-        if (scheduledAt) {
-          const date = new Date(scheduledAt);
-          if (isToday(date)) {
-            classes.push('bg-muted/10');
-          }
-        }
-
-        return cn(classes);
-      }}
+      tableClassName='min-w-[720px]'
+      getRowClassName={getRowClassName}
     >
       <DataTableToolbar table={table} showViewOptions={false} />
     </DataTable>

@@ -1221,9 +1221,14 @@ export function BulkUploadDialog({ onSuccess }: BulkUploadDialogProps) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant='outline' className='gap-2'>
-          <Upload className='h-4 w-4' />
-          Bulk Upload
+        <Button
+          variant='outline'
+          className='gap-2'
+          aria-label='Bulk Upload'
+          title='Bulk Upload'
+        >
+          <Upload className='h-4 w-4 shrink-0' />
+          <span className='hidden sm:inline'>Bulk Upload</span>
           {hasPending && (
             <span className='ml-1 h-2 w-2 rounded-full bg-amber-500' />
           )}
