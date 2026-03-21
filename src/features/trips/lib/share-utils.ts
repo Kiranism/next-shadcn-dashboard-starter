@@ -13,10 +13,15 @@ export function formatTripForSharing(trip: Trip): string {
 
   const passenger = trip.client_name || 'Anonym';
 
-  const from = trip.pickup_address || '-';
+  const formatAddress = (address: string | null | undefined) => {
+    if (!address) return '-';
+    return address.replace(/(?:,\s*)?\b\d{5}\s+Oldenburg[\s\S]*$/i, '').trim();
+  };
+
+  const from = formatAddress(trip.pickup_address);
   const fromStation = trip.pickup_station ? ` (${trip.pickup_station})` : '';
 
-  const to = trip.dropoff_address || '-';
+  const to = formatAddress(trip.dropoff_address);
   const toStation = trip.dropoff_station ? ` (${trip.dropoff_station})` : '';
 
   let text = `${time} - ${passenger} - von ${from}${fromStation} - nach ${to}${toStation}`;

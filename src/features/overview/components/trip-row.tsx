@@ -37,6 +37,25 @@ export function TripRow({
   const isGrouped = !!trip.group_id;
   const tripStatus = (trip.status as TripStatus) ?? 'pending';
 
+  const formatDropoffAddress = (address: string | null | undefined) => {
+    if (!address) return 'Keine Zieladresse';
+
+    const zipCityMatch = address.match(/\b(\d{5})\s+(.*)$/);
+    if (zipCityMatch) {
+      const isOldenburg = /oldenburg/i.test(zipCityMatch[2]);
+      if (isOldenburg) {
+        // Oldenburg: Do not show Zip and City
+        return (
+          address.replace(/(?:,\s*)?\b\d{5}\s+Oldenburg[\s\S]*$/i, '').trim() ||
+          'Keine Zieladresse'
+        );
+      }
+    }
+
+    // Not Oldenburg: Show full address (streetname+number and zip+city)
+    return address;
+  };
+
   return (
     <div
       onClick={onClick}
@@ -104,7 +123,7 @@ export function TripRow({
           )}
         </div>
         <p className='text-muted-foreground line-clamp-1 text-xs'>
-          {trip.dropoff_address || 'Keine Zieladresse'}
+          {formatDropoffAddress(trip.dropoff_address)}
         </p>
       </div>
       <div className='ml-4 flex flex-col items-end gap-1.5'>
