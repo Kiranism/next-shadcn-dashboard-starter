@@ -10,6 +10,43 @@ export interface NormalizedBillingTypeBehavior {
   lockReturnMode: boolean;
   prefillDropoffFromPickup: boolean;
   requirePassenger: boolean;
+  /** True if `billing-type-behavior-dialog` defines any default pickup fields (same test as create-trip). */
+  hasDefaultPickupAddress: boolean;
+  /** True if any default dropoff fields are defined. */
+  hasDefaultDropoffAddress: boolean;
+}
+
+function hasBehaviorDefaultPickup(b: Record<string, unknown>): boolean {
+  const defaultPickup = b.defaultPickup ?? b.default_pickup;
+  const pickupStreet = b.defaultPickupStreet ?? b.default_pickup_street ?? null;
+  const pickupStreetNumber =
+    b.defaultPickupStreetNumber ?? b.default_pickup_street_number ?? null;
+  const pickupZip = b.defaultPickupZip ?? b.default_pickup_zip ?? null;
+  const pickupCity = b.defaultPickupCity ?? b.default_pickup_city ?? null;
+  return !!(
+    defaultPickup ||
+    pickupStreet ||
+    pickupStreetNumber ||
+    pickupZip ||
+    pickupCity
+  );
+}
+
+function hasBehaviorDefaultDropoff(b: Record<string, unknown>): boolean {
+  const defaultDropoff = b.defaultDropoff ?? b.default_dropoff;
+  const dropoffStreet =
+    b.defaultDropoffStreet ?? b.default_dropoff_street ?? null;
+  const dropoffStreetNumber =
+    b.defaultDropoffStreetNumber ?? b.default_dropoff_street_number ?? null;
+  const dropoffZip = b.defaultDropoffZip ?? b.default_dropoff_zip ?? null;
+  const dropoffCity = b.defaultDropoffCity ?? b.default_dropoff_city ?? null;
+  return !!(
+    defaultDropoff ||
+    dropoffStreet ||
+    dropoffStreetNumber ||
+    dropoffZip ||
+    dropoffCity
+  );
 }
 
 /**
@@ -88,6 +125,8 @@ export function normalizeBillingTypeBehavior(
       b.prefill_dropoff_from_pickup ??
       false
     ),
-    requirePassenger
+    requirePassenger,
+    hasDefaultPickupAddress: hasBehaviorDefaultPickup(b),
+    hasDefaultDropoffAddress: hasBehaviorDefaultDropoff(b)
   };
 }

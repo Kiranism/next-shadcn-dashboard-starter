@@ -12,6 +12,7 @@ import {
   type AddressResult
 } from '../../trip-address-passenger';
 import { useTripFormSections } from '../trip-form-sections-context';
+import { BillingProfilePickupAddressHint } from '../billing-profile-address-hints';
 
 export function CreateTripPickupSection() {
   const {
@@ -63,6 +64,9 @@ export function CreateTripPickupSection() {
             <AlertCircle className='h-3.5 w-3.5 shrink-0' />
             Kein Fahrgastname erforderlich — Fahrt wird anonym erstellt.
           </div>
+          {billingBehavior.hasDefaultPickupAddress && (
+            <BillingProfilePickupAddressHint />
+          )}
           {pickupGroups.map((group) => (
             <div key={group.uid} className='flex flex-col gap-2'>
               <div className='grid grid-cols-1 gap-2 sm:grid-cols-4'>
@@ -160,6 +164,9 @@ export function CreateTripPickupSection() {
         </div>
       ) : (
         <div className='flex flex-col gap-3'>
+          {billingBehavior.hasDefaultPickupAddress && (
+            <BillingProfilePickupAddressHint />
+          )}
           {formErrors.passengers && (
             <div className='border-destructive/30 bg-destructive/10 text-destructive mb-1 flex items-center gap-2 rounded-md border px-3 py-2 text-xs'>
               <AlertCircle className='h-3.5 w-3.5 shrink-0' />

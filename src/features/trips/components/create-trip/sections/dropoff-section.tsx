@@ -12,6 +12,7 @@ import {
   type AddressResult
 } from '../../trip-address-passenger';
 import { useTripFormSections } from '../trip-form-sections-context';
+import { BillingProfileDropoffAddressHint } from '../billing-profile-address-hints';
 
 export function CreateTripDropoffSection() {
   const {
@@ -157,9 +158,12 @@ export function CreateTripDropoffSection() {
           ))}
         </div>
       ) : (
-        <>
+        <div className='flex flex-col gap-3'>
+          {billingBehavior.hasDefaultDropoffAddress && (
+            <BillingProfileDropoffAddressHint />
+          )}
           {unassignedPassengers.length > 0 && (
-            <div className='mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30'>
+            <div className='rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30'>
               <div className='mb-2 flex items-center gap-1.5'>
                 <AlertCircle className='h-3.5 w-3.5 text-amber-600 dark:text-amber-400' />
                 <span className='text-[10px] font-semibold text-amber-700 dark:text-amber-300'>
@@ -188,60 +192,56 @@ export function CreateTripDropoffSection() {
             </div>
           )}
 
-          <div className='flex flex-col gap-3'>
-            {dropoffGroups.map((group, idx) => (
-              <AddressGroupCard
-                key={group.uid}
-                group={group}
-                mode='dropoff'
-                passengers={getDropoffGroupPassengers(group.uid)}
-                unassignedPassengers={unassignedPassengers}
-                onAddressChange={(address) =>
-                  updateDropoffAddress(group.uid, address)
-                }
-                onRemoveGroup={
-                  dropoffGroups.length > 1
-                    ? () => removeDropoffGroup(group.uid)
-                    : undefined
-                }
-                onRemovePassenger={unassignFromDropoff}
-                onStationChange={updatePassengerStation}
-                onWheelchairChange={updatePassengerWheelchair}
-                onPassengerNameChange={updatePassengerName}
-                onAssignPassenger={(passengerUid) =>
-                  assignToDropoff(passengerUid, group.uid)
-                }
-                onManualFieldChange={(field, value) =>
-                  handleManualAddressFieldChange(
-                    group.uid,
-                    'dropoff',
-                    field,
-                    value
-                  )
-                }
-                isLocked={isDropoffLocked}
-                groupLabel={
-                  dropoffGroups.length > 1
-                    ? `Zieladresse ${idx + 1}`
-                    : undefined
-                }
-                hasError={!!formErrors.dropoffGroups?.[group.uid]}
-              />
-            ))}
+          {dropoffGroups.map((group, idx) => (
+            <AddressGroupCard
+              key={group.uid}
+              group={group}
+              mode='dropoff'
+              passengers={getDropoffGroupPassengers(group.uid)}
+              unassignedPassengers={unassignedPassengers}
+              onAddressChange={(address) =>
+                updateDropoffAddress(group.uid, address)
+              }
+              onRemoveGroup={
+                dropoffGroups.length > 1
+                  ? () => removeDropoffGroup(group.uid)
+                  : undefined
+              }
+              onRemovePassenger={unassignFromDropoff}
+              onStationChange={updatePassengerStation}
+              onWheelchairChange={updatePassengerWheelchair}
+              onPassengerNameChange={updatePassengerName}
+              onAssignPassenger={(passengerUid) =>
+                assignToDropoff(passengerUid, group.uid)
+              }
+              onManualFieldChange={(field, value) =>
+                handleManualAddressFieldChange(
+                  group.uid,
+                  'dropoff',
+                  field,
+                  value
+                )
+              }
+              isLocked={isDropoffLocked}
+              groupLabel={
+                dropoffGroups.length > 1 ? `Zieladresse ${idx + 1}` : undefined
+              }
+              hasError={!!formErrors.dropoffGroups?.[group.uid]}
+            />
+          ))}
 
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              className='h-8 gap-1.5 text-xs'
-              onClick={addDropoffGroup}
-              disabled={!isPayerSelected}
-            >
-              <Plus className='h-3.5 w-3.5' />
-              Weitere Zieladresse
-            </Button>
-          </div>
-        </>
+          <Button
+            type='button'
+            variant='outline'
+            size='sm'
+            className='h-8 gap-1.5 text-xs'
+            onClick={addDropoffGroup}
+            disabled={!isPayerSelected}
+          >
+            <Plus className='h-3.5 w-3.5' />
+            Weitere Zieladresse
+          </Button>
+        </div>
       )}
     </div>
   );
