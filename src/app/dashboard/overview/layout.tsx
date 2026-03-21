@@ -14,7 +14,10 @@ import { Badge } from '@/components/ui/badge';
 import { IconTrendingUp } from '@tabler/icons-react';
 import { PendingToursWidget } from '@/features/dashboard/components/pending-tours-widget';
 import { useTrips } from '@/features/trips/hooks/use-trips';
-import { StatsCard } from '@/features/dashboard/components/stats-card';
+import {
+  StatsCard,
+  StatsRowCard
+} from '@/features/dashboard/components/stats-card';
 import { subDays } from 'date-fns';
 import {
   getTripsForDay,
@@ -76,7 +79,27 @@ export default function OverViewLayout({
             <CreateTripDialogButton />
           </div>
         </div>
-        <div className='*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-2 gap-2 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs sm:gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-4'>
+        <div
+          className='flex flex-col gap-2 md:hidden'
+          role='region'
+          aria-label='Kennzahlen heute'
+        >
+          <StatsRowCard
+            title='Fahrten heute'
+            value={formatNumber(tripsToday.length)}
+            trend={tripsTrend}
+            description='Geplante Fahrten für heute'
+            isLoading={isLoading}
+          />
+          <StatsRowCard
+            title='Umsatz heute'
+            value={formatCurrency(revenueToday)}
+            trend={revenueTrend}
+            description='Gesamtumsatz der heutigen Fahrten'
+            isLoading={isLoading}
+          />
+        </div>
+        <div className='*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card hidden grid-cols-2 gap-3 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs md:grid md:grid-cols-2 md:gap-4 lg:grid-cols-4'>
           <StatsCard
             className='min-w-0'
             title='Fahrten heute'
