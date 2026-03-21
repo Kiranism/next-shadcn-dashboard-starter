@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
   Popover,
@@ -14,6 +14,20 @@ import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { CalendarIcon, ChevronDownIcon, ClockIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+/** Larger cells + touch-manipulation so the calendar works on phones (e.g. inside Drawer/Dialog). */
+const dateTimePickerCalendarClassNames = {
+  day: cn(
+    buttonVariants({ variant: 'ghost' }),
+    'min-h-11 min-w-[2.75rem] touch-manipulation p-0 text-base font-normal aria-selected:opacity-100 sm:min-h-9 sm:min-w-9 sm:text-sm md:size-8 md:min-h-8 md:min-w-8'
+  ),
+  head_cell:
+    'text-muted-foreground min-w-[2.75rem] rounded-md text-[0.85rem] font-normal sm:min-w-9 sm:text-[0.8rem] md:w-8',
+  nav_button: cn(
+    buttonVariants({ variant: 'outline' }),
+    'min-h-11 min-w-11 touch-manipulation bg-transparent p-0 opacity-70 hover:opacity-100 sm:min-h-9 sm:min-w-9 md:size-7'
+  )
+};
 
 interface DateTimePickerProps {
   value?: Date;
@@ -71,42 +85,55 @@ export function DateTimePicker({
 
   return (
     <div className='flex items-end gap-2'>
-      <div className='flex-1'>
+      <div className='min-w-0 flex-1'>
         {label && (
           <Label htmlFor={id} className='mb-2 block'>
             {label}
           </Label>
         )}
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover modal={false} open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <Button
+              type='button'
               id={id}
               variant='outline'
               disabled={disabled}
               className={cn(
-                'w-full justify-between text-left font-normal',
+                'h-10 min-h-10 w-full touch-manipulation justify-between text-left font-normal md:h-9 md:min-h-0',
                 !selectedDate && 'text-muted-foreground'
               )}
             >
-              <span className='flex items-center gap-2'>
+              <span className='flex min-w-0 items-center gap-2'>
                 <CalendarIcon className='h-4 w-4 shrink-0 opacity-60' />
-                {displayDate}
+                <span className='truncate'>{displayDate}</span>
               </span>
-              <ChevronDownIcon className='h-4 w-4 opacity-50' />
+              <ChevronDownIcon className='h-4 w-4 shrink-0 opacity-50' />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className='w-auto overflow-hidden p-0' align='start'>
+          <PopoverContent
+            align='start'
+            side='bottom'
+            sideOffset={4}
+            collisionPadding={16}
+            onOpenAutoFocus={(event) => event.preventDefault()}
+            className={cn(
+              'z-[100] w-[min(100vw-1rem,20rem)] max-w-[calc(100vw-1rem)] touch-manipulation overflow-y-auto overscroll-contain p-0 sm:w-auto sm:max-w-none',
+              'pb-[max(0.5rem,env(safe-area-inset-bottom,0px))]'
+            )}
+          >
             <Calendar
               mode='single'
               selected={selectedDate}
               onSelect={handleDaySelect}
               defaultMonth={selectedDate}
-              initialFocus
+              initialFocus={false}
+              className='w-full max-w-full'
+              classNames={dateTimePickerCalendarClassNames}
             />
           </PopoverContent>
         </Popover>
       </div>
-      <div className='w-32'>
+      <div className='w-32 shrink-0'>
         {label && <Label className='mb-2 block opacity-0'>Zeit</Label>}
         <div className='relative'>
           <ClockIcon className='text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2' />
@@ -116,7 +143,10 @@ export function DateTimePicker({
             value={timeValue}
             onChange={handleTimeChange}
             disabled={disabled}
-            className='appearance-none pl-9 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none'
+            className={cn(
+              'h-10 min-h-10 touch-manipulation pl-9 md:h-9 md:min-h-0',
+              'appearance-none md:[&::-webkit-calendar-picker-indicator]:hidden md:[&::-webkit-calendar-picker-indicator]:appearance-none'
+            )}
           />
         </div>
       </div>

@@ -1,5 +1,4 @@
 import PageContainer from '@/components/layout/page-container';
-import { Button } from '@/components/ui/button';
 import {
   Card,
   CardDescription,
@@ -15,20 +14,13 @@ import { PieGraph } from './pie-graph';
 import { RecentSales } from './recent-sales';
 import { IconTrendingUp, IconTrendingDown } from '@tabler/icons-react';
 import { Badge } from '@/components/ui/badge';
-import { CreateTripDialogButton } from '@/features/trips/components/create-trip-dialog-button';
-
 export default function OverViewPage() {
   return (
     <PageContainer>
       <div className='flex flex-1 flex-col space-y-2'>
-        <div className='flex items-center justify-between space-y-2'>
-          <h2 className='text-2xl font-bold tracking-tight'>
-            Hi, Welcome back 👋
-          </h2>
-          <div className='hidden items-center space-x-2 md:flex'>
-            <CreateTripDialogButton />
-          </div>
-        </div>
+        <h2 className='text-2xl font-bold tracking-tight'>
+          Hi, Welcome back 👋
+        </h2>
         <Tabs defaultValue='overview' className='space-y-4'>
           <TabsList>
             <TabsTrigger value='overview'>Overview</TabsTrigger>

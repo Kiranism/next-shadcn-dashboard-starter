@@ -38,8 +38,8 @@ export function Breadcrumbs({ items: manualItems }: BreadcrumbsProps) {
   if (items.length === 0) return null;
 
   return (
-    <Breadcrumb>
-      <BreadcrumbList>
+    <Breadcrumb className='max-w-full min-w-0'>
+      <BreadcrumbList className='flex-nowrap overflow-x-auto'>
         {items.map((item, index) => {
           const isLast = index === items.length - 1;
           return (

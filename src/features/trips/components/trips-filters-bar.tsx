@@ -3,14 +3,21 @@
 /**
  * URL-driven trip filters for `/dashboard/trips` (shared by list + kanban queries).
  * Below `md`: compact row (search, date, “more filters”); advanced selects + Spalten expand
- * inside a collapsible. From `md` up, all controls stay in one wrapping row. State syncs
+ * inside a collapsible. From `md` up, all controls stay in one non-wrapping row
+ * (horizontal scroll if needed). State syncs
  * via `router.replace` + `router.refresh()` so the server RSC reloads with matching query params.
  */
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { format, startOfWeek, subWeeks, addWeeks } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { CalendarIcon, ChevronDown, ListFilter, Settings2 } from 'lucide-react';
+import {
+  CalendarIcon,
+  ChevronDown,
+  ListFilter,
+  RotateCcw,
+  Settings2
+} from 'lucide-react';
 import { CheckIcon, CaretSortIcon } from '@radix-ui/react-icons';
 
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -445,14 +452,17 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
   );
 
   const filterCountResetFooter = (
-    <div className='border-border/60 flex w-full min-w-0 shrink-0 flex-row items-center justify-between gap-2 border-t pt-2 md:w-auto md:justify-end md:gap-3 md:border-0 md:pt-0'>
+    <div className='border-border/60 flex w-full min-w-0 shrink-0 flex-row items-center justify-between gap-2 border-t pt-2 md:w-auto md:justify-end md:border-0 md:pt-0'>
       <span className='text-muted-foreground text-[11px]'>
         {totalItems} Fahrten
       </span>
       <Button
+        type='button'
         variant='ghost'
-        size='sm'
-        className='text-muted-foreground hover:text-foreground h-10 min-h-10 shrink-0 px-3 text-xs md:h-8 md:min-h-0'
+        size='icon'
+        className='text-muted-foreground hover:text-foreground size-10 shrink-0 md:size-8'
+        aria-label='Filter zurücksetzen'
+        title='Filter zurücksetzen'
         onClick={() => {
           updateFilters({
             search: null,
@@ -464,7 +474,7 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
           });
         }}
       >
-        Filter zurücksetzen
+        <RotateCcw className='size-4' />
       </Button>
     </div>
   );
@@ -518,7 +528,7 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
         </div>
       ) : (
         <div className='bg-muted/40 mb-1 flex min-w-0 shrink-0 flex-col gap-2 rounded-lg px-3 py-2 text-xs md:flex-row md:items-start md:justify-between md:gap-3'>
-          <div className='flex w-full min-w-0 flex-col gap-2 md:flex-1 md:flex-row md:flex-wrap md:items-center md:gap-2'>
+          <div className='flex w-full min-w-0 flex-col gap-2 md:min-w-0 md:flex-1 md:flex-row md:flex-nowrap md:items-center md:gap-2 md:overflow-x-auto'>
             <Input
               placeholder='Fahrgast oder Adresse suchen'
               value={localSearch}

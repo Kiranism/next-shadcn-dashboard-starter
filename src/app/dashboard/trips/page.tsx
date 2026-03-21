@@ -4,7 +4,6 @@ import TripsListingPage from '@/features/trips/components/trips-listing';
 import { searchParamsCache } from '@/lib/searchparams';
 import { SearchParams } from 'nuqs/server';
 import { Suspense } from 'react';
-import { CreateTripDialogButton } from '@/features/trips/components/create-trip-dialog-button';
 import { BulkUploadDialog } from '@/features/trips/components/bulk-upload-dialog';
 import { PrintTripsButton } from '@/features/trips/components/print-trips-button';
 import { TripsRealtimeSync } from '@/features/trips/components/trips-realtime-sync';
@@ -32,7 +31,6 @@ export default async function Page(props: pageProps) {
         <div className='flex shrink-0 flex-nowrap items-center justify-end gap-2'>
           <PrintTripsButton />
           <BulkUploadDialog />
-          <CreateTripDialogButton />
         </div>
       }
     >

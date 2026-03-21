@@ -26,8 +26,6 @@ import {
   formatCurrency,
   formatNumber
 } from '@/features/dashboard/lib/stats-utils';
-import { CreateTripDialogButton } from '@/features/trips/components/create-trip-dialog-button';
-
 export default function OverViewLayout({
   sales,
   pie_stats,
@@ -71,14 +69,9 @@ export default function OverViewLayout({
   return (
     <PageContainer>
       <div className='flex flex-1 flex-col space-y-2'>
-        <div className='flex flex-row items-center justify-between gap-2'>
-          <h2 className='min-w-0 flex-1 text-xl font-bold tracking-tight sm:text-2xl'>
-            Hi, Willkommen zurück 👋
-          </h2>
-          <div className='shrink-0'>
-            <CreateTripDialogButton />
-          </div>
-        </div>
+        <h2 className='min-w-0 text-xl font-bold tracking-tight sm:text-2xl'>
+          Hi, Willkommen zurück 👋
+        </h2>
         <div
           className='flex flex-col gap-2 md:hidden'
           role='region'
