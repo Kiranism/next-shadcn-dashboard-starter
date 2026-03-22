@@ -1,11 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFormState, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { Form } from '@/components/ui/form';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
 import { useTripFormData } from '@/features/trips/hooks/use-trip-form-data';
 import { tripsService } from '@/features/trips/api/trips.service';
 import { getDrivingMetrics } from '@/lib/google-directions';
@@ -29,11 +30,36 @@ import {
   normalizeBillingTypeBehavior,
   parseBehaviorProfileRaw
 } from '@/features/trips/lib/normalize-billing-type-behavior-profile';
+import { useCreateTripDraft } from '@/features/trips/hooks/use-create-trip-draft';
+import {
+  buildTripFormValuesFromDraft,
+  type CreateTripDraftStored
+} from '@/features/trips/lib/create-trip-draft';
+
+const FIELD_TO_SECTION: Partial<Record<keyof TripFormValues, string>> = {
+  payer_id: 'payer',
+  billing_type_id: 'payer',
+  scheduled_at: 'schedule',
+  return_mode: 'schedule',
+  return_date: 'schedule',
+  return_time: 'schedule',
+  driver_id: 'extras',
+  is_wheelchair: 'extras',
+  notes: 'extras'
+};
+
+function scrollToCreateTripSection(section: string) {
+  document
+    .querySelector(`[data-create-trip-section="${section}"]`)
+    ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
 
 export interface CreateTripFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
   onClientSelect?: (client: ClientOption | null) => void;
+  /** Fired when RHF or address/passenger state becomes dirty — for close confirmation. */
+  onDirtyChange?: (dirty: boolean) => void;
   /**
    * Optional client id to preselect when opening the form
    * globally (e.g. via Cmd+K "Neue Fahrt für [Name]").
@@ -45,6 +71,7 @@ export function CreateTripForm({
   onSuccess,
   onCancel,
   onClientSelect,
+  onDirtyChange,
   preselectedClientId
 }: CreateTripFormProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -88,6 +115,75 @@ export function CreateTripForm({
       notes: ''
     }
   });
+
+  const { isDirty: rhfDirty } = useFormState({ control: form.control });
+
+  const handleApplyDraft = React.useCallback(
+    (draft: CreateTripDraftStored) => {
+      form.reset(buildTripFormValuesFromDraft(draft.values));
+      setPassengers((draft.passengers as PassengerEntry[]) ?? []);
+      const pu = draft.pickupGroups as AddressGroupEntry[];
+      const dr = draft.dropoffGroups as AddressGroupEntry[];
+      setPickupGroups(
+        Array.isArray(pu) && pu.length > 0
+          ? pu
+          : [{ uid: crypto.randomUUID(), address: '' }]
+      );
+      setDropoffGroups(
+        Array.isArray(dr) && dr.length > 0
+          ? dr
+          : [{ uid: crypto.randomUUID(), address: '' }]
+      );
+      setFormErrors({});
+      hasInitializedReturnDateRef.current = false;
+    },
+    [form]
+  );
+
+  const {
+    showRestoreBanner,
+    draftStorageHint,
+    applyPendingDraft,
+    discardPendingDraft,
+    clearDraftStorage
+  } = useCreateTripDraft({
+    form,
+    passengers,
+    pickupGroups,
+    dropoffGroups,
+    isSubmitting,
+    onApplyDraft: handleApplyDraft
+  });
+
+  const handleRhfInvalid = React.useCallback(
+    (errs: FieldErrors<TripFormValues>) => {
+      const order: (keyof TripFormValues)[] = [
+        'payer_id',
+        'billing_type_id',
+        'scheduled_at',
+        'return_mode',
+        'return_date',
+        'return_time',
+        'driver_id',
+        'is_wheelchair',
+        'notes'
+      ];
+      const first =
+        order.find((k) => errs[k]) ??
+        (Object.keys(errs)[0] as keyof TripFormValues | undefined);
+      if (!first) return;
+      const section = FIELD_TO_SECTION[first];
+      void form.setFocus(first);
+      requestAnimationFrame(() => {
+        if (section) scrollToCreateTripSection(section);
+        const el = document.querySelector(
+          `[name="${String(first)}"]`
+        ) as HTMLElement | null;
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    },
+    [form]
+  );
 
   const watchedPayerId = form.watch('payer_id');
   const watchedBillingTypeId = form.watch('billing_type_id');
@@ -586,6 +682,16 @@ export function CreateTripForm({
 
   // ── Derived values ─────────────────────────────────────────────────────────
 
+  const parallelDirty =
+    passengers.length > 0 ||
+    pickupGroups.some((g) => g.address.trim().length > 0) ||
+    dropoffGroups.some((g) => g.address.trim().length > 0);
+  const combinedDirty = rhfDirty || parallelDirty;
+
+  React.useEffect(() => {
+    onDirtyChange?.(combinedDirty);
+  }, [combinedDirty, onDirtyChange]);
+
   const unassignedPassengers = passengers.filter((p) => !p.dropoff_group_uid);
 
   const getPickupGroupPassengers = (groupUid: string) =>
@@ -675,6 +781,11 @@ export function CreateTripForm({
     if (hasCustomError) {
       setFormErrors(errors);
       toast.error('Bitte alle Pflichtfelder ausfüllen.');
+      if (errors.passengers || errors.pickupGroups) {
+        scrollToCreateTripSection('pickup');
+      } else if (errors.dropoffGroups || errors.unassigned) {
+        scrollToCreateTripSection('dropoff');
+      }
       return;
     }
 
@@ -987,6 +1098,7 @@ export function CreateTripForm({
           ? `${tripCount} Hin- und Rückfahrt${tripCount > 1 ? 'en' : ''} erfolgreich erstellt!`
           : `${tripCount} Fahrt${tripCount > 1 ? 'en' : ''} erfolgreich erstellt!`
       );
+      clearDraftStorage();
       onSuccess?.();
     } catch (error: any) {
       toast.error(`Fehler beim Erstellen: ${error.message}`);
@@ -1047,9 +1159,40 @@ export function CreateTripForm({
     <TripFormSectionsProvider value={sectionsContext}>
       <Form
         form={form as any}
-        onSubmit={form.handleSubmit(handleSubmit as any)}
+        onSubmit={form.handleSubmit(handleSubmit as any, handleRhfInvalid)}
         className='flex min-h-0 flex-1 flex-col gap-0'
       >
+        {showRestoreBanner ? (
+          <div className='bg-muted/40 border-border space-y-2 border-b px-4 py-3 sm:px-6'>
+            <p className='text-foreground text-sm font-medium'>
+              Gespeicherter Entwurf
+              {draftStorageHint ? ` (${draftStorageHint})` : ''}
+            </p>
+            <p className='text-muted-foreground text-xs'>
+              Nur auf diesem Gerät gespeichert. Daten können personenbezogen
+              sein.
+            </p>
+            <div className='flex flex-wrap gap-2'>
+              <Button
+                type='button'
+                size='sm'
+                className='min-h-10 touch-manipulation'
+                onClick={applyPendingDraft}
+              >
+                Fortsetzen
+              </Button>
+              <Button
+                type='button'
+                size='sm'
+                variant='outline'
+                className='min-h-10 touch-manipulation'
+                onClick={discardPendingDraft}
+              >
+                Verwerfen
+              </Button>
+            </div>
+          </div>
+        ) : null}
         <CreateTripPayerSection />
         <Separator />
         <CreateTripPickupSection />

@@ -39,6 +39,7 @@ export function CreateTripDropoffSection() {
 
   return (
     <div
+      data-create-trip-section='dropoff'
       className={cn(
         'px-6 py-4 transition-all duration-300',
         !isPayerSelected && 'pointer-events-none opacity-40'

@@ -27,7 +27,7 @@ export function CreateTripExtrasSection() {
   const requirePassenger = billingBehavior.requirePassenger;
 
   return (
-    <div className='px-6 py-4'>
+    <div data-create-trip-section='extras' className='px-6 py-4'>
       <div className='mb-3 flex items-center gap-2'>
         <Car className='text-muted-foreground h-4 w-4' />
         <span className='text-muted-foreground text-xs font-semibold tracking-wider uppercase'>
@@ -43,7 +43,7 @@ export function CreateTripExtrasSection() {
               <FormLabel className='text-xs'>Fahrer (optional)</FormLabel>
               <Select onValueChange={field.onChange} value={field.value || ''}>
                 <FormControl>
-                  <SelectTrigger className='h-9'>
+                  <SelectTrigger className='h-9 text-base md:text-sm'>
                     <SelectValue placeholder='Nicht zugewiesen' />
                   </SelectTrigger>
                 </FormControl>
@@ -121,7 +121,7 @@ export function CreateTripExtrasSection() {
                 <Textarea
                   {...field}
                   placeholder='Besondere Hinweise...'
-                  className='h-20 resize-none text-sm'
+                  className='h-20 resize-none text-base md:text-sm'
                 />
               </FormControl>
               <FormMessage className='text-xs' />

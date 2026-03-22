@@ -41,6 +41,7 @@ export function CreateTripPickupSection() {
 
   return (
     <div
+      data-create-trip-section='pickup'
       className={cn(
         'px-6 py-4 transition-all duration-300',
         !isPayerSelected && 'pointer-events-none opacity-40'

@@ -277,7 +277,7 @@ export function AddressAutocomplete({
             placeholder={placeholder}
             disabled={disabled}
             // Taller field on small screens — matches other trip form inputs (~44px touch target)
-            className={cn('h-10 text-sm sm:h-8 sm:text-[11px]', className)}
+            className={cn('h-10 text-base sm:h-8 sm:text-[11px]', className)}
             autoComplete='off'
           />
           {isLoading && (

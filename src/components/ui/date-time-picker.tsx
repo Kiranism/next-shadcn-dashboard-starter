@@ -14,6 +14,8 @@ import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { CalendarIcon, ChevronDownIcon, ClockIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useIsNarrowScreen } from '@/hooks/use-is-narrow-screen';
+import { MobileDateTimeSheet } from '@/features/trips/components/create-trip/mobile-datetime-sheet';
 
 /** Larger cells + touch-manipulation so the calendar works on phones (e.g. inside Drawer/Dialog). */
 const dateTimePickerCalendarClassNames = {
@@ -44,13 +46,22 @@ export function DateTimePicker({
   disabled,
   id = 'date-time-picker'
 }: DateTimePickerProps) {
-  const [open, setOpen] = React.useState(false);
+  const narrow = useIsNarrowScreen(768);
+  const [popoverOpen, setPopoverOpen] = React.useState(false);
+  const [dateSheetOpen, setDateSheetOpen] = React.useState(false);
+  const [timeSheetOpen, setTimeSheetOpen] = React.useState(false);
   const [timeValue, setTimeValue] = React.useState<string>(() => {
     if (value) {
       return format(value, 'HH:mm');
     }
     return '';
   });
+
+  React.useEffect(() => {
+    if (value) {
+      setTimeValue(format(value, 'HH:mm'));
+    }
+  }, [value]);
 
   const selectedDate = value;
 
@@ -65,7 +76,7 @@ export function DateTimePicker({
     const newDate = new Date(day);
     newDate.setHours(hours, minutes, 0, 0);
     onChange?.(newDate);
-    setOpen(false);
+    setPopoverOpen(false);
   };
 
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,6 +94,94 @@ export function DateTimePicker({
     ? format(selectedDate, 'dd. MMMM yyyy', { locale: de })
     : 'Datum wählen';
 
+  const displayTime = selectedDate
+    ? format(selectedDate, 'HH:mm')
+    : timeValue || '—';
+
+  const timeId = `${id}-time`;
+
+  if (narrow) {
+    return (
+      <div className='flex w-full flex-col gap-2'>
+        {label ? <span className='text-xs font-medium'>{label}</span> : null}
+        <div className='flex w-full flex-row items-end gap-2'>
+          <div className='min-w-0 flex-1'>
+            <Label
+              htmlFor={id}
+              className='text-muted-foreground mb-1 block text-xs'
+            >
+              Datum
+            </Label>
+            <Button
+              type='button'
+              id={id}
+              variant='outline'
+              disabled={disabled}
+              onClick={() => setDateSheetOpen(true)}
+              className={cn(
+                'h-10 min-h-10 w-full touch-manipulation justify-between text-left text-base font-normal md:h-9 md:min-h-0',
+                !selectedDate && 'text-muted-foreground'
+              )}
+            >
+              <span className='flex min-w-0 items-center gap-2'>
+                <CalendarIcon className='h-4 w-4 shrink-0 opacity-60' />
+                <span className='min-w-0 truncate'>{displayDate}</span>
+              </span>
+              <ChevronDownIcon className='h-4 w-4 shrink-0 opacity-50' />
+            </Button>
+            <MobileDateTimeSheet
+              open={dateSheetOpen}
+              onOpenChange={setDateSheetOpen}
+              value={selectedDate}
+              title='Datum wählen'
+              mode='date'
+              onConfirm={(d) => {
+                onChange?.(d);
+                setTimeValue(format(d, 'HH:mm'));
+              }}
+            />
+          </div>
+          <div className='w-[8.25rem] shrink-0 sm:w-[9.5rem]'>
+            <Label
+              htmlFor={timeId}
+              className='text-muted-foreground mb-1 block text-xs'
+            >
+              Uhrzeit
+            </Label>
+            <Button
+              type='button'
+              id={timeId}
+              variant='outline'
+              disabled={disabled || !selectedDate}
+              onClick={() => setTimeSheetOpen(true)}
+              className={cn(
+                'h-10 min-h-10 w-full touch-manipulation justify-between text-left font-mono text-base font-normal md:h-9 md:min-h-0',
+                !selectedDate && 'text-muted-foreground'
+              )}
+            >
+              <span className='flex min-w-0 items-center gap-2'>
+                <ClockIcon className='h-4 w-4 shrink-0 opacity-60' />
+                <span className='min-w-0 truncate'>{displayTime}</span>
+              </span>
+              <ChevronDownIcon className='h-4 w-4 shrink-0 opacity-50' />
+            </Button>
+            <MobileDateTimeSheet
+              open={timeSheetOpen}
+              onOpenChange={setTimeSheetOpen}
+              value={selectedDate}
+              title='Uhrzeit wählen'
+              mode='time'
+              onConfirm={(d) => {
+                onChange?.(d);
+                setTimeValue(format(d, 'HH:mm'));
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className='flex items-end gap-2'>
       <div className='min-w-0 flex-1'>
@@ -91,7 +190,7 @@ export function DateTimePicker({
             {label}
           </Label>
         )}
-        <Popover modal={false} open={open} onOpenChange={setOpen}>
+        <Popover modal={false} open={popoverOpen} onOpenChange={setPopoverOpen}>
           <PopoverTrigger asChild>
             <Button
               type='button'

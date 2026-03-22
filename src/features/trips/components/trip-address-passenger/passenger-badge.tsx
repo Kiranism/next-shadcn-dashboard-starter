@@ -54,13 +54,13 @@ export function PassengerBadge({
               value={passenger.first_name}
               onChange={(e) => onFirstNameChange?.(e.target.value)}
               placeholder='Vorname...'
-              className='bg-muted/40 min-h-10 border-dashed px-2 text-xs focus-visible:ring-1 sm:h-6 sm:min-h-0 sm:flex-1 sm:px-1.5 sm:text-[10px]'
+              className='bg-muted/40 min-h-10 border-dashed px-2 text-base focus-visible:ring-1 sm:h-6 sm:min-h-0 sm:flex-1 sm:px-1.5 sm:text-[10px]'
             />
             <Input
               value={passenger.last_name}
               onChange={(e) => onLastNameChange?.(e.target.value)}
               placeholder='Nachname...'
-              className='bg-muted/40 min-h-10 border-dashed px-2 text-xs focus-visible:ring-1 sm:h-6 sm:min-h-0 sm:flex-1 sm:px-1.5 sm:text-[10px]'
+              className='bg-muted/40 min-h-10 border-dashed px-2 text-base focus-visible:ring-1 sm:h-6 sm:min-h-0 sm:flex-1 sm:px-1.5 sm:text-[10px]'
             />
           </div>
         ) : (
@@ -103,7 +103,7 @@ export function PassengerBadge({
         value={stationValue}
         onChange={(e) => onStationChange(e.target.value)}
         placeholder='Station...'
-        className='bg-muted/40 min-h-10 border-dashed px-2 text-xs focus-visible:ring-1 sm:h-6 sm:min-h-0 sm:px-1.5 sm:text-[10px]'
+        className='bg-muted/40 min-h-10 border-dashed px-2 text-base focus-visible:ring-1 sm:h-6 sm:min-h-0 sm:px-1.5 sm:text-[10px]'
       />
     </div>
   );

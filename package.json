@@ -91,6 +91,7 @@
     "react-dropzone": "^14.3.5",
     "react-hook-form": "^7.54.1",
     "react-markdown": "^10.1.0",
+    "react-mobile-picker": "^1.2.0",
     "react-resizable-panels": "^2.1.7",
     "react-responsive": "^10.0.0",
     "recharts": "^2.15.1",

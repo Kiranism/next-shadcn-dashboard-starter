@@ -281,7 +281,7 @@ export function AddressGroupCard({
                     onManualFieldChange?.('street_number', e.target.value)
                   }
                   placeholder='Nr.'
-                  className='h-10 text-sm sm:h-8 sm:text-[11px]'
+                  className='h-10 text-base sm:h-8 sm:text-[11px]'
                   disabled={isLocked}
                 />
               </div>
@@ -294,7 +294,7 @@ export function AddressGroupCard({
                     onManualFieldChange?.('zip_code', e.target.value)
                   }
                   placeholder='PLZ'
-                  className='h-10 text-sm sm:h-8 sm:text-[11px]'
+                  className='h-10 text-base sm:h-8 sm:text-[11px]'
                   disabled={isLocked}
                 />
               </div>
@@ -305,7 +305,7 @@ export function AddressGroupCard({
                     onManualFieldChange?.('city', e.target.value)
                   }
                   placeholder='Stadt'
-                  className='h-10 text-sm sm:h-8 sm:text-[11px]'
+                  className='h-10 text-base sm:h-8 sm:text-[11px]'
                   disabled={isLocked}
                 />
               </div>

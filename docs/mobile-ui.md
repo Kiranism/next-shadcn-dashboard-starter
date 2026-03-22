@@ -13,7 +13,7 @@ This document describes how narrow viewports are handled in the Taxigo admin so 
 | Piece | Location | Behaviour |
 | --- | --- | --- |
 | Form (single source of truth) | [`src/features/trips/components/create-trip/create-trip-form.tsx`](../src/features/trips/components/create-trip/create-trip-form.tsx) | Zod schema in [`schema.ts`](../src/features/trips/components/create-trip/schema.ts); sections under [`create-trip/sections/`](../src/features/trips/components/create-trip/sections/). |
-| Shell | [`create-trip-dialog.tsx`](../src/features/trips/components/create-trip/create-trip-dialog.tsx) | **&lt; 768px**: `Drawer` (full-height sheet, form stacked above optional client panel). **≥ 768px**: `Dialog` with **responsive row layout** (`flex-col` / `md:flex-row`) so the form and `ClientTripsPanel` never stay side-by-side on a narrow dialog width. |
+| Shell | [`create-trip-dialog.tsx`](../src/features/trips/components/create-trip/create-trip-dialog.tsx) | **&lt; 768px**: `Drawer` (full-height sheet, form only — **Geplante Fahrten** / `ClientTripsPanel` hidden). `repositionInputs={false}` (Vaul) for better keyboard behaviour. **≥ 768px**: `Dialog` with **responsive row layout** (`flex-col` / `md:flex-row`) so the form and `ClientTripsPanel` never stay side-by-side on a narrow dialog width. |
 | Full-page entry | [`/dashboard/trips/new`](../src/app/dashboard/trips/new/page.tsx) | Same `CreateTripForm`; useful for bookmarks and “full screen” entry on phones. |
 
 Do **not** fork validation or submit logic for mobile; only change presentation (shell, layout, density).

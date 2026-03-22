@@ -11,7 +11,7 @@ export function CreateTripFormFooter() {
   const { passengers, isSubmitting, onCancel } = useTripFormSections();
 
   return (
-    <div className='bg-muted/30 flex flex-col gap-3 border-t px-6 py-4 sm:flex-row sm:items-center sm:justify-between'>
+    <div className='bg-background sticky bottom-0 z-10 flex flex-col gap-3 border-t px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:pb-4'>
       {passengers.length > 0 && (
         <div className='text-muted-foreground flex items-center gap-1.5 text-xs'>
           <Users className='h-3.5 w-3.5' />

@@ -29,7 +29,7 @@ export function CreateTripPayerSection() {
   } = useTripFormSections();
 
   return (
-    <div className='px-6 pt-4 pb-4'>
+    <div data-create-trip-section='payer' className='px-6 pt-4 pb-4'>
       <div className='mb-3 flex items-center gap-2'>
         <CreditCard className='text-muted-foreground h-4 w-4' />
         <span className='text-muted-foreground text-xs font-semibold tracking-wider uppercase'>
@@ -54,7 +54,7 @@ export function CreateTripPayerSection() {
                 disabled={isLoading}
               >
                 <FormControl>
-                  <SelectTrigger className='h-9 w-full min-w-0'>
+                  <SelectTrigger className='h-9 w-full min-w-0 text-base md:text-sm'>
                     <SelectValue placeholder='Wählen...' />
                   </SelectTrigger>
                 </FormControl>
@@ -79,7 +79,7 @@ export function CreateTripPayerSection() {
                 <FormLabel className='text-xs'>Abrechnungsart</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
-                    <SelectTrigger className='h-9 w-full min-w-0'>
+                    <SelectTrigger className='h-9 w-full min-w-0 text-base md:text-sm'>
                       <SelectValue placeholder='Wählen...' />
                     </SelectTrigger>
                   </FormControl>
