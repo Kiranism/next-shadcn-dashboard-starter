@@ -99,9 +99,20 @@ export function PrintTripsButton() {
       );
 
       /** Nur Fahrer mit mindestens einer Fahrt; ohne „Nicht zugewiesen“. */
-      const overviewColumns = columnsAll.filter(
-        (c) => c.id !== 'unassigned' && (itemsByColumn[c.id]?.length ?? 0) > 0
-      );
+      const overviewColumns = columnsAll
+        .filter(
+          (c) => c.id !== 'unassigned' && (itemsByColumn[c.id]?.length ?? 0) > 0
+        )
+        .sort((a, b) => {
+          const countA = itemsByColumn[a.id]?.length ?? 0;
+          const countB = itemsByColumn[b.id]?.length ?? 0;
+          // Sort descending by trip count
+          if (countB !== countA) {
+            return countB - countA;
+          }
+          // Fallback to alphabetical if counts are equal
+          return a.title.localeCompare(b.title, 'de');
+        });
 
       const overviewItems: Record<string, TripData[]> = {};
       for (const col of overviewColumns) {
