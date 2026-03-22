@@ -54,8 +54,8 @@ export default function PageContainer({
   const content = isloading ? <PageSkeleton /> : children;
 
   return scrollable ? (
-    <ScrollArea className='min-h-0 flex-1'>
-      <div className='flex flex-1 flex-col p-4 md:px-6'>
+    <ScrollArea className='min-h-0 min-w-0 flex-1'>
+      <div className='flex min-w-0 flex-1 flex-col p-4 md:px-6'>
         <div className='mb-4 flex min-w-0 shrink-0 flex-row items-start justify-between gap-2 sm:gap-4'>
           <div className='min-w-0 flex-1'>
             <Heading

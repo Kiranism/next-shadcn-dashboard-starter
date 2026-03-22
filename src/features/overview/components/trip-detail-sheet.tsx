@@ -374,7 +374,7 @@ export function TripDetailSheet({
                     type='button'
                     variant='default'
                     size='sm'
-                    className='h-8 shrink-0 gap-1.5 px-3'
+                    className='h-8 shrink-0 gap-1.5 px-2 sm:px-3'
                     title='Details in die Zwischenablage kopieren'
                     aria-label='Teilen: Details kopieren'
                     onClick={async () => {
@@ -387,7 +387,9 @@ export function TripDetailSheet({
                     }}
                   >
                     <Share2 className='h-4 w-4 shrink-0' />
-                    <span className='text-xs font-medium'>Teilen</span>
+                    <span className='hidden text-xs font-medium sm:inline'>
+                      Teilen
+                    </span>
                   </Button>
                 </div>
               </SheetHeader>

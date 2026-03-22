@@ -122,7 +122,15 @@ export function UrgencyIndicator({
     return () => clearInterval(interval);
   }, [scheduledAt, status]);
 
-  if (level === 'none') return null;
+  // Dot variant: always reserve the same footprint as the visible dot so time columns
+  // stay aligned when urgency is "none" (avoids layout shift vs coloured rows / neighbours).
+  const effectiveVariant = variant ?? 'dot';
+  if (level === 'none') {
+    if (effectiveVariant === 'dot') {
+      return <span className='inline-block size-2 shrink-0' aria-hidden />;
+    }
+    return null;
+  }
 
   const isOverdue = level === 'overdue';
   const isDue = level === 'due';

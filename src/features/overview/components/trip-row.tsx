@@ -60,7 +60,7 @@ export function TripRow({
     <div
       onClick={onClick}
       className={cn(
-        'group mb-0 flex cursor-pointer items-start rounded-lg p-1.5 transition-all select-none',
+        'group mb-0 flex cursor-pointer items-start rounded-lg p-2 transition-all select-none',
         rowColor === 'transparent' ? 'hover:bg-muted/50' : 'hover:brightness-95'
       )}
       style={{
@@ -68,12 +68,17 @@ export function TripRow({
           rowColor !== 'transparent'
             ? `color-mix(in srgb, ${rowColor}, var(--background) 85%)`
             : undefined,
-        borderLeft:
-          rowColor !== 'transparent' ? `4px solid ${rowColor}` : undefined
+        // Same 4px slot for every row so times align; transparent when no billing color.
+        borderLeft: `4px solid ${rowColor === 'transparent' ? 'transparent' : rowColor}`
       }}
     >
-      <div className='flex min-w-[56px] flex-col'>
-        <div className='flex items-center'>
+      <div className='flex min-w-[3.5rem] flex-col'>
+        <div
+          className={cn(
+            'flex items-center gap-1.5',
+            compact ? 'min-h-8' : 'min-h-10'
+          )}
+        >
           <div className='flex w-4 shrink-0 items-center justify-center'>
             <UrgencyIndicator
               scheduledAt={trip.scheduled_at}
@@ -83,7 +88,7 @@ export function TripRow({
           </div>
           <div
             className={cn(
-              'text-primary leading-tight font-bold',
+              'text-primary leading-none font-bold tabular-nums',
               compact ? 'text-sm' : 'text-lg'
             )}
           >

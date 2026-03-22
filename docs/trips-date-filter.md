@@ -46,9 +46,16 @@ For an active `scheduled_at` URL param, the query combines:
 
 Imports or drafts sometimes have **neither** time nor requested day. Those rows cannot be tied to a specific picker day.
 
-We only add them when the **selected filter day** matches the **server’s current calendar day** (same `YYYY-MM-DD` logic as the rest of this filter). So they appear on “today” on the server, not on arbitrary historical dates.
+We only add them when the **selected filter day** matches **today’s calendar date in the business timezone** (see below), not the raw UTC date of the host.
 
-> **Note:** If your deploy region uses UTC while dispatchers work in another TZ, “today” on the server may differ from local “today”. A future improvement is to pass a timezone or use `requested_date` consistently for all unscheduled trips.
+### Business timezone (production-safe)
+
+Day boundaries and “today” use a single **IANA timezone** (default `Europe/Berlin`), not the Node process timezone (often UTC on Vercel). Implementation:
+
+- **`src/features/trips/lib/trip-business-date.ts`** — `getZonedDayBoundsIso(ymd)`, `instantToYmdInBusinessTz(ms)`, `todayYmdInBusinessTz()` using `@date-fns/tz`.
+- **`scheduled_at` URL values** are canonical **`YYYY-MM-DD`** strings for single-day and week-jump filters. Legacy **numeric ms** values are still accepted: they are mapped to a calendar day **in the business TZ**, then the same bounds apply.
+
+Optional env: `NEXT_PUBLIC_TRIPS_BUSINESS_TIMEZONE` (defaults to `Europe/Berlin`). Set on Vercel if operations use another region.
 
 ---
 
@@ -56,8 +63,9 @@ We only add them when the **selected filter day** matches the **server’s curre
 
 | Shape | Meaning |
 |--------|--------|
-| Single timestamp | One calendar day (midnight-based bounds from that instant). |
-| `from,to` | Range; filters use ISO bounds for `scheduled_at` and `YYYY-MM-DD` bounds for `requested_date`. |
+| `YYYY-MM-DD` | Single calendar day in the **business timezone**; server builds UTC `[start, end)` for `scheduled_at` and uses the same string for `requested_date`. |
+| Numeric ms (legacy) | Mapped to `YYYY-MM-DD` in the business TZ, then same as above. |
+| `from,to` (two numbers) | Range; each ms mapped to YMD in the business TZ; scheduled window is `[start of first day, start of day after last day)` in UTC. |
 
 ---
 

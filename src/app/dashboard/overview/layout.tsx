@@ -68,7 +68,7 @@ export default function OverViewLayout({
 
   return (
     <PageContainer>
-      <div className='flex flex-1 flex-col space-y-2'>
+      <div className='flex min-w-0 flex-1 flex-col space-y-2'>
         <h2 className='min-w-0 text-xl font-bold tracking-tight sm:text-2xl'>
           Hi, Willkommen zurück 👋
         </h2>

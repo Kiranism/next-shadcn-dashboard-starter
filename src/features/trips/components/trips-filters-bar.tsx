@@ -52,6 +52,12 @@ import { useTripFormData } from '@/features/trips/hooks/use-trip-form-data';
 import { useTripsTableStore } from '@/features/trips/stores/use-trips-table-store';
 import { useIsNarrowScreen } from '@/hooks/use-is-narrow-screen';
 import { cn } from '@/lib/utils';
+import {
+  instantToYmdInBusinessTz,
+  isYmdString,
+  todayYmdInBusinessTz,
+  ymdToPickerDate
+} from '@/features/trips/lib/trip-business-date';
 
 interface TripsFiltersBarProps {
   totalItems: number;
@@ -109,13 +115,11 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
     setLocalSearch(search);
   }, [search]);
 
-  // On first mount only: if no date is in the URL, default to today.
+  // On first mount only: if no date is in the URL, default to today (business TZ).
   useEffect(() => {
     if (searchParams.get('scheduled_at')) return;
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
     const params = new URLSearchParams(searchParams.toString());
-    params.set('scheduled_at', String(startOfToday.getTime()));
+    params.set('scheduled_at', todayYmdInBusinessTz());
     params.set('page', '1');
     const next = `${pathname}?${params.toString()}`;
     startTransition(() => {
@@ -159,8 +163,11 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
 
   const selectedDate = useMemo((): Date | undefined => {
     if (!scheduledAt) return undefined;
-    // Only use the first part (ignore any legacy range suffix)
-    const ts = Number(scheduledAt.split(',')[0]);
+    const first = scheduledAt.split(',')[0]?.trim() ?? '';
+    if (isYmdString(first)) {
+      return ymdToPickerDate(first);
+    }
+    const ts = Number(first);
     if (Number.isNaN(ts)) return undefined;
     const d = new Date(ts);
     return Number.isNaN(d.getTime()) ? undefined : d;
@@ -191,7 +198,9 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
   const jumpToWeekStart = (anchor: Date) => {
     const weekStart = startOfWeek(anchor, { weekStartsOn: 1 });
     weekStart.setHours(0, 0, 0, 0);
-    updateFilters({ scheduled_at: String(weekStart.getTime()) });
+    updateFilters({
+      scheduled_at: instantToYmdInBusinessTz(weekStart.getTime())
+    });
     setDatePopoverOpen(false);
   };
 
@@ -338,7 +347,9 @@ export function TripsFiltersBar({ totalItems }: TripsFiltersBarProps) {
               }
               const d = new Date(day);
               d.setHours(0, 0, 0, 0);
-              updateFilters({ scheduled_at: String(d.getTime()) });
+              updateFilters({
+                scheduled_at: instantToYmdInBusinessTz(d.getTime())
+              });
               setDatePopoverOpen(false);
             }}
             numberOfMonths={1}

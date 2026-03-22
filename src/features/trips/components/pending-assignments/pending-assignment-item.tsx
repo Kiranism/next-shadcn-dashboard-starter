@@ -79,8 +79,8 @@ export function PendingAssignmentItem({
   const isAssignDisabled = isAssigning || (!selectedDriverId && !timeChanged);
 
   return (
-    <div className='hover:bg-muted/30 flex flex-col gap-2 border-b px-4 py-3 text-sm transition-colors last:border-0'>
-      <div className='flex flex-wrap items-start justify-between gap-x-2 gap-y-1.5'>
+    <div className='hover:bg-muted/30 flex min-w-0 flex-col gap-2 border-b px-4 py-3 text-sm transition-colors last:border-0'>
+      <div className='flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-x-2 sm:gap-y-1.5'>
         {/* Passenger List */}
         <span className='text-foreground line-clamp-1 font-medium'>
           {[trip.greeting_style, trip.client_name].filter(Boolean).join(' ') ||
@@ -88,7 +88,7 @@ export function PendingAssignmentItem({
         </span>
 
         {/* Date / Time */}
-        <div className='flex flex-col items-end gap-1'>
+        <div className='flex flex-col items-stretch gap-1 sm:items-end'>
           <div className='flex items-center gap-1.5'>
             <Input
               type='time'
@@ -120,9 +120,9 @@ export function PendingAssignmentItem({
       </div>
 
       {/* Driver select + assign */}
-      <div className='mt-1 flex items-center gap-2'>
+      <div className='mt-1 flex flex-col gap-2 sm:flex-row sm:items-center'>
         <Select value={selectedDriverId ?? ''} onValueChange={onDriverSelect}>
-          <SelectTrigger className='h-8 flex-1 text-xs'>
+          <SelectTrigger className='h-9 w-full min-w-0 flex-1 text-xs sm:h-8'>
             <SelectValue placeholder='Fahrer wählen…' />
           </SelectTrigger>
           <SelectContent>
@@ -143,7 +143,7 @@ export function PendingAssignmentItem({
           type='button'
           size='sm'
           className={cn(
-            'h-8 shrink-0 gap-1.5 text-xs',
+            'h-9 w-full shrink-0 gap-1.5 text-xs sm:h-8 sm:w-auto',
             !selectedDriverId && 'cursor-not-allowed'
           )}
           disabled={isAssignDisabled}

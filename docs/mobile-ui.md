@@ -40,6 +40,15 @@ Shared UI lives under [`src/features/trips/components/trip-address-passenger/`](
 
 [`src/app/dashboard/overview/layout.tsx`](../src/app/dashboard/overview/layout.tsx): on viewports **below `md`**, the two main KPIs use stacked **[`StatsRowCard`](../src/features/dashboard/components/stats-card.tsx)** rows (compact row layout); **charts are hidden below `lg`**. From **`lg`**, the usual grid returns (including placeholder stat cards). Below **`lg`**, the main content order is **stats → Offene Touren → Nächste Fahrten**; the **`lg`** grid restores the wider two-column layout with charts.
 
+## Dispatch Inbox (header bell)
+
+| Piece | Location | Behaviour |
+| --- | --- | --- |
+| Shell | [`pending-assignments-popover.tsx`](../src/features/trips/components/pending-assignments/pending-assignments-popover.tsx) | **&lt; 768px**: bottom **`Drawer`** (`max-h-[90dvh]`, native scroll + safe-area padding, `repositionInputs={false}`). **≥ 768px**: **`Popover`** (`align="end"`, `420px` max width, `min()` / `collisionPadding` for small tablets). |
+| Row layout | [`pending-assignment-item.tsx`](../src/features/trips/components/pending-assignments/pending-assignment-item.tsx) | Name/time and driver/actions **stack** on the phone; **`sm`** and up use horizontal rows. |
+
+Feature notes and data behaviour: [`dispatch-inbox.md`](dispatch-inbox.md).
+
 ## Adding a new mobile-specific behaviour
 
 1. Prefer **CSS** (`flex-col md:flex-row`, `hidden md:block`, `min-h-0`, `overflow-y-auto`, `100dvh` where needed).

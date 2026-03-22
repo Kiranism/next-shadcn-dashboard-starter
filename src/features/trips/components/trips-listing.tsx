@@ -13,18 +13,12 @@ import { TripsViewToggle } from './trips-view-toggle';
 import { TripsKanbanBoard } from './trips-kanban-board';
 import { TripsFiltersBar } from './trips-filters-bar';
 import type { SearchParams } from 'nuqs/server';
-
-/**
- * Formats a calendar day as `YYYY-MM-DD` for `requested_date` filters.
- * Uses `getFullYear` / `getMonth` / `getDate` on the same `Date` instances
- * as the `scheduled_at` day bounds so both branches stay consistent.
- */
-function ymdFromCalendarDate(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
+import {
+  getZonedDayBoundsIso,
+  instantToYmdInBusinessTz,
+  isYmdString,
+  todayYmdInBusinessTz
+} from '@/features/trips/lib/trip-business-date';
 
 type TripsListingPageProps = {
   /** Same Promise as `page.tsx` — must be parsed in this async tree so filters match the URL. */
@@ -106,67 +100,65 @@ export default async function TripsListingPage({
     if (parts.length === 2) {
       const [from, to] = parts;
       if (from && to) {
-        // Calendar range from filters bar: "fromTs,toTs" (inclusive-ish via timestamps).
         const fromMs = Number(from);
         const toMs = Number(to);
-        const startISO = new Date(fromMs).toISOString();
-        const endISO = new Date(toMs).toISOString();
-        const fromYmd = ymdFromCalendarDate(new Date(fromMs));
-        const toYmd = ymdFromCalendarDate(new Date(toMs));
-        query = query.or(
-          [
-            // Scheduled: timestamp window
-            `and(scheduled_at.gte.${startISO},scheduled_at.lte.${endISO})`,
-            // Unscheduled: same intent-day window on `requested_date` (date column)
-            `and(scheduled_at.is.null,requested_date.gte.${fromYmd},requested_date.lte.${toYmd})`
-          ].join(',')
-        );
+        if (!Number.isNaN(fromMs) && !Number.isNaN(toMs)) {
+          const fromYmd = instantToYmdInBusinessTz(fromMs);
+          const toYmd = instantToYmdInBusinessTz(toMs);
+          const { startISO } = getZonedDayBoundsIso(fromYmd);
+          const { endExclusiveISO } = getZonedDayBoundsIso(toYmd);
+          query = query.or(
+            [
+              `and(scheduled_at.gte.${startISO},scheduled_at.lt.${endExclusiveISO})`,
+              `and(scheduled_at.is.null,requested_date.gte.${fromYmd},requested_date.lte.${toYmd})`
+            ].join(',')
+          );
+        }
       } else if (from) {
-        // Open-ended: from this instant onward (scheduled) or requested_date >= that day.
         const fromMs = Number(from);
-        const fromYmd = ymdFromCalendarDate(new Date(fromMs));
-        query = query.or(
-          [
-            `scheduled_at.gte.${new Date(fromMs).toISOString()}`,
-            `and(scheduled_at.is.null,requested_date.gte.${fromYmd})`
-          ].join(',')
-        );
+        if (!Number.isNaN(fromMs)) {
+          const fromYmd = instantToYmdInBusinessTz(fromMs);
+          const { startISO } = getZonedDayBoundsIso(fromYmd);
+          query = query.or(
+            [
+              `scheduled_at.gte.${startISO}`,
+              `and(scheduled_at.is.null,requested_date.gte.${fromYmd})`
+            ].join(',')
+          );
+        }
       } else if (to) {
         const toMs = Number(to);
-        const toYmd = ymdFromCalendarDate(new Date(toMs));
-        query = query.or(
-          [
-            `scheduled_at.lte.${new Date(toMs).toISOString()}`,
-            `and(scheduled_at.is.null,requested_date.lte.${toYmd})`
-          ].join(',')
-        );
+        if (!Number.isNaN(toMs)) {
+          const toYmd = instantToYmdInBusinessTz(toMs);
+          const { endExclusiveISO } = getZonedDayBoundsIso(toYmd);
+          query = query.or(
+            [
+              `scheduled_at.lt.${endExclusiveISO}`,
+              `and(scheduled_at.is.null,requested_date.lte.${toYmd})`
+            ].join(',')
+          );
+        }
       }
     } else if (parts.length === 1 && parts[0]) {
-      // Single-day picker: one timestamp (typically local midnight for that day).
-      const timestamp = Number(parts[0]);
-      if (!Number.isNaN(timestamp)) {
-        const day = new Date(timestamp);
-        const startOfDay = new Date(
-          day.getFullYear(),
-          day.getMonth(),
-          day.getDate()
-        );
-        const endOfDay = new Date(
-          day.getFullYear(),
-          day.getMonth(),
-          day.getDate() + 1
-        );
-        const startISO = startOfDay.toISOString();
-        const endISO = endOfDay.toISOString();
-        const dayStr = ymdFromCalendarDate(day);
+      const raw = parts[0].trim();
+      let dayStr: string | null = null;
+
+      if (isYmdString(raw)) {
+        dayStr = raw;
+      } else {
+        const timestamp = Number(raw);
+        if (!Number.isNaN(timestamp)) {
+          dayStr = instantToYmdInBusinessTz(timestamp);
+        }
+      }
+
+      if (dayStr) {
+        const { startISO, endExclusiveISO } = getZonedDayBoundsIso(dayStr);
         const branches = [
-          `and(scheduled_at.gte.${startISO},scheduled_at.lt.${endISO})`,
+          `and(scheduled_at.gte.${startISO},scheduled_at.lt.${endExclusiveISO})`,
           `and(scheduled_at.is.null,requested_date.eq.${dayStr})`
         ];
-        // Imports / drafts with neither time nor requested day: show only when the
-        // selected filter day is the server's current calendar day (small backlog).
-        // See docs/trips-date-filter.md — "Backlog: both scheduled_at and requested_date are NULL".
-        if (ymdFromCalendarDate(new Date()) === dayStr) {
+        if (todayYmdInBusinessTz() === dayStr) {
           branches.push(`and(scheduled_at.is.null,requested_date.is.null)`);
         }
         query = query.or(branches.join(','));

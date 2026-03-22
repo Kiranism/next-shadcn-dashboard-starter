@@ -119,9 +119,9 @@ export function UpcomingTrips() {
   };
 
   return (
-    <Card className='@container/card flex h-[560px] max-h-[70vh] flex-col'>
-      <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-4'>
-        <div className='space-y-1'>
+    <Card className='@container/card flex h-[560px] max-h-[70vh] min-w-0 flex-col'>
+      <CardHeader className='flex flex-col gap-3 space-y-0 pb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-0'>
+        <div className='min-w-0 space-y-1'>
           <CardTitle>Nächste Fahrten</CardTitle>
           <CardDescription>
             {allTrips.length} bevorstehende Fahrten{' '}
@@ -134,7 +134,7 @@ export function UpcomingTrips() {
           </CardDescription>
         </div>
         <Select value={filter} onValueChange={handleFilterChange}>
-          <SelectTrigger className='w-[120px]'>
+          <SelectTrigger className='w-full shrink-0 sm:w-[120px]'>
             <SelectValue placeholder='Zeitraum' />
           </SelectTrigger>
           <SelectContent>

@@ -224,9 +224,9 @@ function UnplannedTripRow({
     : null;
 
   return (
-    <div className='flex items-center justify-between gap-4 rounded-lg border p-3'>
+    <div className='flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4'>
       {/* Trip Information (Left) */}
-      <div className='min-w-0 flex-1'>
+      <div className='w-full min-w-0 flex-1 sm:w-auto'>
         <div className='flex flex-wrap items-center gap-1.5'>
           <span className='text-sm font-semibold'>
             {trip.client_name || 'Unbekannt'}
@@ -265,21 +265,21 @@ function UnplannedTripRow({
           </p>
         )}
       </div>
-      {/* Scheduling controls (Right) */}
-      <div className='flex flex-shrink-0 items-center gap-2'>
-        <div className='flex items-center gap-2'>
+      {/* Scheduling controls — wrap / stack on narrow viewports so the row cannot force page-wide overflow */}
+      <div className='flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:max-w-[min(100%,28rem)] sm:justify-end'>
+        <div className='flex min-w-0 flex-wrap items-center gap-2'>
           <Input
             type='date'
             value={dateStr}
             onChange={(e) => setDateStr(e.target.value)}
-            className='h-8 w-28 text-xs'
+            className='h-8 min-w-0 flex-1 text-xs sm:w-28 sm:flex-none'
             disabled={isSubmitting}
           />
           <Input
             type='time'
             value={time}
             onChange={(e) => setTime(e.target.value)}
-            className='h-8 w-24 text-xs'
+            className='h-8 min-w-0 flex-1 text-xs sm:w-24 sm:flex-none'
             disabled={isSubmitting}
           />
         </div>
@@ -288,7 +288,7 @@ function UnplannedTripRow({
           value={driverId || 'unassigned'}
           onValueChange={(v) => setDriverId(v === 'unassigned' ? null : v)}
         >
-          <SelectTrigger className='h-8 w-[120px] text-xs'>
+          <SelectTrigger className='h-8 min-w-[7.5rem] flex-1 text-xs sm:w-[120px] sm:flex-none'>
             <SelectValue placeholder='Fahrer' />
           </SelectTrigger>
           <SelectContent>
