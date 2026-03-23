@@ -9,8 +9,12 @@
     "baseColor": "zinc",
     "cssVariables": true
   },
+  "iconLibrary": "radix",
   "aliases": {
     "components": "@/components",
     "utils": "@/lib/utils"
+  },
+  "registries": {
+    "@diceui": "https://diceui.com/r/{name}.json"
   }
 }

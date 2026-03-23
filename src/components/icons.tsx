@@ -37,7 +37,8 @@ import {
   IconStar,
   IconBox,
   IconPalette,
-  IconBell
+  IconBell,
+  IconMessage
 } from '@tabler/icons-react';
 
 export type Icon = React.ComponentType<IconProps>;
@@ -81,5 +82,6 @@ export const Icons = {
   exclusive: IconStar,
   account: IconUserCircle,
   profile: IconUser,
-  notification: IconBell
+  notification: IconBell,
+  chat: IconMessage
 };

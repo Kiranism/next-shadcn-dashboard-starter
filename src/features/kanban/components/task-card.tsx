@@ -1,88 +1,49 @@
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Task } from '../utils/store';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { cva } from 'class-variance-authority';
-import { IconGripVertical } from '@tabler/icons-react';
+'use client';
+
 import { Badge } from '@/components/ui/badge';
+import { KanbanItem } from '@/components/ui/kanban';
+import type { Task } from '../utils/store';
 
-// export interface Task {
-//   id: UniqueIdentifier;
-//   columnId: ColumnId;
-//   content: string;
-// }
-
-interface TaskCardProps {
-  task: Task;
-  isOverlay?: boolean;
-}
-
-export type TaskType = 'Task';
-
-export interface TaskDragData {
-  type: TaskType;
+interface TaskCardProps
+  extends Omit<React.ComponentProps<typeof KanbanItem>, 'value'> {
   task: Task;
 }
 
-export function TaskCard({ task, isOverlay }: TaskCardProps) {
-  const {
-    setNodeRef,
-    attributes,
-    listeners,
-    transform,
-    transition,
-    isDragging
-  } = useSortable({
-    id: task.id,
-    data: {
-      type: 'Task',
-      task
-    } satisfies TaskDragData,
-    attributes: {
-      roleDescription: 'Task'
-    }
-  });
-
-  const style = {
-    transition,
-    transform: CSS.Translate.toString(transform)
-  };
-
-  const variants = cva('mb-2', {
-    variants: {
-      dragging: {
-        over: 'ring-2 opacity-30',
-        overlay: 'ring-2 ring-primary'
-      }
-    }
-  });
-
+export function TaskCard({ task, ...props }: TaskCardProps) {
   return (
-    <Card
-      ref={setNodeRef}
-      style={style}
-      className={variants({
-        dragging: isOverlay ? 'overlay' : isDragging ? 'over' : undefined
-      })}
-    >
-      <CardHeader className='space-between border-secondary relative flex flex-row border-b-2 px-3 py-3'>
-        <Button
-          variant={'ghost'}
-          {...attributes}
-          {...listeners}
-          className='text-secondary-foreground/50 -ml-2 h-auto cursor-grab p-1'
-        >
-          <span className='sr-only'>Move task</span>
-          <IconGripVertical />
-        </Button>
-        <Badge variant={'outline'} className='ml-auto font-semibold'>
-          Task
-        </Badge>
-      </CardHeader>
-      <CardContent className='px-3 pt-3 pb-6 text-left whitespace-pre-wrap'>
-        {task.title}
-      </CardContent>
-    </Card>
+    <KanbanItem key={task.id} value={task.id} asChild {...props}>
+      <div className='bg-card rounded-md border p-3 shadow-xs'>
+        <div className='flex flex-col gap-2'>
+          <div className='flex items-center justify-between gap-2'>
+            <span className='line-clamp-1 text-sm font-medium'>
+              {task.title}
+            </span>
+            <Badge
+              variant={
+                task.priority === 'high'
+                  ? 'destructive'
+                  : task.priority === 'medium'
+                    ? 'default'
+                    : 'secondary'
+              }
+              className='pointer-events-none h-5 rounded-sm px-1.5 text-[11px] capitalize'
+            >
+              {task.priority}
+            </Badge>
+          </div>
+          <div className='text-muted-foreground flex items-center justify-between text-xs'>
+            {task.assignee && (
+              <div className='flex items-center gap-1'>
+                <div className='bg-primary/20 size-2 rounded-full' />
+                <span className='line-clamp-1'>{task.assignee}</span>
+              </div>
+            )}
+            {task.dueDate && (
+              <time className='text-[10px] tabular-nums'>{task.dueDate}</time>
+            )}
+          </div>
+        </div>
+      </div>
+    </KanbanItem>
   );
 }

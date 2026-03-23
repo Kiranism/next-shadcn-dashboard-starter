@@ -1,95 +1,109 @@
 import { create } from 'zustand';
 import { v4 as uuid } from 'uuid';
-import { persist } from 'zustand/middleware';
-import { UniqueIdentifier } from '@dnd-kit/core';
-import { Column } from '../components/board-column';
+// import { persist } from 'zustand/middleware';
 
-export type Status = 'TODO' | 'IN_PROGRESS' | 'DONE';
-
-const defaultCols = [
-  {
-    id: 'TODO' as const,
-    title: 'Todo'
-  }
-] satisfies Column[];
-
-export type ColumnId = (typeof defaultCols)[number]['id'];
+export type Priority = 'low' | 'medium' | 'high';
 
 export type Task = {
   id: string;
   title: string;
+  priority: Priority;
   description?: string;
-  status: Status;
+  assignee?: string;
+  dueDate?: string;
 };
 
-export type State = {
-  tasks: Task[];
-  columns: Column[];
-  draggedTask: string | null;
-};
-
-const initialTasks: Task[] = [
-  {
-    id: 'task1',
-    status: 'TODO',
-    title: 'Project initiation and planning'
-  },
-  {
-    id: 'task2',
-    status: 'TODO',
-    title: 'Gather requirements from stakeholders'
-  }
-];
-
-export type Actions = {
+type KanbanState = {
+  columns: Record<string, Task[]>;
+  setColumns: (columns: Record<string, Task[]>) => void;
   addTask: (title: string, description?: string) => void;
-  addCol: (title: string) => void;
-  dragTask: (id: string | null) => void;
-  removeTask: (title: string) => void;
-  removeCol: (id: UniqueIdentifier) => void;
-  setTasks: (updatedTask: Task[]) => void;
-  setCols: (cols: Column[]) => void;
-  updateCol: (id: UniqueIdentifier, newName: string) => void;
 };
 
-export const useTaskStore = create<State & Actions>()(
-  persist(
-    (set) => ({
-      tasks: initialTasks,
-      columns: defaultCols,
-      draggedTask: null,
-      addTask: (title: string, description?: string) =>
-        set((state) => ({
-          tasks: [
-            ...state.tasks,
-            { id: uuid(), title, description, status: 'TODO' }
+const initialColumns: Record<string, Task[]> = {
+  backlog: [
+    {
+      id: '1',
+      title: 'Add authentication',
+      priority: 'high',
+      assignee: 'John Doe',
+      dueDate: '2024-04-01'
+    },
+    {
+      id: '2',
+      title: 'Create API endpoints',
+      priority: 'medium',
+      assignee: 'Jane Smith',
+      dueDate: '2024-04-05'
+    },
+    {
+      id: '3',
+      title: 'Write documentation',
+      priority: 'low',
+      assignee: 'Bob Johnson',
+      dueDate: '2024-04-10'
+    }
+  ],
+  inProgress: [
+    {
+      id: '4',
+      title: 'Design system updates',
+      priority: 'high',
+      assignee: 'Alice Brown',
+      dueDate: '2024-03-28'
+    },
+    {
+      id: '5',
+      title: 'Implement dark mode',
+      priority: 'medium',
+      assignee: 'Charlie Wilson',
+      dueDate: '2024-04-02'
+    }
+  ],
+  done: [
+    {
+      id: '7',
+      title: 'Setup project',
+      priority: 'high',
+      assignee: 'Eve Davis',
+      dueDate: '2024-03-25'
+    },
+    {
+      id: '8',
+      title: 'Initial commit',
+      priority: 'low',
+      assignee: 'Frank White',
+      dueDate: '2024-03-24'
+    }
+  ]
+};
+
+export const useTaskStore = create<KanbanState>()(
+  // To enable persistence across refreshes, uncomment the persist wrapper below:
+  // persist(
+  (set) => ({
+    columns: initialColumns,
+
+    setColumns: (columns) => set({ columns }),
+
+    addTask: (title, description) =>
+      set((state) => ({
+        columns: {
+          ...state.columns,
+          backlog: [
+            {
+              id: uuid(),
+              title,
+              description,
+              priority: 'medium' as Priority,
+              assignee: undefined,
+              dueDate: undefined
+            },
+            ...(state.columns.backlog ?? [])
           ]
-        })),
-      updateCol: (id: UniqueIdentifier, newName: string) =>
-        set((state) => ({
-          columns: state.columns.map((col) =>
-            col.id === id ? { ...col, title: newName } : col
-          )
-        })),
-      addCol: (title: string) =>
-        set((state) => ({
-          columns: [
-            ...state.columns,
-            { title, id: state.columns.length ? title.toUpperCase() : 'TODO' }
-          ]
-        })),
-      dragTask: (id: string | null) => set({ draggedTask: id }),
-      removeTask: (id: string) =>
-        set((state) => ({
-          tasks: state.tasks.filter((task) => task.id !== id)
-        })),
-      removeCol: (id: UniqueIdentifier) =>
-        set((state) => ({
-          columns: state.columns.filter((col) => col.id !== id)
-        })),
-      setTasks: (newTasks: Task[]) => set({ tasks: newTasks }),
-      setCols: (newCols: Column[]) => set({ columns: newCols })
-    }),
-    { name: 'task-store', skipHydration: true }
-  )
+        }
+      }))
+  })
+  //   ,
+  //   { name: 'kanban-store' }
+  // )
 );

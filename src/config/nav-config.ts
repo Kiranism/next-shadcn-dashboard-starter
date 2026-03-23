@@ -76,6 +76,14 @@ export const navItems: NavItem[] = [
     items: []
   },
   {
+    title: 'Chat',
+    url: '/dashboard/chat',
+    icon: 'chat',
+    shortcut: ['c', 'c'],
+    isActive: false,
+    items: []
+  },
+  {
     title: 'Pro',
     url: '#', // Placeholder as there is no direct link for the parent
     icon: 'pro',

@@ -12,7 +12,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-
 import { useTaskStore } from '../utils/store';
 
 export default function NewTaskDialog() {
@@ -33,18 +32,18 @@ export default function NewTaskDialog() {
     <Dialog>
       <DialogTrigger asChild>
         <Button variant='secondary' size='sm'>
-          ＋ Add New Todo
+          + Add New Task
         </Button>
       </DialogTrigger>
       <DialogContent className='sm:max-w-[425px]'>
         <DialogHeader>
-          <DialogTitle>Add New Todo</DialogTitle>
+          <DialogTitle>Add New Task</DialogTitle>
           <DialogDescription>
             What do you want to get done today?
           </DialogDescription>
         </DialogHeader>
         <form
-          id='todo-form'
+          id='task-form'
           className='grid gap-4 py-4'
           onSubmit={handleSubmit}
         >
@@ -52,7 +51,7 @@ export default function NewTaskDialog() {
             <Input
               id='title'
               name='title'
-              placeholder='Todo title...'
+              placeholder='Task title...'
               className='col-span-4'
             />
           </div>
@@ -67,8 +66,8 @@ export default function NewTaskDialog() {
         </form>
         <DialogFooter>
           <DialogTrigger asChild>
-            <Button type='submit' size='sm' form='todo-form'>
-              Add Todo
+            <Button type='submit' size='sm' form='task-form'>
+              Add Task
             </Button>
           </DialogTrigger>
         </DialogFooter>

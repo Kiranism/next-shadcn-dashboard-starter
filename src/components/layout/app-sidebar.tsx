@@ -62,7 +62,7 @@ export default function AppSidebar() {
 
   return (
     <Sidebar collapsible='icon'>
-      <SidebarHeader>
+      <SidebarHeader className='group-data-[collapsible=icon]:pt-4'>
         <OrgSwitcher />
       </SidebarHeader>
       <SidebarContent className='overflow-x-hidden'>

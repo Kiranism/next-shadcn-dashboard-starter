@@ -6,7 +6,7 @@ export default function KanbanViewPage() {
   return (
     <PageContainer
       pageTitle='Kanban'
-      pageDescription='Manage tasks by dnd'
+      pageDescription='Manage tasks with drag and drop'
       pageHeaderAction={<NewTaskDialog />}
     >
       <KanbanBoard />
