@@ -23,56 +23,77 @@ const initialColumns: Record<string, Task[]> = {
   backlog: [
     {
       id: '1',
-      title: 'Add authentication',
+      title: 'Migrate to Stripe billing API',
       priority: 'high',
-      assignee: 'John Doe',
-      dueDate: '2024-04-01'
+      assignee: 'Sarah Chen',
+      dueDate: '2026-04-08'
     },
     {
       id: '2',
-      title: 'Create API endpoints',
+      title: 'Add CSV export to reports',
       priority: 'medium',
-      assignee: 'Jane Smith',
-      dueDate: '2024-04-05'
+      assignee: 'Marcus Rivera',
+      dueDate: '2026-04-12'
     },
     {
       id: '3',
-      title: 'Write documentation',
+      title: 'Update onboarding flow copy',
       priority: 'low',
-      assignee: 'Bob Johnson',
-      dueDate: '2024-04-10'
+      assignee: 'Priya Sharma',
+      dueDate: '2026-04-15'
+    },
+    {
+      id: '9',
+      title: 'Audit RBAC permissions',
+      priority: 'medium',
+      assignee: 'Jordan Kim',
+      dueDate: '2026-04-10'
     }
   ],
   inProgress: [
     {
       id: '4',
-      title: 'Design system updates',
+      title: 'Refactor notification service',
       priority: 'high',
-      assignee: 'Alice Brown',
-      dueDate: '2024-03-28'
+      assignee: 'Alex Turner',
+      dueDate: '2026-04-03'
     },
     {
       id: '5',
-      title: 'Implement dark mode',
+      title: 'Build team invitation flow',
       priority: 'medium',
-      assignee: 'Charlie Wilson',
-      dueDate: '2024-04-02'
+      assignee: 'Emily Nakamura',
+      dueDate: '2026-04-06'
+    },
+    {
+      id: '10',
+      title: 'Fix timezone handling in scheduler',
+      priority: 'high',
+      assignee: 'Sarah Chen',
+      dueDate: '2026-04-04'
     }
   ],
   done: [
     {
-      id: '7',
-      title: 'Setup project',
+      id: '6',
+      title: 'SSO integration with Okta',
       priority: 'high',
-      assignee: 'Eve Davis',
-      dueDate: '2024-03-25'
+      assignee: 'Jordan Kim',
+      dueDate: '2026-03-22'
+    },
+    {
+      id: '7',
+      title: 'Dashboard analytics charts',
+      priority: 'medium',
+      assignee: 'Marcus Rivera',
+      dueDate: '2026-03-20'
     },
     {
       id: '8',
-      title: 'Initial commit',
+      title: 'Webhook retry mechanism',
       priority: 'low',
-      assignee: 'Frank White',
-      dueDate: '2024-03-24'
+      assignee: 'Alex Turner',
+      dueDate: '2026-03-18'
     }
   ]
 };

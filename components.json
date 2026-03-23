@@ -14,7 +14,4 @@
     "components": "@/components",
     "utils": "@/lib/utils"
   },
-  "registries": {
-    "@diceui": "https://diceui.com/r/{name}.json"
-  }
 }

@@ -98,7 +98,9 @@ You can use this Next.js + Shadcn UI dashboard starter to build:
 | [Product List (Table)](https://shadcn-dashboard.kiranism.dev/dashboard/product)                                                                                        | Tanstack tables with server side searching, filter, pagination by Nuqs which is a Type-safe search params state manager in nextjs                                                                                                                                       |
 | [Create Product Form](https://shadcn-dashboard.kiranism.dev/dashboard/product/new)                                                                                     | A Product Form with shadcn form (react-hook-form + zod).                                                                                                                                                                                                                |
 | [Profile](https://shadcn-dashboard.kiranism.dev/dashboard/profile)                                                                                                     | Clerk's full-featured account management UI that allows users to manage their profile and security settings                                                                                                                                                             |
-| [Kanban Board](https://shadcn-dashboard.kiranism.dev/dashboard/kanban)                                                                                                 | A Drag n Drop task management board with dnd-kit and zustand to persist state locally.                                                                                                                                                                                  |
+| [Kanban Board](https://shadcn-dashboard.kiranism.dev/dashboard/kanban)                                                                                                 | A Drag n Drop task management board with dnd-kit and zustand. Features column sorting, task cards with priority badges, assignees, and due dates.                                                                                                                       |
+| [Chat](https://shadcn-dashboard.kiranism.dev/dashboard/chat)                                                                                                           | Real-time messaging UI with conversation list, message bubbles, quick replies, file attachments, and auto-reply demo. Multi-panel layout with mobile responsive design.                                                                                                 |
+| [Notifications](https://shadcn-dashboard.kiranism.dev/dashboard/notifications)                                                                                         | Notification center with bell icon badge in header, popover preview, and dedicated full page with tabs (All/Unread/Read). Mark as read, mark all as read actions.                                                                                                       |
 | [Workspaces](https://shadcn-dashboard.kiranism.dev/dashboard/workspaces)                                                                                               | Organization management page using Clerk's `<OrganizationList />` component. Users can view, create, and switch between organizations/workspaces.                                                                                                                       |
 | [Team Management](https://shadcn-dashboard.kiranism.dev/dashboard/workspaces/team)                                                                                     | Full-featured team management interface using Clerk's `<OrganizationProfile />` component. Manage members, roles, permissions, security settings, and organization details. Requires an active organization.                                                            |
 | [Billing & Plans](https://shadcn-dashboard.kiranism.dev/dashboard/billing)                                                                                             | Billing management page using Clerk's `<PricingTable />` component. Organizations can view available plans, subscribe, and manage subscriptions. Requires an active organization.                                                                                       |
@@ -110,39 +112,42 @@ You can use this Next.js + Shadcn UI dashboard starter to build:
 
 ```plaintext
 src/
-├── app/ # Next.js App Router directory
-│ ├── (auth)/ # Auth route group
-│ │ ├── (signin)/
-│ ├── (dashboard)/ # Dashboard route group
-│ │ ├── layout.tsx
-│ │ ├── loading.tsx
-│ │ └── page.tsx
-│ └── api/ # API routes
+├── app/                           # Next.js App Router directory
+│   ├── auth/                      # Auth pages (sign-in, sign-up)
+│   ├── dashboard/                 # Dashboard route group
+│   │   ├── overview/              # Analytics with parallel routes
+│   │   ├── product/               # Product CRUD pages
+│   │   ├── kanban/                # Task board page
+│   │   ├── chat/                  # Messaging page
+│   │   ├── notifications/         # Notifications page
+│   │   ├── workspaces/            # Org management & teams
+│   │   ├── billing/               # Billing & plans
+│   │   ├── profile/               # User profile
+│   │   └── exclusive/             # Plan-gated page
+│   └── api/                       # API routes
 │
-├── components/ # Shared components
-│ ├── ui/ # UI components (buttons, inputs, etc.)
-│ └── layout/ # Layout components (header, sidebar, etc.)
+├── components/                    # Shared components
+│   ├── ui/                        # UI primitives (buttons, inputs, kanban, etc.)
+│   ├── layout/                    # Layout components (header, sidebar, etc.)
+│   ├── themes/                    # Theme system (selector, mode toggle, config)
+│   └── kbar/                      # Command+K interface
 │
-├── features/ # Feature-based modules
-│ ├── feature/
-│ │ ├── components/ # Feature-specific components
-│ │ ├── actions/ # Server actions
-│ │ ├── schemas/ # Form validation schemas
-│ │ └── utils/ # Feature-specific utilities
-│ │
-├── lib/ # Core utilities and configurations
-│ ├── auth/ # Auth configuration
-│ ├── db/ # Database utilities
-│ └── utils/ # Shared utilities
+├── features/                      # Feature-based modules
+│   ├── overview/                  # Dashboard analytics (charts, cards)
+│   ├── products/                  # Product listing, form, tables
+│   ├── kanban/                    # Drag-drop task board
+│   ├── chat/                      # Messaging (conversations, bubbles, composer)
+│   ├── notifications/             # Notification center & store
+│   ├── auth/                      # Auth components
+│   └── profile/                   # Profile form schemas
 │
-├── hooks/ # Custom hooks
-│ └── use-debounce.ts
-│
-├── stores/ # Zustand stores
-│ └── dashboard-store.ts
-│
-└── types/ # TypeScript types
-└── index.ts
+├── lib/                           # Core utilities and configurations
+├── hooks/                         # Custom hooks
+├── config/                        # Navigation, infobar, data table config
+├── constants/                     # Mock data
+├── styles/                        # Global CSS & theme files
+│   └── themes/                    # Individual theme CSS files
+└── types/                         # TypeScript types
 ```
 
 ## Getting Started
