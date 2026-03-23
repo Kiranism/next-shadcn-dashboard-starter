@@ -21,7 +21,7 @@ function PageSkeleton() {
 export default function PageContainer({
   children,
   scrollable = false,
-  isloading = false,
+  isLoading = false,
   access = true,
   accessFallback,
   pageTitle,
@@ -31,7 +31,7 @@ export default function PageContainer({
 }: {
   children: React.ReactNode;
   scrollable?: boolean;
-  isloading?: boolean;
+  isLoading?: boolean;
   access?: boolean;
   accessFallback?: React.ReactNode;
   pageTitle?: string;
@@ -51,7 +51,7 @@ export default function PageContainer({
     );
   }
 
-  const content = isloading ? <PageSkeleton /> : children;
+  const content = isLoading ? <PageSkeleton /> : children;
 
   const hasHeader = pageTitle || pageHeaderAction;
 

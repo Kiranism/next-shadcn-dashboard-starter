@@ -6,7 +6,10 @@ import {
   Geist_Mono,
   Instrument_Sans,
   Inter,
+  JetBrains_Mono,
+  Merriweather,
   Mulish,
+  Playfair_Display,
   Noto_Sans_Mono,
   Outfit,
   Space_Mono
@@ -71,6 +74,22 @@ const fontSpaceMono = Space_Mono({
   variable: '--font-space-mono'
 });
 
+const fontJetBrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-jetbrains-mono'
+});
+
+const fontMerriweather = Merriweather({
+  subsets: ['latin'],
+  weight: ['300', '400', '700'],
+  variable: '--font-merriweather'
+});
+
+const fontPlayfairDisplay = Playfair_Display({
+  subsets: ['latin'],
+  variable: '--font-playfair-display'
+});
+
 export const fontVariables = cn(
   fontSans.variable,
   fontMono.variable,
@@ -82,5 +101,8 @@ export const fontVariables = cn(
   fontDMSans.variable,
   fontFiraCode.variable,
   fontOutfit.variable,
-  fontSpaceMono.variable
+  fontSpaceMono.variable,
+  fontJetBrainsMono.variable,
+  fontMerriweather.variable,
+  fontPlayfairDisplay.variable
 );

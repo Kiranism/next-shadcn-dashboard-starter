@@ -85,7 +85,7 @@ export const navItems: NavItem[] = [
         title: 'Exclusive',
         url: '/dashboard/exclusive',
         icon: 'exclusive',
-        shortcut: ['m', 'm']
+        shortcut: ['e', 'e']
       }
     ]
   },
@@ -100,6 +100,12 @@ export const navItems: NavItem[] = [
         url: '/dashboard/profile',
         icon: 'profile',
         shortcut: ['m', 'm']
+      },
+      {
+        title: 'Notifications',
+        url: '/dashboard/notifications',
+        icon: 'notification',
+        shortcut: ['n', 'n']
       },
       {
         title: 'Billing',

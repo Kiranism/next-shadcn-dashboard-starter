@@ -28,5 +28,21 @@ export const THEMES = [
   {
     name: 'Notebook',
     value: 'notebook'
+  },
+  {
+    name: 'Light Green',
+    value: 'light-green'
+  },
+  {
+    name: 'Zen',
+    value: 'zen'
+  },
+  {
+    name: 'Astro Vista',
+    value: 'astro-vista'
+  },
+  {
+    name: 'WhatsApp',
+    value: 'whatsapp'
   }
 ];

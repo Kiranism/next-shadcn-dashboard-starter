@@ -16,7 +16,7 @@ export default function ExclusivePage() {
   const { organization, isLoaded } = useOrganization();
 
   return (
-    <PageContainer isloading={!isLoaded}>
+    <PageContainer isLoading={!isLoaded}>
       <Protect
         plan='pro'
         fallback={

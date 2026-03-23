@@ -19,7 +19,7 @@ export default function BillingPage() {
 
   return (
     <PageContainer
-      isloading={!isLoaded}
+      isLoading={!isLoaded}
       access={!!organization}
       accessFallback={
         <div className='flex min-h-[400px] items-center justify-center'>
