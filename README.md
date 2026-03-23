@@ -1,4 +1,4 @@
-<h1 align="center">Admin Dashboard Starter Template with Next.js &amp; Shadcn UI</h1>
+<h1 align="center">Admin Dashboard Template with Next.js &amp; Shadcn UI</h1>
 
 <div align="center">Open source admin dashboard starter built with Next.js 16, shadcn/ui, Tailwind CSS, TypeScript</div>
 
