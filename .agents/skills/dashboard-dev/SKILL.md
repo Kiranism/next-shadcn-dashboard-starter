@@ -20,6 +20,9 @@ This skill encodes the exact patterns and conventions used in this Next.js 16 + 
 | Search params | `src/lib/searchparams.ts` |
 | Theme CSS | `src/styles/themes/<name>.css` |
 | Theme registry | `src/components/themes/theme.config.ts` |
+| Chat feature | `src/features/chat/components/` |
+| Notifications | `src/features/notifications/components/` |
+| Kanban UI component | `src/components/ui/kanban.tsx` |
 | Custom hook | `src/hooks/` |
 | Form components | `src/components/forms/` |
 | Table components | `src/components/ui/table/` |
@@ -104,15 +107,19 @@ Features live in `src/features/<name>/components/`. Each feature is a self-conta
 
 ```
 src/features/<name>/
-└── components/
-    ├── <name>-listing.tsx        # Server component: fetches data, passes to table
-    ├── <name>-form.tsx           # Client component: create/edit form
-    ├── <name>-view-page.tsx      # View/detail page component
-    └── <name>-tables/            # Table-specific components
-        ├── index.tsx             # Table wrapper with useDataTable
-        ├── columns.tsx           # Column definitions
-        ├── cell-action.tsx       # Row action dropdown
-        └── options.ts            # Filter options constants
+├── components/
+│   ├── <name>-listing.tsx        # Server component: fetches data, passes to table
+│   ├── <name>-form.tsx           # Client component: create/edit form
+│   ├── <name>-view-page.tsx      # View/detail page component
+│   └── <name>-tables/            # Table-specific components
+│       ├── index.tsx             # Table wrapper with useDataTable
+│       ├── columns.tsx           # Column definitions
+│       ├── cell-action.tsx       # Row action dropdown
+│       └── options.ts            # Filter options constants
+└── utils/
+    ├── store.ts                  # Zustand store (kanban, chat, notifications)
+    ├── types.ts                  # Feature-specific types
+    └── data.ts                   # Mock/seed data
 ```
 
 ### Listing Component (Server Component)
@@ -571,3 +578,5 @@ These conventions come from the existing codebase — follow them for consistenc
 - **Formatting**: single quotes, JSX single quotes, no trailing comma, 2-space tabs
 - **Icons**: use `@tabler/icons-react` (project convention), registered in `src/components/icons.tsx`
 - **Don't modify `src/components/ui/`** directly — extend shadcn components instead
+- **Zustand stores**: features with client state (kanban, chat, notifications) use Zustand in `features/<name>/utils/store.ts`
+- **Cleanup**: optional features can be removed via `node scripts/cleanup.js --interactive`

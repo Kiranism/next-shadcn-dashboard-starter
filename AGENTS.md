@@ -67,6 +67,8 @@ The project follows a feature-based folder structure designed for scalability in
 │   │   ├── overview/      # Parallel routes (@area_stats, @bar_stats, etc.)
 │   │   ├── product/       # Product management pages
 │   │   ├── kanban/        # Kanban board page
+│   │   ├── chat/          # Messaging page
+│   │   ├── notifications/ # Notifications page
 │   │   ├── workspaces/    # Organization management
 │   │   ├── billing/       # Subscription billing
 │   │   ├── exclusive/     # Pro plan feature example
@@ -91,6 +93,8 @@ The project follows a feature-based folder structure designed for scalability in
 │   ├── overview/          # Dashboard analytics
 │   ├── products/          # Product management
 │   ├── kanban/            # Kanban board with dnd-kit
+│   ├── chat/              # Messaging UI (conversations, bubbles, composer)
+│   ├── notifications/     # Notification center & store
 │   └── profile/           # Profile management
 │
 ├── config/                # Configuration files
@@ -120,9 +124,9 @@ The project follows a feature-based folder structure designed for scalability in
 │   ├── nav-rbac.md        # Navigation RBAC documentation
 │   └── themes.md          # Theme customization guide
 
-/__CLEANUP__               # Feature removal scripts
-    ├── scripts/           # Cleanup automation
-    └── clerk/             # Templates after Clerk removal
+/scripts                   # Dev tooling
+    ├── cleanup.js         # Feature removal (self-contained, delete when done)
+    └── postinstall.js     # Dev server cleanup message (auto-cleans)
 ```
 
 ---
@@ -222,7 +226,7 @@ NEXT_PUBLIC_SENTRY_DISABLED="false"  # Set to "true" to disable in dev
 
 ## Theming System
 
-The project uses a sophisticated multi-theme system with 6 built-in themes:
+The project uses a sophisticated multi-theme system with 10 built-in themes:
 
 - `vercel` (default)
 - `claude`
@@ -230,6 +234,10 @@ The project uses a sophisticated multi-theme system with 6 built-in themes:
 - `supabase`
 - `mono`
 - `notebook`
+- `light-green`
+- `zen`
+- `astro-vista`
+- `whatsapp`
 
 ### Theme Files
 - CSS files: `src/styles/themes/{theme-name}.css`
@@ -404,21 +412,33 @@ Ensure these are set in your deployment platform:
 
 ## Feature Cleanup System
 
-The `__CLEANUP__` folder contains scripts to remove optional features:
+A single `scripts/cleanup.js` file handles removal of optional features:
 
 ```bash
-# List available features
-node __CLEANUP__/scripts/cleanup.js --list
+# Interactive mode — prompts for each feature
+node scripts/cleanup.js --interactive
 
 # Remove specific features
-node __CLEANUP__/scripts/cleanup.js clerk    # Remove auth/org/billing
-node __CLEANUP__/scripts/cleanup.js kanban   # Remove kanban board
-node __CLEANUP__/scripts/cleanup.js sentry   # Remove error tracking
+node scripts/cleanup.js clerk           # Remove auth/org/billing
+node scripts/cleanup.js kanban          # Remove kanban board
+node scripts/cleanup.js chat            # Remove messaging UI
+node scripts/cleanup.js notifications   # Remove notification center
+node scripts/cleanup.js themes          # Keep one theme, remove rest
+node scripts/cleanup.js sentry          # Remove error tracking
+
+# Remove multiple at once
+node scripts/cleanup.js kanban chat notifications
+
+# Preview without changing files
+node scripts/cleanup.js --dry-run kanban
+
+# List all features
+node scripts/cleanup.js --list
 ```
 
 **Safety**: Script requires git repository with at least one commit. Use `--force` to skip.
 
-After cleanup, delete the `__CLEANUP__` folder.
+After cleanup, delete `scripts/cleanup.js` — the dev server message auto-cleans on next start.
 
 ---
 

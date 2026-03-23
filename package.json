@@ -7,7 +7,7 @@
     "url": "https://github.com/Kiranism"
   },
   "scripts": {
-    "dev": "node scripts/postinstall.js; next dev",
+    "dev": "node scripts/postinstall.js 2>/dev/null; next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
