@@ -185,7 +185,16 @@ You should now be able to access the application at http://localhost:3000.
 
 #### Cleanup
 
-To remove demo data, boilerplate, or unwanted starter code, see the [cleanup guide](__CLEANUP__/cleanup.md). Follow the instructions there to tidy up, adapt, or personalize your app as needed for your project.
+To remove optional features you don't need (auth, kanban, chat, notifications, extra themes, sentry), run the cleanup script:
+
+```bash
+node scripts/cleanup.js --interactive   # interactive mode
+node scripts/cleanup.js --list          # see available features
+node scripts/cleanup.js --dry-run chat  # preview before removing
+node scripts/cleanup.js kanban chat     # remove specific features
+```
+
+Run `node scripts/cleanup.js --help` for all options. Delete `scripts/cleanup.js` when you're done.
 
 ## Deploy
 
