@@ -187,6 +187,10 @@ You should now be able to access the application at http://localhost:3000.
 
 To remove demo data, boilerplate, or unwanted starter code, see the [cleanup guide](__CLEANUP__/cleanup.md). Follow the instructions there to tidy up, adapt, or personalize your app as needed for your project.
 
+## Deploy
+
+This project includes a production-ready `Dockerfile` using standalone output mode. For all deployment options (Node.js, Docker, static export, adapters), see the [Next.js Deployment Documentation](https://nextjs.org/docs/app/getting-started/deploying).
+
 ### ⭐ Support
 
 If you find this template helpful, please consider giving it a star ⭐

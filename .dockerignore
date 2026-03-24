@@ -1,0 +1,77 @@
+# Dependencies (installed inside Docker)
+node_modules/
+.pnpm-store/
+
+# Build outputs (generated during docker build)
+.next/
+out/
+dist/
+build/
+.vercel/
+
+# Tests
+coverage/
+__tests__/
+__mocks__/
+*.test.*
+*.spec.*
+
+# Git and editors
+.git/
+.gitignore
+.gitattributes
+.vscode/
+.idea/
+
+# Environment variables
+.env
+.env*.local
+.env.development
+.env.test
+.env.production.local
+
+# Docker files
+Dockerfile*
+.dockerignore
+compose.yaml
+compose.yml
+docker-compose*.yml
+
+# Documentation
+*.md
+docs/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Cache
+.cache/
+.eslintcache
+.swc/
+.turbo/
+
+# TypeScript build metadata
+*.tsbuildinfo
+
+# Config files not needed in image
+*.pem
+.editorconfig
+.prettierrc*
+prettier.config.*
+.eslintrc*
+eslint.config.*
+husky/
+.husky/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# AI tool configs
+.cursor/
+.claude
+AGENTS.md
+
+# Cleanup guide
+__CLEANUP__/
