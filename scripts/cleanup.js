@@ -262,6 +262,7 @@ export const productInfoContent: InfobarContent = {
     'next.config.ts': `import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   images: {
     remotePatterns: [
       {

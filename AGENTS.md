@@ -14,6 +14,8 @@ This file provides essential information for AI coding agents working on this pr
 - **UI Components**: shadcn/ui (New York style)
 - **Authentication**: Clerk (with Organizations/Billing support)
 - **Error Tracking**: Sentry
+- **Charts**: Recharts
+- **Containerization**: Docker (Node.js & Bun Dockerfiles)
 - **Package Manager**: Bun (preferred) or npm
 
 The project follows a feature-based folder structure designed for scalability in SaaS applications, internal tools, and admin panels.
@@ -127,6 +129,10 @@ The project follows a feature-based folder structure designed for scalability in
 /scripts                   # Dev tooling
     ├── cleanup.js         # Feature removal (self-contained, delete when done)
     └── postinstall.js     # Dev server cleanup message (auto-cleans)
+
+Dockerfile                 # Node.js production Dockerfile
+Dockerfile.bun             # Bun production Dockerfile
+.dockerignore              # Docker build exclusions
 ```
 
 ---
@@ -403,8 +409,15 @@ Ensure these are set in your deployment platform:
 - All `NEXT_PUBLIC_*` variables for client-side access
 - `SENTRY_*` variables if using error tracking
 
+### Docker
+Production-ready Dockerfiles are included:
+- `Dockerfile` — Node.js-based
+- `Dockerfile.bun` — Bun-based
+
+Both use `output: 'standalone'` in `next.config.ts`. Pass `NEXT_PUBLIC_*` vars as `--build-arg` at build time, and runtime secrets via `-e` at run time.
+
 ### Build Considerations
-- Output: Static + Server (default Next.js)
+- Output: `standalone` (optimized for Docker/self-hosting)
 - Images: Configured for `api.slingacademy.com`, `img.clerk.com`, `clerk.com`
 - Sentry source maps uploaded automatically in CI
 
