@@ -18,7 +18,7 @@
 
 import { useMemo } from 'react';
 import { useOrganization, useUser } from '@clerk/nextjs';
-import type { NavItem } from '@/types';
+import type { NavItem, NavGroup } from '@/types';
 
 /**
  * Hook to filter navigation items based on RBAC (fully client-side)
@@ -155,4 +155,29 @@ export function useFilteredNavItems(items: NavItem[]) {
   }, [items, accessContext]);
 
   return filteredItems;
+}
+
+/**
+ * Hook to filter navigation groups based on RBAC (fully client-side)
+ *
+ * @param groups - Array of navigation groups to filter
+ * @returns Filtered groups (empty groups are removed)
+ */
+export function useFilteredNavGroups(groups: NavGroup[]) {
+  const allItems = useMemo(() => groups.flatMap((g) => g.items), [groups]);
+  const filteredItems = useFilteredNavItems(allItems);
+
+  return useMemo(() => {
+    const filteredSet = new Set(filteredItems.map((item) => item.title));
+    return groups
+      .map((group) => ({
+        ...group,
+        items: filteredItems.filter((item) =>
+          group.items.some(
+            (gi) => gi.title === item.title && filteredSet.has(gi.title)
+          )
+        )
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [groups, filteredItems]);
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Info } from 'lucide-react';
+import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { useInfobar, type InfobarContent } from '@/components/ui/infobar';
 import { cn } from '@/lib/utils';
@@ -48,7 +48,7 @@ export function InfoButton({
       aria-label='Show information'
       {...props}
     >
-      <Info className='h-4 w-4' />
+      <Icons.info className='h-4 w-4' />
       <span className='sr-only'>Show information</span>
     </Button>
   );

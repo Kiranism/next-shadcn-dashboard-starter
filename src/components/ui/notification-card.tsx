@@ -1,13 +1,7 @@
 'use client';
 
 import type { FC } from 'react';
-import {
-  IconCheck,
-  IconExternalLink,
-  IconAlertCircle,
-  IconClock,
-  IconLoader2
-} from '@tabler/icons-react';
+import { Icons } from '@/components/icons';
 import { cn } from '@/lib/utils';
 
 export type NotificationStatus = 'unread' | 'read' | 'archived';
@@ -62,13 +56,13 @@ const getActionIcon = (actionType: ActionType) => {
   const iconProps = { size: 12, strokeWidth: 2.5 };
   switch (actionType) {
     case 'redirect':
-      return <IconExternalLink {...iconProps} />;
+      return <Icons.externalLink {...iconProps} />;
     case 'api_call':
-      return <IconCheck {...iconProps} />;
+      return <Icons.check {...iconProps} />;
     case 'workflow':
-      return <IconClock {...iconProps} />;
+      return <Icons.clock {...iconProps} />;
     case 'modal':
-      return <IconAlertCircle {...iconProps} />;
+      return <Icons.alertCircle {...iconProps} />;
     default:
       return null;
   }
@@ -137,7 +131,7 @@ export const NotificationCard: FC<NotificationCardProps> = ({
               )}
               aria-label='Mark as read'
             >
-              <IconCheck size={16} />
+              <Icons.check size={16} />
             </button>
           )}
         </div>
@@ -174,12 +168,12 @@ export const NotificationCard: FC<NotificationCardProps> = ({
                     )}
                   >
                     {showLoading ? (
-                      <IconLoader2 size={12} className='animate-spin' />
+                      <Icons.spinner size={12} className='animate-spin' />
                     ) : (
                       <>
                         <span>{action.label}</span>
                         {isExecuted ? (
-                          <IconCheck size={12} strokeWidth={2.5} />
+                          <Icons.check size={12} strokeWidth={2.5} />
                         ) : (
                           getActionIcon(action.type)
                         )}

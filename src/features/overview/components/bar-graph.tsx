@@ -16,7 +16,7 @@ import {
   ChartTooltipContent
 } from '@/components/ui/chart';
 import { Badge } from '@/components/ui/badge';
-import { IconTrendingDown } from '@tabler/icons-react';
+import { Icons } from '@/components/icons';
 
 const chartData = [
   { month: 'January', desktop: 186, mobile: 80 },
@@ -45,7 +45,7 @@ export function BarGraph() {
         <CardTitle>
           Bar Chart - Multiple
           <Badge variant='outline'>
-            <IconTrendingDown />
+            <Icons.trendingDown />
             -5.2%
           </Badge>
         </CardTitle>

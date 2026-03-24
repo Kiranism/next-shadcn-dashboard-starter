@@ -1,6 +1,6 @@
 'use client';
 
-import { IconChevronRight } from '@tabler/icons-react';
+import { Icons } from '@/components/icons';
 
 import {
   Collapsible,
@@ -54,7 +54,7 @@ export function NavMain({
                   >
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>
-                    <IconChevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
+                    <Icons.chevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
                 <CollapsibleContent>

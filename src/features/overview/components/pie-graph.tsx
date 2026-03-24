@@ -16,7 +16,7 @@ import {
   ChartTooltipContent
 } from '@/components/ui/chart';
 import { Badge } from '@/components/ui/badge';
-import { IconTrendingUp } from '@tabler/icons-react';
+import { Icons } from '@/components/icons';
 
 const chartData = [
   { browser: 'chrome', visitors: 275, fill: 'var(--color-chrome)' },
@@ -59,7 +59,7 @@ export function PieGraph() {
         <CardTitle>
           Pie Chart
           <Badge variant='outline'>
-            <IconTrendingUp />
+            <Icons.trendingUp />
             +5.2%
           </Badge>
         </CardTitle>

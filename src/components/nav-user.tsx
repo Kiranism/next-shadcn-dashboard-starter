@@ -1,13 +1,6 @@
 'use client';
 
-import {
-  IconCircleCheck,
-  IconBell,
-  IconChevronsDown,
-  IconCreditCard,
-  IconLogout,
-  IconSparkles
-} from '@tabler/icons-react';
+import { Icons } from '@/components/icons';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -54,7 +47,7 @@ export function NavUser({
                 <span className='truncate font-semibold'>{user.name}</span>
                 <span className='truncate text-xs'>{user.email}</span>
               </div>
-              <IconChevronsDown className='ml-auto size-4' />
+              <Icons.chevronsDown className='ml-auto size-4' />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -78,28 +71,28 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem>
-                <IconSparkles className='mr-2 h-4 w-4' />
+                <Icons.sparkles className='mr-2 h-4 w-4' />
                 Upgrade to Pro
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem>
-                <IconCircleCheck className='mr-2 h-4 w-4' />
+                <Icons.circleCheck className='mr-2 h-4 w-4' />
                 Account
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <IconCreditCard className='mr-2 h-4 w-4' />
+                <Icons.creditCard className='mr-2 h-4 w-4' />
                 Billing
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <IconBell className='mr-2 h-4 w-4' />
+                <Icons.notification className='mr-2 h-4 w-4' />
                 Notifications
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
-              <IconLogout className='mr-2 h-4 w-4' />
+              <Icons.logout className='mr-2 h-4 w-4' />
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>

@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  IconFolder,
-  IconShare,
-  IconDots,
-  IconTrash
-} from '@tabler/icons-react';
-
+import { Icons } from '@/components/icons';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,7 +45,7 @@ export function NavProjects({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuAction showOnHover>
-                  <IconDots />
+                  <Icons.dots />
                   <span className='sr-only'>More</span>
                 </SidebarMenuAction>
               </DropdownMenuTrigger>
@@ -61,16 +55,16 @@ export function NavProjects({
                 align={isMobile ? 'end' : 'start'}
               >
                 <DropdownMenuItem>
-                  <IconFolder className='text-muted-foreground mr-2 h-4 w-4' />
+                  <Icons.workspace className='text-muted-foreground mr-2 h-4 w-4' />
                   <span>View Project</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
-                  <IconShare className='text-muted-foreground mr-2 h-4 w-4' />
+                  <Icons.share className='text-muted-foreground mr-2 h-4 w-4' />
                   <span>Share Project</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
-                  <IconTrash className='text-muted-foreground mr-2 h-4 w-4' />
+                  <Icons.trash className='text-muted-foreground mr-2 h-4 w-4' />
                   <span>Delete Project</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -79,7 +73,7 @@ export function NavProjects({
         ))}
         <SidebarMenuItem>
           <SidebarMenuButton className='text-sidebar-foreground/70'>
-            <IconDots className='text-sidebar-foreground/70' />
+            <Icons.dots className='text-sidebar-foreground/70' />
             <span>More</span>
           </SidebarMenuButton>
         </SidebarMenuItem>

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { IconChevronRight } from '@tabler/icons-react';
+import { Icons } from '@/components/icons';
 import Link from 'next/link';
 import {
   Infobar,
@@ -80,7 +80,7 @@ export function InfoSidebar({
                                 target='_blank'
                               >
                                 <span>{link.title}</span>
-                                <IconChevronRight className='h-3 w-3' />
+                                <Icons.chevronRight className='h-3 w-3' />
                               </Link>
                             </li>
                           ))}

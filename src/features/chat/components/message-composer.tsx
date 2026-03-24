@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useRef } from 'react';
-import { IconPaperclip, IconSend } from '@tabler/icons-react';
+import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { FilePreview } from '@/components/ui/file-preview';
@@ -110,7 +110,7 @@ export function MessageComposer({
             aria-label='Attach a file'
             onClick={() => fileInputRef.current?.click()}
           >
-            <IconPaperclip className='h-3.5 w-3.5 sm:h-4 sm:w-4' />
+            <Icons.paperclip className='h-3.5 w-3.5 sm:h-4 sm:w-4' />
           </Button>
           <Button
             type='submit'
@@ -119,7 +119,7 @@ export function MessageComposer({
             disabled={!draft.trim() && attachments.length === 0}
             aria-label='Send message'
           >
-            <IconSend
+            <Icons.send
               className='h-3.5 w-3.5 sm:h-4 sm:w-4'
               aria-hidden='true'
             />

@@ -1,6 +1,6 @@
 'use client';
 
-import { IconBrightness } from '@tabler/icons-react';
+import { Icons } from '@/components/icons';
 import { useTheme } from 'next-themes';
 import * as React from 'react';
 
@@ -47,7 +47,7 @@ export function ThemeModeToggle() {
           className='group/toggle size-8'
           onClick={handleThemeToggle}
         >
-          <IconBrightness />
+          <Icons.brightness />
           <span className='sr-only'>Toggle theme</span>
         </Button>
       </TooltipTrigger>

@@ -4,7 +4,7 @@ import { DataTableSkeleton } from '@/components/ui/table/data-table-skeleton';
 import ProductListingPage from '@/features/products/components/product-listing';
 import { searchParamsCache, serialize } from '@/lib/searchparams';
 import { cn } from '@/lib/utils';
-import { IconPlus } from '@tabler/icons-react';
+import { Icons } from '@/components/icons';
 import Link from 'next/link';
 import { SearchParams } from 'nuqs/server';
 import { Suspense } from 'react';
@@ -37,7 +37,7 @@ export default async function Page(props: pageProps) {
           href='/dashboard/product/new'
           className={cn(buttonVariants(), 'text-xs md:text-sm')}
         >
-          <IconPlus className='mr-2 h-4 w-4' /> Add New
+          <Icons.add className='mr-2 h-4 w-4' /> Add New
         </Link>
       }
     >

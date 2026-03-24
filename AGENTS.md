@@ -422,6 +422,69 @@ After cleanup, delete the `__CLEANUP__` folder.
 
 ---
 
+## Icon System
+
+**All icons come from a single source: `src/components/icons.tsx`.**
+
+The project uses `@tabler/icons-react` as the sole icon package. Every icon is re-exported through a centralized `Icons` object — **never import directly from `@tabler/icons-react` or any other icon package**.
+
+### Usage
+
+```tsx
+import { Icons } from '@/components/icons';
+
+// In JSX
+<Icons.search className='h-4 w-4' />
+<Icons.chevronRight className='h-4 w-4' />
+
+// Passing as a prop
+icon={Icons.check}
+```
+
+### Adding a New Icon
+
+1. Import the tabler icon in `src/components/icons.tsx`
+2. Add a semantic key to the `Icons` object
+3. Use `Icons.yourKey` everywhere — never the raw import
+
+```tsx
+// In src/components/icons.tsx
+import { IconNewIcon } from '@tabler/icons-react';
+
+export const Icons = {
+  // ...existing icons
+  newIcon: IconNewIcon
+};
+```
+
+### Available Icon Categories
+
+| Category | Example Keys |
+|----------|-------------|
+| General | `check`, `close`, `search`, `settings`, `trash`, `spinner`, `info`, `warning` |
+| Navigation | `chevronDown`, `chevronLeft`, `chevronRight`, `chevronUp`, `chevronsUpDown` |
+| Layout | `dashboard`, `kanban`, `panelLeft` |
+| User | `user`, `account`, `profile`, `teams` |
+| Communication | `chat`, `notification`, `phone`, `video`, `send` |
+| Files | `page`, `post`, `media`, `fileTypePdf`, `fileTypeDoc` |
+| Actions | `add`, `edit`, `upload`, `share`, `login`, `logout` |
+| Theme | `sun`, `moon`, `brightness`, `laptop`, `palette` |
+| Text formatting | `bold`, `italic`, `underline`, `text` |
+| Data / Charts | `trendingUp`, `trendingDown`, `eyeOff`, `adjustments` |
+
+### Icon Showcase Page
+
+Browse all available icons at `/dashboard/elements/icons` — a searchable grid of every icon in the registry.
+
+### Why This Pattern?
+
+- **Single source of truth** — swap icon packages by editing one file
+- **Semantic naming** — `Icons.trash` is clearer than `IconTrash` scattered across files
+- **Discoverability** — autocomplete on `Icons.` shows every available icon
+- **No direct dependencies** — components never couple to a specific icon package
+
+---
+
 ## Common Development Tasks
 
 ### Adding a New Page
@@ -485,3 +548,4 @@ See "Theming System" section above or `docs/themes.md`.
 5. **Follow existing patterns** - look at similar components before creating new ones
 6. **Environment variables** - prefix with `NEXT_PUBLIC_` for client-side access
 7. **shadcn components** - don't modify files in `src/components/ui/` directly; extend them instead
+8. **Icons** - NEVER import icons directly from `@tabler/icons-react` or any other icon package. All icons must be registered in `src/components/icons.tsx` and imported as `import { Icons } from '@/components/icons'`. To add a new icon: add the tabler import to `icons.tsx`, add a semantic key to the `Icons` object, then use `Icons.keyName` in your component.

@@ -1,7 +1,7 @@
 'use client';
 
 import type { Column } from '@tanstack/react-table';
-import { CalendarIcon, XCircle } from 'lucide-react';
+import { Icons } from '@/components/icons';
 import * as React from 'react';
 import type { DateRange } from 'react-day-picker';
 
@@ -184,10 +184,10 @@ export function DataTableDateFilter<TData>({
               onClick={onReset}
               className='focus-visible:ring-ring rounded-sm opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-1 focus-visible:outline-none'
             >
-              <XCircle />
+              <Icons.xCircle />
             </div>
           ) : (
-            <CalendarIcon />
+            <Icons.calendar />
           )}
           {label}
         </Button>

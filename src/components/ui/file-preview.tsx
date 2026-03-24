@@ -2,20 +2,7 @@
 
 import Image from 'next/image';
 import type { FC } from 'react';
-import {
-  IconFile,
-  IconFileTypeDoc,
-  IconFileTypeXls,
-  IconFileTypePdf,
-  IconPhoto,
-  IconVideo,
-  IconMusic,
-  IconFileZip,
-  IconCode,
-  IconFileText,
-  IconLoader2,
-  IconX
-} from '@tabler/icons-react';
+import { Icons } from '@/components/icons';
 import { cn } from '@/lib/utils';
 
 export interface UploadedFile {
@@ -45,7 +32,7 @@ const getFileIcon = (fileType: string, fileName: string) => {
 
   if (fileType.startsWith('image/'))
     return (
-      <IconPhoto
+      <Icons.media
         {...iconProps}
         className='text-emerald-500 dark:text-emerald-400'
       />
@@ -53,7 +40,7 @@ const getFileIcon = (fileType: string, fileName: string) => {
 
   if (fileType === 'application/pdf' || extension === 'pdf')
     return (
-      <IconFileTypePdf
+      <Icons.fileTypePdf
         {...iconProps}
         className='text-red-500 dark:text-red-400'
       />
@@ -65,7 +52,7 @@ const getFileIcon = (fileType: string, fileName: string) => {
     fileType.includes('msword')
   )
     return (
-      <IconFileTypeDoc
+      <Icons.fileTypeDoc
         {...iconProps}
         className='text-blue-500 dark:text-blue-400'
       />
@@ -77,7 +64,7 @@ const getFileIcon = (fileType: string, fileName: string) => {
     fileType.includes('excel')
   )
     return (
-      <IconFileTypeXls
+      <Icons.fileTypeXls
         {...iconProps}
         className='text-green-500 dark:text-green-400'
       />
@@ -85,10 +72,7 @@ const getFileIcon = (fileType: string, fileName: string) => {
 
   if (['txt', 'md'].includes(extension) || fileType === 'text/plain')
     return (
-      <IconFileText
-        {...iconProps}
-        className='text-zinc-500 dark:text-zinc-400'
-      />
+      <Icons.post {...iconProps} className='text-zinc-500 dark:text-zinc-400' />
     );
 
   if (
@@ -108,7 +92,7 @@ const getFileIcon = (fileType: string, fileName: string) => {
     fileType.includes('typescript')
   )
     return (
-      <IconCode
+      <Icons.code
         {...iconProps}
         className='text-yellow-500 dark:text-yellow-400'
       />
@@ -116,7 +100,7 @@ const getFileIcon = (fileType: string, fileName: string) => {
 
   if (['json', 'xml', 'yaml', 'yml'].includes(extension))
     return (
-      <IconCode {...iconProps} className='text-zinc-500 dark:text-zinc-400' />
+      <Icons.code {...iconProps} className='text-zinc-500 dark:text-zinc-400' />
     );
 
   if (
@@ -124,7 +108,7 @@ const getFileIcon = (fileType: string, fileName: string) => {
     ['mp4', 'avi', 'mov', 'mkv'].includes(extension)
   )
     return (
-      <IconVideo
+      <Icons.video
         {...iconProps}
         className='text-purple-500 dark:text-purple-400'
       />
@@ -135,7 +119,10 @@ const getFileIcon = (fileType: string, fileName: string) => {
     ['mp3', 'wav', 'ogg'].includes(extension)
   )
     return (
-      <IconMusic {...iconProps} className='text-pink-500 dark:text-pink-400' />
+      <Icons.music
+        {...iconProps}
+        className='text-pink-500 dark:text-pink-400'
+      />
     );
 
   if (
@@ -144,14 +131,14 @@ const getFileIcon = (fileType: string, fileName: string) => {
     fileType.includes('compressed')
   )
     return (
-      <IconFileZip
+      <Icons.fileZip
         {...iconProps}
         className='text-amber-500 dark:text-amber-400'
       />
     );
 
   return (
-    <IconFile {...iconProps} className='text-zinc-500 dark:text-zinc-400' />
+    <Icons.page {...iconProps} className='text-zinc-500 dark:text-zinc-400' />
   );
 };
 
@@ -209,7 +196,7 @@ export const FilePreview: FC<FilePreviewProps> = ({
           >
             {file.isUploading && (
               <div className='absolute inset-0 flex items-center justify-center rounded-xl bg-black/30'>
-                <IconLoader2 size={20} className='animate-spin text-white' />
+                <Icons.spinner size={20} className='animate-spin text-white' />
               </div>
             )}
 
@@ -224,7 +211,7 @@ export const FilePreview: FC<FilePreviewProps> = ({
                 )}
                 aria-label={`Remove ${file.name}`}
               >
-                <IconX size={10} className='text-white' />
+                <Icons.close size={10} className='text-white' />
               </button>
             )}
 

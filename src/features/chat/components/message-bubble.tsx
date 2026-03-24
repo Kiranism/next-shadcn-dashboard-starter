@@ -1,6 +1,6 @@
 'use client';
 
-import { IconChecks } from '@tabler/icons-react';
+import { Icons } from '@/components/icons';
 import { motion, useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { FilePreview } from '@/components/ui/file-preview';
@@ -73,7 +73,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             {message.timestamp}
           </span>
           {isUser && (
-            <IconChecks
+            <Icons.checks
               className='text-primary-foreground/80 h-3 w-3 sm:h-3.5 sm:w-3.5'
               aria-hidden='true'
             />

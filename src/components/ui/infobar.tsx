@@ -21,7 +21,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { Slot } from '@radix-ui/react-slot';
 import { VariantProps, cva } from 'class-variance-authority';
-import { CircleXIcon } from 'lucide-react';
+import { Icons } from '@/components/icons';
 import { usePathname } from 'next/navigation';
 import * as React from 'react';
 
@@ -352,7 +352,7 @@ function InfobarTrigger({
       }}
       {...props}
     >
-      <CircleXIcon className='size-7' />
+      <Icons.circleX className='size-7' />
       <span className='sr-only'>Toggle Infobar</span>
     </Button>
   );

@@ -23,6 +23,8 @@ This skill encodes the exact patterns and conventions used in this Next.js 16 + 
 | Custom hook | `src/hooks/` |
 | Form components | `src/components/forms/` |
 | Table components | `src/components/ui/table/` |
+| Icons registry | `src/components/icons.tsx` |
+| Icons showcase | `src/app/dashboard/elements/icons/page.tsx` |
 
 ---
 
@@ -90,7 +92,7 @@ export default async function Page(props: PageProps) {
   pageDescription='Manage your products.'
   pageHeaderAction={
     <Link href='/dashboard/product/new' className={cn(buttonVariants())}>
-      <IconPlus className='mr-2 h-4 w-4' /> Add New
+      <Icons.add className='mr-2 h-4 w-4' /> Add New
     </Link>
   }
 >
@@ -160,7 +162,7 @@ import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-h
 import { Badge } from '@/components/ui/badge';
 import { CellAction } from './cell-action';
 import { CATEGORY_OPTIONS } from './options';
-import { Text } from 'lucide-react';
+import { Icons } from '@/components/icons';
 
 export const columns: ColumnDef<YourType>[] = [
   {
@@ -174,7 +176,7 @@ export const columns: ColumnDef<YourType>[] = [
       label: 'Name',
       placeholder: 'Search...',
       variant: 'text',
-      icon: Text
+      icon: Icons.text
     },
     enableColumnFilter: true
   },
@@ -258,7 +260,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { IconDotsVertical, IconEdit, IconTrash } from '@tabler/icons-react';
+import { Icons } from '@/components/icons';
 
 interface CellActionProps {
   data: YourType;
@@ -270,16 +272,16 @@ export function CellAction({ data }: CellActionProps) {
       <DropdownMenuTrigger asChild>
         <Button variant='ghost' className='h-8 w-8 p-0'>
           <span className='sr-only'>Open menu</span>
-          <IconDotsVertical className='h-4 w-4' />
+          <Icons.ellipsis className='h-4 w-4' />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end'>
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
         <DropdownMenuItem>
-          <IconEdit className='mr-2 h-4 w-4' /> Edit
+          <Icons.edit className='mr-2 h-4 w-4' /> Edit
         </DropdownMenuItem>
         <DropdownMenuItem className='text-destructive focus:text-destructive'>
-          <IconTrash className='mr-2 h-4 w-4' /> Delete
+          <Icons.trash className='mr-2 h-4 w-4' /> Delete
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -559,6 +561,69 @@ All colors use **OKLCH format**: `oklch(lightness chroma hue)`.
 
 ---
 
+## 9. Icon System
+
+**All icons come from `src/components/icons.tsx` — the single source of truth.**
+
+The project uses `@tabler/icons-react` as the sole icon package. Every icon is re-exported through the `Icons` object. **Never import directly from `@tabler/icons-react` or any other icon package.**
+
+### Usage Pattern
+
+```tsx
+import { Icons } from '@/components/icons';
+
+// In JSX
+<Icons.search className='h-4 w-4' />
+<Icons.chevronRight className='h-4 w-4' />
+
+// Passing as a prop or variable
+icon={Icons.check}
+const TrashIcon = Icons.trash;
+```
+
+### Adding a New Icon
+
+1. Import the tabler icon at the top of `src/components/icons.tsx`
+2. Add a **semantic** key to the `Icons` object (e.g., `trash` not `iconTrash`)
+3. Use `Icons.yourKey` in your component
+
+```tsx
+// src/components/icons.tsx
+import { IconNewThing } from '@tabler/icons-react';
+
+export const Icons = {
+  // ...existing
+  newThing: IconNewThing
+};
+```
+
+### Common Icon Keys
+
+| Key | Use for |
+|-----|---------|
+| `check`, `close`, `search` | General actions |
+| `chevronDown`, `chevronRight`, `chevronsUpDown` | Navigation / dropdowns |
+| `add`, `edit`, `trash`, `upload` | CRUD actions |
+| `spinner` | Loading states |
+| `info`, `warning`, `alertCircle` | Status / feedback |
+| `sun`, `moon`, `brightness` | Theme toggles |
+| `bold`, `italic`, `underline`, `text` | Text formatting |
+| `check`, `circle`, `circleX`, `minus` | Form indicators (checkbox, radio, etc.) |
+| `panelLeft`, `gripVertical`, `eyeOff` | UI controls (sidebar, resize, column visibility) |
+
+### Rules
+
+- **NEVER** import from `@tabler/icons-react` outside of `src/components/icons.tsx`
+- **NEVER** import from `lucide-react` — the project removed this dependency
+- **ALWAYS** use `Icons.keyName` in components
+- When writing code examples or templates, use the `Icons` import pattern
+
+### Icon Showcase
+
+All icons are browsable at `/dashboard/elements/icons` with search.
+
+---
+
 ## Code Conventions
 
 These conventions come from the existing codebase — follow them for consistency:
@@ -569,5 +634,5 @@ These conventions come from the existing codebase — follow them for consistenc
 - **Function declarations** for components: `function ComponentName() {}` or `export default function`
 - **Props interface naming**: `{ComponentName}Props`
 - **Formatting**: single quotes, JSX single quotes, no trailing comma, 2-space tabs
-- **Icons**: use `@tabler/icons-react` (project convention), registered in `src/components/icons.tsx`
+- **Icons**: always import from `@/components/icons` — never directly from `@tabler/icons-react`
 - **Don't modify `src/components/ui/`** directly — extend shadcn components instead

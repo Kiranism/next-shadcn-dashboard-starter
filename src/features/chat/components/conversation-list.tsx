@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { IconSearch } from '@tabler/icons-react';
+import { Icons } from '@/components/icons';
 import { motion } from 'motion/react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -58,7 +58,7 @@ export function ConversationList({
         Search conversations
       </label>
       <div className='relative'>
-        <IconSearch
+        <Icons.search
           className='text-muted-foreground/70 pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2'
           aria-hidden='true'
         />

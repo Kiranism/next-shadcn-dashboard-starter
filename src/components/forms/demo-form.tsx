@@ -1,65 +1,82 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import * as React from 'react';
+import { useAppForm } from '@/components/ui/tanstack-form';
+import { useStore } from '@tanstack/react-form';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
-import { FormInput } from './form-input';
-import { FormTextarea } from './form-textarea';
-import { FormSelect, type FormOption } from './form-select';
+import { FieldDescription } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
+import { Slider } from '@/components/ui/slider';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
-  FormCheckboxGroup,
-  type CheckboxGroupOption
-} from './form-checkbox-group';
-import { FormRadioGroup, type RadioGroupOption } from './form-radio-group';
-import { FormSwitch } from './form-switch';
-import { FormSlider } from './form-slider';
-import { FormDatePicker } from './form-date-picker';
-import { FormCheckbox } from './form-checkbox';
-import { FormFileUpload, type FileUploadConfig } from './form-file-upload';
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+  InputOTPSeparator
+} from '@/components/ui/input-otp';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList
+} from '@/components/ui/command';
+import { Calendar } from '@/components/ui/calendar';
+import { FileUploader } from '@/components/file-uploader';
+import { format } from 'date-fns';
+import type { DateRange } from 'react-day-picker';
+import { Icons } from '@/components/icons';
+import { cn } from '@/lib/utils';
 
-// Demo form schema
+// Schema
 const demoFormSchema = z.object({
-  // Basic inputs
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.email('Invalid email address'),
   age: z.number().min(18, 'Must be at least 18 years old'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-
-  // Textarea
+  phone: z.string().min(10, 'Phone must be at least 10 digits'),
+  website: z.string().url('Invalid URL').or(z.literal('')),
   bio: z.string().min(10, 'Bio must be at least 10 characters'),
-
-  // Select
   country: z.string().min(1, 'Please select a country'),
-
-  // Checkbox group
+  framework: z.string().min(1, 'Please select a framework'),
   interests: z.array(z.string()).min(1, 'Select at least one interest'),
-
-  // Radio group
   gender: z.string().min(1, 'Please select gender'),
-
-  // Switch
   newsletter: z.boolean(),
-
-  // Slider
   rating: z.number().min(0).max(10),
-
-  // Date picker
   birthDate: z.date().optional(),
-
-  // Single checkbox
+  dateRange: z.any().optional(),
+  eventTime: z.string().optional(),
+  favoriteColor: z.string().optional(),
+  otp: z.string().min(6, 'Please enter 6 digits'),
+  formatting: z.array(z.string()).optional(),
+  tags: z.array(z.string()).min(1, 'Add at least one tag'),
   terms: z.boolean().refine((val) => val === true, 'You must accept the terms'),
-
-  // File upload
   avatar: z.array(z.any()).optional()
 });
 
-type DemoFormData = z.infer<typeof demoFormSchema>;
-
-// Demo options
-const countryOptions: FormOption[] = [
+const countryOptions = [
   { value: 'us', label: 'United States' },
   { value: 'ca', label: 'Canada' },
   { value: 'uk', label: 'United Kingdom' },
@@ -68,7 +85,16 @@ const countryOptions: FormOption[] = [
   { value: 'fr', label: 'France' }
 ];
 
-const interestOptions: CheckboxGroupOption[] = [
+const frameworkOptions = [
+  { value: 'next', label: 'Next.js' },
+  { value: 'remix', label: 'Remix' },
+  { value: 'astro', label: 'Astro' },
+  { value: 'nuxt', label: 'Nuxt' },
+  { value: 'svelte', label: 'SvelteKit' },
+  { value: 'angular', label: 'Angular' }
+];
+
+const interestOptions = [
   { value: 'technology', label: 'Technology' },
   { value: 'sports', label: 'Sports' },
   { value: 'music', label: 'Music' },
@@ -77,227 +103,939 @@ const interestOptions: CheckboxGroupOption[] = [
   { value: 'reading', label: 'Reading' }
 ];
 
-const genderOptions: RadioGroupOption[] = [
+const genderOptions = [
   { value: 'male', label: 'Male' },
   { value: 'female', label: 'Female' },
   { value: 'other', label: 'Other' },
   { value: 'prefer-not-to-say', label: 'Prefer not to say' }
 ];
 
-const fileUploadConfig: FileUploadConfig = {
-  maxSize: 5000000, // 5MB
-  acceptedTypes: ['image/jpeg', 'image/png', 'image/webp'],
-  multiple: false,
-  maxFiles: 1
-};
+function ComboboxField({
+  value,
+  onChange,
+  onBlur,
+  isTouched,
+  isValid
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  onBlur: () => void;
+  isTouched: boolean;
+  isValid: boolean;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const selected = frameworkOptions.find((o) => o.value === value);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant='outline'
+          role='combobox'
+          aria-expanded={open}
+          className='w-full justify-between font-normal'
+          aria-invalid={isTouched && !isValid}
+          onBlur={onBlur}
+        >
+          {selected?.label ?? 'Search frameworks...'}
+          <Icons.chevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className='w-[--radix-popover-trigger-width] p-0'>
+        <Command>
+          <CommandInput placeholder='Search...' />
+          <CommandList>
+            <CommandEmpty>No framework found.</CommandEmpty>
+            <CommandGroup>
+              {frameworkOptions.map((opt) => (
+                <CommandItem
+                  key={opt.value}
+                  value={opt.value}
+                  onSelect={(val) => {
+                    onChange(val);
+                    setOpen(false);
+                  }}
+                >
+                  <Icons.check
+                    className={cn(
+                      'mr-2 h-4 w-4',
+                      value === opt.value ? 'opacity-100' : 'opacity-0'
+                    )}
+                  />
+                  {opt.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function TagsField({
+  values,
+  onPush,
+  onRemove
+}: {
+  values: string[];
+  onPush: (val: string) => void;
+  onRemove: (idx: number) => void;
+}) {
+  const [tagInput, setTagInput] = React.useState('');
+
+  const addTag = () => {
+    const tag = tagInput.trim();
+    if (tag && !values.includes(tag)) {
+      onPush(tag);
+      setTagInput('');
+    }
+  };
+
+  return (
+    <>
+      <div className='flex gap-2'>
+        <Input
+          value={tagInput}
+          onChange={(e) => setTagInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              addTag();
+            }
+          }}
+          placeholder='Type and press Enter...'
+        />
+        <Button type='button' variant='secondary' onClick={addTag}>
+          Add
+        </Button>
+      </div>
+      {values.length > 0 && (
+        <div className='flex flex-wrap gap-2'>
+          {values.map((tag, idx) => (
+            <Badge key={tag} variant='secondary' className='gap-1'>
+              {tag}
+              <button
+                type='button'
+                onClick={() => onRemove(idx)}
+                className='hover:text-destructive ml-0.5'
+              >
+                <Icons.close className='h-3 w-3' />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <div className='space-y-1'>
+      <Separator />
+      <h3 className='text-muted-foreground pt-2 text-sm font-medium tracking-wide uppercase'>
+        {children}
+      </h3>
+    </div>
+  );
+}
 
 export default function DemoForm() {
-  const form = useForm<DemoFormData>({
-    resolver: zodResolver(demoFormSchema),
+  const form = useAppForm({
     defaultValues: {
       name: '',
       email: '',
       age: 18,
       password: '',
+      phone: '',
+      website: '',
       bio: '',
       country: '',
-      interests: [],
+      framework: '',
+      interests: [] as string[],
       gender: '',
       newsletter: false,
       rating: 5,
-      birthDate: undefined,
+      birthDate: undefined as Date | undefined,
+      dateRange: undefined as DateRange | undefined,
+      eventTime: '',
+      favoriteColor: '#6366f1',
+      otp: '',
+      formatting: [] as string[],
+      tags: [] as string[],
       terms: false,
-      avatar: []
+      avatar: [] as any[]
+    },
+    validators: {
+      onSubmit: demoFormSchema as any
+    },
+    onSubmit: ({ value }) => {
+      console.log('Form submitted:', value);
+      alert('Form submitted successfully! Check console for data.');
     }
   });
 
-  const onSubmit = (data: DemoFormData) => {
-    console.log('Form submitted:', data);
-    alert('Form submitted successfully! Check console for data.');
-  };
+  const formValues = useStore(form.store, (s) => s.values);
 
   return (
-    <div className='mx-auto max-w-2xl space-y-6 p-6'>
+    <div className='grid grid-cols-1 gap-6 xl:grid-cols-[1fr_320px]'>
       <Card>
         <CardHeader>
           <CardTitle className='text-2xl font-bold'>
-            Reusable Form Components Demo
+            All Form Inputs Demo
           </CardTitle>
           <p className='text-muted-foreground'>
-            See how these components reduce boilerplate from 15+ lines to just
-            5-8 lines per field
+            Every possible form input — built with TanStack Form + shadcn/ui
           </p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
-            {/* Basic Inputs */}
-            <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-              <FormInput
-                control={form.control}
-                name='name'
-                label='Full Name'
-                placeholder='Enter your full name'
-                required
+          <form.AppForm>
+            <form.Form className='space-y-6'>
+              {/* ─── TEXT INPUTS ─── */}
+              <SectionTitle>Text Inputs</SectionTitle>
+
+              <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+                {/* Name */}
+                <form.AppField
+                  name='name'
+                  children={(field) => (
+                    <field.FieldSet>
+                      <field.Field>
+                        <field.FieldLabel htmlFor={field.name}>
+                          Full Name *
+                        </field.FieldLabel>
+                        <Input
+                          id={field.name}
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          placeholder='John Doe'
+                          aria-invalid={
+                            field.state.meta.isTouched &&
+                            !field.state.meta.isValid
+                          }
+                        />
+                      </field.Field>
+                      <field.FieldError />
+                    </field.FieldSet>
+                  )}
+                />
+
+                {/* Email */}
+                <form.AppField
+                  name='email'
+                  children={(field) => (
+                    <field.FieldSet>
+                      <field.Field>
+                        <field.FieldLabel htmlFor={field.name}>
+                          Email *
+                        </field.FieldLabel>
+                        <Input
+                          id={field.name}
+                          type='email'
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          placeholder='john@example.com'
+                          aria-invalid={
+                            field.state.meta.isTouched &&
+                            !field.state.meta.isValid
+                          }
+                        />
+                      </field.Field>
+                      <field.FieldError />
+                    </field.FieldSet>
+                  )}
+                />
+
+                {/* Password */}
+                <form.AppField
+                  name='password'
+                  children={(field) => (
+                    <field.FieldSet>
+                      <field.Field>
+                        <field.FieldLabel htmlFor={field.name}>
+                          Password *
+                        </field.FieldLabel>
+                        <Input
+                          id={field.name}
+                          type='password'
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          placeholder='Min 8 characters'
+                          aria-invalid={
+                            field.state.meta.isTouched &&
+                            !field.state.meta.isValid
+                          }
+                        />
+                      </field.Field>
+                      <field.FieldError />
+                    </field.FieldSet>
+                  )}
+                />
+
+                {/* Age */}
+                <form.AppField
+                  name='age'
+                  children={(field) => (
+                    <field.FieldSet>
+                      <field.Field>
+                        <field.FieldLabel htmlFor={field.name}>
+                          Age *
+                        </field.FieldLabel>
+                        <Input
+                          id={field.name}
+                          type='number'
+                          min={18}
+                          max={100}
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            field.handleChange(v === '' ? 0 : parseFloat(v));
+                          }}
+                          aria-invalid={
+                            field.state.meta.isTouched &&
+                            !field.state.meta.isValid
+                          }
+                        />
+                      </field.Field>
+                      <field.FieldError />
+                    </field.FieldSet>
+                  )}
+                />
+
+                {/* Phone */}
+                <form.AppField
+                  name='phone'
+                  children={(field) => (
+                    <field.FieldSet>
+                      <field.Field>
+                        <field.FieldLabel htmlFor={field.name}>
+                          Phone *
+                        </field.FieldLabel>
+                        <Input
+                          id={field.name}
+                          type='tel'
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          placeholder='+1 (555) 000-0000'
+                          aria-invalid={
+                            field.state.meta.isTouched &&
+                            !field.state.meta.isValid
+                          }
+                        />
+                      </field.Field>
+                      <field.FieldError />
+                    </field.FieldSet>
+                  )}
+                />
+
+                {/* URL */}
+                <form.AppField
+                  name='website'
+                  children={(field) => (
+                    <field.FieldSet>
+                      <field.Field>
+                        <field.FieldLabel htmlFor={field.name}>
+                          Website
+                        </field.FieldLabel>
+                        <Input
+                          id={field.name}
+                          type='url'
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          placeholder='https://example.com'
+                          aria-invalid={
+                            field.state.meta.isTouched &&
+                            !field.state.meta.isValid
+                          }
+                        />
+                      </field.Field>
+                      <field.FieldError />
+                    </field.FieldSet>
+                  )}
+                />
+              </div>
+
+              {/* Textarea - full width */}
+              <form.AppField
+                name='bio'
+                children={(field) => (
+                  <field.FieldSet>
+                    <field.Field>
+                      <field.FieldLabel htmlFor={field.name}>
+                        Bio *
+                      </field.FieldLabel>
+                      <Textarea
+                        id={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        placeholder='Tell us about yourself...'
+                        maxLength={500}
+                        rows={4}
+                        aria-invalid={
+                          field.state.meta.isTouched &&
+                          !field.state.meta.isValid
+                        }
+                      />
+                      <div className='text-muted-foreground text-right text-xs'>
+                        {field.state.value?.length || 0} / 500
+                      </div>
+                    </field.Field>
+                    <field.FieldError />
+                  </field.FieldSet>
+                )}
               />
 
-              <FormInput
-                control={form.control}
-                name='email'
-                type='email'
-                label='Email Address'
-                placeholder='Enter your email'
-                required
+              {/* ─── SELECT & COMBOBOX ─── */}
+              <SectionTitle>Select & Combobox</SectionTitle>
+
+              <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+                {/* Select */}
+                <form.AppField
+                  name='country'
+                  children={(field) => (
+                    <field.FieldSet>
+                      <field.Field>
+                        <field.FieldLabel htmlFor={field.name}>
+                          Country *
+                        </field.FieldLabel>
+                        <Select
+                          value={field.state.value}
+                          onValueChange={field.handleChange}
+                        >
+                          <SelectTrigger
+                            id={field.name}
+                            aria-invalid={
+                              field.state.meta.isTouched &&
+                              !field.state.meta.isValid
+                            }
+                          >
+                            <SelectValue placeholder='Select your country' />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {countryOptions.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </field.Field>
+                      <field.FieldError />
+                    </field.FieldSet>
+                  )}
+                />
+
+                {/* Combobox */}
+                <form.AppField
+                  name='framework'
+                  children={(field) => (
+                    <field.FieldSet>
+                      <field.Field>
+                        <field.FieldLabel>Framework *</field.FieldLabel>
+                        <ComboboxField
+                          value={field.state.value}
+                          onChange={field.handleChange}
+                          onBlur={field.handleBlur}
+                          isTouched={field.state.meta.isTouched}
+                          isValid={field.state.meta.isValid}
+                        />
+                        <FieldDescription>Searchable dropdown</FieldDescription>
+                      </field.Field>
+                      <field.FieldError />
+                    </field.FieldSet>
+                  )}
+                />
+              </div>
+
+              {/* ─── CHECKBOX & RADIO ─── */}
+              <SectionTitle>Checkbox & Radio</SectionTitle>
+
+              {/* Checkbox Group */}
+              <form.AppField
+                name='interests'
+                mode='array'
+                children={(field) => {
+                  const values: string[] = field.state.value || [];
+                  return (
+                    <field.FieldSet>
+                      <field.FieldLabel>Interests *</field.FieldLabel>
+                      <FieldDescription>Select all that apply</FieldDescription>
+                      <div className='grid grid-cols-2 gap-3 md:grid-cols-3'>
+                        {interestOptions.map((opt) => (
+                          <div
+                            key={opt.value}
+                            className='flex items-center space-x-2'
+                          >
+                            <Checkbox
+                              id={`interests-${opt.value}`}
+                              checked={values.includes(opt.value)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  field.pushValue(opt.value);
+                                } else {
+                                  const idx = values.indexOf(opt.value);
+                                  if (idx > -1) field.removeValue(idx);
+                                }
+                              }}
+                            />
+                            <Label htmlFor={`interests-${opt.value}`}>
+                              {opt.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                      {values.length > 0 && (
+                        <div className='flex flex-wrap gap-2'>
+                          {values.map((v) => (
+                            <Badge key={v} variant='secondary'>
+                              {interestOptions.find((o) => o.value === v)
+                                ?.label || v}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                      <field.FieldError />
+                    </field.FieldSet>
+                  );
+                }}
               />
 
-              <FormInput
-                control={form.control}
-                name='age'
-                type='number'
-                label='Age'
-                min={18}
-                max={100}
-                required
+              {/* Radio Group */}
+              <form.AppField
+                name='gender'
+                children={(field) => (
+                  <field.FieldSet>
+                    <field.FieldLabel>Gender *</field.FieldLabel>
+                    <RadioGroup
+                      value={field.state.value}
+                      onValueChange={field.handleChange}
+                      onBlur={field.handleBlur}
+                      className='flex flex-wrap gap-x-6 gap-y-2'
+                    >
+                      {genderOptions.map((opt) => (
+                        <div
+                          key={opt.value}
+                          className='flex items-center space-x-2'
+                        >
+                          <RadioGroupItem
+                            value={opt.value}
+                            id={`gender-${opt.value}`}
+                          />
+                          <Label htmlFor={`gender-${opt.value}`}>
+                            {opt.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                    <field.FieldError />
+                  </field.FieldSet>
+                )}
               />
 
-              <FormInput
-                control={form.control}
-                name='password'
-                type='password'
-                label='Password'
-                placeholder='Enter your password'
-                required
+              {/* ─── TOGGLE & SWITCH ─── */}
+              <SectionTitle>Toggle & Switch</SectionTitle>
+
+              {/* Switch */}
+              <form.AppField
+                name='newsletter'
+                children={(field) => (
+                  <field.FieldSet>
+                    <field.Field orientation='horizontal'>
+                      <field.FieldContent>
+                        <field.FieldLabel className='text-base'>
+                          Subscribe to Newsletter
+                        </field.FieldLabel>
+                        <FieldDescription>
+                          Receive updates about new features and products
+                        </FieldDescription>
+                      </field.FieldContent>
+                      <Switch
+                        checked={field.state.value}
+                        onCheckedChange={field.handleChange}
+                        onBlur={field.handleBlur}
+                      />
+                    </field.Field>
+                  </field.FieldSet>
+                )}
               />
-            </div>
 
-            {/* Textarea */}
-            <FormTextarea
-              control={form.control}
-              name='bio'
-              label='Bio'
-              placeholder='Tell us about yourself...'
-              description='A brief description about yourself'
-              config={{
-                maxLength: 500,
-                showCharCount: true,
-                rows: 4
-              }}
-              required
-            />
+              {/* Toggle Group */}
+              <form.AppField
+                name='formatting'
+                mode='array'
+                children={(field) => {
+                  const values: string[] = field.state.value || [];
+                  return (
+                    <field.FieldSet>
+                      <field.Field>
+                        <field.FieldLabel>Text Formatting</field.FieldLabel>
+                        <ToggleGroup
+                          type='multiple'
+                          variant='outline'
+                          value={values}
+                          onValueChange={(val) =>
+                            field.form.setFieldValue('formatting', val)
+                          }
+                        >
+                          <ToggleGroupItem value='bold' aria-label='Bold'>
+                            <Icons.bold className='h-4 w-4' />
+                          </ToggleGroupItem>
+                          <ToggleGroupItem value='italic' aria-label='Italic'>
+                            <Icons.italic className='h-4 w-4' />
+                          </ToggleGroupItem>
+                          <ToggleGroupItem
+                            value='underline'
+                            aria-label='Underline'
+                          >
+                            <Icons.underline className='h-4 w-4' />
+                          </ToggleGroupItem>
+                        </ToggleGroup>
+                        <FieldDescription>
+                          Multi-select toggle group
+                        </FieldDescription>
+                      </field.Field>
+                    </field.FieldSet>
+                  );
+                }}
+              />
 
-            {/* Select */}
-            <FormSelect
-              control={form.control}
-              name='country'
-              label='Country'
-              placeholder='Select your country'
-              options={countryOptions}
-              required
-            />
+              {/* Single Checkbox (Terms) */}
+              <form.AppField
+                name='terms'
+                children={(field) => (
+                  <field.FieldSet>
+                    <field.Field orientation='horizontal'>
+                      <Checkbox
+                        checked={field.state.value}
+                        onCheckedChange={(checked) =>
+                          field.handleChange(checked as boolean)
+                        }
+                        aria-invalid={
+                          field.state.meta.isTouched &&
+                          !field.state.meta.isValid
+                        }
+                      />
+                      <field.FieldContent>
+                        <field.FieldLabel className='space-y-1 leading-none'>
+                          I agree to the Terms and Conditions *
+                        </field.FieldLabel>
+                        <field.FieldError />
+                      </field.FieldContent>
+                    </field.Field>
+                  </field.FieldSet>
+                )}
+              />
 
-            {/* Checkbox Group */}
-            <FormCheckboxGroup
-              control={form.control}
-              name='interests'
-              label='Interests'
-              description='Select all that apply'
-              options={interestOptions}
-              columns={3}
-              showBadges={true}
-              required
-            />
+              {/* ─── SLIDER ─── */}
+              <SectionTitle>Slider</SectionTitle>
 
-            {/* Radio Group */}
-            <FormRadioGroup
-              control={form.control}
-              name='gender'
-              label='Gender'
-              options={genderOptions}
-              orientation='horizontal'
-              required
-            />
+              <form.AppField
+                name='rating'
+                children={(field) => (
+                  <field.FieldSet>
+                    <field.Field>
+                      <field.FieldLabel>Overall Rating</field.FieldLabel>
+                      <div className='px-1'>
+                        <Slider
+                          min={0}
+                          max={10}
+                          step={0.5}
+                          value={[field.state.value ?? 0]}
+                          onValueChange={(v) => field.handleChange(v[0])}
+                          onBlur={field.handleBlur}
+                        />
+                        <div className='text-muted-foreground mt-1 flex justify-between text-xs'>
+                          <span>0</span>
+                          <span className='font-medium'>
+                            {field.state.value ?? 0}/10
+                          </span>
+                          <span>10</span>
+                        </div>
+                      </div>
+                      <FieldDescription>
+                        Rate your experience (0-10)
+                      </FieldDescription>
+                    </field.Field>
+                  </field.FieldSet>
+                )}
+              />
 
-            {/* Switch */}
-            <FormSwitch
-              control={form.control}
-              name='newsletter'
-              label='Subscribe to Newsletter'
-              description='Receive updates about new features and products'
-            />
+              {/* ─── DATE & TIME ─── */}
+              <SectionTitle>Date & Time</SectionTitle>
 
-            {/* Slider */}
-            <FormSlider
-              control={form.control}
-              name='rating'
-              label='Overall Rating'
-              description='Rate your experience (0-10)'
-              config={{
-                min: 0,
-                max: 10,
-                step: 0.5,
-                formatValue: (value) => `${value}/10`
-              }}
-              showValue={true}
-            />
+              <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+                {/* Date Picker */}
+                <form.AppField
+                  name='birthDate'
+                  children={(field) => (
+                    <field.FieldSet>
+                      <field.Field>
+                        <field.FieldLabel>Birth Date</field.FieldLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant='outline'
+                              className={cn(
+                                'w-full justify-start text-left font-normal',
+                                !field.state.value && 'text-muted-foreground'
+                              )}
+                            >
+                              <Icons.calendar className='mr-2 h-4 w-4' />
+                              {field.state.value ? (
+                                format(field.state.value, 'PPP')
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className='w-auto p-0' align='start'>
+                            <Calendar
+                              mode='single'
+                              selected={field.state.value}
+                              onSelect={field.handleChange}
+                              disabled={(date) => date > new Date()}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </field.Field>
+                    </field.FieldSet>
+                  )}
+                />
 
-            {/* Date Picker */}
-            <FormDatePicker
-              control={form.control}
-              name='birthDate'
-              label='Birth Date'
-              description='Your date of birth (optional)'
-              config={{
-                maxDate: new Date(),
-                placeholder: 'Select your birth date'
-              }}
-            />
+                {/* Time Picker */}
+                <form.AppField
+                  name='eventTime'
+                  children={(field) => (
+                    <field.FieldSet>
+                      <field.Field>
+                        <field.FieldLabel htmlFor={field.name}>
+                          Event Time
+                        </field.FieldLabel>
+                        <Input
+                          id={field.name}
+                          type='time'
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                        />
+                      </field.Field>
+                    </field.FieldSet>
+                  )}
+                />
+              </div>
 
-            {/* Single Checkbox */}
-            <FormCheckbox
-              control={form.control}
-              name='terms'
-              checkboxLabel='I agree to the Terms and Conditions'
-              description='Please read and accept our terms'
-              required
-            />
+              {/* Date Range Picker - full width */}
+              <form.AppField
+                name='dateRange'
+                children={(field) => {
+                  const range = field.state.value as DateRange | undefined;
+                  return (
+                    <field.FieldSet>
+                      <field.Field>
+                        <field.FieldLabel>Date Range</field.FieldLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant='outline'
+                              className={cn(
+                                'w-full justify-start text-left font-normal',
+                                !range?.from && 'text-muted-foreground'
+                              )}
+                            >
+                              <Icons.calendar className='mr-2 h-4 w-4' />
+                              {range?.from ? (
+                                range.to ? (
+                                  <>
+                                    {format(range.from, 'LLL dd, y')} -{' '}
+                                    {format(range.to, 'LLL dd, y')}
+                                  </>
+                                ) : (
+                                  format(range.from, 'LLL dd, y')
+                                )
+                              ) : (
+                                <span>Pick a date range</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className='w-auto p-0' align='start'>
+                            <Calendar
+                              mode='range'
+                              selected={range}
+                              onSelect={field.handleChange}
+                              numberOfMonths={2}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </field.Field>
+                    </field.FieldSet>
+                  );
+                }}
+              />
 
-            {/* File Upload */}
-            <FormFileUpload
-              control={form.control}
-              name='avatar'
-              label='Profile Picture'
-              description='Upload a profile picture (optional)'
-              config={fileUploadConfig}
-            />
+              {/* ─── SPECIAL INPUTS ─── */}
+              <SectionTitle>Special Inputs</SectionTitle>
 
-            {/* Submit Button */}
-            <div className='flex gap-4 pt-4'>
-              <Button type='submit' className='flex-1'>
-                Submit Form
-              </Button>
-              <Button
-                type='button'
-                variant='outline'
-                onClick={() => form.reset()}
-                className='flex-1'
-              >
-                Reset
-              </Button>
-            </div>
-          </form>
+              <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+                {/* OTP Input */}
+                <form.AppField
+                  name='otp'
+                  children={(field) => (
+                    <field.FieldSet>
+                      <field.Field>
+                        <field.FieldLabel>Verification Code *</field.FieldLabel>
+                        <InputOTP
+                          maxLength={6}
+                          value={field.state.value}
+                          onChange={field.handleChange}
+                        >
+                          <InputOTPGroup>
+                            <InputOTPSlot index={0} />
+                            <InputOTPSlot index={1} />
+                            <InputOTPSlot index={2} />
+                          </InputOTPGroup>
+                          <InputOTPSeparator />
+                          <InputOTPGroup>
+                            <InputOTPSlot index={3} />
+                            <InputOTPSlot index={4} />
+                            <InputOTPSlot index={5} />
+                          </InputOTPGroup>
+                        </InputOTP>
+                        <FieldDescription>6-digit OTP input</FieldDescription>
+                      </field.Field>
+                      <field.FieldError />
+                    </field.FieldSet>
+                  )}
+                />
+
+                {/* Color Picker */}
+                <form.AppField
+                  name='favoriteColor'
+                  children={(field) => (
+                    <field.FieldSet>
+                      <field.Field>
+                        <field.FieldLabel htmlFor={field.name}>
+                          Favorite Color
+                        </field.FieldLabel>
+                        <div className='flex items-center gap-3'>
+                          <input
+                            id={field.name}
+                            type='color'
+                            value={field.state.value}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                            className='h-9 w-12 cursor-pointer rounded-md border p-1'
+                          />
+                          <Input
+                            value={field.state.value}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                            className='w-28 font-mono'
+                            placeholder='#000000'
+                          />
+                        </div>
+                        <FieldDescription>
+                          Native color picker with hex
+                        </FieldDescription>
+                      </field.Field>
+                    </field.FieldSet>
+                  )}
+                />
+              </div>
+
+              {/* Tags Input - full width */}
+              <form.AppField
+                name='tags'
+                mode='array'
+                children={(field) => {
+                  const values: string[] = field.state.value || [];
+                  return (
+                    <field.FieldSet>
+                      <field.Field>
+                        <field.FieldLabel>Tags *</field.FieldLabel>
+                        <TagsField
+                          values={values}
+                          onPush={(val) => field.pushValue(val)}
+                          onRemove={(idx) => field.removeValue(idx)}
+                        />
+                        <FieldDescription>
+                          Press Enter or click Add to create tags
+                        </FieldDescription>
+                      </field.Field>
+                      <field.FieldError />
+                    </field.FieldSet>
+                  );
+                }}
+              />
+
+              {/* ─── FILE UPLOAD ─── */}
+              <SectionTitle>File Upload</SectionTitle>
+
+              <form.AppField
+                name='avatar'
+                children={(field) => (
+                  <field.FieldSet>
+                    <field.Field>
+                      <field.FieldLabel>Profile Picture</field.FieldLabel>
+                      <FileUploader
+                        value={field.state.value}
+                        onValueChange={field.handleChange}
+                        maxSize={5000000}
+                        maxFiles={1}
+                        accept={{
+                          'image/jpeg': [],
+                          'image/png': [],
+                          'image/webp': []
+                        }}
+                      />
+                      <FieldDescription>
+                        Drag & drop or click to upload (max 5MB)
+                      </FieldDescription>
+                    </field.Field>
+                    <field.FieldError />
+                  </field.FieldSet>
+                )}
+              />
+
+              {/* ─── SUBMIT ─── */}
+              <Separator />
+              <div className='flex gap-4 pt-2'>
+                <Button type='submit' className='flex-1'>
+                  Submit Form
+                </Button>
+                <Button
+                  type='button'
+                  variant='outline'
+                  onClick={() => form.reset()}
+                  className='flex-1'
+                >
+                  Reset
+                </Button>
+              </div>
+            </form.Form>
+          </form.AppForm>
         </CardContent>
       </Card>
 
-      {/* Form Data Preview */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Form Data Preview</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <pre className='bg-muted overflow-auto rounded-lg p-4 text-sm'>
-            {JSON.stringify(form.watch(), null, 2)}
-          </pre>
-        </CardContent>
-      </Card>
+      {/* Form Data Preview - sticky sidebar */}
+      <div className='xl:sticky xl:top-4 xl:self-start'>
+        <Card>
+          <CardHeader>
+            <CardTitle>Form Data Preview</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <pre className='bg-muted max-h-[calc(100vh-8rem)] overflow-auto rounded-lg p-4 text-xs'>
+              {JSON.stringify(formValues, null, 2)}
+            </pre>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -1,16 +1,20 @@
 'use client';
 
-import { FormFileUpload } from '@/components/forms/form-file-upload';
-import { FormInput } from '@/components/forms/form-input';
-import { FormSelect } from '@/components/forms/form-select';
-import { FormTextarea } from '@/components/forms/form-textarea';
+import { useAppForm } from '@/components/ui/tanstack-form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
+import { FileUploader } from '@/components/file-uploader';
 import { Product } from '@/constants/mock-api';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
 const MAX_FILE_SIZE = 5000000;
@@ -50,25 +54,24 @@ export default function ProductForm({
   initialData: Product | null;
   pageTitle: string;
 }) {
-  const defaultValues = {
-    name: initialData?.name || '',
-    category: initialData?.category || '',
-    price: initialData?.price || undefined,
-    description: initialData?.description || ''
-  };
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: defaultValues
-  });
-
   const router = useRouter();
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // Form submission logic would be implemented here
-    console.log(values);
-    router.push('/dashboard/product');
-  }
+  const form = useAppForm({
+    defaultValues: {
+      image: undefined as any,
+      name: initialData?.name || '',
+      category: initialData?.category || '',
+      price: initialData?.price || (undefined as number | undefined),
+      description: initialData?.description || ''
+    },
+    validators: {
+      onSubmit: formSchema as any
+    },
+    onSubmit: ({ value }) => {
+      console.log(value);
+      router.push('/dashboard/product');
+    }
+  });
 
   return (
     <Card className='mx-auto w-full'>
@@ -78,84 +81,167 @@ export default function ProductForm({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Form
-          form={form}
-          onSubmit={form.handleSubmit(onSubmit)}
-          className='space-y-8'
-        >
-          <FormFileUpload
-            control={form.control}
-            name='image'
-            label='Product Image'
-            description='Upload a product image'
-            config={{
-              maxSize: 5 * 1024 * 1024,
-              maxFiles: 4
-            }}
-          />
-
-          <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
-            <FormInput
-              control={form.control}
-              name='name'
-              label='Product Name'
-              placeholder='Enter product name'
-              required
+        <form.AppForm>
+          <form.Form className='space-y-8'>
+            <form.AppField
+              name='image'
+              children={(field) => (
+                <field.FieldSet>
+                  <field.Field>
+                    <field.FieldLabel>Product Image</field.FieldLabel>
+                    <FileUploader
+                      value={field.state.value}
+                      onValueChange={field.handleChange}
+                      maxSize={5 * 1024 * 1024}
+                      maxFiles={4}
+                    />
+                  </field.Field>
+                  <field.FieldError />
+                </field.FieldSet>
+              )}
             />
 
-            <FormSelect
-              control={form.control}
-              name='category'
-              label='Category'
-              placeholder='Select category'
-              required
-              options={[
-                {
-                  label: 'Beauty Products',
-                  value: 'beauty'
-                },
-                {
-                  label: 'Electronics',
-                  value: 'electronics'
-                },
-                {
-                  label: 'Home & Garden',
-                  value: 'home'
-                },
-                {
-                  label: 'Sports & Outdoors',
-                  value: 'sports'
-                }
-              ]}
+            <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+              <form.AppField
+                name='name'
+                children={(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <field.FieldSet>
+                      <field.Field>
+                        <field.FieldLabel htmlFor={field.name}>
+                          Product Name *
+                        </field.FieldLabel>
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          placeholder='Enter product name'
+                          aria-invalid={isInvalid}
+                        />
+                      </field.Field>
+                      <field.FieldError />
+                    </field.FieldSet>
+                  );
+                }}
+              />
+
+              <form.AppField
+                name='category'
+                children={(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <field.FieldSet>
+                      <field.Field>
+                        <field.FieldLabel htmlFor={field.name}>
+                          Category *
+                        </field.FieldLabel>
+                        <Select
+                          name={field.name}
+                          value={field.state.value}
+                          onValueChange={field.handleChange}
+                        >
+                          <SelectTrigger
+                            id={field.name}
+                            aria-invalid={isInvalid}
+                          >
+                            <SelectValue placeholder='Select category' />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value='beauty'>
+                              Beauty Products
+                            </SelectItem>
+                            <SelectItem value='electronics'>
+                              Electronics
+                            </SelectItem>
+                            <SelectItem value='home'>Home & Garden</SelectItem>
+                            <SelectItem value='sports'>
+                              Sports & Outdoors
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </field.Field>
+                      <field.FieldError />
+                    </field.FieldSet>
+                  );
+                }}
+              />
+
+              <form.AppField
+                name='price'
+                children={(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <field.FieldSet>
+                      <field.Field>
+                        <field.FieldLabel htmlFor={field.name}>
+                          Price *
+                        </field.FieldLabel>
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          type='number'
+                          min={0}
+                          step='0.01'
+                          value={field.state.value ?? ''}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            field.handleChange(
+                              v === '' ? undefined : parseFloat(v)
+                            );
+                          }}
+                          placeholder='Enter price'
+                          aria-invalid={isInvalid}
+                        />
+                      </field.Field>
+                      <field.FieldError />
+                    </field.FieldSet>
+                  );
+                }}
+              />
+            </div>
+
+            <form.AppField
+              name='description'
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <field.FieldSet>
+                    <field.Field>
+                      <field.FieldLabel htmlFor={field.name}>
+                        Description *
+                      </field.FieldLabel>
+                      <Textarea
+                        id={field.name}
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        placeholder='Enter product description'
+                        maxLength={500}
+                        rows={4}
+                        aria-invalid={isInvalid}
+                      />
+                      <div className='text-muted-foreground text-right text-sm'>
+                        {field.state.value?.length || 0} / 500
+                      </div>
+                    </field.Field>
+                    <field.FieldError />
+                  </field.FieldSet>
+                );
+              }}
             />
 
-            <FormInput
-              control={form.control}
-              name='price'
-              label='Price'
-              placeholder='Enter price'
-              required
-              type='number'
-              min={0}
-              step='0.01'
-            />
-          </div>
-
-          <FormTextarea
-            control={form.control}
-            name='description'
-            label='Description'
-            placeholder='Enter product description'
-            required
-            config={{
-              maxLength: 500,
-              showCharCount: true,
-              rows: 4
-            }}
-          />
-
-          <Button type='submit'>Add Product</Button>
-        </Form>
+            <Button type='submit'>Add Product</Button>
+          </form.Form>
+        </form.AppForm>
       </CardContent>
     </Card>
   );
