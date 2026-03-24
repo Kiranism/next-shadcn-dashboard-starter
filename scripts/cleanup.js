@@ -703,30 +703,61 @@ class FeatureCleanup {
     let modified = false;
 
     for (const url of navItemsToRemove) {
-      const escapedUrl = url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // Find each object containing the url and remove it using brace-depth tracking
+      // This handles nested braces (e.g. access: { requireOrg: true }) and trailing comments
+      let idx;
+      while ((idx = content.indexOf(`'${url}'`)) !== -1) {
+        // Walk backwards to find the opening brace of this object
+        let start = idx;
+        let depth = 0;
+        while (start > 0) {
+          start--;
+          if (content[start] === '}') depth++;
+          if (content[start] === '{') {
+            if (depth === 0) break;
+            depth--;
+          }
+        }
+        // Include leading whitespace/newline
+        while (
+          start > 0 &&
+          (content[start - 1] === ' ' ||
+            content[start - 1] === '\t' ||
+            content[start - 1] === '\n')
+        ) {
+          start--;
+        }
 
-      // Remove sub-items
-      const subItemRegex = new RegExp(
-        `\\s*\\{[^{}]*url:\\s*'${escapedUrl}'[^{}]*\\},?`,
-        'g'
-      );
-      let newContent = content.replace(subItemRegex, '');
-      if (newContent !== content) {
-        content = newContent;
-        modified = true;
-      }
+        // Walk forward from the url to find the matching closing brace
+        let end = idx;
+        depth = 0;
+        while (end < content.length) {
+          if (content[end] === '{') depth++;
+          if (content[end] === '}') {
+            depth--;
+            if (depth < 0) {
+              end++;
+              break;
+            }
+          }
+          end++;
+        }
+        // Skip trailing comma and whitespace
+        if (content[end] === ',') end++;
 
-      // Remove top-level items
-      const topItemRegex = new RegExp(
-        `\\s*\\{[^{}]*url:\\s*'${escapedUrl}'[^}]*(?:\\{[^}]*\\}[^}]*)*\\},?`,
-        'g'
-      );
-      newContent = content.replace(topItemRegex, '');
-      if (newContent !== content) {
-        content = newContent;
+        content = content.slice(0, start) + content.slice(end);
         modified = true;
       }
     }
+
+    // Clean up empty parent groups (items array with only whitespace)
+    content = content.replace(
+      /,?\s*\{[^{}]*items:\s*\[\s*\]\s*\}/g,
+      (match, offset) => {
+        // Only remove if it looks like a parent group (has url: '#')
+        return match.includes("url: '#'") ? '' : match;
+      }
+    );
 
     content = content.replace(/,(\s*\])/g, '$1');
     content = content.replace(/\n\s*\n\s*\n/g, '\n\n');
