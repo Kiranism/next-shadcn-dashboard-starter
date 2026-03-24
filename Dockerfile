@@ -38,6 +38,8 @@ ARG NEXT_PUBLIC_CLERK_SIGN_IN_URL=/auth/sign-in
 ARG NEXT_PUBLIC_CLERK_SIGN_UP_URL=/auth/sign-up
 ARG NEXT_PUBLIC_SENTRY_DISABLED=true
 
+ENV BUILD_STANDALONE=true
+
 RUN npm run build
 
 # ============================================
