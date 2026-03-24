@@ -3,18 +3,16 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 export function PieGraphSkeleton() {
   return (
-    <Card>
-      <CardHeader className='flex flex-col items-stretch space-y-0 border-b p-0'>
-        <div className='flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6'>
-          <Skeleton className='h-6 w-[180px]' />
-          <Skeleton className='h-4 w-[250px]' />
+    <Card className='flex h-full flex-col'>
+      <CardHeader className='items-center pb-0'>
+        <div className='flex items-center gap-2'>
+          <Skeleton className='h-6 w-[100px]' />
+          <Skeleton className='h-5 w-[60px] rounded-full' />
         </div>
+        <Skeleton className='h-4 w-[150px]' />
       </CardHeader>
-      <CardContent className='p-6'>
-        <div className='flex h-[280px] items-center justify-center'>
-          {/* Circular skeleton for pie chart */}
-          <Skeleton className='h-[300px] w-[300px] rounded-full' />
-        </div>
+      <CardContent className='flex flex-1 items-center justify-center pb-0'>
+        <Skeleton className='h-[250px] w-[250px] rounded-full' />
       </CardContent>
     </Card>
   );
