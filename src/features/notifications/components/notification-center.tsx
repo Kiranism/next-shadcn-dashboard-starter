@@ -12,12 +12,22 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { NotificationCard } from '@/components/ui/notification-card';
 import { useNotificationStore } from '../utils/store';
+import { useRouter } from 'next/navigation';
 
 const MAX_VISIBLE = 5;
+
+const actionRoutes: Record<string, string> = {
+  view: '/dashboard/workspaces',
+  'view-product': '/dashboard/product',
+  billing: '/dashboard/billing',
+  open: '/dashboard/kanban',
+  'open-chat': '/dashboard/chat'
+};
 
 export function NotificationCenter() {
   const { notifications, markAsRead, markAllAsRead, unreadCount } =
     useNotificationStore();
+  const router = useRouter();
   const count = unreadCount();
   const visibleNotifications = notifications.slice(0, MAX_VISIBLE);
 
@@ -88,11 +98,12 @@ export function NotificationCenter() {
                   createdAt={notification.createdAt}
                   actions={notification.actions}
                   onMarkAsRead={markAsRead}
-                  onAction={(notifId, actionId, actionType) => {
-                    // Handle actions — users can customize this
-                    console.log(
-                      `Action ${actionId} (${actionType}) on notification ${notifId}`
-                    );
+                  onAction={(notifId, actionId) => {
+                    const route = actionRoutes[actionId];
+                    if (route) {
+                      markAsRead(notifId);
+                      router.push(route);
+                    }
                   }}
                 />
               ))}

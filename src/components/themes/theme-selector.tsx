@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 
 import { Icons } from '../icons';
+import { Kbd } from '@/components/ui/kbd';
 import { THEMES } from './theme.config';
 
 export function ThemeSelector() {
@@ -34,6 +35,7 @@ export function ThemeSelector() {
           </span>
           <span className='text-muted-foreground block sm:hidden'>Theme</span>
           <SelectValue placeholder='Select a theme' />
+          <Kbd>T T</Kbd>
         </SelectTrigger>
         <SelectContent align='end'>
           {THEMES.length > 0 && (

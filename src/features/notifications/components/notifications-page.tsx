@@ -5,11 +5,21 @@ import PageContainer from '@/components/layout/page-container';
 import { Button } from '@/components/ui/button';
 import { NotificationCard } from '@/components/ui/notification-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useRouter } from 'next/navigation';
 import { useNotificationStore } from '../utils/store';
+
+const actionRoutes: Record<string, string> = {
+  view: '/dashboard/workspaces',
+  'view-product': '/dashboard/product',
+  billing: '/dashboard/billing',
+  open: '/dashboard/kanban',
+  'open-chat': '/dashboard/chat'
+};
 
 export default function NotificationsPage() {
   const { notifications, markAsRead, markAllAsRead, unreadCount } =
     useNotificationStore();
+  const router = useRouter();
   const count = unreadCount();
 
   const unreadNotifications = notifications.filter(
@@ -39,10 +49,12 @@ export default function NotificationsPage() {
             createdAt={notification.createdAt}
             actions={notification.actions}
             onMarkAsRead={markAsRead}
-            onAction={(notifId, actionId, actionType) => {
-              console.log(
-                `Action ${actionId} (${actionType}) on notification ${notifId}`
-              );
+            onAction={(notifId, actionId) => {
+              const route = actionRoutes[actionId];
+              if (route) {
+                markAsRead(notifId);
+                router.push(route);
+              }
             }}
           />
         ))}

@@ -36,6 +36,7 @@ This template uses the following stack:
 - Error tracking - [Sentry](https://sentry.io/for/nextjs/?utm_source=github&utm_medium=paid-community&utm_campaign=general-fy26q2-nextjs&utm_content=github-banner-project-tryfree)
 - Styling - [Tailwind CSS v4](https://tailwindcss.com)
 - Components - [Shadcn-ui](https://ui.shadcn.com)
+- Charts - [Recharts](https://recharts.org) • [Evil Charts](https://evilcharts.com/)
 - Schema Validations - [Zod](https://zod.dev)
 - State Management - [Zustand](https://zustand-demo.pmnd.rs)
 - Search params state manager - [Nuqs](https://nuqs.47ng.com/)
@@ -194,6 +195,38 @@ node scripts/cleanup.js kanban chat     # remove specific features
 ```
 
 Run `node scripts/cleanup.js --help` for all options. Delete `scripts/cleanup.js` when you're done.
+
+## Deploy
+
+This project includes production-ready Dockerfiles (`Dockerfile` for Node.js, `Dockerfile.bun` for Bun) using standalone output mode. For all deployment options, see the [Next.js Deployment Documentation](https://nextjs.org/docs/app/getting-started/deploying).
+
+### Docker
+
+**Build the image:**
+
+```bash
+# Node.js
+docker build \
+  --build-arg NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_xxxxx \
+  -t shadcn-dashboard .
+
+# OR Bun
+docker build -f Dockerfile.bun \
+  --build-arg NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_xxxxx \
+  -t shadcn-dashboard .
+```
+
+**Run the container:**
+
+```bash
+docker run -d -p 3000:3000 \
+  -e NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_xxxxx \
+  -e CLERK_SECRET_KEY=sk_live_xxxxx \
+  --restart unless-stopped \
+  --name shadcn-dashboard \
+  shadcn-dashboard
+```
+
 
 ### ⭐ Support
 

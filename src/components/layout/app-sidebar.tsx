@@ -178,7 +178,9 @@ export default function AppSidebar() {
                       Billing
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => router.push('/dashboard/notifications')}
+                  >
                     <IconBell className='mr-2 h-4 w-4' />
                     Notifications
                   </DropdownMenuItem>
