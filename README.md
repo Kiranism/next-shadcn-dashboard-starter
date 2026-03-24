@@ -187,6 +187,38 @@ You should now be able to access the application at http://localhost:3000.
 
 To remove demo data, boilerplate, or unwanted starter code, see the [cleanup guide](__CLEANUP__/cleanup.md). Follow the instructions there to tidy up, adapt, or personalize your app as needed for your project.
 
+## Deploy
+
+This project includes production-ready Dockerfiles (`Dockerfile` for Node.js, `Dockerfile.bun` for Bun) using standalone output mode. For all deployment options, see the [Next.js Deployment Documentation](https://nextjs.org/docs/app/getting-started/deploying).
+
+### Docker
+
+**Build the image:**
+
+```bash
+# Node.js
+docker build \
+  --build-arg NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_xxxxx \
+  -t shadcn-dashboard .
+
+# OR Bun
+docker build -f Dockerfile.bun \
+  --build-arg NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_xxxxx \
+  -t shadcn-dashboard .
+```
+
+**Run the container:**
+
+```bash
+docker run -d -p 3000:3000 \
+  -e NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_xxxxx \
+  -e CLERK_SECRET_KEY=sk_live_xxxxx \
+  --restart unless-stopped \
+  --name shadcn-dashboard \
+  shadcn-dashboard
+```
+
+
 ### ⭐ Support
 
 If you find this template helpful, please consider giving it a star ⭐
