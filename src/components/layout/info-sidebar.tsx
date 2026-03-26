@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { IconChevronRight } from '@tabler/icons-react';
+import { Icons } from '@/components/icons';
 import Link from 'next/link';
 import {
   Infobar,
@@ -39,7 +39,7 @@ export function InfoSidebar({
 
   return (
     <Infobar {...props}>
-      <InfobarHeader className='flex flex-row items-start justify-between gap-2 border-b px-3 py-3'>
+      <InfobarHeader className='bg-sidebar sticky top-0 z-10 flex flex-row items-start justify-between gap-2 border-b px-3 py-3'>
         <div className='min-w-0 flex-1'>
           <h2 className='text-lg font-semibold wrap-break-word'>
             {data.title}
@@ -54,8 +54,8 @@ export function InfoSidebar({
           <InfobarGroupContent>
             <div className='flex flex-col gap-6 px-4 py-4'>
               {data.sections && data.sections.length > 0 ? (
-                data.sections.map((section, index) => (
-                  <div key={index} className='flex flex-col gap-3'>
+                data.sections.map((section) => (
+                  <div key={section.title} className='flex flex-col gap-3'>
                     {section.title && (
                       <h3 className='text-foreground text-sm font-semibold'>
                         {section.title}
@@ -73,14 +73,15 @@ export function InfoSidebar({
                         </h4>
                         <ul className='flex flex-col gap-1.5'>
                           {section.links.map((link, linkIndex) => (
-                            <li key={linkIndex}>
+                            <li key={link.title}>
                               <Link
                                 href={link.url}
                                 className='text-primary flex items-center gap-1.5 text-sm underline'
                                 target='_blank'
+                                rel='noopener noreferrer'
                               >
                                 <span>{link.title}</span>
-                                <IconChevronRight className='h-3 w-3' />
+                                <Icons.chevronRight className='h-3 w-3' />
                               </Link>
                             </li>
                           ))}

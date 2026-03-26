@@ -1,7 +1,7 @@
 'use client';
 
 import type { Column } from '@tanstack/react-table';
-import { EyeOff } from 'lucide-react';
+import { Icons } from '@/components/icons';
 
 import {
   DropdownMenu,
@@ -89,7 +89,7 @@ export function DataTableColumnHeader<TData, TValue>({
             checked={!column.getIsVisible()}
             onClick={() => column.toggleVisibility(false)}
           >
-            <EyeOff />
+            <Icons.eyeOff />
             Hide
           </DropdownMenuCheckboxItem>
         )}

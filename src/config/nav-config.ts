@@ -1,9 +1,10 @@
-import { NavItem } from '@/types';
+import { NavGroup } from '@/types';
 
 /**
  * Navigation configuration with RBAC support
  *
  * This configuration is used for both the sidebar navigation and Cmd+K bar.
+ * Items are organized into groups, each rendered with a SidebarGroupLabel.
  *
  * RBAC Access Control:
  * Each navigation item can have an `access` property that controls visibility
@@ -32,104 +33,164 @@ import { NavItem } from '@/types';
  * Note: The `visible` function is deprecated but still supported for backward compatibility.
  * Use the `access` property for new items.
  */
-export const navItems: NavItem[] = [
+export const navGroups: NavGroup[] = [
   {
-    title: 'Dashboard',
-    url: '/dashboard/overview',
-    icon: 'dashboard',
-    isActive: false,
-    shortcut: ['d', 'd'],
-    items: []
-  },
-  {
-    title: 'Workspaces',
-    url: '/dashboard/workspaces',
-    icon: 'workspace',
-    isActive: false,
-    items: []
-  },
-  {
-    title: 'Teams',
-    url: '/dashboard/workspaces/team',
-    icon: 'teams',
-    isActive: false,
-    items: [],
-    // Require organization to be active
-    access: { requireOrg: true }
-    // Alternative: require specific permission
-    // access: { requireOrg: true, permission: 'org:teams:view' }
-  },
-  {
-    title: 'Product',
-    url: '/dashboard/product',
-    icon: 'product',
-    shortcut: ['p', 'p'],
-    isActive: false,
-    items: []
-  },
-  {
-    title: 'Kanban',
-    url: '/dashboard/kanban',
-    icon: 'kanban',
-    shortcut: ['k', 'k'],
-    isActive: false,
-    items: []
-  },
-  {
-    title: 'Chat',
-    url: '/dashboard/chat',
-    icon: 'chat',
-    shortcut: ['c', 'c'],
-    isActive: false,
-    items: []
-  },
-  {
-    title: 'Pro',
-    url: '#', // Placeholder as there is no direct link for the parent
-    icon: 'pro',
-    isActive: true,
+    label: 'Overview',
     items: [
       {
-        title: 'Exclusive',
-        url: '/dashboard/exclusive',
-        icon: 'exclusive',
-        shortcut: ['e', 'e']
+        title: 'Dashboard',
+        url: '/dashboard/overview',
+        icon: 'dashboard',
+        isActive: false,
+        shortcut: ['d', 'd'],
+        items: []
+      },
+      {
+        title: 'Workspaces',
+        url: '/dashboard/workspaces',
+        icon: 'workspace',
+        isActive: false,
+        items: []
+      },
+      {
+        title: 'Teams',
+        url: '/dashboard/workspaces/team',
+        icon: 'teams',
+        isActive: false,
+        items: [],
+        access: { requireOrg: true }
+      },
+      {
+        title: 'Product',
+        url: '/dashboard/product',
+        icon: 'product',
+        shortcut: ['p', 'p'],
+        isActive: false,
+        items: []
+      },
+      {
+        title: 'Users',
+        url: '/dashboard/users',
+        icon: 'teams',
+        shortcut: ['u', 'u'],
+        isActive: false,
+        items: []
+      },
+      {
+        title: 'Kanban',
+        url: '/dashboard/kanban',
+        icon: 'kanban',
+        shortcut: ['k', 'k'],
+        isActive: false,
+        items: []
+      },
+      {
+        title: 'Chat',
+        url: '/dashboard/chat',
+        icon: 'chat',
+        shortcut: ['c', 'c'],
+        isActive: false,
+        items: []
       }
     ]
   },
   {
-    title: 'Account',
-    url: '#', // Placeholder as there is no direct link for the parent
-    icon: 'account',
-    isActive: true,
+    label: 'Elements',
     items: [
       {
-        title: 'Profile',
-        url: '/dashboard/profile',
-        icon: 'profile',
-        shortcut: ['m', 'm']
+        title: 'Forms',
+        url: '#',
+        icon: 'forms',
+        isActive: true,
+        items: [
+          {
+            title: 'Basic Form',
+            url: '/dashboard/forms/basic',
+            icon: 'forms',
+            shortcut: ['f', 'f']
+          },
+          {
+            title: 'Multi-Step Form',
+            url: '/dashboard/forms/multi-step',
+            icon: 'forms'
+          },
+          {
+            title: 'Sheet & Dialog',
+            url: '/dashboard/forms/sheet-form',
+            icon: 'forms'
+          },
+          {
+            title: 'Advanced Patterns',
+            url: '/dashboard/forms/advanced',
+            icon: 'forms'
+          }
+        ]
       },
       {
-        title: 'Notifications',
-        url: '/dashboard/notifications',
-        icon: 'notification',
-        shortcut: ['n', 'n']
+        title: 'React Query',
+        url: '/dashboard/react-query',
+        icon: 'code',
+        isActive: false,
+        items: []
       },
       {
-        title: 'Billing',
-        url: '/dashboard/billing',
-        icon: 'billing',
-        shortcut: ['b', 'b'],
-        // Only show billing if in organization context
-        access: { requireOrg: true }
-        // Alternative: require billing management permission
-        // access: { requireOrg: true, permission: 'org:manage:billing' }
+        title: 'Icons',
+        url: '/dashboard/elements/icons',
+        icon: 'palette',
+        isActive: false,
+        items: []
+      }
+    ]
+  },
+  {
+    label: '',
+    items: [
+      {
+        title: 'Pro',
+        url: '#',
+        icon: 'pro',
+        isActive: true,
+        items: [
+          {
+            title: 'Exclusive',
+            url: '/dashboard/exclusive',
+            icon: 'exclusive',
+            shortcut: ['e', 'e']
+          }
+        ]
       },
       {
-        title: 'Login',
-        shortcut: ['l', 'l'],
-        url: '/',
-        icon: 'login'
+        title: 'Account',
+        url: '#',
+        icon: 'account',
+        isActive: true,
+        items: [
+          {
+            title: 'Profile',
+            url: '/dashboard/profile',
+            icon: 'profile',
+            shortcut: ['m', 'm']
+          },
+          {
+            title: 'Notifications',
+            url: '/dashboard/notifications',
+            icon: 'notification',
+            shortcut: ['n', 'n']
+          },
+          {
+            title: 'Billing',
+            url: '/dashboard/billing',
+            icon: 'billing',
+            shortcut: ['b', 'b'],
+            access: { requireOrg: true }
+          },
+          {
+            title: 'Login',
+            shortcut: ['l', 'l'],
+            url: '/',
+            icon: 'login'
+          }
+        ]
       }
     ]
   }

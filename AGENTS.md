@@ -36,9 +36,16 @@ The project follows a feature-based folder structure designed for scalability in
 - CSS custom properties for theming (OKLCH color format)
 
 ### State Management
-- Zustand 5.x for global state
+- Zustand 5.x for local UI state (chat, kanban, notifications)
 - Nuqs for URL search params state management
-- React Hook Form + Zod for form handling
+- TanStack Form + Zod for form handling (via `useAppForm` hook)
+
+### Data Fetching & Caching
+- TanStack React Query for data fetching, caching, and mutations
+- Server-side prefetching with `HydrationBoundary` + `dehydrate`
+- Client-side `useQuery` + nuqs `shallow: true` for tables (no RSC round-trips on pagination/filter)
+- `useMutation` + `invalidateQueries` for form submissions
+- Query client singleton in `src/lib/query-client.ts`
 
 ### Authentication & Authorization
 - Clerk for authentication and user management
@@ -48,8 +55,9 @@ The project follows a feature-based folder structure designed for scalability in
 
 ### Data & APIs
 - TanStack Table for data tables
+- TanStack React Query for data fetching and mutations
 - Recharts for analytics/charts
-- Mock API utilities in `src/constants/mock-api.ts`
+- Mock API utilities in `src/constants/mock-api.ts` and `mock-api-users.ts`
 
 ### Development Tools
 - ESLint 8.x with Next.js core-web-vitals config
@@ -93,7 +101,15 @@ The project follows a feature-based folder structure designed for scalability in
 ├── features/              # Feature-based modules
 │   ├── auth/              # Authentication components
 │   ├── overview/          # Dashboard analytics
-│   ├── products/          # Product management
+│   ├── products/          # Product management (React Query + nuqs)
+│   │   ├── api/           # Query options (productsQueryOptions)
+│   │   ├── components/    # Listing, form, table components
+│   │   ├── schemas/       # Zod schemas
+│   │   └── constants/     # Filter options
+│   ├── users/             # User management (React Query + nuqs)
+│   │   ├── api/           # Query options (usersQueryOptions)
+│   │   └── components/    # Listing, table components
+│   ├── react-query-demo/  # React Query showcase (Pokemon API)
 │   ├── kanban/            # Kanban board with dnd-kit
 │   ├── chat/              # Messaging UI (conversations, bubbles, composer)
 │   ├── notifications/     # Notification center & store
@@ -265,16 +281,24 @@ See `docs/themes.md` for detailed theming guide.
 ## Navigation & RBAC System
 
 ### Navigation Configuration
-Navigation is defined in `src/config/nav-config.ts`:
+Navigation is organized into groups in `src/config/nav-config.ts`:
 
 ```typescript
-export const navItems: NavItem[] = [
+import { NavGroup } from '@/types';
+
+export const navGroups: NavGroup[] = [
   {
-    title: 'Dashboard',
-    url: '/dashboard/overview',
-    icon: 'dashboard',
-    shortcut: ['d', 'd'],
-    access: { requireOrg: true }  // RBAC check
+    label: 'Overview',
+    items: [
+      {
+        title: 'Dashboard',
+        url: '/dashboard/overview',
+        icon: 'dashboard',
+        shortcut: ['d', 'd'],
+        items: [],
+        access: { requireOrg: true }  // RBAC check
+      }
+    ]
   }
 ];
 ```
@@ -331,30 +355,48 @@ const hasFeature = has({ feature: 'premium_access' });
 
 ## Data Fetching Patterns
 
-### Server Components (Default)
-Fetch data directly in async components:
+### React Query (Default for all new pages)
+
+The project uses TanStack React Query with server-side prefetching and client-side cache management:
+
+1. **Query options** defined in `src/features/<name>/api/queries.ts` — shared between server prefetch and client hooks
+2. **Server prefetch** in listing component using `getQueryClient().prefetchQuery()` + `HydrationBoundary`
+3. **Client fetch** using `useQuery()` with nuqs `shallow: true` — no RSC round-trips on pagination/filter
 
 ```tsx
-export default async function ProductPage() {
-  const products = await getProducts(); // Your data fetch
-  return <ProductTable data={products} />;
-}
+// Server: prefetch
+const queryClient = getQueryClient();
+void queryClient.prefetchQuery(entitiesQueryOptions(filters));
+
+// Client: useQuery reacts to URL changes
+const { data, isLoading } = useQuery(entitiesQueryOptions(filters));
+const { table } = useDataTable({ data: data?.items, columns, shallow: true });
+```
+
+### Mutations
+Forms use `useMutation` + `useQueryClient().invalidateQueries()`:
+
+```tsx
+const mutation = useMutation({
+  mutationFn: (data) => fakeEntities.createEntity(data),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['entities'] });
+    toast.success('Created');
+  }
+});
 ```
 
 ### URL State Management
 Use `nuqs` for search params state:
-
-```tsx
-import { useQueryState } from 'nuqs';
-
-const [search, setSearch] = useQueryState('search');
-```
+- `searchParamsCache` (server) — reads params in server components
+- `useQueryState` (client) — reads/writes params in client components with `shallow: true`
 
 ### Data Tables
-Tables use TanStack Table with server-side filtering:
+Tables use TanStack Table with React Query:
+- Query options in `features/*/api/queries.ts`
 - Column definitions in `features/*/components/*-tables/columns.tsx`
 - Table component in `src/components/ui/table/data-table.tsx`
-- Filter parsers in `src/lib/parsers.ts`
+- Column pinning via `initialState.columnPinning` in `useDataTable`
 
 ---
 
@@ -455,6 +497,69 @@ After cleanup, delete `scripts/cleanup.js` — the dev server message auto-clean
 
 ---
 
+## Icon System
+
+**All icons come from a single source: `src/components/icons.tsx`.**
+
+The project uses `@tabler/icons-react` as the sole icon package. Every icon is re-exported through a centralized `Icons` object — **never import directly from `@tabler/icons-react` or any other icon package**.
+
+### Usage
+
+```tsx
+import { Icons } from '@/components/icons';
+
+// In JSX
+<Icons.search className='h-4 w-4' />
+<Icons.chevronRight className='h-4 w-4' />
+
+// Passing as a prop
+icon={Icons.check}
+```
+
+### Adding a New Icon
+
+1. Import the tabler icon in `src/components/icons.tsx`
+2. Add a semantic key to the `Icons` object
+3. Use `Icons.yourKey` everywhere — never the raw import
+
+```tsx
+// In src/components/icons.tsx
+import { IconNewIcon } from '@tabler/icons-react';
+
+export const Icons = {
+  // ...existing icons
+  newIcon: IconNewIcon
+};
+```
+
+### Available Icon Categories
+
+| Category | Example Keys |
+|----------|-------------|
+| General | `check`, `close`, `search`, `settings`, `trash`, `spinner`, `info`, `warning` |
+| Navigation | `chevronDown`, `chevronLeft`, `chevronRight`, `chevronUp`, `chevronsUpDown` |
+| Layout | `dashboard`, `kanban`, `panelLeft` |
+| User | `user`, `account`, `profile`, `teams` |
+| Communication | `chat`, `notification`, `phone`, `video`, `send` |
+| Files | `page`, `post`, `media`, `fileTypePdf`, `fileTypeDoc` |
+| Actions | `add`, `edit`, `upload`, `share`, `login`, `logout` |
+| Theme | `sun`, `moon`, `brightness`, `laptop`, `palette` |
+| Text formatting | `bold`, `italic`, `underline`, `text` |
+| Data / Charts | `trendingUp`, `trendingDown`, `eyeOff`, `adjustments` |
+
+### Icon Showcase Page
+
+Browse all available icons at `/dashboard/elements/icons` — a searchable grid of every icon in the registry.
+
+### Why This Pattern?
+
+- **Single source of truth** — swap icon packages by editing one file
+- **Semantic naming** — `Icons.trash` is clearer than `IconTrash` scattered across files
+- **Discoverability** — autocomplete on `Icons.` shows every available icon
+- **No direct dependencies** — components never couple to a specific icon package
+
+---
+
 ## Common Development Tasks
 
 ### Adding a New Page
@@ -518,3 +623,6 @@ See "Theming System" section above or `docs/themes.md`.
 5. **Follow existing patterns** - look at similar components before creating new ones
 6. **Environment variables** - prefix with `NEXT_PUBLIC_` for client-side access
 7. **shadcn components** - don't modify files in `src/components/ui/` directly; extend them instead
+8. **Icons** - NEVER import icons directly from `@tabler/icons-react` or any other icon package. All icons must be registered in `src/components/icons.tsx` and imported as `import { Icons } from '@/components/icons'`. To add a new icon: add the tabler import to `icons.tsx`, add a semantic key to the `Icons` object, then use `Icons.keyName` in your component.
+9. **Page headers** - Always use `PageContainer` props (`pageTitle`, `pageDescription`, `pageHeaderAction`) for page headers. Never import `<Heading>` manually in pages — `PageContainer` handles that internally.
+10. **Forms** - Use TanStack Form via `useAppForm` from `@/components/ui/tanstack-form`. Never use `useState` inside `AppField` render props — extract stateful logic into separate components.

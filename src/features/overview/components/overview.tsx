@@ -13,7 +13,7 @@ import { AreaGraph } from './area-graph';
 import { BarGraph } from './bar-graph';
 import { PieGraph } from './pie-graph';
 import { RecentSales } from './recent-sales';
-import { IconTrendingUp, IconTrendingDown } from '@tabler/icons-react';
+import { Icons } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 
 export default function OverViewPage() {
@@ -45,14 +45,15 @@ export default function OverViewPage() {
                   </CardTitle>
                   <CardAction>
                     <Badge variant='outline'>
-                      <IconTrendingUp />
+                      <Icons.trendingUp />
                       +12.5%
                     </Badge>
                   </CardAction>
                 </CardHeader>
                 <CardFooter className='flex-col items-start gap-1.5 text-sm'>
                   <div className='line-clamp-1 flex gap-2 font-medium'>
-                    Trending up this month <IconTrendingUp className='size-4' />
+                    Trending up this month{' '}
+                    <Icons.trendingUp className='size-4' />
                   </div>
                   <div className='text-muted-foreground'>
                     Visitors for the last 6 months
@@ -67,14 +68,15 @@ export default function OverViewPage() {
                   </CardTitle>
                   <CardAction>
                     <Badge variant='outline'>
-                      <IconTrendingDown />
+                      <Icons.trendingDown />
                       -20%
                     </Badge>
                   </CardAction>
                 </CardHeader>
                 <CardFooter className='flex-col items-start gap-1.5 text-sm'>
                   <div className='line-clamp-1 flex gap-2 font-medium'>
-                    Down 20% this period <IconTrendingDown className='size-4' />
+                    Down 20% this period{' '}
+                    <Icons.trendingDown className='size-4' />
                   </div>
                   <div className='text-muted-foreground'>
                     Acquisition needs attention
@@ -89,14 +91,15 @@ export default function OverViewPage() {
                   </CardTitle>
                   <CardAction>
                     <Badge variant='outline'>
-                      <IconTrendingUp />
+                      <Icons.trendingUp />
                       +12.5%
                     </Badge>
                   </CardAction>
                 </CardHeader>
                 <CardFooter className='flex-col items-start gap-1.5 text-sm'>
                   <div className='line-clamp-1 flex gap-2 font-medium'>
-                    Strong user retention <IconTrendingUp className='size-4' />
+                    Strong user retention{' '}
+                    <Icons.trendingUp className='size-4' />
                   </div>
                   <div className='text-muted-foreground'>
                     Engagement exceed targets
@@ -111,7 +114,7 @@ export default function OverViewPage() {
                   </CardTitle>
                   <CardAction>
                     <Badge variant='outline'>
-                      <IconTrendingUp />
+                      <Icons.trendingUp />
                       +4.5%
                     </Badge>
                   </CardAction>
@@ -119,7 +122,7 @@ export default function OverViewPage() {
                 <CardFooter className='flex-col items-start gap-1.5 text-sm'>
                   <div className='line-clamp-1 flex gap-2 font-medium'>
                     Steady performance increase{' '}
-                    <IconTrendingUp className='size-4' />
+                    <Icons.trendingUp className='size-4' />
                   </div>
                   <div className='text-muted-foreground'>
                     Meets growth projections

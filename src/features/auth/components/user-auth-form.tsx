@@ -1,70 +1,75 @@
 'use client';
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
-} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useAppForm } from '@/components/ui/tanstack-form';
 import { useSearchParams } from 'next/navigation';
 import { useTransition } from 'react';
-import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
 import GithubSignInButton from './github-auth-button';
-import { FormInput } from '@/components/forms/form-input';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Enter a valid email address' })
 });
 
-type UserFormValue = z.infer<typeof formSchema>;
-
 export default function UserAuthForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl');
   const [loading, startTransition] = useTransition();
-  const defaultValues = {
-    email: 'demo@gmail.com'
-  };
-  const form = useForm<UserFormValue>({
-    resolver: zodResolver(formSchema),
-    defaultValues
-  });
 
-  const onSubmit = async (data: UserFormValue) => {
-    startTransition(() => {
-      console.log('continue with email clicked');
-      toast.success('Signed In Successfully!');
-    });
-  };
+  const form = useAppForm({
+    defaultValues: {
+      email: 'demo@gmail.com'
+    },
+    validators: {
+      onSubmit: formSchema
+    },
+    onSubmit: ({ value }) => {
+      startTransition(() => {
+        console.log('continue with email clicked');
+        toast.success('Signed In Successfully!');
+      });
+    }
+  });
 
   return (
     <>
-      <Form
-        form={form}
-        onSubmit={form.handleSubmit(onSubmit)}
-        className='w-full space-y-2'
-      >
-        <FormInput
-          control={form.control}
-          name='email'
-          label='Email'
-          placeholder='Enter your email...'
-          disabled={loading}
-        />
-        <Button
-          disabled={loading}
-          className='mt-2 ml-auto w-full'
-          type='submit'
-        >
-          Continue With Email
-        </Button>
-      </Form>
+      <form.AppForm>
+        <form.Form className='w-full space-y-2'>
+          <form.AppField
+            name='email'
+            children={(field) => (
+              <field.FieldSet>
+                <field.Field>
+                  <field.FieldLabel htmlFor={field.name}>
+                    Email
+                  </field.FieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder='Enter your email...'
+                    disabled={loading}
+                    aria-invalid={
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                    }
+                  />
+                </field.Field>
+                <field.FieldError />
+              </field.FieldSet>
+            )}
+          />
+          <Button
+            disabled={loading}
+            className='mt-2 ml-auto w-full'
+            type='submit'
+          >
+            Continue With Email
+          </Button>
+        </form.Form>
+      </form.AppForm>
       <div className='relative'>
         <div className='absolute inset-0 flex items-center'>
           <span className='w-full border-t' />

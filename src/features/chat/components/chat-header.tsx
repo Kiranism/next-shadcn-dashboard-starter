@@ -1,6 +1,6 @@
 'use client';
 
-import { IconDotsVertical, IconPhone, IconVideo } from '@tabler/icons-react';
+import { Icons } from '@/components/icons';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -51,7 +51,7 @@ export function ChatHeader({ conversation }: ChatHeaderProps) {
           className='border-border/40 bg-background/60 text-muted-foreground hover:bg-muted/60 focus-visible:ring-primary/40 focus-visible:ring-offset-background size-8 rounded-full border transition focus-visible:ring-2 focus-visible:ring-offset-2 sm:size-10'
           aria-label='Start audio call'
         >
-          <IconPhone className='h-3.5 w-3.5 sm:h-4 sm:w-4' />
+          <Icons.phone className='h-3.5 w-3.5 sm:h-4 sm:w-4' />
         </Button>
         <Button
           type='button'
@@ -60,7 +60,7 @@ export function ChatHeader({ conversation }: ChatHeaderProps) {
           className='border-border/40 bg-background/60 text-muted-foreground hover:bg-muted/60 focus-visible:ring-primary/40 focus-visible:ring-offset-background size-8 rounded-full border transition focus-visible:ring-2 focus-visible:ring-offset-2 sm:size-10'
           aria-label='Start video call'
         >
-          <IconVideo className='h-3.5 w-3.5 sm:h-4 sm:w-4' />
+          <Icons.video className='h-3.5 w-3.5 sm:h-4 sm:w-4' />
         </Button>
         <Button
           type='button'
@@ -69,7 +69,7 @@ export function ChatHeader({ conversation }: ChatHeaderProps) {
           className='border-border/40 bg-background/60 text-muted-foreground hover:bg-muted/60 focus-visible:ring-primary/40 focus-visible:ring-offset-background size-8 rounded-full border transition focus-visible:ring-2 focus-visible:ring-offset-2 sm:size-10'
           aria-label='Open conversation menu'
         >
-          <IconDotsVertical className='h-3.5 w-3.5 sm:h-4 sm:w-4' />
+          <Icons.ellipsis className='h-3.5 w-3.5 sm:h-4 sm:w-4' />
         </Button>
       </div>
     </header>

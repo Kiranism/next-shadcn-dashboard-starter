@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth, useOrganizationList } from '@clerk/nextjs';
-import { Check, ChevronsUpDown, GalleryVerticalEnd, Plus } from 'lucide-react';
+import { Icons } from '@/components/icons';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
@@ -65,7 +65,7 @@ export function OrgSwitcher() {
         <SidebarMenuItem>
           <SidebarMenuButton size='lg' disabled>
             <div className='bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg'>
-              <GalleryVerticalEnd className='size-4' />
+              <Icons.galleryVerticalEnd className='size-4' />
             </div>
             <div
               className={`grid flex-1 text-left text-sm leading-tight transition-all duration-200 ease-in-out ${
@@ -96,7 +96,7 @@ export function OrgSwitcher() {
             className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
           >
             <div className='bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg'>
-              <Plus className='size-4' />
+              <Icons.add className='size-4' />
             </div>
             <div
               className={`grid flex-1 text-left text-sm leading-tight transition-all duration-200 ease-in-out ${
@@ -110,7 +110,7 @@ export function OrgSwitcher() {
                 Get started
               </span>
             </div>
-            <ChevronsUpDown
+            <Icons.chevronsUpDown
               className={`ml-auto transition-all duration-200 ease-in-out ${
                 state === 'collapsed'
                   ? 'invisible max-w-0 opacity-0'
@@ -151,7 +151,7 @@ export function OrgSwitcher() {
                     className='size-full object-cover'
                   />
                 ) : (
-                  <GalleryVerticalEnd className='size-4' />
+                  <Icons.galleryVerticalEnd className='size-4' />
                 )}
               </div>
               <div
@@ -170,7 +170,7 @@ export function OrgSwitcher() {
                   )?.role || 'Organization'}
                 </span>
               </div>
-              <ChevronsUpDown
+              <Icons.chevronsUpDown
                 className={`ml-auto transition-all duration-200 ease-in-out ${
                   state === 'collapsed'
                     ? 'invisible max-w-0 opacity-0'
@@ -209,11 +209,11 @@ export function OrgSwitcher() {
                         className='size-full object-cover'
                       />
                     ) : (
-                      <GalleryVerticalEnd className='size-3.5 shrink-0' />
+                      <Icons.galleryVerticalEnd className='size-3.5 shrink-0' />
                     )}
                   </div>
                   {membership.organization.name}
-                  {isActive && <Check className='ml-auto size-4' />}
+                  {isActive && <Icons.check className='ml-auto size-4' />}
                   {!isActive && (
                     <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>
                   )}
@@ -228,7 +228,7 @@ export function OrgSwitcher() {
               }}
             >
               <div className='flex size-6 items-center justify-center rounded-md border bg-transparent'>
-                <Plus className='size-4' />
+                <Icons.add className='size-4' />
               </div>
               <div className='text-muted-foreground font-medium'>
                 Add organization

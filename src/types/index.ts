@@ -22,6 +22,11 @@ export interface NavItem {
   access?: PermissionCheck;
 }
 
+export interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
 export interface NavItemWithChildren extends NavItem {
   items: NavItemWithChildren[];
 }

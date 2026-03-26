@@ -1,6 +1,6 @@
 'use client';
 
-import { IconGripVertical } from '@tabler/icons-react';
+import { Icons } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { KanbanColumn, KanbanColumnHandle } from '@/components/ui/kanban';
@@ -33,7 +33,7 @@ export function TaskColumn({ value, tasks, ...props }: TaskColumnProps) {
         </div>
         <KanbanColumnHandle asChild>
           <Button variant='ghost' size='icon'>
-            <IconGripVertical className='h-4 w-4' />
+            <Icons.gripVertical className='h-4 w-4' />
           </Button>
         </KanbanColumnHandle>
       </div>

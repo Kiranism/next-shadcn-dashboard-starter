@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-header';
 import { Product } from '@/constants/data';
 import { Column, ColumnDef } from '@tanstack/react-table';
-import { CheckCircle2, Text, XCircle } from 'lucide-react';
+import { Icons } from '@/components/icons';
 import Image from 'next/image';
 import { CellAction } from './cell-action';
 import { CATEGORY_OPTIONS } from './options';
@@ -36,19 +36,20 @@ export const columns: ColumnDef<Product>[] = [
       label: 'Name',
       placeholder: 'Search products...',
       variant: 'text',
-      icon: Text
+      icon: Icons.text
     },
     enableColumnFilter: true
   },
   {
     id: 'category',
     accessorKey: 'category',
+    enableSorting: false,
     header: ({ column }: { column: Column<Product, unknown> }) => (
       <DataTableColumnHeader column={column} title='Category' />
     ),
     cell: ({ cell }) => {
       const status = cell.getValue<Product['category']>();
-      const Icon = status === 'active' ? CheckCircle2 : XCircle;
+      const Icon = status === 'active' ? Icons.circleCheck : Icons.xCircle;
 
       return (
         <Badge variant='outline' className='capitalize'>

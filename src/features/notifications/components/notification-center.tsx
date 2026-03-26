@@ -1,6 +1,6 @@
 'use client';
 
-import { IconBell, IconChevronRight } from '@tabler/icons-react';
+import { Icons } from '@/components/icons';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
@@ -35,7 +35,7 @@ export function NotificationCenter() {
     <Popover>
       <PopoverTrigger asChild>
         <Button variant='ghost' size='icon' className='relative h-8 w-8'>
-          <IconBell className='h-4 w-4' />
+          <Icons.notification className='h-4 w-4' />
           {count > 0 && (
             <span className='bg-destructive text-destructive-foreground absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium'>
               {count > 9 ? '9+' : count}
@@ -57,7 +57,7 @@ export function NotificationCenter() {
             <h4 className='text-sm font-semibold group-hover:underline'>
               Notifications
             </h4>
-            <IconChevronRight className='text-muted-foreground h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5' />
+            <Icons.chevronRight className='text-muted-foreground h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5' />
           </Link>
           <div className='flex items-center gap-2'>
             {count > 0 && (
@@ -81,7 +81,7 @@ export function NotificationCenter() {
         <ScrollArea className='h-[400px]'>
           {notifications.length === 0 ? (
             <div className='flex flex-col items-center justify-center py-12'>
-              <IconBell className='text-muted-foreground/40 mb-2 h-8 w-8' />
+              <Icons.notification className='text-muted-foreground/40 mb-2 h-8 w-8' />
               <p className='text-muted-foreground text-sm'>
                 No notifications yet
               </p>

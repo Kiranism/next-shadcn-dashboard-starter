@@ -8,7 +8,7 @@ import {
   BreadcrumbSeparator
 } from '@/components/ui/breadcrumb';
 import { useBreadcrumbs } from '@/hooks/use-breadcrumbs';
-import { IconSlash } from '@tabler/icons-react';
+import { Icons } from '@/components/icons';
 import { Fragment } from 'react';
 
 export function Breadcrumbs() {
@@ -27,7 +27,7 @@ export function Breadcrumbs() {
             )}
             {index < items.length - 1 && (
               <BreadcrumbSeparator className='hidden md:block'>
-                <IconSlash />
+                <Icons.slash />
               </BreadcrumbSeparator>
             )}
             {index === items.length - 1 && (

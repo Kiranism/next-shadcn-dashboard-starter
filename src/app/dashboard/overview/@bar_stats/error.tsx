@@ -3,7 +3,7 @@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { IconAlertCircle } from '@tabler/icons-react';
+import { Icons } from '@/components/icons';
 import { useRouter } from 'next/navigation';
 import { useEffect, useTransition } from 'react';
 import * as Sentry from '@sentry/nextjs';
@@ -32,7 +32,7 @@ export default function StatsError({ error, reset }: StatsErrorProps) {
       <CardHeader className='flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row'>
         <div className='flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6'>
           <Alert variant='destructive' className='border-none'>
-            <IconAlertCircle className='h-4 w-4' />
+            <Icons.alertCircle className='h-4 w-4' />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription className='mt-2'>
               Failed to load statistics: {error.message}

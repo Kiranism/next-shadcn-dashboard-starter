@@ -1,6 +1,6 @@
 'use client';
 
-import { IconX, IconUpload } from '@tabler/icons-react';
+import { Icons } from '@/components/icons';
 import Image from 'next/image';
 import * as React from 'react';
 import Dropzone, {
@@ -211,7 +211,7 @@ export function FileUploader(props: FileUploaderProps) {
             {isDragActive ? (
               <div className='flex flex-col items-center justify-center gap-4 sm:px-5'>
                 <div className='rounded-full border border-dashed p-3'>
-                  <IconUpload
+                  <Icons.upload
                     className='text-muted-foreground size-7'
                     aria-hidden='true'
                   />
@@ -223,7 +223,7 @@ export function FileUploader(props: FileUploaderProps) {
             ) : (
               <div className='flex flex-col items-center justify-center gap-4 sm:px-5'>
                 <div className='rounded-full border border-dashed p-3'>
-                  <IconUpload
+                  <Icons.upload
                     className='text-muted-foreground size-7'
                     aria-hidden='true'
                   />
@@ -304,7 +304,7 @@ function FileCard({ file, progress, onRemove }: FileCardProps) {
           disabled={progress !== undefined && progress < 100}
           className='size-8 rounded-full'
         >
-          <IconX className='text-muted-foreground' />
+          <Icons.close className='text-muted-foreground' />
           <span className='sr-only'>Remove file</span>
         </Button>
       </div>

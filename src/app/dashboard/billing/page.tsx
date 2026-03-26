@@ -11,7 +11,7 @@ import {
 import { useOrganization } from '@clerk/nextjs';
 import { PricingTable } from '@clerk/nextjs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Info } from 'lucide-react';
+import { Icons } from '@/components/icons';
 import { billingInfoContent } from '@/config/infoconfig';
 
 export default function BillingPage() {
@@ -39,7 +39,7 @@ export default function BillingPage() {
       <div className='space-y-6'>
         {/* Info Alert */}
         <Alert>
-          <Info className='h-4 w-4' />
+          <Icons.info className='h-4 w-4' />
           <AlertDescription>
             Plans and subscriptions are managed through Clerk Billing. Subscribe
             to a plan to unlock features and higher limits.

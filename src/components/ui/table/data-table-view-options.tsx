@@ -1,7 +1,7 @@
 'use client';
 
 import type { Table } from '@tanstack/react-table';
-import { Settings2 } from 'lucide-react';
+import { Icons } from '@/components/icons';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -49,7 +49,7 @@ export function DataTableViewOptions<TData>({
           size='sm'
           className='ml-auto hidden h-8 lg:flex'
         >
-          <Settings2 />
+          <Icons.adjustments />
           View
           <CaretSortIcon className='ml-auto opacity-50' />
         </Button>
