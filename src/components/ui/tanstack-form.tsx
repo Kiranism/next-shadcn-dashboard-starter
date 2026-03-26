@@ -1,160 +1,60 @@
-import {
-  createFormHook,
-  createFormHookContexts,
-  revalidateLogic,
-  useStore
-} from '@tanstack/react-form';
+/**
+ * tanstack-form.tsx — Main entry point for the form system.
+ *
+ * Provides useAppForm, useFormFields, Form, SubmitButton, StepButton,
+ * withForm, and withFieldGroup. See docs/forms.md for full usage guide.
+ */
+
+import { createFormHook } from '@tanstack/react-form';
 import type { VariantProps } from 'class-variance-authority';
 import * as React from 'react';
 import { Button, type buttonVariants } from '@/components/ui/button';
 import {
-  Field as DefaultField,
-  FieldError as DefaultFieldError,
-  FieldSet as DefaultFieldSet,
   FieldContent,
   FieldDescription,
   FieldGroup,
   FieldLabel,
   FieldLegend,
   FieldSeparator,
-  FieldTitle,
-  fieldVariants
+  FieldTitle
 } from '@/components/ui/field';
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput
 } from '@/components/ui/input-group';
+import {
+  TextField,
+  TextareaField,
+  SelectField,
+  CheckboxField,
+  SwitchField,
+  RadioGroupField,
+  SliderField,
+  FileUploadField,
+  FormTextField,
+  FormTextareaField,
+  FormSelectField,
+  FormCheckboxField,
+  FormSwitchField,
+  FormRadioGroupField,
+  FormSliderField,
+  FormFileUploadField
+} from '@/components/forms/fields';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
-
-const {
+import {
   fieldContext,
   formContext,
-  useFieldContext: _useFieldContext,
-  useFormContext
-} = createFormHookContexts();
+  useFormContext,
+  FormFieldSet,
+  FormField,
+  FormFieldError
+} from './form-context';
 
-const { useAppForm, withForm, withFieldGroup } = createFormHook({
-  fieldContext,
-  formContext,
-  fieldComponents: {
-    Field,
-    FieldError,
-    FieldSet,
-    FieldContent,
-    FieldDescription,
-    FieldGroup,
-    FieldLabel,
-    FieldLegend,
-    FieldSeparator,
-    FieldTitle,
-    InputGroup,
-    InputGroupAddon,
-    InputGroupInput
-  },
-  formComponents: {
-    SubmitButton,
-    StepButton,
-    FieldLegend,
-    FieldDescription,
-    FieldSeparator,
-    Form
-  }
-});
-
-type FormItemContextValue = {
-  id: string;
-};
-
-const FormItemContext = React.createContext<FormItemContextValue>(
-  {} as FormItemContextValue
-);
-
-function FieldSet({
-  className,
-  children,
-  ...props
-}: React.ComponentProps<'fieldset'>) {
-  const id = React.useId();
-
-  return (
-    <FormItemContext.Provider value={{ id }}>
-      <DefaultFieldSet className={cn('grid gap-1', className)} {...props}>
-        {children}
-      </DefaultFieldSet>
-    </FormItemContext.Provider>
-  );
-}
-
-const useFieldContext = () => {
-  const { id } = React.useContext(FormItemContext);
-  const { name, store, ...fieldContext } = _useFieldContext();
-
-  const errors = useStore(store, (state) => state.meta.errors);
-  if (!fieldContext) {
-    throw new Error('useFieldContext should be used within <FormItem>');
-  }
-
-  return {
-    id,
-    name,
-    formItemId: `${id}-form-item`,
-    formDescriptionId: `${id}-form-item-description`,
-    formMessageId: `${id}-form-item-message`,
-    errors,
-    store,
-    ...fieldContext
-  };
-};
-
-function Field({
-  children,
-  ...props
-}: React.ComponentProps<'div'> & VariantProps<typeof fieldVariants>) {
-  const {
-    errors,
-    formItemId,
-    formDescriptionId,
-    formMessageId,
-    handleBlur,
-    store
-  } = useFieldContext();
-  const isTouched = useStore(store, (state) => state.meta.isTouched);
-  const hasVisibleErrors = !!errors.length && isTouched;
-
-  return (
-    <DefaultField
-      data-invalid={hasVisibleErrors}
-      id={formItemId}
-      onBlur={handleBlur}
-      aria-describedby={
-        !hasVisibleErrors
-          ? `${formDescriptionId}`
-          : `${formDescriptionId} ${formMessageId}`
-      }
-      aria-invalid={hasVisibleErrors}
-      {...props}
-    >
-      {children}
-    </DefaultField>
-  );
-}
-
-function FieldError({ className, ...props }: React.ComponentProps<'p'>) {
-  const { errors, formMessageId, store } = useFieldContext();
-  const isTouched = useStore(store, (state) => state.meta.isTouched);
-  if (!errors.length || !isTouched) return null;
-  return (
-    <DefaultFieldError
-      data-slot='form-message'
-      id={formMessageId}
-      className={cn('text-destructive text-sm', className)}
-      {...props}
-      errors={errors}
-    />
-  );
-}
+// ---------------------------------------------------------------------------
+// Form-level components (used as form.ComponentName)
+// ---------------------------------------------------------------------------
 
 function Form({
   children,
@@ -238,11 +138,130 @@ function StepButton({
   );
 }
 
+// ---------------------------------------------------------------------------
+// Hook creation
+// ---------------------------------------------------------------------------
+
+const { useAppForm, withForm, withFieldGroup } = createFormHook({
+  fieldContext,
+  formContext,
+  fieldComponents: {
+    // Structural (for custom fields via AppField escape hatch)
+    Field: FormField,
+    FieldError: FormFieldError,
+    FieldSet: FormFieldSet,
+    FieldContent,
+    FieldDescription,
+    FieldGroup,
+    FieldLabel,
+    FieldLegend,
+    FieldSeparator,
+    FieldTitle,
+    InputGroup,
+    InputGroupAddon,
+    InputGroupInput,
+    // Base field components (for AppField render-prop pattern)
+    TextField,
+    TextareaField,
+    SelectField,
+    CheckboxField,
+    SwitchField,
+    RadioGroupField,
+    SliderField,
+    FileUploadField
+  },
+  formComponents: {
+    // Layout & actions
+    Form,
+    SubmitButton,
+    StepButton,
+    FieldLegend,
+    FieldDescription,
+    FieldSeparator,
+    // Composed field components (flat API — convenience pattern)
+    // These allow form.TextField, form.SelectField, etc.
+    // For type-safe field names, use form.AppField render-prop instead.
+    TextField: FormTextField,
+    TextareaField: FormTextareaField,
+    SelectField: FormSelectField,
+    CheckboxField: FormCheckboxField,
+    SwitchField: FormSwitchField,
+    RadioGroupField: FormRadioGroupField,
+    SliderField: FormSliderField,
+    FileUploadField: FormFileUploadField
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Type-safe field names — useFormFields
+// ---------------------------------------------------------------------------
+
+import type { WithTypedName } from './form-context';
+
+/**
+ * Returns all composed field components with type-safe `name` props.
+ * Pass your form's value type (or `z.infer<typeof schema>`) to narrow names.
+ *
+ * @example
+ * ```tsx
+ * type FormValues = z.infer<typeof mySchema>;
+ * const form = useAppForm({ defaultValues: {...} as FormValues, ... });
+ * const { FormTextField, FormSelectField } = useFormFields<FormValues>();
+ *
+ * <FormTextField name="email" />  // ✅ autocomplete + type check
+ * <FormTextField name="typo" />   // ❌ TypeScript error!
+ * ```
+ */
+function useFormFields<TValues extends Record<string, unknown>>() {
+  type Typed<C> = WithTypedName<C, TValues>;
+  return {
+    FormTextField: FormTextField as unknown as Typed<typeof FormTextField>,
+    FormTextareaField: FormTextareaField as unknown as Typed<
+      typeof FormTextareaField
+    >,
+    FormSelectField: FormSelectField as unknown as Typed<
+      typeof FormSelectField
+    >,
+    FormCheckboxField: FormCheckboxField as unknown as Typed<
+      typeof FormCheckboxField
+    >,
+    FormSwitchField: FormSwitchField as unknown as Typed<
+      typeof FormSwitchField
+    >,
+    FormRadioGroupField: FormRadioGroupField as unknown as Typed<
+      typeof FormRadioGroupField
+    >,
+    FormSliderField: FormSliderField as unknown as Typed<
+      typeof FormSliderField
+    >,
+    FormFileUploadField: FormFileUploadField as unknown as Typed<
+      typeof FormFileUploadField
+    >
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Exports
+// ---------------------------------------------------------------------------
+
+export { useAppForm, withForm, withFieldGroup, useFormFields };
+
+export type {
+  FieldConfig,
+  FieldValidatorConfig,
+  FieldListenerConfig,
+  WithTypedName
+} from './form-context';
+
 export {
+  createFormField,
+  typedField,
   revalidateLogic,
-  useAppForm,
+  scrollToFirstError,
   useFieldContext,
   useFormContext,
-  withFieldGroup,
-  withForm
-};
+  FormFieldSet,
+  FormField,
+  FormFieldError,
+  FormErrors
+} from './form-context';

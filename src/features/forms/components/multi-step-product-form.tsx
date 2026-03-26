@@ -7,15 +7,6 @@ import { toast } from 'sonner';
 import * as z from 'zod';
 import { Icons } from '@/components/icons';
 import { FieldDescription } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { motion, AnimatePresence } from 'motion/react';
 import { useFormStepper } from '@/hooks/use-stepper';
@@ -42,6 +33,13 @@ const stepSchemas = [
 
 // --- Step Groups ---
 
+const categoryOptions = [
+  { value: 'beauty', label: 'Beauty Products' },
+  { value: 'electronics', label: 'Electronics' },
+  { value: 'home', label: 'Home & Garden' },
+  { value: 'sports', label: 'Sports & Outdoors' }
+];
+
 const Step1Group = withFieldGroup({
   defaultValues: {
     name: '',
@@ -58,90 +56,35 @@ const Step1Group = withFieldGroup({
 
         <group.AppField name='name'>
           {(field) => (
-            <field.FieldSet>
-              <field.Field>
-                <field.FieldLabel htmlFor='name'>
-                  Product Name *
-                </field.FieldLabel>
-                <Input
-                  name='name'
-                  placeholder='Enter product name'
-                  value={(field.state.value as string | undefined) ?? ''}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  aria-invalid={
-                    !!field.state.meta.errors.length &&
-                    field.state.meta.isTouched
-                  }
-                />
-              </field.Field>
-              <field.FieldError />
-            </field.FieldSet>
+            <field.TextField
+              label='Product Name'
+              required
+              placeholder='Enter product name'
+            />
           )}
         </group.AppField>
 
         <group.AppField name='category'>
           {(field) => (
-            <field.FieldSet>
-              <field.Field>
-                <field.FieldLabel htmlFor='category'>
-                  Category *
-                </field.FieldLabel>
-                <Select
-                  name='category'
-                  value={(field.state.value as string | undefined) ?? ''}
-                  onValueChange={field.handleChange}
-                >
-                  <SelectTrigger
-                    aria-invalid={
-                      !!field.state.meta.errors.length &&
-                      field.state.meta.isTouched
-                    }
-                  >
-                    <SelectValue placeholder='Select category' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value='beauty'>Beauty Products</SelectItem>
-                    <SelectItem value='electronics'>Electronics</SelectItem>
-                    <SelectItem value='home'>Home & Garden</SelectItem>
-                    <SelectItem value='sports'>Sports & Outdoors</SelectItem>
-                  </SelectContent>
-                </Select>
-              </field.Field>
-              <field.FieldError />
-            </field.FieldSet>
+            <field.SelectField
+              label='Category'
+              required
+              options={categoryOptions}
+              placeholder='Select category'
+            />
           )}
         </group.AppField>
 
         <group.AppField name='price'>
           {(field) => (
-            <field.FieldSet>
-              <field.Field>
-                <field.FieldLabel htmlFor='price'>Price *</field.FieldLabel>
-                <Input
-                  name='price'
-                  type='number'
-                  min={0}
-                  step='0.01'
-                  placeholder='Enter price'
-                  value={
-                    (field.state.value as number | undefined) != null
-                      ? String(field.state.value)
-                      : ''
-                  }
-                  onBlur={field.handleBlur}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    field.handleChange(v === '' ? undefined : parseFloat(v));
-                  }}
-                  aria-invalid={
-                    !!field.state.meta.errors.length &&
-                    field.state.meta.isTouched
-                  }
-                />
-              </field.Field>
-              <field.FieldError />
-            </field.FieldSet>
+            <field.TextField
+              label='Price'
+              required
+              type='number'
+              min={0}
+              step={0.01}
+              placeholder='Enter price'
+            />
           )}
         </group.AppField>
       </div>
@@ -161,31 +104,13 @@ const Step2Group = withFieldGroup({
 
         <group.AppField name='description'>
           {(field) => (
-            <field.FieldSet>
-              <field.Field>
-                <field.FieldLabel htmlFor='description'>
-                  Description *
-                </field.FieldLabel>
-                <Textarea
-                  name='description'
-                  placeholder='Enter product description'
-                  value={(field.state.value as string | undefined) ?? ''}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  maxLength={500}
-                  rows={5}
-                  className='resize-none'
-                  aria-invalid={
-                    !!field.state.meta.errors.length &&
-                    field.state.meta.isTouched
-                  }
-                />
-                <div className='text-muted-foreground text-right text-sm'>
-                  {((field.state.value as string) ?? '').length}/500 characters
-                </div>
-              </field.Field>
-              <field.FieldError />
-            </field.FieldSet>
+            <field.TextareaField
+              label='Description'
+              required
+              placeholder='Enter product description'
+              maxLength={500}
+              rows={5}
+            />
           )}
         </group.AppField>
       </div>
@@ -256,6 +181,13 @@ function ReviewSummary({
 
 // --- Main Form ---
 
+type ProductFormValues = {
+  name: string;
+  category: string;
+  price: number | undefined;
+  description: string;
+};
+
 export default function MultiStepProductForm() {
   const {
     currentValidator,
@@ -270,9 +202,9 @@ export default function MultiStepProductForm() {
     defaultValues: {
       name: '',
       category: '',
-      price: undefined as number | undefined,
+      price: undefined,
       description: ''
-    } as z.input<typeof productFormSchema>,
+    } as ProductFormValues,
     validationLogic: revalidateLogic(),
     validators: {
       onDynamic: currentValidator as typeof productFormSchema,
@@ -362,10 +294,7 @@ export default function MultiStepProductForm() {
                     Reset
                   </Button>
                 )}
-                <form.SubmitButton
-                  label='Submit'
-                  onClick={() => handleNextStepOrSubmit(form)}
-                />
+                <form.SubmitButton label='Submit' />
               </div>
             ) : (
               <div className='flex w-full items-center justify-end gap-3 pt-3'>

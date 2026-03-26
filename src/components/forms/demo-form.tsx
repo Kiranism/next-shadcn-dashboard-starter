@@ -1,19 +1,14 @@
 'use client';
 
 import * as React from 'react';
-import { useAppForm } from '@/components/ui/tanstack-form';
+import { useAppForm, useFormFields } from '@/components/ui/tanstack-form';
 import { useStore } from '@tanstack/react-form';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FieldDescription } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Switch } from '@/components/ui/switch';
-import { Slider } from '@/components/ui/slider';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -23,13 +18,6 @@ import {
   InputOTPSlot,
   InputOTPSeparator
 } from '@/components/ui/input-otp';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
 import {
   Popover,
   PopoverContent,
@@ -44,13 +32,13 @@ import {
   CommandList
 } from '@/components/ui/command';
 import { Calendar } from '@/components/ui/calendar';
-import { FileUploader } from '@/components/file-uploader';
+import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
 import { Icons } from '@/components/icons';
 import { cn } from '@/lib/utils';
 
-// Schema
+// Schema (form-level safety net — onSubmit catches anything field-level missed)
 const demoFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.email('Invalid email address'),
@@ -109,6 +97,8 @@ const genderOptions = [
   { value: 'other', label: 'Other' },
   { value: 'prefer-not-to-say', label: 'Prefer not to say' }
 ];
+
+// ─── Custom field components (no pre-built field component exists) ───
 
 function ComboboxField({
   value,
@@ -240,6 +230,33 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
+// ─── Form ───
+
+type DemoFormValues = {
+  name: string;
+  email: string;
+  age: number;
+  password: string;
+  phone: string;
+  website: string;
+  bio: string;
+  country: string;
+  framework: string;
+  interests: string[];
+  gender: string;
+  newsletter: boolean;
+  rating: number;
+  birthDate?: Date;
+  dateRange?: DateRange;
+  eventTime?: string;
+  favoriteColor?: string;
+  otp: string;
+  formatting?: string[];
+  tags: string[];
+  terms: boolean;
+  avatar?: File[];
+};
+
 export default function DemoForm() {
   const form = useAppForm({
     defaultValues: {
@@ -252,28 +269,39 @@ export default function DemoForm() {
       bio: '',
       country: '',
       framework: '',
-      interests: [] as string[],
+      interests: [],
       gender: '',
       newsletter: false,
       rating: 5,
-      birthDate: undefined as Date | undefined,
-      dateRange: undefined as DateRange | undefined,
+      birthDate: undefined,
+      dateRange: undefined,
       eventTime: '',
       favoriteColor: '#6366f1',
       otp: '',
-      formatting: [] as string[],
-      tags: [] as string[],
+      formatting: [],
+      tags: [],
       terms: false,
-      avatar: [] as any[]
-    },
+      avatar: []
+    } as DemoFormValues,
     validators: {
-      onSubmit: demoFormSchema as any
+      // Form-level safety net — catches anything field-level validators missed
+      onSubmit: demoFormSchema
     },
     onSubmit: ({ value }) => {
       console.log('Form submitted:', value);
       alert('Form submitted successfully! Check console for data.');
     }
   });
+
+  const {
+    FormTextField,
+    FormTextareaField,
+    FormSelectField,
+    FormSwitchField,
+    FormRadioGroupField,
+    FormSliderField,
+    FormFileUploadField
+  } = useFormFields<DemoFormValues>();
 
   const formValues = useStore(form.store, (s) => s.values);
 
@@ -291,248 +319,127 @@ export default function DemoForm() {
         <CardContent>
           <form.AppForm>
             <form.Form className='space-y-6'>
-              {/* ─── TEXT INPUTS ─── */}
+              {/* ─── TEXT INPUTS (flat pattern + field-level onBlur validation) ─── */}
               <SectionTitle>Text Inputs</SectionTitle>
 
               <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-                {/* Name */}
-                <form.AppField
+                <FormTextField
                   name='name'
-                  children={(field) => (
-                    <field.FieldSet>
-                      <field.Field>
-                        <field.FieldLabel htmlFor={field.name}>
-                          Full Name *
-                        </field.FieldLabel>
-                        <Input
-                          id={field.name}
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          placeholder='John Doe'
-                          aria-invalid={
-                            field.state.meta.isTouched &&
-                            !field.state.meta.isValid
-                          }
-                        />
-                      </field.Field>
-                      <field.FieldError />
-                    </field.FieldSet>
-                  )}
+                  label='Full Name'
+                  required
+                  placeholder='John Doe'
+                  validators={{
+                    onBlur: z
+                      .string()
+                      .min(2, 'Name must be at least 2 characters')
+                  }}
                 />
-
-                {/* Email */}
-                <form.AppField
+                {/* Async validation: simulated server-side email check */}
+                <FormTextField
                   name='email'
-                  children={(field) => (
-                    <field.FieldSet>
-                      <field.Field>
-                        <field.FieldLabel htmlFor={field.name}>
-                          Email *
-                        </field.FieldLabel>
-                        <Input
-                          id={field.name}
-                          type='email'
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          placeholder='john@example.com'
-                          aria-invalid={
-                            field.state.meta.isTouched &&
-                            !field.state.meta.isValid
-                          }
-                        />
-                      </field.Field>
-                      <field.FieldError />
-                    </field.FieldSet>
-                  )}
+                  label='Email'
+                  required
+                  type='email'
+                  placeholder='john@example.com'
+                  validators={{
+                    onBlur: z.string().email('Invalid email address'),
+                    onChangeAsync: async ({ value }: { value: string }) => {
+                      if (!value || value.length < 3) return undefined;
+                      // Simulated server check — replace with real API call
+                      await new Promise((r) => setTimeout(r, 500));
+                      if (value === 'taken@example.com') {
+                        return 'This email is already registered';
+                      }
+                      return undefined;
+                    },
+                    onChangeAsyncDebounceMs: 500
+                  }}
                 />
-
-                {/* Password */}
-                <form.AppField
+                <FormTextField
                   name='password'
-                  children={(field) => (
-                    <field.FieldSet>
-                      <field.Field>
-                        <field.FieldLabel htmlFor={field.name}>
-                          Password *
-                        </field.FieldLabel>
-                        <Input
-                          id={field.name}
-                          type='password'
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          placeholder='Min 8 characters'
-                          aria-invalid={
-                            field.state.meta.isTouched &&
-                            !field.state.meta.isValid
-                          }
-                        />
-                      </field.Field>
-                      <field.FieldError />
-                    </field.FieldSet>
-                  )}
+                  label='Password'
+                  required
+                  type='password'
+                  placeholder='Min 8 characters'
+                  validators={{
+                    onBlur: z
+                      .string()
+                      .min(8, 'Password must be at least 8 characters')
+                  }}
                 />
-
-                {/* Age */}
-                <form.AppField
+                <FormTextField
                   name='age'
-                  children={(field) => (
-                    <field.FieldSet>
-                      <field.Field>
-                        <field.FieldLabel htmlFor={field.name}>
-                          Age *
-                        </field.FieldLabel>
-                        <Input
-                          id={field.name}
-                          type='number'
-                          min={18}
-                          max={100}
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            field.handleChange(v === '' ? 0 : parseFloat(v));
-                          }}
-                          aria-invalid={
-                            field.state.meta.isTouched &&
-                            !field.state.meta.isValid
-                          }
-                        />
-                      </field.Field>
-                      <field.FieldError />
-                    </field.FieldSet>
-                  )}
+                  label='Age'
+                  required
+                  type='number'
+                  min={18}
+                  max={100}
+                  placeholder='18'
+                  validators={{
+                    onBlur: z.number().min(18, 'Must be at least 18 years old')
+                  }}
                 />
-
-                {/* Phone */}
-                <form.AppField
+                <FormTextField
                   name='phone'
-                  children={(field) => (
-                    <field.FieldSet>
-                      <field.Field>
-                        <field.FieldLabel htmlFor={field.name}>
-                          Phone *
-                        </field.FieldLabel>
-                        <Input
-                          id={field.name}
-                          type='tel'
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          placeholder='+1 (555) 000-0000'
-                          aria-invalid={
-                            field.state.meta.isTouched &&
-                            !field.state.meta.isValid
-                          }
-                        />
-                      </field.Field>
-                      <field.FieldError />
-                    </field.FieldSet>
-                  )}
+                  label='Phone'
+                  required
+                  type='tel'
+                  placeholder='+1 (555) 000-0000'
+                  validators={{
+                    onBlur: z
+                      .string()
+                      .min(10, 'Phone must be at least 10 digits')
+                  }}
                 />
-
-                {/* URL */}
-                <form.AppField
+                <FormTextField
                   name='website'
-                  children={(field) => (
-                    <field.FieldSet>
-                      <field.Field>
-                        <field.FieldLabel htmlFor={field.name}>
-                          Website
-                        </field.FieldLabel>
-                        <Input
-                          id={field.name}
-                          type='url'
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          placeholder='https://example.com'
-                          aria-invalid={
-                            field.state.meta.isTouched &&
-                            !field.state.meta.isValid
-                          }
-                        />
-                      </field.Field>
-                      <field.FieldError />
-                    </field.FieldSet>
-                  )}
+                  label='Website'
+                  type='url'
+                  placeholder='https://example.com'
                 />
               </div>
 
-              {/* Textarea - full width */}
-              <form.AppField
+              {/* ─── TEXTAREA (flat pattern + onBlur validation) ─── */}
+              <FormTextareaField
                 name='bio'
-                children={(field) => (
-                  <field.FieldSet>
-                    <field.Field>
-                      <field.FieldLabel htmlFor={field.name}>
-                        Bio *
-                      </field.FieldLabel>
-                      <Textarea
-                        id={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder='Tell us about yourself...'
-                        maxLength={500}
-                        rows={4}
-                        aria-invalid={
-                          field.state.meta.isTouched &&
-                          !field.state.meta.isValid
-                        }
-                      />
-                      <div className='text-muted-foreground text-right text-xs'>
-                        {field.state.value?.length || 0} / 500
-                      </div>
-                    </field.Field>
-                    <field.FieldError />
-                  </field.FieldSet>
-                )}
+                label='Bio'
+                required
+                placeholder='Tell us about yourself...'
+                maxLength={500}
+                rows={4}
+                validators={{
+                  onBlur: z
+                    .string()
+                    .min(10, 'Bio must be at least 10 characters')
+                }}
               />
 
               {/* ─── SELECT & COMBOBOX ─── */}
               <SectionTitle>Select & Combobox</SectionTitle>
 
               <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-                {/* Select */}
-                <form.AppField
+                {/* Listener: logs country changes (replace with dependent field reset) */}
+                <FormSelectField
                   name='country'
-                  children={(field) => (
-                    <field.FieldSet>
-                      <field.Field>
-                        <field.FieldLabel htmlFor={field.name}>
-                          Country *
-                        </field.FieldLabel>
-                        <Select
-                          value={field.state.value}
-                          onValueChange={field.handleChange}
-                        >
-                          <SelectTrigger
-                            id={field.name}
-                            aria-invalid={
-                              field.state.meta.isTouched &&
-                              !field.state.meta.isValid
-                            }
-                          >
-                            <SelectValue placeholder='Select your country' />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {countryOptions.map((opt) => (
-                              <SelectItem key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </field.Field>
-                      <field.FieldError />
-                    </field.FieldSet>
-                  )}
+                  label='Country'
+                  required
+                  options={countryOptions}
+                  placeholder='Select your country'
+                  validators={{
+                    onBlur: z.string().min(1, 'Please select a country')
+                  }}
+                  listeners={{
+                    onChange: ({ value }) => {
+                      // Side effect example: reset dependent fields when country changes.
+                      // In a real form with state/city fields:
+                      //   fieldApi.form.setFieldValue('state', '');
+                      //   fieldApi.form.setFieldValue('city', '');
+                      console.log('Country changed to:', value);
+                    }
+                  }}
                 />
 
-                {/* Combobox */}
+                {/* Combobox — custom, needs AppField (type-safe name) */}
                 <form.AppField
                   name='framework'
                   children={(field) => (
@@ -557,7 +464,7 @@ export default function DemoForm() {
               {/* ─── CHECKBOX & RADIO ─── */}
               <SectionTitle>Checkbox & Radio</SectionTitle>
 
-              {/* Checkbox Group */}
+              {/* Checkbox Group — array mode, needs AppField */}
               <form.AppField
                 name='interests'
                 mode='array'
@@ -607,66 +514,28 @@ export default function DemoForm() {
                 }}
               />
 
-              {/* Radio Group */}
-              <form.AppField
+              {/* Radio Group (flat pattern + onBlur validation) */}
+              <FormRadioGroupField
                 name='gender'
-                children={(field) => (
-                  <field.FieldSet>
-                    <field.FieldLabel>Gender *</field.FieldLabel>
-                    <RadioGroup
-                      value={field.state.value}
-                      onValueChange={field.handleChange}
-                      onBlur={field.handleBlur}
-                      className='flex flex-wrap gap-x-6 gap-y-2'
-                    >
-                      {genderOptions.map((opt) => (
-                        <div
-                          key={opt.value}
-                          className='flex items-center space-x-2'
-                        >
-                          <RadioGroupItem
-                            value={opt.value}
-                            id={`gender-${opt.value}`}
-                          />
-                          <Label htmlFor={`gender-${opt.value}`}>
-                            {opt.label}
-                          </Label>
-                        </div>
-                      ))}
-                    </RadioGroup>
-                    <field.FieldError />
-                  </field.FieldSet>
-                )}
+                label='Gender'
+                required
+                options={genderOptions}
+                validators={{
+                  onBlur: z.string().min(1, 'Please select gender')
+                }}
               />
 
               {/* ─── TOGGLE & SWITCH ─── */}
               <SectionTitle>Toggle & Switch</SectionTitle>
 
-              {/* Switch */}
-              <form.AppField
+              {/* Switch (flat pattern) */}
+              <FormSwitchField
                 name='newsletter'
-                children={(field) => (
-                  <field.FieldSet>
-                    <field.Field orientation='horizontal'>
-                      <field.FieldContent>
-                        <field.FieldLabel className='text-base'>
-                          Subscribe to Newsletter
-                        </field.FieldLabel>
-                        <FieldDescription>
-                          Receive updates about new features and products
-                        </FieldDescription>
-                      </field.FieldContent>
-                      <Switch
-                        checked={field.state.value}
-                        onCheckedChange={field.handleChange}
-                        onBlur={field.handleBlur}
-                      />
-                    </field.Field>
-                  </field.FieldSet>
-                )}
+                label='Subscribe to Newsletter'
+                description='Receive updates about new features and products'
               />
 
-              {/* Toggle Group */}
+              {/* Toggle Group — array mode, needs AppField */}
               <form.AppField
                 name='formatting'
                 mode='array'
@@ -706,7 +575,7 @@ export default function DemoForm() {
                 }}
               />
 
-              {/* Single Checkbox (Terms) */}
+              {/* Terms checkbox — custom horizontal layout, needs AppField */}
               <form.AppField
                 name='terms'
                 children={(field) => (
@@ -733,41 +602,19 @@ export default function DemoForm() {
                 )}
               />
 
-              {/* ─── SLIDER ─── */}
+              {/* ─── SLIDER (flat pattern) ─── */}
               <SectionTitle>Slider</SectionTitle>
 
-              <form.AppField
+              <FormSliderField
                 name='rating'
-                children={(field) => (
-                  <field.FieldSet>
-                    <field.Field>
-                      <field.FieldLabel>Overall Rating</field.FieldLabel>
-                      <div className='px-1'>
-                        <Slider
-                          min={0}
-                          max={10}
-                          step={0.5}
-                          value={[field.state.value ?? 0]}
-                          onValueChange={(v) => field.handleChange(v[0])}
-                          onBlur={field.handleBlur}
-                        />
-                        <div className='text-muted-foreground mt-1 flex justify-between text-xs'>
-                          <span>0</span>
-                          <span className='font-medium'>
-                            {field.state.value ?? 0}/10
-                          </span>
-                          <span>10</span>
-                        </div>
-                      </div>
-                      <FieldDescription>
-                        Rate your experience (0-10)
-                      </FieldDescription>
-                    </field.Field>
-                  </field.FieldSet>
-                )}
+                label='Overall Rating'
+                description='Rate your experience (0-10)'
+                min={0}
+                max={10}
+                step={0.5}
               />
 
-              {/* ─── DATE & TIME ─── */}
+              {/* ─── DATE & TIME (custom, need AppField) ─── */}
               <SectionTitle>Date & Time</SectionTitle>
 
               <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
@@ -810,7 +657,7 @@ export default function DemoForm() {
                   )}
                 />
 
-                {/* Time Picker */}
+                {/* Time Input */}
                 <form.AppField
                   name='eventTime'
                   children={(field) => (
@@ -832,7 +679,7 @@ export default function DemoForm() {
                 />
               </div>
 
-              {/* Date Range Picker - full width */}
+              {/* Date Range Picker */}
               <form.AppField
                 name='dateRange'
                 children={(field) => {
@@ -881,7 +728,7 @@ export default function DemoForm() {
                 }}
               />
 
-              {/* ─── SPECIAL INPUTS ─── */}
+              {/* ─── SPECIAL INPUTS (custom, need AppField) ─── */}
               <SectionTitle>Special Inputs</SectionTitle>
 
               <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
@@ -949,7 +796,7 @@ export default function DemoForm() {
                 />
               </div>
 
-              {/* Tags Input - full width */}
+              {/* Tags Input — array mode, needs AppField */}
               <form.AppField
                 name='tags'
                 mode='array'
@@ -974,41 +821,20 @@ export default function DemoForm() {
                 }}
               />
 
-              {/* ─── FILE UPLOAD ─── */}
+              {/* ─── FILE UPLOAD (flat pattern) ─── */}
               <SectionTitle>File Upload</SectionTitle>
 
-              <form.AppField
+              <FormFileUploadField
                 name='avatar'
-                children={(field) => (
-                  <field.FieldSet>
-                    <field.Field>
-                      <field.FieldLabel>Profile Picture</field.FieldLabel>
-                      <FileUploader
-                        value={field.state.value}
-                        onValueChange={field.handleChange}
-                        maxSize={5000000}
-                        maxFiles={1}
-                        accept={{
-                          'image/jpeg': [],
-                          'image/png': [],
-                          'image/webp': []
-                        }}
-                      />
-                      <FieldDescription>
-                        Drag & drop or click to upload (max 5MB)
-                      </FieldDescription>
-                    </field.Field>
-                    <field.FieldError />
-                  </field.FieldSet>
-                )}
+                label='Profile Picture'
+                description='Drag & drop or click to upload (max 5MB)'
+                maxSize={5000000}
+                maxFiles={1}
               />
 
               {/* ─── SUBMIT ─── */}
               <Separator />
               <div className='flex gap-4 pt-2'>
-                <Button type='submit' className='flex-1'>
-                  Submit Form
-                </Button>
                 <Button
                   type='button'
                   variant='outline'
@@ -1017,6 +843,7 @@ export default function DemoForm() {
                 >
                   Reset
                 </Button>
+                <form.SubmitButton label='Submit Form' className='flex-1' />
               </div>
             </form.Form>
           </form.AppForm>

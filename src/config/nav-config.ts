@@ -105,6 +105,16 @@ export const navGroups: NavGroup[] = [
             title: 'Multi-Step Form',
             url: '/dashboard/forms/multi-step',
             icon: 'forms'
+          },
+          {
+            title: 'Sheet & Dialog',
+            url: '/dashboard/forms/sheet-form',
+            icon: 'forms'
+          },
+          {
+            title: 'Advanced Patterns',
+            url: '/dashboard/forms/advanced',
+            icon: 'forms'
           }
         ]
       },
