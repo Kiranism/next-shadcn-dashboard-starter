@@ -2,9 +2,8 @@
 
 import { DataTable } from '@/components/ui/table/data-table';
 import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
-import { DataTableSkeleton } from '@/components/ui/table/data-table-skeleton';
 import { useDataTable } from '@/hooks/use-data-table';
-import { useQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
 import { getSortingStateParser } from '@/lib/parsers';
 import { usersQueryOptions } from '../../api/queries';
@@ -29,14 +28,12 @@ export function UsersTable() {
     ...(params.sort.length > 0 && { sort: JSON.stringify(params.sort) })
   };
 
-  const { data, isLoading } = useQuery(usersQueryOptions(filters));
+  const { data } = useSuspenseQuery(usersQueryOptions(filters));
 
-  const totalUsers = data?.total_users ?? 0;
-  const users = data?.users ?? [];
-  const pageCount = Math.ceil(totalUsers / params.perPage);
+  const pageCount = Math.ceil(data.total_users / params.perPage);
 
   const { table } = useDataTable({
-    data: users,
+    data: data.users,
     columns,
     pageCount,
     shallow: true,
@@ -46,10 +43,6 @@ export function UsersTable() {
     }
   });
 
-  if (isLoading) {
-    return <DataTableSkeleton columnCount={5} rowCount={10} filterCount={2} />;
-  }
-
   return (
     <DataTable table={table}>
       <DataTableToolbar table={table} />
@@ -58,5 +51,11 @@ export function UsersTable() {
 }
 
 export function UsersTableSkeleton() {
-  return <DataTableSkeleton columnCount={5} rowCount={10} filterCount={2} />;
+  return (
+    <div className='flex flex-1 animate-pulse flex-col gap-4'>
+      <div className='bg-muted h-10 w-full rounded' />
+      <div className='bg-muted h-96 w-full rounded-lg' />
+      <div className='bg-muted h-10 w-full rounded' />
+    </div>
+  );
 }

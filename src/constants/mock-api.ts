@@ -98,12 +98,16 @@ export const fakeProducts = {
   }: {
     page?: number;
     limit?: number;
-    categories?: string;
+    categories?: string | string[];
     search?: string;
     sort?: string;
   }) {
     await delay(1000);
-    const categoriesArray = categories ? categories.split('.') : [];
+    const categoriesArray = categories
+      ? Array.isArray(categories)
+        ? categories
+        : String(categories).split(/[.,]/)
+      : [];
     const allProducts = await this.getAll({
       categories: categoriesArray,
       search
@@ -157,7 +161,7 @@ export const fakeProducts = {
 
   // Get a specific product by its ID
   async getProductById(id: number) {
-    await delay(1000); // Simulate a delay
+    await delay(3000); // Simulate a slow API call
 
     // Find the product by its ID
     const product = this.records.find((product) => product.id === id);

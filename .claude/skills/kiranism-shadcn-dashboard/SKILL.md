@@ -98,45 +98,36 @@ export default function EntityListingPage() {
 }
 ```
 
-### Client Table Component (`shallow: true` + `useSuspenseQuery`)
+### Client Table Component (`shallow: true` + `useQuery`)
 
 ```tsx
 'use client';
 
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
-import { getSortingStateParser } from '@/lib/parsers';
+import { useQuery } from '@tanstack/react-query';
+import { parseAsInteger, useQueryState } from 'nuqs';
 import { useDataTable } from '@/hooks/use-data-table';
 import { entitiesQueryOptions } from '../../api/queries';
 import { columns } from './columns';
 
-const columnIds = columns.map((c) => c.id).filter(Boolean) as string[];
-
 export function EntityTable() {
-  const [params] = useQueryStates({
-    page: parseAsInteger.withDefault(1),
-    perPage: parseAsInteger.withDefault(10),
-    name: parseAsString,
-    sort: getSortingStateParser(columnIds).withDefault([])
-  });
+  const [page] = useQueryState('page', parseAsInteger.withDefault(1));
+  const [pageSize] = useQueryState('perPage', parseAsInteger.withDefault(10));
+  const [search] = useQueryState('name');
 
-  const filters = {
-    page: params.page,
-    limit: params.perPage,
-    ...(params.name && { search: params.name }),
-    ...(params.sort.length > 0 && { sort: JSON.stringify(params.sort) })
-  };
+  const filters = { page, limit: pageSize, ...(search && { search }) };
 
-  const { data } = useSuspenseQuery(entitiesQueryOptions(filters));
+  const { data, isLoading } = useQuery(entitiesQueryOptions(filters));
 
   const { table } = useDataTable({
-    data: data.items,
+    data: data?.items ?? [],
     columns,
-    pageCount: Math.ceil(data.total_items / params.perPage),
-    shallow: true,
+    pageCount: Math.ceil((data?.total_items ?? 0) / pageSize),
+    shallow: true,  // URL changes stay client-side — React Query handles fetching
     debounceMs: 500,
     initialState: { columnPinning: { right: ['actions'] } }
   });
+
+  if (isLoading) return <DataTableSkeleton columnCount={5} rowCount={10} filterCount={2} />;
 
   return (
     <DataTable table={table}>
@@ -147,18 +138,11 @@ export function EntityTable() {
 ```
 
 **Key points:**
-- `void` prefetch on server + `useSuspenseQuery` on client — the standard TanStack Query + Next.js pattern
-- `useSuspenseQuery` integrates with React Suspense — data streams in via Next.js streaming SSR
-- `<Suspense fallback>` shows skeleton while data streams in — this is expected, the skeleton IS the Suspense fallback during streaming
-- Without `<Suspense>` wrapper: no skeleton, but previous page stays visible until data resolves
-- Once cached (within `staleTime`), subsequent visits are instant — no skeleton
 - `shallow: true` — URL changes stay client-side, React Query fetches on the client
-- `useQueryStates` reads all URL params including `sort` with `getSortingStateParser` (same parser `useDataTable` uses — avoids nuqs conflicts)
+- `shallow: false` — triggers full RSC server navigation (legacy pattern, avoid for new pages)
+- First load uses hydrated server-prefetched data (no loading spinner)
+- Subsequent pagination/filter changes fetch on the client
 - Cached pages/filters load instantly (React Query cache)
-
-**Why `useSuspenseQuery` not `useQuery`:**
-- `useQuery` doesn't integrate with Suspense — shows `isLoading` skeleton even when data is prefetched
-- `useSuspenseQuery` picks up the dehydrated pending query and suspends until it streams in
 
 ### Mutations (Forms)
 
