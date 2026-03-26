@@ -88,17 +88,19 @@ export const fakeProducts = {
     return products;
   },
 
-  // Get paginated results with optional category filtering and search
+  // Get paginated results with optional category filtering, search, and sorting
   async getProducts({
     page = 1,
     limit = 10,
     categories,
-    search
+    search,
+    sort
   }: {
     page?: number;
     limit?: number;
     categories?: string;
     search?: string;
+    sort?: string;
   }) {
     await delay(1000);
     const categoriesArray = categories ? categories.split('.') : [];
@@ -106,6 +108,32 @@ export const fakeProducts = {
       categories: categoriesArray,
       search
     });
+
+    // Sorting
+    if (sort) {
+      try {
+        const sortItems = JSON.parse(sort) as {
+          id: string;
+          desc: boolean;
+        }[];
+        if (sortItems.length > 0) {
+          const { id, desc } = sortItems[0];
+          allProducts.sort((a, b) => {
+            const aVal = (a as Record<string, unknown>)[id];
+            const bVal = (b as Record<string, unknown>)[id];
+            if (typeof aVal === 'number' && typeof bVal === 'number') {
+              return desc ? bVal - aVal : aVal - bVal;
+            }
+            const aStr = String(aVal ?? '').toLowerCase();
+            const bStr = String(bVal ?? '').toLowerCase();
+            return desc ? bStr.localeCompare(aStr) : aStr.localeCompare(bStr);
+          });
+        }
+      } catch {
+        // Invalid sort param — ignore
+      }
+    }
+
     const totalProducts = allProducts.length;
 
     // Pagination logic
@@ -149,6 +177,58 @@ export const fakeProducts = {
       time: currentTime,
       message: `Product with ID ${id} found`,
       product
+    };
+  },
+
+  // Create a new product
+  async createProduct(
+    data: Omit<Product, 'id' | 'created_at' | 'updated_at' | 'photo_url'>
+  ) {
+    await delay(1000);
+
+    const newProduct: Product = {
+      ...data,
+      id: this.records.length + 1,
+      photo_url: `https://api.slingacademy.com/public/sample-products/${this.records.length + 1}.png`,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    this.records.push(newProduct);
+
+    return {
+      success: true,
+      message: 'Product created successfully',
+      product: newProduct
+    };
+  },
+
+  // Update an existing product
+  async updateProduct(
+    id: number,
+    data: Omit<Product, 'id' | 'created_at' | 'updated_at' | 'photo_url'>
+  ) {
+    await delay(1000);
+
+    const index = this.records.findIndex((product) => product.id === id);
+
+    if (index === -1) {
+      return {
+        success: false,
+        message: `Product with ID ${id} not found`
+      };
+    }
+
+    this.records[index] = {
+      ...this.records[index],
+      ...data,
+      updated_at: new Date().toISOString()
+    };
+
+    return {
+      success: true,
+      message: 'Product updated successfully',
+      product: this.records[index]
     };
   }
 };

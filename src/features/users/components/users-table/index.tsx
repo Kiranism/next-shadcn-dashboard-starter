@@ -7,17 +7,17 @@ import { useDataTable } from '@/hooks/use-data-table';
 import { useQuery } from '@tanstack/react-query';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
 import { getSortingStateParser } from '@/lib/parsers';
-import { productsQueryOptions } from '../../api/queries';
+import { usersQueryOptions } from '../../api/queries';
 import { columns } from './columns';
 
 const columnIds = columns.map((c) => c.id).filter(Boolean) as string[];
 
-export function ProductTable() {
+export function UsersTable() {
   const [params] = useQueryStates({
     page: parseAsInteger.withDefault(1),
     perPage: parseAsInteger.withDefault(10),
     name: parseAsString,
-    category: parseAsString,
+    role: parseAsString,
     sort: getSortingStateParser(columnIds).withDefault([])
   });
 
@@ -25,18 +25,18 @@ export function ProductTable() {
     page: params.page,
     limit: params.perPage,
     ...(params.name && { search: params.name }),
-    ...(params.category && { categories: params.category }),
+    ...(params.role && { roles: params.role }),
     ...(params.sort.length > 0 && { sort: JSON.stringify(params.sort) })
   };
 
-  const { data, isLoading } = useQuery(productsQueryOptions(filters));
+  const { data, isLoading } = useQuery(usersQueryOptions(filters));
 
-  const totalProducts = data?.total_products ?? 0;
-  const products = data?.products ?? [];
-  const pageCount = Math.ceil(totalProducts / params.perPage);
+  const totalUsers = data?.total_users ?? 0;
+  const users = data?.users ?? [];
+  const pageCount = Math.ceil(totalUsers / params.perPage);
 
   const { table } = useDataTable({
-    data: products,
+    data: users,
     columns,
     pageCount,
     shallow: true,
@@ -47,7 +47,7 @@ export function ProductTable() {
   });
 
   if (isLoading) {
-    return <DataTableSkeleton columnCount={5} rowCount={8} filterCount={2} />;
+    return <DataTableSkeleton columnCount={5} rowCount={10} filterCount={2} />;
   }
 
   return (
@@ -55,4 +55,8 @@ export function ProductTable() {
       <DataTableToolbar table={table} />
     </DataTable>
   );
+}
+
+export function UsersTableSkeleton() {
+  return <DataTableSkeleton columnCount={5} rowCount={10} filterCount={2} />;
 }

@@ -2,8 +2,10 @@
 
 import { useAppForm, useFormFields } from '@/components/ui/tanstack-form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Product } from '@/constants/mock-api';
+import { Product, fakeProducts } from '@/constants/mock-api';
 import { useRouter } from 'next/navigation';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import * as z from 'zod';
 import {
   productSchema,
@@ -19,6 +21,46 @@ export default function ProductForm({
   pageTitle: string;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+
+  const createMutation = useMutation({
+    mutationFn: (data: {
+      name: string;
+      category: string;
+      price: number;
+      description: string;
+    }) => fakeProducts.createProduct(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast.success('Product created successfully');
+      router.push('/dashboard/product');
+    },
+    onError: () => {
+      toast.error('Failed to create product');
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: {
+      id: number;
+      values: {
+        name: string;
+        category: string;
+        price: number;
+        description: string;
+      };
+    }) => fakeProducts.updateProduct(data.id, data.values),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast.success('Product updated successfully');
+      router.push('/dashboard/product');
+    },
+    onError: () => {
+      toast.error('Failed to update product');
+    }
+  });
+
+  const isEdit = !!initialData;
 
   const form = useAppForm({
     defaultValues: {
@@ -31,9 +73,22 @@ export default function ProductForm({
     validators: {
       onSubmit: productSchema
     },
-    onSubmit: ({ value }) => {
-      console.log(value);
-      router.push('/dashboard/product');
+    onSubmit: async ({ value }) => {
+      const payload = {
+        name: value.name,
+        category: value.category,
+        price: value.price!,
+        description: value.description
+      };
+
+      if (isEdit) {
+        await updateMutation.mutateAsync({
+          id: initialData.id,
+          values: payload
+        });
+      } else {
+        await createMutation.mutateAsync(payload);
+      }
     }
   });
 
@@ -43,6 +98,8 @@ export default function ProductForm({
     FormTextareaField,
     FormFileUploadField
   } = useFormFields<ProductFormValues>();
+
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <Card className='mx-auto w-full'>
@@ -114,7 +171,17 @@ export default function ProductForm({
               }}
             />
 
-            <form.SubmitButton label='Add Product' />
+            <div className='flex justify-end'>
+              <form.SubmitButton
+                label={
+                  isPending
+                    ? 'Saving...'
+                    : isEdit
+                      ? 'Update Product'
+                      : 'Add Product'
+                }
+              />
+            </div>
           </form.Form>
         </form.AppForm>
       </CardContent>

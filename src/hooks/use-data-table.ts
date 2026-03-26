@@ -2,6 +2,7 @@
 
 import {
   type ColumnFiltersState,
+  type ColumnPinningState,
   type PaginationState,
   type RowSelectionState,
   type SortingState,
@@ -108,6 +109,9 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
   );
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>(initialState?.columnVisibility ?? {});
+  const [columnPinning, setColumnPinning] = React.useState<ColumnPinningState>(
+    initialState?.columnPinning ?? {}
+  );
 
   const [page, setPage] = useQueryState(
     PAGE_KEY,
@@ -267,6 +271,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
       pagination,
       sorting,
       columnVisibility,
+      columnPinning,
       rowSelection,
       columnFilters
     },
@@ -280,6 +285,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     onSortingChange,
     onColumnFiltersChange,
     onColumnVisibilityChange: setColumnVisibility,
+    onColumnPinningChange: setColumnPinning,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),

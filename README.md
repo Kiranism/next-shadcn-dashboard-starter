@@ -38,10 +38,11 @@ This template uses the following stack:
 - Components - [Shadcn-ui](https://ui.shadcn.com)
 - Charts - [Recharts](https://recharts.org) • [Evil Charts](https://evilcharts.com/)
 - Schema Validations - [Zod](https://zod.dev)
+- Data Fetching - [TanStack React Query](https://tanstack.com/query) (server prefetch + client cache + mutations)
 - State Management - [Zustand](https://zustand-demo.pmnd.rs)
 - Search params state manager - [Nuqs](https://nuqs.47ng.com/)
 - Tables - [Tanstack Data Tables](https://ui.shadcn.com/docs/components/data-table) • [Dice table](https://www.diceui.com/docs/components/data-table)
-- Forms - [React Hook Form](https://ui.shadcn.com/docs/components/form)
+- Forms - [TanStack Form](https://tanstack.com/form) + [Zod](https://zod.dev)
 - Command+k interface - [kbar](https://kbar.vercel.app/)
 - Linting - [ESLint](https://eslint.org)
 - Pre-commit Hooks - [Husky](https://typicode.github.io/husky/)
@@ -56,7 +57,7 @@ _If you are looking for a Tanstack start dashboard template, here is the [repo](
 
 - 📊 **Analytics overview** page with cards and charts
 
-- 📋 **Data tables** with server-side search, filter & pagination
+- 📋 **Data tables** with React Query prefetch, client-side cache, search, filter & pagination
 
 - 🔐 **Authentication** & user management via Clerk
 
@@ -96,8 +97,10 @@ You can use this Next.js + Shadcn UI dashboard starter to build:
 | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [Signup / Signin](https://go.clerk.com/ILdYhn7)                                                                                                                        | Authentication with **Clerk** provides secure authentication and user management with multiple sign-in options including passwordless authentication, social logins, and enterprise SSO - all designed to enhance security while delivering a seamless user experience. |
 | [Dashboard Overview](https://shadcn-dashboard.kiranism.dev/dashboard)                                                                                                  | Cards with Recharts graphs for analytics. Parallel routes in the overview sections feature independent loading, error handling, and isolated component rendering.                                                                                                       |
-| [Product List (Table)](https://shadcn-dashboard.kiranism.dev/dashboard/product)                                                                                        | Tanstack tables with server side searching, filter, pagination by Nuqs which is a Type-safe search params state manager in nextjs                                                                                                                                       |
-| [Create Product Form](https://shadcn-dashboard.kiranism.dev/dashboard/product/new)                                                                                     | A Product Form with shadcn form (react-hook-form + zod).                                                                                                                                                                                                                |
+| [Product List (Table)](https://shadcn-dashboard.kiranism.dev/dashboard/product)                                                                                        | TanStack Table + React Query (server prefetch + client cache) with nuqs URL state for search, filter, pagination. `shallow: true` keeps interactions client-side.                                                                                                       |
+| [Create Product Form](https://shadcn-dashboard.kiranism.dev/dashboard/product/new)                                                                                     | TanStack Form + Zod with `useMutation` for create/update. Cache invalidation on success.                                                                                                                                                                                |
+| [Users (Table)](https://shadcn-dashboard.kiranism.dev/dashboard/users)                                                                                                 | Users table with React Query + nuqs pattern. Same architecture as Products — server prefetch, client-side pagination/filter via React Query cache.                                                                                                                       |
+| [React Query Demo](https://shadcn-dashboard.kiranism.dev/dashboard/react-query)                                                                                       | Pokemon API showcase demonstrating server prefetch + `HydrationBoundary` + `useSuspenseQuery` pattern with client-side cache.                                                                                                                                           |
 | [Profile](https://shadcn-dashboard.kiranism.dev/dashboard/profile)                                                                                                     | Clerk's full-featured account management UI that allows users to manage their profile and security settings                                                                                                                                                             |
 | [Kanban Board](https://shadcn-dashboard.kiranism.dev/dashboard/kanban)                                                                                                 | A Drag n Drop task management board with dnd-kit and zustand. Features column sorting, task cards with priority badges, assignees, and due dates.                                                                                                                       |
 | [Chat](https://shadcn-dashboard.kiranism.dev/dashboard/chat)                                                                                                           | Real-time messaging UI with conversation list, message bubbles, quick replies, file attachments, and auto-reply demo. Multi-panel layout with mobile responsive design.                                                                                                 |
@@ -117,7 +120,9 @@ src/
 │   ├── auth/                      # Auth pages (sign-in, sign-up)
 │   ├── dashboard/                 # Dashboard route group
 │   │   ├── overview/              # Analytics with parallel routes
-│   │   ├── product/               # Product CRUD pages
+│   │   ├── product/               # Product CRUD pages (React Query)
+│   │   ├── users/                 # Users table (React Query + nuqs)
+│   │   ├── react-query/           # React Query demo page
 │   │   ├── kanban/                # Task board page
 │   │   ├── chat/                  # Messaging page
 │   │   ├── notifications/         # Notifications page
@@ -135,14 +140,16 @@ src/
 │
 ├── features/                      # Feature-based modules
 │   ├── overview/                  # Dashboard analytics (charts, cards)
-│   ├── products/                  # Product listing, form, tables
+│   ├── products/                  # Product listing, form, tables (React Query)
+│   ├── users/                     # User management table (React Query)
+│   ├── react-query-demo/          # React Query demo (Pokemon API)
 │   ├── kanban/                    # Drag-drop task board
 │   ├── chat/                      # Messaging (conversations, bubbles, composer)
 │   ├── notifications/             # Notification center & store
 │   ├── auth/                      # Auth components
 │   └── profile/                   # Profile form schemas
 │
-├── lib/                           # Core utilities and configurations
+├── lib/                           # Core utilities (query-client, searchparams, etc.)
 ├── hooks/                         # Custom hooks
 ├── config/                        # Navigation, infobar, data table config
 ├── constants/                     # Mock data

@@ -1,38 +1,34 @@
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
 import { getQueryClient } from '@/lib/query-client';
 import { searchParamsCache } from '@/lib/searchparams';
-import { productsQueryOptions } from '../api/queries';
-import { ProductTable } from './product-tables';
-import { DataTableSkeleton } from '@/components/ui/table/data-table-skeleton';
+import { usersQueryOptions } from '../api/queries';
+import { UsersTable, UsersTableSkeleton } from './users-table';
 import { Suspense } from 'react';
 
-export default function ProductListingPage() {
+export default function UserListingPage() {
   const page = searchParamsCache.get('page');
   const search = searchParamsCache.get('name');
   const pageLimit = searchParamsCache.get('perPage');
-  const categories = searchParamsCache.get('category');
+  const roles = searchParamsCache.get('role');
   const sort = searchParamsCache.get('sort');
 
   const filters = {
     page,
     limit: pageLimit,
     ...(search && { search }),
-    ...(categories && { categories }),
+    ...(roles && { roles }),
     ...(sort && { sort })
   };
 
   const queryClient = getQueryClient();
 
-  void queryClient.prefetchQuery(productsQueryOptions(filters));
+  // Prefetch on the server with the current search params
+  void queryClient.prefetchQuery(usersQueryOptions(filters));
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <Suspense
-        fallback={
-          <DataTableSkeleton columnCount={5} rowCount={8} filterCount={2} />
-        }
-      >
-        <ProductTable />
+      <Suspense fallback={<UsersTableSkeleton />}>
+        <UsersTable />
       </Suspense>
     </HydrationBoundary>
   );

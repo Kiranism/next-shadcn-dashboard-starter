@@ -43,6 +43,7 @@ export const columns: ColumnDef<Product>[] = [
   {
     id: 'category',
     accessorKey: 'category',
+    enableSorting: false,
     header: ({ column }: { column: Column<Product, unknown> }) => (
       <DataTableColumnHeader column={column} title='Category' />
     ),

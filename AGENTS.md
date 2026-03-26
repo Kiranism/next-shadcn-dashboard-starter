@@ -34,9 +34,16 @@ The project follows a feature-based folder structure designed for scalability in
 - CSS custom properties for theming (OKLCH color format)
 
 ### State Management
-- Zustand 5.x for global state
+- Zustand 5.x for local UI state (chat, kanban, notifications)
 - Nuqs for URL search params state management
 - TanStack Form + Zod for form handling (via `useAppForm` hook)
+
+### Data Fetching & Caching
+- TanStack React Query for data fetching, caching, and mutations
+- Server-side prefetching with `HydrationBoundary` + `dehydrate`
+- Client-side `useQuery` + nuqs `shallow: true` for tables (no RSC round-trips on pagination/filter)
+- `useMutation` + `invalidateQueries` for form submissions
+- Query client singleton in `src/lib/query-client.ts`
 
 ### Authentication & Authorization
 - Clerk for authentication and user management
@@ -46,8 +53,9 @@ The project follows a feature-based folder structure designed for scalability in
 
 ### Data & APIs
 - TanStack Table for data tables
+- TanStack React Query for data fetching and mutations
 - Recharts for analytics/charts
-- Mock API utilities in `src/constants/mock-api.ts`
+- Mock API utilities in `src/constants/mock-api.ts` and `mock-api-users.ts`
 
 ### Development Tools
 - ESLint 8.x with Next.js core-web-vitals config
@@ -89,7 +97,15 @@ The project follows a feature-based folder structure designed for scalability in
 ├── features/              # Feature-based modules
 │   ├── auth/              # Authentication components
 │   ├── overview/          # Dashboard analytics
-│   ├── products/          # Product management
+│   ├── products/          # Product management (React Query + nuqs)
+│   │   ├── api/           # Query options (productsQueryOptions)
+│   │   ├── components/    # Listing, form, table components
+│   │   ├── schemas/       # Zod schemas
+│   │   └── constants/     # Filter options
+│   ├── users/             # User management (React Query + nuqs)
+│   │   ├── api/           # Query options (usersQueryOptions)
+│   │   └── components/    # Listing, table components
+│   ├── react-query-demo/  # React Query showcase (Pokemon API)
 │   ├── kanban/            # Kanban board with dnd-kit
 │   └── profile/           # Profile management
 │
@@ -325,30 +341,48 @@ const hasFeature = has({ feature: 'premium_access' });
 
 ## Data Fetching Patterns
 
-### Server Components (Default)
-Fetch data directly in async components:
+### React Query (Default for all new pages)
+
+The project uses TanStack React Query with server-side prefetching and client-side cache management:
+
+1. **Query options** defined in `src/features/<name>/api/queries.ts` — shared between server prefetch and client hooks
+2. **Server prefetch** in listing component using `getQueryClient().prefetchQuery()` + `HydrationBoundary`
+3. **Client fetch** using `useQuery()` with nuqs `shallow: true` — no RSC round-trips on pagination/filter
 
 ```tsx
-export default async function ProductPage() {
-  const products = await getProducts(); // Your data fetch
-  return <ProductTable data={products} />;
-}
+// Server: prefetch
+const queryClient = getQueryClient();
+void queryClient.prefetchQuery(entitiesQueryOptions(filters));
+
+// Client: useQuery reacts to URL changes
+const { data, isLoading } = useQuery(entitiesQueryOptions(filters));
+const { table } = useDataTable({ data: data?.items, columns, shallow: true });
+```
+
+### Mutations
+Forms use `useMutation` + `useQueryClient().invalidateQueries()`:
+
+```tsx
+const mutation = useMutation({
+  mutationFn: (data) => fakeEntities.createEntity(data),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['entities'] });
+    toast.success('Created');
+  }
+});
 ```
 
 ### URL State Management
 Use `nuqs` for search params state:
-
-```tsx
-import { useQueryState } from 'nuqs';
-
-const [search, setSearch] = useQueryState('search');
-```
+- `searchParamsCache` (server) — reads params in server components
+- `useQueryState` (client) — reads/writes params in client components with `shallow: true`
 
 ### Data Tables
-Tables use TanStack Table with server-side filtering:
+Tables use TanStack Table with React Query:
+- Query options in `features/*/api/queries.ts`
 - Column definitions in `features/*/components/*-tables/columns.tsx`
 - Table component in `src/components/ui/table/data-table.tsx`
-- Filter parsers in `src/lib/parsers.ts`
+- Column pinning via `initialState.columnPinning` in `useDataTable`
 
 ---
 

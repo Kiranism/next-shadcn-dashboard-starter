@@ -12,7 +12,6 @@ import {
   SheetTitle,
   SheetTrigger
 } from '@/components/ui/sheet';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -69,9 +68,9 @@ export default function SheetProductForm() {
           </SheetDescription>
         </SheetHeader>
 
-        <ScrollArea className='-mx-6 flex-1 px-6'>
+        <div className='flex-1 overflow-auto'>
           <form.AppForm>
-            <form.Form id='sheet-product-form' className='space-y-4 py-4'>
+            <form.Form id='sheet-product-form' className='space-y-4'>
               <form.AppField
                 name='name'
                 children={(field) => {
@@ -209,9 +208,9 @@ export default function SheetProductForm() {
               />
             </form.Form>
           </form.AppForm>
-        </ScrollArea>
+        </div>
 
-        <SheetFooter className='pt-4'>
+        <SheetFooter>
           <Button
             type='button'
             variant='outline'

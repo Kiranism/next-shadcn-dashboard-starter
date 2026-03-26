@@ -69,6 +69,14 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
+        title: 'Users',
+        url: '/dashboard/users',
+        icon: 'teams',
+        shortcut: ['u', 'u'],
+        isActive: false,
+        items: []
+      },
+      {
         title: 'Kanban',
         url: '/dashboard/kanban',
         icon: 'kanban',
@@ -117,6 +125,13 @@ export const navGroups: NavGroup[] = [
             icon: 'forms'
           }
         ]
+      },
+      {
+        title: 'React Query',
+        url: '/dashboard/react-query',
+        icon: 'code',
+        isActive: false,
+        items: []
       },
       {
         title: 'Icons',
