@@ -145,12 +145,16 @@ export const fakeUsers = {
   }: {
     page?: number;
     limit?: number;
-    roles?: string;
+    roles?: string | string[];
     search?: string;
     sort?: string;
   }) {
     await delay(800);
-    const rolesArray = roles ? roles.split('.') : [];
+    const rolesArray = roles
+      ? Array.isArray(roles)
+        ? roles
+        : String(roles).split(/[.,]/)
+      : [];
     const allUsers = await this.getAll({
       roles: rolesArray,
       search

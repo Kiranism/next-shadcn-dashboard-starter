@@ -1,11 +1,10 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { Product } from '@/constants/mock-api';
 import { notFound } from 'next/navigation';
 import ProductForm from './product-form';
 import { productByIdOptions } from '../api/queries';
-import FormCardSkeleton from '@/components/form-card-skeleton';
 
 type TProductViewPageProps = {
   productId: string;
@@ -20,11 +19,7 @@ export default function ProductViewPage({ productId }: TProductViewPageProps) {
 }
 
 function EditProductView({ productId }: { productId: number }) {
-  const { data, isLoading } = useQuery(productByIdOptions(productId));
-
-  if (isLoading) {
-    return <FormCardSkeleton />;
-  }
+  const { data } = useSuspenseQuery(productByIdOptions(productId));
 
   if (!data?.success || !data?.product) {
     notFound();

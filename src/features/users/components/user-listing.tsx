@@ -22,7 +22,6 @@ export default function UserListingPage() {
 
   const queryClient = getQueryClient();
 
-  // Prefetch on the server with the current search params
   void queryClient.prefetchQuery(usersQueryOptions(filters));
 
   return (

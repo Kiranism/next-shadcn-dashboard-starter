@@ -360,18 +360,38 @@ const hasFeature = has({ feature: 'premium_access' });
 The project uses TanStack React Query with server-side prefetching and client-side cache management:
 
 1. **Query options** defined in `src/features/<name>/api/queries.ts` — shared between server prefetch and client hooks
-2. **Server prefetch** in listing component using `getQueryClient().prefetchQuery()` + `HydrationBoundary`
-3. **Client fetch** using `useQuery()` with nuqs `shallow: true` — no RSC round-trips on pagination/filter
+2. **Server prefetch** using `void queryClient.prefetchQuery()` + `HydrationBoundary` + `dehydrate` — `void` (fire-and-forget) is the standard TanStack pattern for Next.js App Router
+3. **Client fetch** using `useSuspenseQuery()` — integrates with React Suspense so prefetched data streams in without showing a loading skeleton on first load
+4. **Suspense boundary** wraps the client component — shows a fallback skeleton only on subsequent client-side navigations when cache is empty
 
 ```tsx
-// Server: prefetch
+// Server component: prefetch + dehydrate
 const queryClient = getQueryClient();
-void queryClient.prefetchQuery(entitiesQueryOptions(filters));
+void queryClient.prefetchQuery(entitiesQueryOptions(filters)); // void, not await
 
-// Client: useQuery reacts to URL changes
-const { data, isLoading } = useQuery(entitiesQueryOptions(filters));
-const { table } = useDataTable({ data: data?.items, columns, shallow: true });
+return (
+  <HydrationBoundary state={dehydrate(queryClient)}>
+    <Suspense fallback={<Skeleton />}>
+      <EntityTable />
+    </Suspense>
+  </HydrationBoundary>
+);
+
+// Client component: useSuspenseQuery (not useQuery)
+const { data } = useSuspenseQuery(entitiesQueryOptions(filters));
 ```
+
+**Why `void` + `useSuspenseQuery`:**
+- `void` fires the prefetch without blocking the server component
+- `useSuspenseQuery` integrates with React Suspense — the pending query streams in via Next.js streaming SSR
+- With `<Suspense fallback={<Skeleton />}>`: skeleton shows immediately while data streams in — this is expected behavior, the skeleton IS the Suspense fallback during streaming
+- Without `<Suspense>` wrapper: no skeleton, but the previous page stays visible until data fully resolves (feels like a slow navigation)
+- Once data is cached (within `staleTime`), subsequent visits are instant — no skeleton
+
+**Why NOT `useQuery`:**
+- `useQuery` doesn't integrate with Suspense — returns `isLoading: true` and you must handle loading state manually
+- Hydrated pending queries from `void` prefetch won't prevent the loading state
+- Results in skeleton flash even when data is prefetched
 
 ### Mutations
 Forms use `useMutation` + `useQueryClient().invalidateQueries()`:
