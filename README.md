@@ -38,7 +38,7 @@ This template uses the following stack:
 - Components - [Shadcn-ui](https://ui.shadcn.com)
 - Charts - [Recharts](https://recharts.org) • [Evil Charts](https://evilcharts.com/)
 - Schema Validations - [Zod](https://zod.dev)
-- Data Fetching - [TanStack React Query](https://tanstack.com/query) (server prefetch + client cache + mutations)
+- Data Fetching - [TanStack React Query](https://tanstack.com/query)
 - State Management - [Zustand](https://zustand-demo.pmnd.rs)
 - Search params state manager - [Nuqs](https://nuqs.47ng.com/)
 - Tables - [Tanstack Data Tables](https://ui.shadcn.com/docs/components/data-table) • [Dice table](https://www.diceui.com/docs/components/data-table)
