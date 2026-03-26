@@ -3,8 +3,6 @@ import { getQueryClient } from '@/lib/query-client';
 import { searchParamsCache } from '@/lib/searchparams';
 import { productsQueryOptions } from '../api/queries';
 import { ProductTable } from './product-tables';
-import { DataTableSkeleton } from '@/components/ui/table/data-table-skeleton';
-import { Suspense } from 'react';
 
 export default function ProductListingPage() {
   const page = searchParamsCache.get('page');
@@ -27,13 +25,7 @@ export default function ProductListingPage() {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <Suspense
-        fallback={
-          <DataTableSkeleton columnCount={5} rowCount={8} filterCount={2} />
-        }
-      >
-        <ProductTable />
-      </Suspense>
+      <ProductTable />
     </HydrationBoundary>
   );
 }

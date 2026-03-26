@@ -2,8 +2,7 @@ import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
 import { getQueryClient } from '@/lib/query-client';
 import { searchParamsCache } from '@/lib/searchparams';
 import { usersQueryOptions } from '../api/queries';
-import { UsersTable, UsersTableSkeleton } from './users-table';
-import { Suspense } from 'react';
+import { UsersTable } from './users-table';
 
 export default function UserListingPage() {
   const page = searchParamsCache.get('page');
@@ -26,9 +25,7 @@ export default function UserListingPage() {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <Suspense fallback={<UsersTableSkeleton />}>
-        <UsersTable />
-      </Suspense>
+      <UsersTable />
     </HydrationBoundary>
   );
 }
