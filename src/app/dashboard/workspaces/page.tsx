@@ -2,14 +2,9 @@
 
 import PageContainer from '@/components/layout/page-container';
 import { OrganizationList } from '@clerk/nextjs';
-import { dark } from '@clerk/themes';
-import { useTheme } from 'next-themes';
 import { workspacesInfoContent } from '@/config/infoconfig';
 
 export default function WorkspacesPage() {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-
   return (
     <PageContainer
       pageTitle='Workspaces'
@@ -18,7 +13,6 @@ export default function WorkspacesPage() {
     >
       <OrganizationList
         appearance={{
-          baseTheme: isDark ? dark : undefined,
           elements: {
             organizationListBox: 'space-y-2',
             organizationPreview: 'rounded-lg border p-4 hover:bg-accent',

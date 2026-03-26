@@ -25,8 +25,6 @@ import { Icons } from '@/components/icons';
 import { usePathname } from 'next/navigation';
 import * as React from 'react';
 
-const INFOBAR_COOKIE_NAME = 'infobar_state';
-const INFOBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 const INFOBAR_WIDTH = '22rem';
 const INFOBAR_WIDTH_MOBILE = '22rem';
 const INFOBAR_WIDTH_ICON = '3rem';
@@ -113,9 +111,6 @@ function InfobarProvider({
       } else {
         _setOpen(openState);
       }
-
-      // This sets the cookie to keep the infobar state.
-      // document.cookie = `${INFOBAR_COOKIE_NAME}=${openState}; path=/; max-age=${INFOBAR_COOKIE_MAX_AGE}`;
     },
     [setOpenProp, open, isMobile]
   );
@@ -143,17 +138,17 @@ function InfobarProvider({
 
   // Clear content and close infobar when pathname changes
   React.useEffect(() => {
-    // If we're on a different page than where content was set, clear it
     if (contentPathname !== null && contentPathname !== pathname) {
       setIsPathnameChanging(true);
       setContent(null);
       setContentPathname(null);
       setOpen(false);
 
-      // Reset the flag after transition would complete (200ms)
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         setIsPathnameChanging(false);
       }, 200);
+
+      return () => clearTimeout(timer);
     }
   }, [pathname, contentPathname]);
 
@@ -307,7 +302,7 @@ function Infobar({
       <div
         data-slot='infobar-container'
         className={cn(
-          'absolute inset-y-0 z-10 hidden h-svh w-(--infobar-width) transition-[left,right,width] duration-(--infobar-transition-duration,200ms) ease-linear md:flex',
+          'fixed inset-y-0 z-30 hidden h-dvh w-(--infobar-width) transition-[left,right,width] duration-(--infobar-transition-duration,200ms) ease-linear md:flex',
           side === 'left'
             ? 'left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--infobar-width)*-1)]'
             : 'right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--infobar-width)*-1)]',
@@ -559,7 +554,7 @@ const infobarMenuButtonVariants = cva(
       variant: {
         default: 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
         outline:
-          'bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]'
+          'bg-background shadow-[0_0_0_1px_var(--sidebar-border)] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_var(--sidebar-accent)]'
       },
       size: {
         default: 'h-8 text-sm',

@@ -3,8 +3,6 @@
 import { useState } from 'react';
 import { Icons } from '@/components/icons';
 import PageContainer from '@/components/layout/page-container';
-import { Heading } from '@/components/ui/heading';
-import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { buttonVariants } from '@/components/ui/button';
 import Link from 'next/link';
@@ -19,24 +17,21 @@ export default function IconsViewPage() {
   );
 
   return (
-    <PageContainer>
+    <PageContainer
+      pageTitle='Icons'
+      pageHeaderAction={
+        <Link
+          href={TABLER_ICONS_URL}
+          target='_blank'
+          rel='noopener noreferrer'
+          className={buttonVariants({ variant: 'outline' })}
+        >
+          <Icons.externalLink className='mr-2 h-4 w-4' />
+          <span className='hidden sm:inline'>Browse</span> Tabler Icons
+        </Link>
+      }
+    >
       <div className='space-y-4'>
-        <div className='flex items-start justify-between'>
-          <Heading
-            title='Icons'
-            description='All available icons from the centralized icons registry. Import from @/components/icons instead of directly from icon packages.'
-          />
-          <Link
-            href={TABLER_ICONS_URL}
-            target='_blank'
-            rel='noopener noreferrer'
-            className={buttonVariants({ variant: 'outline' })}
-          >
-            <Icons.externalLink className='mr-2 h-4 w-4' />
-            Browse More on Tabler Icons
-          </Link>
-        </div>
-        <Separator />
         <Input
           placeholder='Search icons...'
           value={search}

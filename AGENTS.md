@@ -36,7 +36,7 @@ The project follows a feature-based folder structure designed for scalability in
 ### State Management
 - Zustand 5.x for global state
 - Nuqs for URL search params state management
-- React Hook Form + Zod for form handling
+- TanStack Form + Zod for form handling (via `useAppForm` hook)
 
 ### Authentication & Authorization
 - Clerk for authentication and user management
@@ -251,16 +251,24 @@ See `docs/themes.md` for detailed theming guide.
 ## Navigation & RBAC System
 
 ### Navigation Configuration
-Navigation is defined in `src/config/nav-config.ts`:
+Navigation is organized into groups in `src/config/nav-config.ts`:
 
 ```typescript
-export const navItems: NavItem[] = [
+import { NavGroup } from '@/types';
+
+export const navGroups: NavGroup[] = [
   {
-    title: 'Dashboard',
-    url: '/dashboard/overview',
-    icon: 'dashboard',
-    shortcut: ['d', 'd'],
-    access: { requireOrg: true }  // RBAC check
+    label: 'Overview',
+    items: [
+      {
+        title: 'Dashboard',
+        url: '/dashboard/overview',
+        icon: 'dashboard',
+        shortcut: ['d', 'd'],
+        items: [],
+        access: { requireOrg: true }  // RBAC check
+      }
+    ]
   }
 ];
 ```
@@ -549,3 +557,5 @@ See "Theming System" section above or `docs/themes.md`.
 6. **Environment variables** - prefix with `NEXT_PUBLIC_` for client-side access
 7. **shadcn components** - don't modify files in `src/components/ui/` directly; extend them instead
 8. **Icons** - NEVER import icons directly from `@tabler/icons-react` or any other icon package. All icons must be registered in `src/components/icons.tsx` and imported as `import { Icons } from '@/components/icons'`. To add a new icon: add the tabler import to `icons.tsx`, add a semantic key to the `Icons` object, then use `Icons.keyName` in your component.
+9. **Page headers** - Always use `PageContainer` props (`pageTitle`, `pageDescription`, `pageHeaderAction`) for page headers. Never import `<Heading>` manually in pages — `PageContainer` handles that internally.
+10. **Forms** - Use TanStack Form via `useAppForm` from `@/components/ui/tanstack-form`. Never use `useState` inside `AppField` render props — extract stateful logic into separate components.

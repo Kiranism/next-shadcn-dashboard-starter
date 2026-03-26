@@ -26,16 +26,21 @@ export function InfoButton({
   size = 'icon',
   ...props
 }: InfoButtonProps) {
-  const { setContent, setOpen } = useInfobar();
+  const { setContent, setOpen, open } = useInfobar();
 
-  // Automatically set content when component mounts (e.g., on page load/refresh)
+  // Set content on mount so the infobar has it ready, but don't force it open
+  const contentRef = React.useRef(content);
+  contentRef.current = content;
+
   React.useEffect(() => {
-    setContent(content);
-  }, [content, setContent]);
+    setContent(contentRef.current);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     setContent(content);
-    setOpen(true);
+    if (!open) {
+      setOpen(true);
+    }
     props.onClick?.(e);
   };
 

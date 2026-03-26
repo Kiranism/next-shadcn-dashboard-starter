@@ -82,6 +82,7 @@ export default async function Page(props: PageProps) {
 - Wrap async data-fetching components in `<Suspense>`
 - Use `DataTableSkeleton` as fallback for table pages
 - Export `metadata` for the page title
+- **Always use `PageContainer` props for page headers** — never import `<Heading>` manually
 - `PageContainer` props: `scrollable`, `pageTitle`, `pageDescription`, `infoContent`, `pageHeaderAction`
 
 ### PageContainer with Action Button
@@ -303,142 +304,171 @@ export const CATEGORY_OPTIONS = [
 
 ## 4. Forms
 
-Forms use React Hook Form + Zod. The project has reusable form field components in `src/components/forms/`.
+Forms use **TanStack Form + Zod** with the project's custom `useAppForm` hook and field layout components from `src/components/ui/tanstack-form.tsx` and `src/components/ui/field.tsx`.
 
 ```tsx
 'use client';
 
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useAppForm } from '@/components/ui/tanstack-form';
 import * as z from 'zod';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form } from '@/components/ui/form';
-import { FormInput } from '@/components/forms/form-input';
-import { FormSelect } from '@/components/forms/form-select';
-import { FormTextarea } from '@/components/forms/form-textarea';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from '@/components/ui/select';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   category: z.string().min(1, 'Please select a category'),
-  price: z.coerce.number().positive('Price must be positive'),
   description: z.string().min(10, 'Description must be at least 10 characters')
 });
 
-type FormValues = z.infer<typeof formSchema>;
-
-interface FeatureFormProps {
-  initialData?: FormValues | null;
-  pageTitle: string;
-}
-
-export default function FeatureForm({ initialData, pageTitle }: FeatureFormProps) {
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: initialData || {
+export default function FeatureForm() {
+  const form = useAppForm({
+    defaultValues: {
       name: '',
       category: '',
-      price: undefined,
       description: ''
+    },
+    validators: {
+      onSubmit: formSchema as any
+    },
+    onSubmit: ({ value }) => {
+      console.log('Submitted:', value);
     }
   });
 
-  function onSubmit(values: FormValues) {
-    // Handle submit
-  }
-
   return (
-    <Card className='mx-auto w-full'>
-      <CardHeader>
-        <CardTitle className='text-left text-2xl font-bold'>
-          {pageTitle}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
-            <FormInput
-              control={form.control}
-              name='name'
-              label='Name'
-              placeholder='Enter name'
-              required
-            />
-            <FormSelect
-              control={form.control}
-              name='category'
-              label='Category'
-              placeholder='Select category'
-              required
-              options={[
-                { label: 'Option A', value: 'a' },
-                { label: 'Option B', value: 'b' }
-              ]}
-            />
-            <FormTextarea
-              control={form.control}
-              name='description'
-              label='Description'
-              placeholder='Enter description'
-              required
-              config={{ maxLength: 500, showCharCount: true, rows: 4 }}
-            />
-            <Button type='submit'>
-              {initialData ? 'Update' : 'Create'}
-            </Button>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+    <form.AppForm>
+      <form.Form className='space-y-6'>
+        <form.AppField
+          name='name'
+          children={(field) => (
+            <field.FieldSet>
+              <field.Field>
+                <field.FieldLabel htmlFor={field.name}>Name *</field.FieldLabel>
+                <Input
+                  id={field.name}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder='Enter name'
+                  aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                />
+              </field.Field>
+              <field.FieldError />
+            </field.FieldSet>
+          )}
+        />
+
+        <form.AppField
+          name='category'
+          children={(field) => (
+            <field.FieldSet>
+              <field.Field>
+                <field.FieldLabel>Category *</field.FieldLabel>
+                <Select value={field.state.value} onValueChange={field.handleChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder='Select category' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='a'>Option A</SelectItem>
+                    <SelectItem value='b'>Option B</SelectItem>
+                  </SelectContent>
+                </Select>
+              </field.Field>
+              <field.FieldError />
+            </field.FieldSet>
+          )}
+        />
+
+        <form.SubmitButton label='Submit' />
+      </form.Form>
+    </form.AppForm>
   );
 }
 ```
 
-**Available form components** (all accept `control`, `name`, `label`, `description`, `required`, `disabled`):
-- `FormInput` — text, email, number, password inputs
-- `FormSelect` — dropdown select with `options` prop
-- `FormTextarea` — textarea with optional `config` (maxLength, showCharCount, rows, resize)
-- `FormFileUpload` — file upload with `config` (maxSize, maxFiles)
+**Key form patterns:**
+- `useAppForm` — creates form with `defaultValues`, `validators`, `onSubmit`
+- `form.AppField` — renders a field with render prop `children={(field) => ...}`
+- `field.FieldSet` → `field.Field` → `field.FieldLabel` + input + `field.FieldError` — standard field layout
+- `field.Field orientation='horizontal'` — label left, input right (for switches, checkboxes)
+- `form.SubmitButton` — auto-disables during submit, shows spinner
+- **Never use `useState` inside `children` render prop** — extract into a separate component instead (Rules of Hooks)
+- Multi-step forms use `withFieldGroup` and `useFormStepper` from `src/hooks/use-stepper.tsx`
+- See `src/components/forms/demo-form.tsx` for all input types and `src/features/forms/components/multi-step-product-form.tsx` for multi-step pattern
 
 ---
 
 ## 5. Navigation Configuration
 
-Add items to `src/config/nav-config.ts`:
+Navigation is organized into **groups** in `src/config/nav-config.ts`. Each group has a `label` (rendered as a sidebar section header) and an `items` array:
 
 ```tsx
-export const navItems: NavItem[] = [
+import { NavGroup } from '@/types';
+
+export const navGroups: NavGroup[] = [
   {
-    title: 'Feature Name',
-    url: '/dashboard/feature',
-    icon: 'iconName',           // Key from Icons registry
-    shortcut: ['f', 'f'],       // Optional: kbar shortcut
-    items: []                   // Empty array = no sub-items
-  },
-  // With RBAC access control:
-  {
-    title: 'Admin Only',
-    url: '/dashboard/admin',
-    icon: 'settings',
-    access: {
-      requireOrg: true,                    // Needs active organization
-      permission: 'org:admin:manage',      // Needs specific permission
-      role: 'admin'                        // Needs specific role
-    },
-    items: []
-  },
-  // With nested sub-items:
-  {
-    title: 'Parent',
-    url: '#',
-    icon: 'folder',
-    isActive: true,             // Expanded by default
+    label: 'Overview',
     items: [
       {
-        title: 'Child Page',
-        url: '/dashboard/parent/child',
-        icon: 'file',
-        shortcut: ['p', 'c']
+        title: 'Dashboard',
+        url: '/dashboard/overview',
+        icon: 'dashboard',
+        shortcut: ['d', 'd'],
+        isActive: false,
+        items: []
+      }
+    ]
+  },
+  {
+    label: 'Elements',
+    items: [
+      // Parent with sub-items (collapsible):
+      {
+        title: 'Forms',
+        url: '#',
+        icon: 'forms',
+        isActive: true,           // Expanded by default
+        items: [
+          {
+            title: 'Basic Form',
+            url: '/dashboard/forms/basic',
+            icon: 'forms',
+            shortcut: ['f', 'f']
+          },
+          {
+            title: 'Multi-Step Form',
+            url: '/dashboard/forms/multi-step',
+            icon: 'forms'
+          }
+        ]
+      },
+      // Flat item (no sub-items):
+      {
+        title: 'Icons',
+        url: '/dashboard/elements/icons',
+        icon: 'palette',
+        isActive: false,
+        items: []
+      }
+    ]
+  },
+  {
+    label: '',                    // Empty label = no section header
+    items: [
+      // With RBAC access control:
+      {
+        title: 'Admin Only',
+        url: '/dashboard/admin',
+        icon: 'settings',
+        access: {
+          requireOrg: true,
+          permission: 'org:admin:manage',
+          role: 'admin'
+        },
+        items: []
       }
     ]
   }
