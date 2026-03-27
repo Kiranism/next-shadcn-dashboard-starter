@@ -42,9 +42,10 @@ export default function SheetProductForm() {
       description: ''
     },
     validators: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TanStack Form validator type mismatch with Zod
       onSubmit: productSchema as any
     },
-    onSubmit: ({ value }) => {
+    onSubmit: () => {
       alert('Product created successfully!');
       setOpen(false);
       form.reset();

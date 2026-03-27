@@ -165,15 +165,14 @@ export function DataTableDateFilter<TData>({
       <PopoverTrigger asChild>
         <Button variant='outline' size='sm' className='border-dashed'>
           {hasValue ? (
-            <div
-              role='button'
+            <button
+              type='button'
               aria-label={`Clear ${title} filter`}
-              tabIndex={0}
               onClick={onReset}
               className='focus-visible:ring-ring rounded-sm opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-1 focus-visible:outline-none'
             >
               <Icons.xCircle />
-            </div>
+            </button>
           ) : (
             <Icons.calendar />
           )}

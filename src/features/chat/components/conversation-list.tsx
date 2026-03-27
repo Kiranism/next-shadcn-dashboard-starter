@@ -83,7 +83,7 @@ export function ConversationList({ conversations, selectedId, onSelect }: Conver
               key={conversation.id}
               type='button'
               onClick={() => onSelect(conversation.id)}
-              aria-pressed={isActive}
+              aria-current={isActive ? 'true' : undefined}
               className={cn(
                 'focus-visible:ring-primary/50 group focus-visible:ring-offset-background relative flex w-full items-start gap-3 rounded-2xl border border-transparent p-3 text-left transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
                 isActive

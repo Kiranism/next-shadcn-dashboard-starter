@@ -790,7 +790,7 @@ class FeatureCleanup {
       if (!fs.existsSync(filePath)) continue;
       let content = fs.readFileSync(filePath, 'utf8');
       const before = content;
-      content = content.replace(/\n*# Clerk Setup Guide[\s\S]*?(?=\n#|\n##|\Z)/gi, '\n');
+      content = content.replace(/\n*# Clerk Setup Guide[\s\S]*?(?=\n#|\n##|$)/gi, '\n');
       content = content.replace(/Clerk['\s]/gi, 'Auth ');
       content = content.replace(/clerk\.com[^\s]*/gi, '');
       if (content !== before) {

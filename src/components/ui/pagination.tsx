@@ -7,7 +7,6 @@ import { Button, buttonVariants } from '@/components/ui/button';
 function Pagination({ className, ...props }: React.ComponentProps<'nav'>) {
   return (
     <nav
-      role='navigation'
       aria-label='pagination'
       data-slot='pagination'
       className={cn('mx-auto flex w-full justify-center', className)}
@@ -37,6 +36,7 @@ type PaginationLinkProps = {
 
 function PaginationLink({ className, isActive, size = 'icon', ...props }: PaginationLinkProps) {
   return (
+    // oxlint-disable-next-line jsx-a11y/anchor-has-content -- children passed via ...props spread
     <a
       aria-current={isActive ? 'page' : undefined}
       data-slot='pagination-link'

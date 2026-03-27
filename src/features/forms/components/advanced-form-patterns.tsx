@@ -110,7 +110,7 @@ export default function AdvancedFormPatterns() {
     validators: {
       onSubmit: advancedSchema
     },
-    onSubmit: ({ value }) => {
+    onSubmit: () => {
       toast.success('Team registered successfully!');
     },
     onSubmitInvalid: () => {

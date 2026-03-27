@@ -42,6 +42,7 @@ export function useFilteredNavItems(items: NavItem[]) {
       role: role ?? undefined,
       hasOrg: !!organization
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- using stable primitives to avoid infinite re-renders from unstable Clerk object refs
   }, [organization?.id, user?.id, membership?.permissions, membership?.role]);
 
   // Filter items synchronously (all client-side)

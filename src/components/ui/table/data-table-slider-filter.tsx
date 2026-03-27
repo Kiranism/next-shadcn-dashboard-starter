@@ -123,15 +123,14 @@ export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderF
       <PopoverTrigger asChild>
         <Button variant='outline' size='sm' className='border-dashed'>
           {columnFilterValue ? (
-            <div
-              role='button'
+            <button
+              type='button'
               aria-label={`Clear ${title} filter`}
-              tabIndex={0}
               className='focus-visible:ring-ring rounded-sm opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-1 focus-visible:outline-none'
               onClick={onReset}
             >
               <Icons.xCircle />
-            </div>
+            </button>
           ) : (
             <Icons.plusCircle />
           )}

@@ -15,6 +15,7 @@
     "out/**",
     "build/**",
     "node_modules/**",
+    "scripts/**",
     "pnpm-lock.yaml",
     "CHANGELOG.md"
   ],

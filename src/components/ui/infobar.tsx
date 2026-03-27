@@ -140,6 +140,7 @@ function InfobarProvider({
 
       return () => clearTimeout(timer);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- setOpen is a stable React state setter
   }, [pathname, contentPathname]);
 
   // Update setContent to also track pathname

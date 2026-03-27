@@ -1,7 +1,7 @@
 import type { Modifier } from '@dnd-kit/core';
 
 export function createRestrictToContainer(getElement: () => HTMLElement | null): Modifier {
-  return ({ transform, draggingNodeRect, containerNodeRect }) => {
+  return ({ transform, draggingNodeRect, containerNodeRect: _containerNodeRect }) => {
     const container = getElement();
 
     if (!draggingNodeRect || !container) {

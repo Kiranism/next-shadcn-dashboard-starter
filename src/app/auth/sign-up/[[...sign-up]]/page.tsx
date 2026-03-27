@@ -21,7 +21,7 @@ export default async function Page() {
       const data = await response.json();
       stars = data.stargazers_count || stars; // Update stars if API response is valid
     }
-  } catch (error) {
+  } catch {
     // Error fetching GitHub stars, using default value
   }
   return <SignUpViewPage stars={stars} />;

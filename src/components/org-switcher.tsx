@@ -38,6 +38,7 @@ export function OrgSwitcher() {
     if (userMemberships?.revalidate) {
       void userMemberships.revalidate();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only revalidate when org changes, not on every userMemberships ref change
   }, [orgId]);
 
   // Get the currently active organization

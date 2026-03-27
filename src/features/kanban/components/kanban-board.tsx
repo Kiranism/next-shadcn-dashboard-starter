@@ -12,6 +12,7 @@ export function KanbanBoard() {
   const { columns, setColumns } = useTaskStore();
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- factory function, stable after mount
   const restrictToBoard = useCallback(
     createRestrictToContainer(() => containerRef.current),
     []

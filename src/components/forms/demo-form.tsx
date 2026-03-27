@@ -117,6 +117,7 @@ function ComboboxField({
         <Button
           variant='outline'
           role='combobox'
+          aria-controls='framework-listbox'
           aria-expanded={open}
           className='w-full justify-between font-normal'
           aria-invalid={isTouched && !isValid}
@@ -283,7 +284,7 @@ export default function DemoForm() {
       // Form-level safety net — catches anything field-level validators missed
       onSubmit: demoFormSchema
     },
-    onSubmit: ({ value }) => {
+    onSubmit: () => {
       alert('Form submitted successfully!');
     }
   });

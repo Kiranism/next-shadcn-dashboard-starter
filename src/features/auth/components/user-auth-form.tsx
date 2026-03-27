@@ -2,7 +2,6 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAppForm } from '@/components/ui/tanstack-form';
-import { useSearchParams } from 'next/navigation';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
 import * as z from 'zod';
@@ -13,8 +12,6 @@ const formSchema = z.object({
 });
 
 export default function UserAuthForm() {
-  const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl');
   const [loading, startTransition] = useTransition();
 
   const form = useAppForm({
@@ -24,7 +21,7 @@ export default function UserAuthForm() {
     validators: {
       onSubmit: formSchema
     },
-    onSubmit: ({ value }) => {
+    onSubmit: () => {
       startTransition(() => {
         toast.success('Signed In Successfully!');
       });

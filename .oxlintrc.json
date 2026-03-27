@@ -6,7 +6,7 @@
     "browser": true,
     "node": true
   },
-  "ignorePatterns": [".next/**", "out/**", "build/**", "next-env.d.ts"],
+  "ignorePatterns": [".next/**", "out/**", "build/**", "next-env.d.ts", "scripts/**"],
   "settings": {
     "jsx-a11y": {
       "components": {
@@ -32,14 +32,17 @@
     "react-hooks/rules-of-hooks": "error",
     "react-hooks/exhaustive-deps": "warn",
 
+    "no-shadow": "off",
     "import/no-anonymous-default-export": "warn",
+    "import/no-unassigned-import": "off",
 
     "jsx-a11y/alt-text": ["warn", { "elements": ["img"], "img": ["Image"] }],
     "jsx-a11y/aria-props": "warn",
     "jsx-a11y/aria-proptypes": "warn",
     "jsx-a11y/aria-unsupported-elements": "warn",
     "jsx-a11y/role-has-required-aria-props": "warn",
-    "jsx-a11y/role-supports-aria-props": "warn"
+    "jsx-a11y/role-supports-aria-props": "warn",
+    "jsx-a11y/prefer-tag-over-role": "off"
   },
   "overrides": [
     {

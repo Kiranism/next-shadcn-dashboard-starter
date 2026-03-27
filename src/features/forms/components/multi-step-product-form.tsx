@@ -192,7 +192,7 @@ export default function MultiStepProductForm() {
       onDynamic: currentValidator as typeof productFormSchema,
       onDynamicAsyncDebounceMs: 500
     },
-    onSubmit: ({ value }) => {
+    onSubmit: () => {
       toast.success('Product created successfully!');
     }
   });

@@ -66,7 +66,7 @@ export function InfoSidebar({ ...props }: React.ComponentProps<typeof Infobar>) 
                           Learn more
                         </h4>
                         <ul className='flex flex-col gap-1.5'>
-                          {section.links.map((link, linkIndex) => (
+                          {section.links.map((link) => (
                             <li key={link.title}>
                               <Link
                                 href={link.url}

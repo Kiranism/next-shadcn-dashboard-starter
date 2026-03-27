@@ -92,7 +92,6 @@ export function MessageComposer({
               // Reset so same file can be re-selected
               e.target.value = '';
             }}
-            aria-hidden='true'
           />
           <Button
             type='button'

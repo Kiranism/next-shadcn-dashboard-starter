@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useOrganization, Protect } from '@clerk/nextjs';
 import { Icons } from '@/components/icons';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import Link from 'next/link';
 
 export default function ExclusivePage() {
   const { organization, isLoaded } = useOrganization();
@@ -24,9 +25,9 @@ export default function ExclusivePage() {
                   <span className='font-semibold'>Pro</span> plan.
                   <br />
                   Upgrade your subscription in&nbsp;
-                  <a className='underline' href='/dashboard/billing'>
+                  <Link className='underline' href='/dashboard/billing'>
                     Billing &amp; Plans
-                  </a>
+                  </Link>
                   .
                 </div>
               </AlertDescription>
