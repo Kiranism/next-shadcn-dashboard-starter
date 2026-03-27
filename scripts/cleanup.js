@@ -32,6 +32,7 @@ export default async function Dashboard() {
     'src/components/layout/providers.tsx': `'use client';
 import React from 'react';
 import { ActiveThemeProvider } from '../themes/active-theme';
+import QueryProvider from './query-provider';
 
 export default function Providers({
   activeThemeValue,
@@ -43,18 +44,14 @@ export default function Providers({
   return (
     <>
       <ActiveThemeProvider initialTheme={activeThemeValue}>
-        {children}
+        <QueryProvider>{children}</QueryProvider>
       </ActiveThemeProvider>
     </>
   );
 }
 `,
     'src/components/layout/app-sidebar.tsx': `'use client';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger
-} from '@/components/ui/collapsible';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,14 +75,9 @@ import {
   SidebarMenuSubItem,
   SidebarRail
 } from '@/components/ui/sidebar';
-import { navItems } from '@/config/nav-config';
+import { navGroups } from '@/config/nav-config';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import { useFilteredNavItems } from '@/hooks/use-nav';
-import {
-  IconBell,
-  IconChevronRight,
-  IconChevronsDown
-} from '@tabler/icons-react';
+import { useFilteredNavGroups } from '@/hooks/use-nav';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import * as React from 'react';
@@ -94,7 +86,7 @@ import { Icons } from '../icons';
 export default function AppSidebar() {
   const pathname = usePathname();
   const { isOpen } = useMediaQuery();
-  const itemsToShow = useFilteredNavItems(navItems);
+  const filteredGroups = useFilteredNavGroups(navGroups);
 
   React.useEffect(() => {
     // Side effects based on sidebar state changes
@@ -104,64 +96,60 @@ export default function AppSidebar() {
     <Sidebar collapsible='icon'>
       <SidebarHeader />
       <SidebarContent className='overflow-x-hidden'>
-        <SidebarGroup>
-          <SidebarGroupLabel>Overview</SidebarGroupLabel>
-          <SidebarMenu>
-            {itemsToShow.map((item) => {
-              const Icon = item.icon ? Icons[item.icon] : Icons.logo;
-              return item?.items && item?.items?.length > 0 ? (
-                <Collapsible
-                  key={item.title}
-                  asChild
-                  defaultOpen={item.isActive}
-                  className='group/collapsible'
-                >
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton
-                        tooltip={item.title}
-                        isActive={pathname === item.url}
-                      >
-                        {item.icon && <Icon />}
-                        <span>{item.title}</span>
-                        <IconChevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        {item.items?.map((subItem) => (
-                          <SidebarMenuSubItem key={subItem.title}>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={pathname === subItem.url}
-                            >
-                              <Link href={subItem.url}>
-                                <span>{subItem.title}</span>
-                              </Link>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </SidebarMenuItem>
-                </Collapsible>
-              ) : (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
+        {filteredGroups.map((group) => (
+          <SidebarGroup key={group.label || 'ungrouped'} className='py-0'>
+            {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
+            <SidebarMenu>
+              {group.items.map((item) => {
+                const Icon = item.icon ? Icons[item.icon] : Icons.logo;
+                return item?.items && item?.items?.length > 0 ? (
+                  <Collapsible
+                    key={item.title}
                     asChild
-                    tooltip={item.title}
-                    isActive={pathname === item.url}
+                    defaultOpen={item.isActive}
+                    className='group/collapsible'
                   >
-                    <Link href={item.url}>
-                      <Icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              );
-            })}
-          </SidebarMenu>
-        </SidebarGroup>
+                    <SidebarMenuItem>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton tooltip={item.title} isActive={pathname === item.url}>
+                          {item.icon && <Icon />}
+                          <span>{item.title}</span>
+                          <Icons.chevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {item.items?.map((subItem) => (
+                            <SidebarMenuSubItem key={subItem.title}>
+                              <SidebarMenuSubButton asChild isActive={pathname === subItem.url}>
+                                <Link href={subItem.url}>
+                                  <span>{subItem.title}</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </SidebarMenuItem>
+                  </Collapsible>
+                ) : (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      tooltip={item.title}
+                      isActive={pathname === item.url}
+                    >
+                      <Link href={item.url}>
+                        <Icon />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
@@ -173,7 +161,7 @@ export default function AppSidebar() {
                   className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
                 >
                   <span className='truncate'>Account</span>
-                  <IconChevronsDown className='ml-auto size-4' />
+                  <Icons.chevronsDown className='ml-auto size-4' />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -189,7 +177,7 @@ export default function AppSidebar() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
-                  <IconBell className='mr-2 h-4 w-4' />
+                  <Icons.notification className='mr-2 h-4 w-4' />
                   Notifications
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -210,10 +198,14 @@ export function UserNav() {
 `,
     'src/hooks/use-nav.ts': `'use client';
 
-import type { NavItem } from '@/types';
+import type { NavItem, NavGroup } from '@/types';
 
 export function useFilteredNavItems(items: NavItem[]) {
   return items;
+}
+
+export function useFilteredNavGroups(groups: NavGroup[]) {
+  return groups;
 }
 `,
     'src/config/infoconfig.ts': `import type { InfobarContent } from '@/components/ui/infobar';
@@ -244,12 +236,49 @@ export const productInfoContent: InfobarContent = {
       ]
     },
     {
+      title: 'Editing Products',
+      description:
+        'You can edit existing products by clicking on a product row in the table. This will open the product edit form where you can modify any product information. Changes are saved automatically when you submit the form.',
+      links: [
+        {
+          title: 'Editing Products Guide',
+          url: '#'
+        }
+      ]
+    },
+    {
+      title: 'Deleting Products',
+      description:
+        'Products can be deleted from the product listing table. Click the delete action for the product you want to remove. You will be asked to confirm the deletion before the product is permanently removed from your catalog.',
+      links: [
+        {
+          title: 'Product Deletion Policy',
+          url: '#'
+        }
+      ]
+    },
+    {
       title: 'Table Features',
       description:
         'The product table includes several powerful features to help you manage large product catalogs efficiently. You can sort columns by clicking on column headers, filter products using the filter controls, navigate through pages using pagination, and quickly find products using the search functionality.',
       links: [
         {
           title: 'Table Features Documentation',
+          url: '#'
+        },
+        {
+          title: 'Sorting and Filtering Guide',
+          url: '#'
+        }
+      ]
+    },
+    {
+      title: 'Product Fields',
+      description:
+        'Each product can have the following fields: Name (required), Description (optional text), Price (numeric value), Category (for organizing products), and Image Upload (for product photos). All fields can be edited when creating or updating a product.',
+      links: [
+        {
+          title: 'Product Fields Specification',
           url: '#'
         }
       ]
@@ -269,10 +298,23 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'api.slingacademy.com',
         port: ''
+      },
+      {
+        protocol: 'https',
+        hostname: 'img.clerk.com',
+        port: ''
+      },
+      {
+        protocol: 'https',
+        hostname: 'clerk.com',
+        port: ''
       }
     ]
   },
-  transpilePackages: ['geist']
+  transpilePackages: ['geist'],
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production'
+  }
 };
 
 export default nextConfig;
@@ -292,7 +334,7 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <html>
+    <html lang='en'>
       <body>
         <NextError statusCode={0} />
       </body>
@@ -305,7 +347,7 @@ export default function GlobalError({
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { IconAlertCircle } from '@tabler/icons-react';
+import { Icons } from '@/components/icons';
 import { useRouter } from 'next/navigation';
 import { useEffect, useTransition } from 'react';
 
@@ -332,7 +374,7 @@ export default function StatsError({ error, reset }: StatsErrorProps) {
       <CardHeader className='flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row'>
         <div className='flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6'>
           <Alert variant='destructive' className='border-none'>
-            <IconAlertCircle className='h-4 w-4' />
+            <Icons.alertCircle className='h-4 w-4' />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription className='mt-2'>
               Failed to load statistics: {error.message}
@@ -376,7 +418,13 @@ const FEATURES = {
       'src/features/auth',
       'src/features/profile'
     ],
-    files: ['docs/clerk_setup.md', 'src/middleware.ts', 'middleware.ts'],
+    files: [
+      'docs/clerk_setup.md',
+      'src/middleware.ts',
+      'middleware.ts',
+      'src/components/org-switcher.tsx',
+      'src/components/user-avatar-profile.tsx'
+    ],
     dependencies: ['@clerk/nextjs', '@clerk/themes'],
     envVars: [
       'NEXTAUTH_SECRET',
@@ -440,6 +488,27 @@ export const config = {
     files: ['src/components/ui/notification-card.tsx'],
     dependencies: [],
     navItemsToRemove: ['/dashboard/notifications']
+  },
+  examples: {
+    name: 'Examples (Forms, React Query demo, Icons)',
+    folders: [
+      'src/app/dashboard/forms',
+      'src/app/dashboard/elements',
+      'src/app/dashboard/react-query',
+      'src/features/forms',
+      'src/features/elements',
+      'src/features/react-query-demo'
+    ],
+    files: [],
+    dependencies: [],
+    navItemsToRemove: [
+      '/dashboard/forms/basic',
+      '/dashboard/forms/multi-step',
+      '/dashboard/forms/sheet-form',
+      '/dashboard/forms/advanced',
+      '/dashboard/react-query',
+      '/dashboard/elements/icons'
+    ]
   },
   themes: {
     name: 'Extra Themes (keep only one theme)',
@@ -557,6 +626,7 @@ class FeatureCleanup {
 
     if (this.featuresToRemove.includes('notifications')) {
       this.cleanNotificationFromHeader();
+      this.cleanNotificationFromSidebar();
     }
 
     if (this.dryRun) {
@@ -679,14 +749,17 @@ class FeatureCleanup {
 
     let content = fs.readFileSync(configPath, 'utf8');
     const before = content;
+    // Remove Clerk image hostname entries (handles both comma-first and comma-after patterns)
     content = content.replace(
-      /,\s*\{\s*protocol:\s*['"]https['"],\s*hostname:\s*['"]img\.clerk\.com['"][^}]*\}/g,
+      /,?\s*\{\s*protocol:\s*['"]https['"],\s*hostname:\s*['"]img\.clerk\.com['"][^}]*\},?/g,
       ''
     );
     content = content.replace(
-      /,\s*\{\s*protocol:\s*['"]https['"],\s*hostname:\s*['"]clerk\.com['"][^}]*\}/g,
+      /,?\s*\{\s*protocol:\s*['"]https['"],\s*hostname:\s*['"]clerk\.com['"][^}]*\},?/g,
       ''
     );
+    // Clean up any trailing comma before closing bracket
+    content = content.replace(/,(\s*\])/g, '$1');
     if (content !== before) {
       if (!this.dryRun) fs.writeFileSync(configPath, content, 'utf8');
       this.log('✅ Cleaned next.config.ts (removed Clerk image hostnames)');
@@ -752,6 +825,12 @@ class FeatureCleanup {
       return match.includes("url: '#'") ? '' : match;
     });
 
+    // Clean up empty label groups with no items left
+    content = content.replace(
+      /,?\s*\{\s*label:\s*['"][^'"]*['"],\s*items:\s*\[\s*\]\s*\}/g,
+      ''
+    );
+
     content = content.replace(/,(\s*\])/g, '$1');
     content = content.replace(/\n\s*\n\s*\n/g, '\n\n');
 
@@ -774,6 +853,25 @@ class FeatureCleanup {
     if (content !== before) {
       if (!this.dryRun) fs.writeFileSync(headerPath, content, 'utf8');
       this.log('✅ Cleaned header.tsx (removed NotificationCenter)');
+    }
+  }
+
+  cleanNotificationFromSidebar() {
+    const sidebarPath = path.join(ROOT, 'src/components/layout/app-sidebar.tsx');
+    if (!fs.existsSync(sidebarPath)) return;
+
+    let content = fs.readFileSync(sidebarPath, 'utf8');
+    const before = content;
+
+    // Remove the Notifications dropdown menu item from the sidebar footer
+    content = content.replace(
+      /\s*<DropdownMenuItem[^>]*onClick=\{[^}]*\/dashboard\/notifications[^}]*\}[^>]*>\s*(?:<[^>]+>\s*)?Notifications\s*<\/DropdownMenuItem>/g,
+      ''
+    );
+
+    if (content !== before) {
+      if (!this.dryRun) fs.writeFileSync(sidebarPath, content, 'utf8');
+      this.log('✅ Cleaned app-sidebar.tsx (removed Notifications menu item)');
     }
   }
 

@@ -110,7 +110,7 @@
     "@types/react-dom": "19.2.3"
   },
   "lint-staged": {
-    "**/*.{js,jsx,tsx,ts,css,less,scss,sass}": [
+    "!(scripts)/**/*.{js,jsx,tsx,ts,css,less,scss,sass}": [
       "oxfmt --write"
     ]
   }
