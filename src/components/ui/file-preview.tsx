@@ -31,125 +31,60 @@ const getFileIcon = (fileType: string, fileName: string) => {
   const iconProps = { size: 24 };
 
   if (fileType.startsWith('image/'))
-    return (
-      <Icons.media
-        {...iconProps}
-        className='text-emerald-500 dark:text-emerald-400'
-      />
-    );
+    return <Icons.media {...iconProps} className='text-emerald-500 dark:text-emerald-400' />;
 
   if (fileType === 'application/pdf' || extension === 'pdf')
-    return (
-      <Icons.fileTypePdf
-        {...iconProps}
-        className='text-red-500 dark:text-red-400'
-      />
-    );
+    return <Icons.fileTypePdf {...iconProps} className='text-red-500 dark:text-red-400' />;
 
   if (
     ['doc', 'docx', 'odt', 'rtf'].includes(extension) ||
     fileType.includes('wordprocessing') ||
     fileType.includes('msword')
   )
-    return (
-      <Icons.fileTypeDoc
-        {...iconProps}
-        className='text-blue-500 dark:text-blue-400'
-      />
-    );
+    return <Icons.fileTypeDoc {...iconProps} className='text-blue-500 dark:text-blue-400' />;
 
   if (
     ['xls', 'xlsx', 'csv', 'ods'].includes(extension) ||
     fileType.includes('spreadsheet') ||
     fileType.includes('excel')
   )
-    return (
-      <Icons.fileTypeXls
-        {...iconProps}
-        className='text-green-500 dark:text-green-400'
-      />
-    );
+    return <Icons.fileTypeXls {...iconProps} className='text-green-500 dark:text-green-400' />;
 
   if (['txt', 'md'].includes(extension) || fileType === 'text/plain')
-    return (
-      <Icons.post {...iconProps} className='text-zinc-500 dark:text-zinc-400' />
-    );
+    return <Icons.post {...iconProps} className='text-zinc-500 dark:text-zinc-400' />;
 
   if (
-    [
-      'js',
-      'ts',
-      'jsx',
-      'tsx',
-      'py',
-      'java',
-      'c',
-      'cpp',
-      'html',
-      'css'
-    ].includes(extension) ||
+    ['js', 'ts', 'jsx', 'tsx', 'py', 'java', 'c', 'cpp', 'html', 'css'].includes(extension) ||
     fileType.includes('javascript') ||
     fileType.includes('typescript')
   )
-    return (
-      <Icons.code
-        {...iconProps}
-        className='text-yellow-500 dark:text-yellow-400'
-      />
-    );
+    return <Icons.code {...iconProps} className='text-yellow-500 dark:text-yellow-400' />;
 
   if (['json', 'xml', 'yaml', 'yml'].includes(extension))
-    return (
-      <Icons.code {...iconProps} className='text-zinc-500 dark:text-zinc-400' />
-    );
+    return <Icons.code {...iconProps} className='text-zinc-500 dark:text-zinc-400' />;
 
-  if (
-    fileType.startsWith('video/') ||
-    ['mp4', 'avi', 'mov', 'mkv'].includes(extension)
-  )
-    return (
-      <Icons.video
-        {...iconProps}
-        className='text-purple-500 dark:text-purple-400'
-      />
-    );
+  if (fileType.startsWith('video/') || ['mp4', 'avi', 'mov', 'mkv'].includes(extension))
+    return <Icons.video {...iconProps} className='text-purple-500 dark:text-purple-400' />;
 
-  if (
-    fileType.startsWith('audio/') ||
-    ['mp3', 'wav', 'ogg'].includes(extension)
-  )
-    return (
-      <Icons.music
-        {...iconProps}
-        className='text-pink-500 dark:text-pink-400'
-      />
-    );
+  if (fileType.startsWith('audio/') || ['mp3', 'wav', 'ogg'].includes(extension))
+    return <Icons.music {...iconProps} className='text-pink-500 dark:text-pink-400' />;
 
   if (
     ['zip', 'rar', 'tar', 'gz', '7z'].includes(extension) ||
     fileType.includes('archive') ||
     fileType.includes('compressed')
   )
-    return (
-      <Icons.fileZip
-        {...iconProps}
-        className='text-amber-500 dark:text-amber-400'
-      />
-    );
+    return <Icons.fileZip {...iconProps} className='text-amber-500 dark:text-amber-400' />;
 
-  return (
-    <Icons.page {...iconProps} className='text-zinc-500 dark:text-zinc-400' />
-  );
+  return <Icons.page {...iconProps} className='text-zinc-500 dark:text-zinc-400' />;
 };
 
 const getFormattedFileType = (fileType: string, fileName: string): string => {
   const ext = getFileExtension(fileName).toUpperCase();
 
-  if (fileType.includes('msword') || fileType.includes('wordprocessing'))
-    return 'DOC';
+  if (fileType.includes('msword') || fileType.includes('wordprocessing')) return 'DOC';
 
-  if (fileType.includes('spreadsheet') || fileType.includes('excel'))
-    return 'SPREADSHEET';
+  if (fileType.includes('spreadsheet') || fileType.includes('excel')) return 'SPREADSHEET';
 
   const typePart = fileType.split('/')[1];
 
@@ -230,9 +165,7 @@ export const FilePreview: FC<FilePreviewProps> = ({
                 <div
                   className={cn(
                     'mr-3 flex h-10 w-10 items-center justify-center rounded-lg',
-                    isInverted
-                      ? 'bg-primary-foreground/10'
-                      : 'bg-muted-foreground/10'
+                    isInverted ? 'bg-primary-foreground/10' : 'bg-muted-foreground/10'
                   )}
                 >
                   {getFileIcon(file.type, file.name)}
@@ -244,16 +177,12 @@ export const FilePreview: FC<FilePreviewProps> = ({
                       isInverted ? 'text-primary-foreground' : 'text-foreground'
                     )}
                   >
-                    {file.name.length > 18
-                      ? `${file.name.substring(0, 15)}...`
-                      : file.name}
+                    {file.name.length > 18 ? `${file.name.substring(0, 15)}...` : file.name}
                   </p>
                   <span
                     className={cn(
                       'text-xs',
-                      isInverted
-                        ? 'text-primary-foreground/70'
-                        : 'text-muted-foreground'
+                      isInverted ? 'text-primary-foreground/70' : 'text-muted-foreground'
                     )}
                   >
                     {getFormattedFileType(file.type, file.name)}

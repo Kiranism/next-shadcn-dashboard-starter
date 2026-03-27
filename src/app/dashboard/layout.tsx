@@ -16,11 +16,7 @@ export const metadata: Metadata = {
   }
 };
 
-export default async function DashboardLayout({
-  children
-}: {
-  children: React.ReactNode;
-}) {
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   // Persisting the sidebar state in the cookie.
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get('sidebar_state')?.value === 'true';

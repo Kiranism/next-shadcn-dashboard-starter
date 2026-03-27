@@ -12,8 +12,10 @@ import {
 } from '@/components/ui/form-context';
 import { Spinner } from '@/components/ui/spinner';
 
-interface TextFieldProps
-  extends Omit<React.ComponentProps<'input'>, 'value' | 'onChange' | 'onBlur'> {
+interface TextFieldProps extends Omit<
+  React.ComponentProps<'input'>,
+  'value' | 'onChange' | 'onBlur'
+> {
   label: string;
   description?: string;
   required?: boolean;

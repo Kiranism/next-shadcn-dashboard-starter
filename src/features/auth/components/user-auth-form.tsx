@@ -26,7 +26,6 @@ export default function UserAuthForm() {
     },
     onSubmit: ({ value }) => {
       startTransition(() => {
-        console.log('continue with email clicked');
         toast.success('Signed In Successfully!');
       });
     }
@@ -41,9 +40,7 @@ export default function UserAuthForm() {
             children={(field) => (
               <field.FieldSet>
                 <field.Field>
-                  <field.FieldLabel htmlFor={field.name}>
-                    Email
-                  </field.FieldLabel>
+                  <field.FieldLabel htmlFor={field.name}>Email</field.FieldLabel>
                   <Input
                     id={field.name}
                     name={field.name}
@@ -52,20 +49,14 @@ export default function UserAuthForm() {
                     onChange={(e) => field.handleChange(e.target.value)}
                     placeholder='Enter your email...'
                     disabled={loading}
-                    aria-invalid={
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    }
+                    aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
                   />
                 </field.Field>
                 <field.FieldError />
               </field.FieldSet>
             )}
           />
-          <Button
-            disabled={loading}
-            className='mt-2 ml-auto w-full'
-            type='submit'
-          >
+          <Button disabled={loading} className='mt-2 ml-auto w-full' type='submit'>
             Continue With Email
           </Button>
         </form.Form>
@@ -75,9 +66,7 @@ export default function UserAuthForm() {
           <span className='w-full border-t' />
         </div>
         <div className='relative flex justify-center text-xs uppercase'>
-          <span className='bg-background text-muted-foreground px-2'>
-            Or continue with
-          </span>
+          <span className='bg-background text-muted-foreground px-2'>Or continue with</span>
         </div>
       </div>
       <GithubSignInButton />

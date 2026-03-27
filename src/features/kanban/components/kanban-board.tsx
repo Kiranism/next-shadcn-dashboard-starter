@@ -2,11 +2,7 @@
 
 import { useCallback, useRef } from 'react';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import {
-  Kanban,
-  KanbanBoard as KanbanBoardPrimitive,
-  KanbanOverlay
-} from '@/components/ui/kanban';
+import { Kanban, KanbanBoard as KanbanBoardPrimitive, KanbanOverlay } from '@/components/ui/kanban';
 import { useTaskStore } from '../utils/store';
 import { TaskColumn } from './board-column';
 import { TaskCard } from './task-card';

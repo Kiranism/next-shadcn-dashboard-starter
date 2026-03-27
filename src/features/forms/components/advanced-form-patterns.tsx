@@ -111,7 +111,6 @@ export default function AdvancedFormPatterns() {
       onSubmit: advancedSchema
     },
     onSubmit: ({ value }) => {
-      console.log('Team registered:', value);
       toast.success('Team registered successfully!');
     },
     onSubmitInvalid: () => {
@@ -119,8 +118,7 @@ export default function AdvancedFormPatterns() {
     }
   });
 
-  const { FormTextField, FormSelectField } =
-    useFormFields<AdvancedFormValues>();
+  const { FormTextField, FormSelectField } = useFormFields<AdvancedFormValues>();
 
   // Read current country reactively for dependent state field
   const selectedCountry = useStore(form.store, (s) => s.values.country);
@@ -131,8 +129,8 @@ export default function AdvancedFormPatterns() {
       <CardHeader>
         <CardTitle className='text-2xl font-bold'>Team Registration</CardTitle>
         <p className='text-muted-foreground'>
-          Demonstrates async validation, linked fields, nested objects, dynamic
-          arrays, listeners, form-level errors, and scroll-to-first-error.
+          Demonstrates async validation, linked fields, nested objects, dynamic arrays, listeners,
+          form-level errors, and scroll-to-first-error.
         </p>
       </CardHeader>
       <CardContent>
@@ -144,9 +142,7 @@ export default function AdvancedFormPatterns() {
             {/* ─── Section 1: Account ─── */}
             <div className='space-y-1'>
               <h3 className='text-lg font-semibold'>Account</h3>
-              <p className='text-muted-foreground text-sm'>
-                Async validation, linked fields
-              </p>
+              <p className='text-muted-foreground text-sm'>Async validation, linked fields</p>
             </div>
 
             <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
@@ -157,9 +153,7 @@ export default function AdvancedFormPatterns() {
                 required
                 placeholder='Choose a username'
                 validators={{
-                  onBlur: z
-                    .string()
-                    .min(3, 'Username must be at least 3 characters'),
+                  onBlur: z.string().min(3, 'Username must be at least 3 characters'),
                   onChangeAsync: async ({ value }: { value: string }) => {
                     if (!value || value.length < 3) return undefined;
                     await new Promise((r) => setTimeout(r, 500));
@@ -237,9 +231,7 @@ export default function AdvancedFormPatterns() {
                 required
                 placeholder='e.g. Alpha Squad'
                 validators={{
-                  onBlur: z
-                    .string()
-                    .min(2, 'Team name must be at least 2 characters')
+                  onBlur: z.string().min(2, 'Team name must be at least 2 characters')
                 }}
               />
               <FormTextField
@@ -251,10 +243,7 @@ export default function AdvancedFormPatterns() {
                 max={100}
                 placeholder='1-100'
                 validators={{
-                  onBlur: z
-                    .number()
-                    .min(1, 'At least 1 member')
-                    .max(100, 'Max 100 members')
+                  onBlur: z.number().min(1, 'At least 1 member').max(100, 'Max 100 members')
                 }}
               />
             </div>
@@ -264,9 +253,7 @@ export default function AdvancedFormPatterns() {
             {/* ─── Section 3: Members (dynamic array rows) ─── */}
             <div className='space-y-1'>
               <h3 className='text-lg font-semibold'>Members</h3>
-              <p className='text-muted-foreground text-sm'>
-                Dynamic array rows with add / remove
-              </p>
+              <p className='text-muted-foreground text-sm'>Dynamic array rows with add / remove</p>
             </div>
 
             <form.AppField name='members' mode='array'>
@@ -286,9 +273,7 @@ export default function AdvancedFormPatterns() {
                               <Input
                                 placeholder='Member name'
                                 value={subField.state.value}
-                                onChange={(e) =>
-                                  subField.handleChange(e.target.value)
-                                }
+                                onChange={(e) => subField.handleChange(e.target.value)}
                                 onBlur={subField.handleBlur}
                               />
                             </subField.Field>
@@ -308,9 +293,7 @@ export default function AdvancedFormPatterns() {
                               <Input
                                 placeholder='Role'
                                 value={subField.state.value}
-                                onChange={(e) =>
-                                  subField.handleChange(e.target.value)
-                                }
+                                onChange={(e) => subField.handleChange(e.target.value)}
                                 onBlur={subField.handleBlur}
                               />
                             </subField.Field>
@@ -383,9 +366,7 @@ export default function AdvancedFormPatterns() {
                 label='State / Region'
                 required
                 options={stateOptions}
-                placeholder={
-                  selectedCountry ? 'Select state' : 'Select a country first'
-                }
+                placeholder={selectedCountry ? 'Select state' : 'Select a country first'}
                 validators={{
                   onBlur: z.string().min(1, 'Please select a state')
                 }}
@@ -404,7 +385,7 @@ export default function AdvancedFormPatterns() {
               >
                 Reset
               </Button>
-              <form.SubmitButton label='Register Team' className='flex-1' />
+              <form.SubmitButton className='flex-1'>Register Team</form.SubmitButton>
             </div>
           </form.Form>
         </form.AppForm>

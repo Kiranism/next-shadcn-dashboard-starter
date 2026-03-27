@@ -5,8 +5,7 @@
 import { faker } from '@faker-js/faker';
 import { matchSorter } from 'match-sorter'; // For filtering
 
-export const delay = (ms: number) =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+export const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Define the shape of Product data
 export type Product = {
@@ -43,9 +42,7 @@ export const fakeProducts = {
         id,
         name: faker.commerce.productName(),
         description: faker.commerce.productDescription(),
-        created_at: faker.date
-          .between({ from: '2022-01-01', to: '2023-12-31' })
-          .toISOString(),
+        created_at: faker.date.between({ from: '2022-01-01', to: '2023-12-31' }).toISOString(),
         price: parseFloat(faker.commerce.price({ min: 5, max: 500, dec: 2 })),
         photo_url: `https://api.slingacademy.com/public/sample-products/${id}.png`,
         category: faker.helpers.arrayElement(categories),
@@ -62,20 +59,12 @@ export const fakeProducts = {
   },
 
   // Get all products with optional category filtering and search
-  async getAll({
-    categories = [],
-    search
-  }: {
-    categories?: string[];
-    search?: string;
-  }) {
+  async getAll({ categories = [], search }: { categories?: string[]; search?: string }) {
     let products = [...this.records];
 
     // Filter products based on selected categories
     if (categories.length > 0) {
-      products = products.filter((product) =>
-        categories.includes(product.category)
-      );
+      products = products.filter((product) => categories.includes(product.category));
     }
 
     // Search functionality across multiple fields
@@ -185,9 +174,7 @@ export const fakeProducts = {
   },
 
   // Create a new product
-  async createProduct(
-    data: Omit<Product, 'id' | 'created_at' | 'updated_at' | 'photo_url'>
-  ) {
+  async createProduct(data: Omit<Product, 'id' | 'created_at' | 'updated_at' | 'photo_url'>) {
     await delay(1000);
 
     const newProduct: Product = {
@@ -233,6 +220,24 @@ export const fakeProducts = {
       success: true,
       message: 'Product updated successfully',
       product: this.records[index]
+    };
+  },
+
+  // Delete a product
+  async deleteProduct(id: number) {
+    await delay(1000);
+
+    const index = this.records.findIndex((product) => product.id === id);
+
+    if (index === -1) {
+      return { success: false, message: `Product with ID ${id} not found` };
+    }
+
+    this.records.splice(index, 1);
+
+    return {
+      success: true,
+      message: 'Product deleted successfully'
     };
   }
 };

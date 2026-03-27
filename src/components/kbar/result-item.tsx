@@ -16,9 +16,7 @@ const ResultItem = React.forwardRef(
   ) => {
     const ancestors = React.useMemo(() => {
       if (!currentRootActionId) return action.ancestors;
-      const index = action.ancestors.findIndex(
-        (ancestor) => ancestor.id === currentRootActionId
-      );
+      const index = action.ancestors.findIndex((ancestor) => ancestor.id === currentRootActionId);
       return action.ancestors.slice(index + 1);
     }, [action.ancestors, currentRootActionId]);
 
@@ -40,18 +38,14 @@ const ResultItem = React.forwardRef(
               {ancestors.length > 0 &&
                 ancestors.map((ancestor) => (
                   <React.Fragment key={ancestor.id}>
-                    <span className='text-muted-foreground mr-2'>
-                      {ancestor.name}
-                    </span>
+                    <span className='text-muted-foreground mr-2'>{ancestor.name}</span>
                     <span className='mr-2'>&rsaquo;</span>
                   </React.Fragment>
                 ))}
               <span>{action.name}</span>
             </div>
             {action.subtitle && (
-              <span className='text-muted-foreground text-sm'>
-                {action.subtitle}
-              </span>
+              <span className='text-muted-foreground text-sm'>{action.subtitle}</span>
             )}
           </div>
         </div>

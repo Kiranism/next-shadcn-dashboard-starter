@@ -92,7 +92,6 @@ Plans and features require Clerk's `has()` function which is server-side only. O
    ```
 
 2. **Show item, protect at page level** (current approach):
-
    - Navigation item is shown
    - Page component checks server-side and redirects/shows error if needed
 

@@ -1,7 +1,7 @@
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-header';
-import type { User } from '@/constants/mock-api-users';
+import type { User } from '../../api/types';
 import { Column, ColumnDef } from '@tanstack/react-table';
 import { Icons } from '@/components/icons';
 import { CellAction } from './cell-action';
@@ -19,9 +19,7 @@ export const columns: ColumnDef<User>[] = [
         <span className='font-medium'>
           {row.original.first_name} {row.original.last_name}
         </span>
-        <span className='text-muted-foreground text-xs'>
-          {row.original.email}
-        </span>
+        <span className='text-muted-foreground text-xs'>{row.original.email}</span>
       </div>
     ),
     meta: {
@@ -63,11 +61,7 @@ export const columns: ColumnDef<User>[] = [
     cell: ({ cell }) => {
       const status = cell.getValue<User['status']>();
       const variant =
-        status === 'Active'
-          ? 'default'
-          : status === 'Inactive'
-            ? 'secondary'
-            : 'outline';
+        status === 'Active' ? 'default' : status === 'Inactive' ? 'secondary' : 'outline';
       return <Badge variant={variant}>{status}</Badge>;
     }
   },

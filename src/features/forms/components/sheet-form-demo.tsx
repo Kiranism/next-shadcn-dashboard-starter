@@ -23,13 +23,7 @@ import {
   DialogTitle,
   DialogTrigger
 } from '@/components/ui/dialog';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Icons } from '@/components/icons';
 
@@ -75,7 +69,6 @@ function SheetFormSection() {
       description: ''
     } as SheetFormValues,
     onSubmit: ({ value }) => {
-      console.log('Sheet form submitted:', value);
       toast.success('Product created successfully!', {
         description: `${value.name} has been added.`
       });
@@ -84,16 +77,15 @@ function SheetFormSection() {
     }
   });
 
-  const { FormTextField, FormSelectField, FormTextareaField } =
-    useFormFields<SheetFormValues>();
+  const { FormTextField, FormSelectField, FormTextareaField } = useFormFields<SheetFormValues>();
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Sheet Form</CardTitle>
         <CardDescription>
-          A product creation form inside a Sheet. The submit button lives in the
-          SheetFooter, outside the form element, connected via the HTML{' '}
+          A product creation form inside a Sheet. The submit button lives in the SheetFooter,
+          outside the form element, connected via the HTML{' '}
           <code className='bg-muted rounded px-1 text-sm'>form</code> attribute.
         </CardDescription>
       </CardHeader>
@@ -122,9 +114,7 @@ function SheetFormSection() {
                     required
                     placeholder='Enter product name'
                     validators={{
-                      onBlur: z
-                        .string()
-                        .min(2, 'Product name must be at least 2 characters')
+                      onBlur: z.string().min(2, 'Product name must be at least 2 characters')
                     }}
                   />
 
@@ -148,9 +138,7 @@ function SheetFormSection() {
                     step='0.01'
                     placeholder='0.00'
                     validators={{
-                      onBlur: z
-                        .number()
-                        .min(0.01, 'Price must be greater than 0')
+                      onBlur: z.number().min(0.01, 'Price must be greater than 0')
                     }}
                   />
 
@@ -162,9 +150,7 @@ function SheetFormSection() {
                     maxLength={500}
                     rows={4}
                     validators={{
-                      onBlur: z
-                        .string()
-                        .min(10, 'Description must be at least 10 characters')
+                      onBlur: z.string().min(10, 'Description must be at least 10 characters')
                     }}
                   />
                 </form.Form>
@@ -172,11 +158,7 @@ function SheetFormSection() {
             </ScrollArea>
 
             <SheetFooter className='pt-4'>
-              <Button
-                type='button'
-                variant='outline'
-                onClick={() => setOpen(false)}
-              >
+              <Button type='button' variant='outline' onClick={() => setOpen(false)}>
                 Cancel
               </Button>
               <Button type='submit' form='sheet-form-id'>
@@ -203,7 +185,6 @@ function DialogFormSection() {
       feedback: ''
     } as DialogFormValues,
     onSubmit: ({ value }) => {
-      console.log('Dialog form submitted:', value);
       toast.success('Feedback submitted!', {
         description: `Rating: ${value.rating}/10. Thank you!`
       });
@@ -212,18 +193,16 @@ function DialogFormSection() {
     }
   });
 
-  const { FormSliderField, FormTextareaField } =
-    useFormFields<DialogFormValues>();
+  const { FormSliderField, FormTextareaField } = useFormFields<DialogFormValues>();
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Dialog Form</CardTitle>
         <CardDescription>
-          A quick feedback form inside a Dialog. Uses composed field components
-          from{' '}
-          <code className='bg-muted rounded px-1 text-sm'>useFormFields</code>{' '}
-          with the submit button in the DialogFooter.
+          A quick feedback form inside a Dialog. Uses composed field components from{' '}
+          <code className='bg-muted rounded px-1 text-sm'>useFormFields</code> with the submit
+          button in the DialogFooter.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -237,9 +216,7 @@ function DialogFormSection() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Quick Feedback</DialogTitle>
-              <DialogDescription>
-                Rate your experience and leave a comment.
-              </DialogDescription>
+              <DialogDescription>Rate your experience and leave a comment.</DialogDescription>
             </DialogHeader>
 
             <form.AppForm>
@@ -261,20 +238,14 @@ function DialogFormSection() {
                   maxLength={300}
                   rows={3}
                   validators={{
-                    onBlur: z
-                      .string()
-                      .min(5, 'Feedback must be at least 5 characters')
+                    onBlur: z.string().min(5, 'Feedback must be at least 5 characters')
                   }}
                 />
               </form.Form>
             </form.AppForm>
 
             <DialogFooter>
-              <Button
-                type='button'
-                variant='outline'
-                onClick={() => setOpen(false)}
-              >
+              <Button type='button' variant='outline' onClick={() => setOpen(false)}>
                 Cancel
               </Button>
               <Button type='submit' form='dialog-form-id'>

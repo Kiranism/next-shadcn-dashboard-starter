@@ -5,8 +5,7 @@
 import { faker } from '@faker-js/faker';
 import { matchSorter } from 'match-sorter';
 
-export const delay = (ms: number) =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+export const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export type User = {
   id: number;
@@ -27,14 +26,7 @@ export const fakeUsers = {
   initialize() {
     const sampleUsers: User[] = [];
     function generateRandomUserData(id: number): User {
-      const roles = [
-        'Developer',
-        'Designer',
-        'Manager',
-        'QA',
-        'DevOps',
-        'Product Owner'
-      ];
+      const roles = ['Developer', 'Designer', 'Manager', 'QA', 'DevOps', 'Product Owner'];
       const statuses = ['Active', 'Inactive', 'Invited'];
 
       return {
@@ -45,9 +37,7 @@ export const fakeUsers = {
         phone: faker.phone.number({ style: 'national' }),
         status: faker.helpers.arrayElement(statuses),
         role: faker.helpers.arrayElement(roles),
-        created_at: faker.date
-          .between({ from: '2022-01-01', to: '2023-12-31' })
-          .toISOString(),
+        created_at: faker.date.between({ from: '2022-01-01', to: '2023-12-31' }).toISOString(),
         updated_at: faker.date.recent().toISOString()
       };
     }
@@ -94,10 +84,7 @@ export const fakeUsers = {
     };
   },
 
-  async updateUser(
-    id: number,
-    data: Omit<User, 'id' | 'created_at' | 'updated_at'>
-  ) {
+  async updateUser(id: number, data: Omit<User, 'id' | 'created_at' | 'updated_at'>) {
     await delay(800);
 
     const index = this.records.findIndex((user) => user.id === id);
@@ -150,11 +137,7 @@ export const fakeUsers = {
     sort?: string;
   }) {
     await delay(800);
-    const rolesArray = roles
-      ? Array.isArray(roles)
-        ? roles
-        : String(roles).split(/[.,]/)
-      : [];
+    const rolesArray = roles ? (Array.isArray(roles) ? roles : String(roles).split(/[.,]/)) : [];
     const allUsers = await this.getAll({
       roles: rolesArray,
       search
@@ -172,13 +155,9 @@ export const fakeUsers = {
           allUsers.sort((a, b) => {
             // Handle computed 'name' column
             const aVal =
-              id === 'name'
-                ? `${a.first_name} ${a.last_name}`
-                : (a as Record<string, unknown>)[id];
+              id === 'name' ? `${a.first_name} ${a.last_name}` : (a as Record<string, unknown>)[id];
             const bVal =
-              id === 'name'
-                ? `${b.first_name} ${b.last_name}`
-                : (b as Record<string, unknown>)[id];
+              id === 'name' ? `${b.first_name} ${b.last_name}` : (b as Record<string, unknown>)[id];
             if (typeof aVal === 'number' && typeof bVal === 'number') {
               return desc ? bVal - aVal : aVal - bVal;
             }

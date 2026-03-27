@@ -31,9 +31,7 @@ const defaultData = {
   ]
 };
 
-export function InfoSidebar({
-  ...props
-}: React.ComponentProps<typeof Infobar>) {
+export function InfoSidebar({ ...props }: React.ComponentProps<typeof Infobar>) {
   const { content } = useInfobar();
   const data = content || defaultData;
 
@@ -41,9 +39,7 @@ export function InfoSidebar({
     <Infobar {...props}>
       <InfobarHeader className='bg-sidebar sticky top-0 z-10 flex flex-row items-start justify-between gap-2 border-b px-3 py-3'>
         <div className='min-w-0 flex-1'>
-          <h2 className='text-lg font-semibold wrap-break-word'>
-            {data.title}
-          </h2>
+          <h2 className='text-lg font-semibold wrap-break-word'>{data.title}</h2>
         </div>
         <div className='shrink-0'>
           <InfobarTrigger className='-mr-1' />
@@ -57,9 +53,7 @@ export function InfoSidebar({
                 data.sections.map((section) => (
                   <div key={section.title} className='flex flex-col gap-3'>
                     {section.title && (
-                      <h3 className='text-foreground text-sm font-semibold'>
-                        {section.title}
-                      </h3>
+                      <h3 className='text-foreground text-sm font-semibold'>{section.title}</h3>
                     )}
                     {section.description && (
                       <p className='text-muted-foreground text-sm leading-relaxed'>

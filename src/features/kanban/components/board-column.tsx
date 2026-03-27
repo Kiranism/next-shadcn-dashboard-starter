@@ -14,8 +14,7 @@ const COLUMN_TITLES: Record<string, string> = {
   done: 'Done'
 };
 
-interface TaskColumnProps
-  extends Omit<React.ComponentProps<typeof KanbanColumn>, 'children'> {
+interface TaskColumnProps extends Omit<React.ComponentProps<typeof KanbanColumn>, 'children'> {
   tasks: Task[];
 }
 
@@ -24,9 +23,7 @@ export function TaskColumn({ value, tasks, ...props }: TaskColumnProps) {
     <KanbanColumn value={value} className='w-[320px] shrink-0' {...props}>
       <div className='flex items-center justify-between'>
         <div className='flex items-center gap-2'>
-          <span className='text-sm font-semibold'>
-            {COLUMN_TITLES[value] ?? value}
-          </span>
+          <span className='text-sm font-semibold'>{COLUMN_TITLES[value] ?? value}</span>
           <Badge variant='secondary' className='pointer-events-none rounded-sm'>
             {tasks.length}
           </Badge>

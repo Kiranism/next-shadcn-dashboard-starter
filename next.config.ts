@@ -23,7 +23,10 @@ const baseConfig: NextConfig = {
       }
     ]
   },
-  transpilePackages: ['geist']
+  transpilePackages: ['geist'],
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production'
+  }
 };
 
 let configWithPlugins = baseConfig;
@@ -57,9 +60,7 @@ if (!process.env.NEXT_PUBLIC_SENTRY_DISABLED) {
 
     // Disable source map upload when org/project are not configured
     sourcemaps: {
-      disable:
-        !process.env.NEXT_PUBLIC_SENTRY_ORG ||
-        !process.env.NEXT_PUBLIC_SENTRY_PROJECT
+      disable: !process.env.NEXT_PUBLIC_SENTRY_ORG || !process.env.NEXT_PUBLIC_SENTRY_PROJECT
     }
   });
 }

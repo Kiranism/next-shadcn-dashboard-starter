@@ -33,17 +33,20 @@ async function UsersPage() {
   const users = await db.user.findMany();
 
   // Or fetch from external API
-  const posts = await fetch('https://api.example.com/posts').then(r => r.json());
+  const posts = await fetch('https://api.example.com/posts').then((r) => r.json());
 
   return (
     <ul>
-      {users.map(user => <li key={user.id}>{user.name}</li>)}
+      {users.map((user) => (
+        <li key={user.id}>{user.name}</li>
+      ))}
     </ul>
   );
 }
 ```
 
 **Benefits**:
+
 - No API to maintain
 - No client-server waterfall
 - Secrets stay on server
@@ -81,20 +84,22 @@ import { createPost } from '@/app/actions';
 export default function NewPost() {
   return (
     <form action={createPost}>
-      <input name="title" required />
-      <button type="submit">Create</button>
+      <input name='title' required />
+      <button type='submit'>Create</button>
     </form>
   );
 }
 ```
 
 **Benefits**:
+
 - End-to-end type safety
 - Progressive enhancement (works without JS)
 - Automatic request handling
 - Integrated with React transitions
 
 **Constraints**:
+
 - POST only (no GET caching semantics)
 - Internal use only (no external access)
 - Cannot return non-serializable data
@@ -122,12 +127,14 @@ export async function POST(request: NextRequest) {
 ```
 
 **When to use**:
+
 - External API access (mobile apps, third parties)
 - Webhooks from external services
 - GET endpoints that need HTTP caching
 - OpenAPI/Swagger documentation needed
 
 **When NOT to use**:
+
 - Internal data fetching (use Server Components)
 - Mutations from your UI (use Server Actions)
 
@@ -138,8 +145,8 @@ export async function POST(request: NextRequest) {
 ```tsx
 // Bad: Sequential waterfalls
 async function Dashboard() {
-  const user = await getUser();        // Wait...
-  const posts = await getPosts();      // Then wait...
+  const user = await getUser(); // Wait...
+  const posts = await getPosts(); // Then wait...
   const comments = await getComments(); // Then wait...
 
   return <div>...</div>;
@@ -151,11 +158,7 @@ async function Dashboard() {
 ```tsx
 // Good: Parallel fetching
 async function Dashboard() {
-  const [user, posts, comments] = await Promise.all([
-    getUser(),
-    getPosts(),
-    getComments(),
-  ]);
+  const [user, posts, comments] = await Promise.all([getUser(), getPosts(), getComments()]);
 
   return <div>...</div>;
 }
@@ -238,7 +241,7 @@ async function Page() {
 }
 
 // Client Component
-'use client';
+('use client');
 function ClientComponent({ initialData }) {
   const [data, setData] = useState(initialData);
   // ...
@@ -256,7 +259,7 @@ function ClientComponent() {
 
   useEffect(() => {
     fetch('/api/data')
-      .then(r => r.json())
+      .then((r) => r.json())
       .then(setData);
   }, []);
 
@@ -289,9 +292,9 @@ function ClientComponent() {
 
 ## Quick Reference
 
-| Pattern | Use Case | HTTP Method | Caching |
-|---------|----------|-------------|---------|
-| Server Component fetch | Internal reads | Any | Full Next.js caching |
-| Server Action | Mutations, form submissions | POST only | No |
-| Route Handler | External APIs, webhooks | Any | GET can be cached |
-| Client fetch to API | Client-side reads | Any | HTTP cache headers |
+| Pattern                | Use Case                    | HTTP Method | Caching              |
+| ---------------------- | --------------------------- | ----------- | -------------------- |
+| Server Component fetch | Internal reads              | Any         | Full Next.js caching |
+| Server Action          | Mutations, form submissions | POST only   | No                   |
+| Route Handler          | External APIs, webhooks     | Any         | GET can be cached    |
+| Client fetch to API    | Client-side reads           | Any         | HTTP cache headers   |

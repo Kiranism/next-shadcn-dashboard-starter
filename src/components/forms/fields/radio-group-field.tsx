@@ -20,12 +20,7 @@ interface RadioGroupFieldProps {
   options: Option[];
 }
 
-export function RadioGroupField({
-  label,
-  description,
-  required,
-  options
-}: RadioGroupFieldProps) {
+export function RadioGroupField({ label, description, required, options }: RadioGroupFieldProps) {
   const field = useFieldContext();
   const value = useStore(field.store, (s) => s.value) as string;
 
@@ -44,10 +39,7 @@ export function RadioGroupField({
       >
         {options.map((opt) => (
           <div key={opt.value} className='flex items-center space-x-2'>
-            <RadioGroupItem
-              value={opt.value}
-              id={`${field.name}-${opt.value}`}
-            />
+            <RadioGroupItem value={opt.value} id={`${field.name}-${opt.value}`} />
             <Label htmlFor={`${field.name}-${opt.value}`}>{opt.label}</Label>
           </div>
         ))}

@@ -10,12 +10,7 @@ interface AlertModalProps {
   loading: boolean;
 }
 
-export const AlertModal: React.FC<AlertModalProps> = ({
-  isOpen,
-  onClose,
-  onConfirm,
-  loading
-}) => {
+export function AlertModal({ isOpen, onClose, onConfirm, loading }: AlertModalProps) {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -43,4 +38,4 @@ export const AlertModal: React.FC<AlertModalProps> = ({
       </div>
     </Modal>
   );
-};
+}

@@ -1,13 +1,7 @@
 'use client';
 
 import PageContainer from '@/components/layout/page-container';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useOrganization, Protect } from '@clerk/nextjs';
 import { Icons } from '@/components/icons';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -24,9 +18,7 @@ export default function ExclusivePage() {
             <Alert>
               <Icons.lock className='h-5 w-5 text-yellow-600' />
               <AlertDescription>
-                <div className='mb-1 text-lg font-semibold'>
-                  Pro Plan Required
-                </div>
+                <div className='mb-1 text-lg font-semibold'>Pro Plan Required</div>
                 <div className='text-muted-foreground'>
                   This page is only available to organizations on the{' '}
                   <span className='font-semibold'>Pro</span> plan.
@@ -49,19 +41,15 @@ export default function ExclusivePage() {
               Exclusive Area
             </h1>
             <p className='text-muted-foreground'>
-              Welcome,{' '}
-              <span className='font-semibold'>{organization?.name}</span>! This
-              page contains exclusive features for Pro plan organizations.
+              Welcome, <span className='font-semibold'>{organization?.name}</span>! This page
+              contains exclusive features for Pro plan organizations.
             </p>
           </div>
           <Card>
             <CardHeader>
-              <CardTitle>
-                Thank You for Checking Out the Exclusive Page
-              </CardTitle>
+              <CardTitle>Thank You for Checking Out the Exclusive Page</CardTitle>
               <CardDescription>
-                This means you belong to an organization subscribed to the Pro
-                plan.
+                This means you belong to an organization subscribed to the Pro plan.
               </CardDescription>
             </CardHeader>
             <CardContent>

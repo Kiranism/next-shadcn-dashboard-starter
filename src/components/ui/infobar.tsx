@@ -11,12 +11,7 @@ import {
   SheetTitle
 } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { Slot } from '@radix-ui/react-slot';
@@ -86,9 +81,7 @@ function InfobarProvider({
   const isMobile = useIsMobile();
   const [openMobile, setOpenMobile] = React.useState(false);
   const [content, setContent] = React.useState<InfobarContent | null>(null);
-  const [contentPathname, setContentPathname] = React.useState<string | null>(
-    null
-  );
+  const [contentPathname, setContentPathname] = React.useState<string | null>(null);
   const [isPathnameChanging, setIsPathnameChanging] = React.useState(false);
   const pathname = usePathname();
 
@@ -123,10 +116,7 @@ function InfobarProvider({
   // Adds a keyboard shortcut to toggle the infobar.
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (
-        event.key === INFOBAR_KEYBOARD_SHORTCUT &&
-        (event.metaKey || event.ctrlKey)
-      ) {
+      if (event.key === INFOBAR_KEYBOARD_SHORTCUT && (event.metaKey || event.ctrlKey)) {
         event.preventDefault();
         toggleInfobar();
       }
@@ -230,8 +220,7 @@ function Infobar({
   variant?: 'sidebar' | 'floating' | 'inset';
   collapsible?: 'offcanvas' | 'icon' | 'none';
 }) {
-  const { isMobile, state, openMobile, setOpenMobile, isPathnameChanging } =
-    useInfobar();
+  const { isMobile, state, openMobile, setOpenMobile, isPathnameChanging } = useInfobar();
 
   if (collapsible === 'none') {
     return (
@@ -326,11 +315,7 @@ function Infobar({
   );
 }
 
-function InfobarTrigger({
-  className,
-  onClick,
-  ...props
-}: React.ComponentProps<typeof Button>) {
+function InfobarTrigger({ className, onClick, ...props }: React.ComponentProps<typeof Button>) {
   const { toggleInfobar } = useInfobar();
 
   return (
@@ -392,10 +377,7 @@ function InfobarInset({ className, ...props }: React.ComponentProps<'main'>) {
   );
 }
 
-function InfobarInput({
-  className,
-  ...props
-}: React.ComponentProps<typeof Input>) {
+function InfobarInput({ className, ...props }: React.ComponentProps<typeof Input>) {
   return (
     <Input
       data-slot='infobar-input'
@@ -428,10 +410,7 @@ function InfobarFooter({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
-function InfobarSeparator({
-  className,
-  ...props
-}: React.ComponentProps<typeof Separator>) {
+function InfobarSeparator({ className, ...props }: React.ComponentProps<typeof Separator>) {
   return (
     <Separator
       data-slot='infobar-separator'
@@ -511,10 +490,7 @@ function InfobarGroupAction({
   );
 }
 
-function InfobarGroupContent({
-  className,
-  ...props
-}: React.ComponentProps<'div'>) {
+function InfobarGroupContent({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot='infobar-group-content'
@@ -651,10 +627,7 @@ function InfobarMenuAction({
   );
 }
 
-function InfobarMenuBadge({
-  className,
-  ...props
-}: React.ComponentProps<'div'>) {
+function InfobarMenuBadge({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot='infobar-menu-badge'
@@ -692,12 +665,7 @@ function InfobarMenuSkeleton({
       className={cn('flex h-8 items-center gap-2 rounded-md px-2', className)}
       {...props}
     >
-      {showIcon && (
-        <Skeleton
-          className='size-4 rounded-md'
-          data-infobar='menu-skeleton-icon'
-        />
-      )}
+      {showIcon && <Skeleton className='size-4 rounded-md' data-infobar='menu-skeleton-icon' />}
       <Skeleton
         className='h-4 max-w-(--skeleton-width) flex-1'
         data-infobar='menu-skeleton-text'
@@ -726,10 +694,7 @@ function InfobarMenuSub({ className, ...props }: React.ComponentProps<'ul'>) {
   );
 }
 
-function InfobarMenuSubItem({
-  className,
-  ...props
-}: React.ComponentProps<'li'>) {
+function InfobarMenuSubItem({ className, ...props }: React.ComponentProps<'li'>) {
   return (
     <li
       data-slot='infobar-menu-sub-item'

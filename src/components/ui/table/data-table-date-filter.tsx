@@ -7,11 +7,7 @@ import type { DateRange } from 'react-day-picker';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger
-} from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { formatDate } from '@/lib/format';
 
@@ -23,8 +19,7 @@ function getIsDateRange(value: DateSelection): value is DateRange {
 
 function parseAsDate(timestamp: number | string | undefined): Date | undefined {
   if (!timestamp) return undefined;
-  const numericTimestamp =
-    typeof timestamp === 'string' ? Number(timestamp) : timestamp;
+  const numericTimestamp = typeof timestamp === 'string' ? Number(timestamp) : timestamp;
   const date = new Date(numericTimestamp);
   return !Number.isNaN(date.getTime()) ? date : undefined;
 }
@@ -129,9 +124,7 @@ export function DataTableDateFilter<TData>({
       if (!getIsDateRange(selectedDates)) return null;
 
       const hasSelectedDates = selectedDates.from || selectedDates.to;
-      const dateText = hasSelectedDates
-        ? formatDateRange(selectedDates)
-        : 'Select date range';
+      const dateText = hasSelectedDates ? formatDateRange(selectedDates) : 'Select date range';
 
       return (
         <span className='flex items-center gap-2'>
@@ -152,19 +145,14 @@ export function DataTableDateFilter<TData>({
     if (getIsDateRange(selectedDates)) return null;
 
     const hasSelectedDate = selectedDates.length > 0;
-    const dateText = hasSelectedDate
-      ? formatDate(selectedDates[0])
-      : 'Select date';
+    const dateText = hasSelectedDate ? formatDate(selectedDates[0]) : 'Select date';
 
     return (
       <span className='flex items-center gap-2'>
         <span>{title}</span>
         {hasSelectedDate && (
           <>
-            <Separator
-              orientation='vertical'
-              className='mx-0.5 data-[orientation=vertical]:h-4'
-            />
+            <Separator orientation='vertical' className='mx-0.5 data-[orientation=vertical]:h-4' />
             <span>{dateText}</span>
           </>
         )}
@@ -198,9 +186,7 @@ export function DataTableDateFilter<TData>({
             initialFocus
             mode='range'
             selected={
-              getIsDateRange(selectedDates)
-                ? selectedDates
-                : { from: undefined, to: undefined }
+              getIsDateRange(selectedDates) ? selectedDates : { from: undefined, to: undefined }
             }
             onSelect={onSelect}
           />
@@ -208,9 +194,7 @@ export function DataTableDateFilter<TData>({
           <Calendar
             initialFocus
             mode='single'
-            selected={
-              !getIsDateRange(selectedDates) ? selectedDates[0] : undefined
-            }
+            selected={!getIsDateRange(selectedDates) ? selectedDates[0] : undefined}
             onSelect={onSelect}
           />
         )}

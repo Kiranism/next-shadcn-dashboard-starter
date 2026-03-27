@@ -31,11 +31,7 @@ export function MessageComposer({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <form
-      onSubmit={onSubmit}
-      className='space-y-2 sm:space-y-3'
-      aria-label='Reply composer'
-    >
+    <form onSubmit={onSubmit} className='space-y-2 sm:space-y-3' aria-label='Reply composer'>
       <label htmlFor='messenger-editor' className='sr-only'>
         Write a message
       </label>
@@ -65,11 +61,7 @@ export function MessageComposer({
                 }
               }
             }}
-            placeholder={
-              'Message ' +
-              contactName +
-              ' (Enter to send, Shift+Enter for newline)'
-            }
+            placeholder={'Message ' + contactName + ' (Enter to send, Shift+Enter for newline)'}
             rows={2}
             className='text-foreground placeholder:text-muted-foreground/70 min-h-[3rem] w-full resize-none border-none bg-transparent text-xs focus-visible:ring-0 focus-visible:outline-none sm:min-h-[4rem] sm:text-sm'
             aria-label={'Message ' + contactName}
@@ -119,10 +111,7 @@ export function MessageComposer({
             disabled={!draft.trim() && attachments.length === 0}
             aria-label='Send message'
           >
-            <Icons.send
-              className='h-3.5 w-3.5 sm:h-4 sm:w-4'
-              aria-hidden='true'
-            />
+            <Icons.send className='h-3.5 w-3.5 sm:h-4 sm:w-4' aria-hidden='true' />
           </Button>
         </div>
       </div>

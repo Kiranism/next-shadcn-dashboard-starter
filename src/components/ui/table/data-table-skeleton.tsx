@@ -45,9 +45,7 @@ export function DataTableSkeleton({
               ))
             : null}
         </div>
-        {withViewOptions ? (
-          <Skeleton className='ml-auto hidden h-7 w-[4.5rem] lg:flex' />
-        ) : null}
+        {withViewOptions ? <Skeleton className='ml-auto hidden h-7 w-[4.5rem] lg:flex' /> : null}
       </div>
 
       <div className='flex-1 rounded-md border'>

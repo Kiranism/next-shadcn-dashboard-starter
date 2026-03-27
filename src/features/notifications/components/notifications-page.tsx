@@ -17,14 +17,11 @@ const actionRoutes: Record<string, string> = {
 };
 
 export default function NotificationsPage() {
-  const { notifications, markAsRead, markAllAsRead, unreadCount } =
-    useNotificationStore();
+  const { notifications, markAsRead, markAllAsRead, unreadCount } = useNotificationStore();
   const router = useRouter();
   const count = unreadCount();
 
-  const unreadNotifications = notifications.filter(
-    (n) => n.status === 'unread'
-  );
+  const unreadNotifications = notifications.filter((n) => n.status === 'unread');
   const readNotifications = notifications.filter((n) => n.status === 'read');
 
   const renderList = (items: typeof notifications) => {
@@ -78,12 +75,8 @@ export default function NotificationsPage() {
       <Tabs defaultValue='all'>
         <TabsList>
           <TabsTrigger value='all'>All ({notifications.length})</TabsTrigger>
-          <TabsTrigger value='unread'>
-            Unread ({unreadNotifications.length})
-          </TabsTrigger>
-          <TabsTrigger value='read'>
-            Read ({readNotifications.length})
-          </TabsTrigger>
+          <TabsTrigger value='unread'>Unread ({unreadNotifications.length})</TabsTrigger>
+          <TabsTrigger value='read'>Read ({readNotifications.length})</TabsTrigger>
         </TabsList>
         <TabsContent value='all' className='mt-4'>
           {renderList(notifications)}

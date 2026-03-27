@@ -10,22 +10,22 @@ This skill encodes the exact patterns and conventions used in this Next.js 16 + 
 
 ## Quick Reference: What Goes Where
 
-| Task | Location |
-|------|----------|
-| New page | `src/app/dashboard/<name>/page.tsx` |
-| New feature | `src/features/<name>/components/` |
-| Query options | `src/features/<name>/api/queries.ts` |
-| Nav item | `src/config/nav-config.ts` |
-| Types | `src/types/index.ts` |
-| Mock data | `src/constants/mock-api.ts` or `mock-api-<name>.ts` |
-| Search params | `src/lib/searchparams.ts` |
-| Query client | `src/lib/query-client.ts` |
-| Theme CSS | `src/styles/themes/<name>.css` |
-| Theme registry | `src/components/themes/theme.config.ts` |
-| Custom hook | `src/hooks/` |
-| Form components | `src/components/forms/` |
-| Table components | `src/components/ui/table/` |
-| Icons registry | `src/components/icons.tsx` |
+| Task             | Location                                            |
+| ---------------- | --------------------------------------------------- |
+| New page         | `src/app/dashboard/<name>/page.tsx`                 |
+| New feature      | `src/features/<name>/components/`                   |
+| Query options    | `src/features/<name>/api/queries.ts`                |
+| Nav item         | `src/config/nav-config.ts`                          |
+| Types            | `src/types/index.ts`                                |
+| Mock data        | `src/constants/mock-api.ts` or `mock-api-<name>.ts` |
+| Search params    | `src/lib/searchparams.ts`                           |
+| Query client     | `src/lib/query-client.ts`                           |
+| Theme CSS        | `src/styles/themes/<name>.css`                      |
+| Theme registry   | `src/components/themes/theme.config.ts`             |
+| Custom hook      | `src/hooks/`                                        |
+| Form components  | `src/components/forms/`                             |
+| Table components | `src/components/ui/table/`                          |
+| Icons registry   | `src/components/icons.tsx`                          |
 
 ---
 
@@ -57,11 +57,7 @@ import { fakeEntities, type Entity } from '@/constants/mock-api-entities';
 
 export type { Entity };
 
-export const entitiesQueryOptions = (filters: {
-  page?: number;
-  limit?: number;
-  search?: string;
-}) =>
+export const entitiesQueryOptions = (filters: { page?: number; limit?: number; search?: string }) =>
   queryOptions({
     queryKey: ['entities', filters],
     queryFn: () => fakeEntities.getEntities(filters)
@@ -122,7 +118,7 @@ export function EntityTable() {
     data: data?.items ?? [],
     columns,
     pageCount: Math.ceil((data?.total_items ?? 0) / pageSize),
-    shallow: true,  // URL changes stay client-side — React Query handles fetching
+    shallow: true, // URL changes stay client-side — React Query handles fetching
     debounceMs: 500,
     initialState: { columnPinning: { right: ['actions'] } }
   });
@@ -138,6 +134,7 @@ export function EntityTable() {
 ```
 
 **Key points:**
+
 - `shallow: true` — URL changes stay client-side, React Query fetches on the client
 - `shallow: false` — triggers full RSC server navigation (legacy pattern, avoid for new pages)
 - First load uses hydrated server-prefetched data (no loading spinner)
@@ -162,7 +159,7 @@ const createMutation = useMutation({
 // In useAppForm onSubmit:
 onSubmit: async ({ value }) => {
   await createMutation.mutateAsync(payload);
-}
+};
 ```
 
 ---
@@ -230,7 +227,11 @@ export const columns: ColumnDef<YourType>[] = [
 ### Column Pinning
 
 ```tsx
-initialState: { columnPinning: { right: ['actions'] } }
+initialState: {
+  columnPinning: {
+    right: ['actions'];
+  }
+}
 ```
 
 **Filter variants**: `text`, `number`, `range`, `date`, `dateRange`, `select`, `multiSelect`, `boolean`

@@ -1,7 +1,7 @@
 'use client';
 
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { Product } from '@/constants/mock-api';
+import type { Product } from '../api/types';
 import { notFound } from 'next/navigation';
 import ProductForm from './product-form';
 import { productByIdOptions } from '../api/queries';
@@ -25,10 +25,5 @@ function EditProductView({ productId }: { productId: number }) {
     notFound();
   }
 
-  return (
-    <ProductForm
-      initialData={data.product as Product}
-      pageTitle='Edit Product'
-    />
-  );
+  return <ProductForm initialData={data.product as Product} pageTitle='Edit Product' />;
 }

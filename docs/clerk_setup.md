@@ -110,11 +110,7 @@ Or protect by Feature:
 ```tsx
 <Protect
   feature='premium_access'
-  fallback={
-    <p>
-      Only subscribers with the Premium Access feature can access this content.
-    </p>
-  }
+  fallback={<p>Only subscribers with the Premium Access feature can access this content.</p>}
 >
   <h1>Exclusive Premium Content</h1>
 </Protect>

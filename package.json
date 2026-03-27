@@ -10,17 +10,12 @@
     "dev": "node scripts/postinstall.js 2>/dev/null; next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "lint:fix": "eslint src --fix && bun format",
-    "lint:strict": "eslint --max-warnings=0 src",
-    "format": "prettier --write .",
-    "format:check": "prettier -c -w .",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix && bun format",
+    "lint:strict": "oxlint --deny-warnings",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
     "prepare": "husky"
-  },
-  "lint-staged": {
-    "**/*.{js,jsx,tsx,ts,css,less,scss,sass}": [
-      "prettier --write --no-error-on-unmatched-pattern"
-    ]
   },
   "dependencies": {
     "@clerk/nextjs": "^6.39.1",
@@ -68,8 +63,6 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
-    "eslint": "8.48.0",
-    "eslint-config-next": "16.2.1",
     "input-otp": "^1.4.2",
     "kbar": "^0.1.0-beta.48",
     "match-sorter": "^8.2.0",
@@ -106,15 +99,19 @@
     "@types/react-dom": "19.2.3",
     "@types/sort-by": "^1.2.3",
     "@types/uuid": "^10.0.0",
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
     "husky": "^9.1.7",
     "lint-staged": "^15.5.2",
-    "prettier": "3.4.2",
-    "prettier-plugin-tailwindcss": "^0.6.14",
+    "oxfmt": "^0.42.0",
+    "oxlint": "^1.57.0",
     "tw-animate-css": "^1.4.0"
   },
   "overrides": {
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3"
+  },
+  "lint-staged": {
+    "**/*.{js,jsx,tsx,ts,css,less,scss,sass}": [
+      "oxfmt --write"
+    ]
   }
 }

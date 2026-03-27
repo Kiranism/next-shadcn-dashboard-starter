@@ -8,8 +8,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import type { User } from '@/constants/mock-api-users';
-import { fakeUsers } from '@/constants/mock-api-users';
+import { deleteUser } from '../../api/service';
+import { userKeys } from '../../api/queries';
+import type { User } from '../../api/types';
 import { Icons } from '@/components/icons';
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -20,15 +21,15 @@ interface CellActionProps {
   data: User;
 }
 
-export const CellAction: React.FC<CellActionProps> = ({ data }) => {
+export function CellAction({ data }: CellActionProps) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => fakeUsers.deleteUser(id),
+    mutationFn: (id: number) => deleteUser(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
       toast.success('User deleted successfully');
       setDeleteOpen(false);
     },
@@ -65,4 +66,4 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
       </DropdownMenu>
     </>
   );
-};
+}

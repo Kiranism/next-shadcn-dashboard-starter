@@ -50,9 +50,8 @@ export default function SignUpViewPage({ stars }: { stars: number }) {
         <div className='relative z-20 mt-auto'>
           <blockquote className='space-y-2'>
             <p className='text-lg'>
-              &ldquo;This starter template has saved me countless hours of work
-              and helped me deliver projects to my clients faster than ever
-              before.&rdquo;
+              &ldquo;This starter template has saved me countless hours of work and helped me
+              deliver projects to my clients faster than ever before.&rdquo;
             </p>
             <footer className='text-sm'>Random Dude</footer>
           </blockquote>
@@ -86,10 +85,7 @@ export default function SignUpViewPage({ stars }: { stars: number }) {
           <div className='text-muted-foreground space-y-2 px-8 text-center text-xs'>
             <p>
               This is an{' '}
-              <Link
-                href='/about'
-                className='hover:text-primary underline underline-offset-4'
-              >
+              <Link href='/about' className='hover:text-primary underline underline-offset-4'>
                 open-source project
               </Link>{' '}
               for demo purposes. Authentication is handled securely by Clerk.

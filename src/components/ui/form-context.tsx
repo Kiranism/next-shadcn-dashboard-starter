@@ -17,11 +17,7 @@
  * circular dependencies.
  */
 
-import {
-  createFormHookContexts,
-  revalidateLogic,
-  useStore
-} from '@tanstack/react-form';
+import { createFormHookContexts, revalidateLogic, useStore } from '@tanstack/react-form';
 import type { AnyFieldApi, DeepKeys } from '@tanstack/form-core';
 import type { VariantProps } from 'class-variance-authority';
 import * as React from 'react';
@@ -48,9 +44,7 @@ type FormItemContextValue = {
   id: string;
 };
 
-const FormItemContext = React.createContext<FormItemContextValue>(
-  {} as FormItemContextValue
-);
+const FormItemContext = React.createContext<FormItemContextValue>({} as FormItemContextValue);
 
 // ---------------------------------------------------------------------------
 // 2. Enhanced useFieldContext
@@ -83,11 +77,7 @@ const useFieldContext = () => {
 // 3. Structural field components
 // ---------------------------------------------------------------------------
 
-function FieldSet({
-  className,
-  children,
-  ...props
-}: React.ComponentProps<'fieldset'>) {
+function FieldSet({ className, children, ...props }: React.ComponentProps<'fieldset'>) {
   const id = React.useId();
 
   return (
@@ -103,8 +93,7 @@ function Field({
   children,
   ...props
 }: React.ComponentProps<'div'> & VariantProps<typeof fieldVariants>) {
-  const { errors, formItemId, formDescriptionId, formMessageId, store } =
-    useFieldContext();
+  const { errors, formItemId, formDescriptionId, formMessageId, store } = useFieldContext();
   const form = useFormContext();
   const isTouched = useStore(store, (state) => state.meta.isTouched);
   // Show errors after user interaction OR after first submit attempt
@@ -116,9 +105,7 @@ function Field({
       data-invalid={hasVisibleErrors}
       id={formItemId}
       aria-describedby={
-        !hasVisibleErrors
-          ? `${formDescriptionId}`
-          : `${formDescriptionId} ${formMessageId}`
+        !hasVisibleErrors ? `${formDescriptionId}` : `${formDescriptionId} ${formMessageId}`
       }
       aria-invalid={hasVisibleErrors}
       {...props}
@@ -301,9 +288,7 @@ type FormFieldSlot = React.ComponentType<{
   children: (fieldApi: AnyFieldApi) => React.ReactNode;
 }>;
 
-function createFormField<P extends object>(
-  FieldComponent: React.ComponentType<P>
-) {
+function createFormField<P extends object>(FieldComponent: React.ComponentType<P>) {
   function ComposedFormField({
     name,
     validators,
@@ -313,15 +298,7 @@ function createFormField<P extends object>(
     defaultValue,
     ...props
   }: { name: string } & FieldConfig &
-    Omit<
-      P,
-      | 'name'
-      | 'validators'
-      | 'asyncDebounceMs'
-      | 'listeners'
-      | 'mode'
-      | 'defaultValue'
-    >) {
+    Omit<P, 'name' | 'validators' | 'asyncDebounceMs' | 'listeners' | 'mode' | 'defaultValue'>) {
     const form = useFormContext();
     const FieldSlot = form.Field as unknown as FormFieldSlot;
     return (
@@ -362,9 +339,7 @@ function createFormField<P extends object>(
 type WithTypedName<C, TValues> =
   C extends React.ComponentType<infer P>
     ? P extends { name: string }
-      ? React.ComponentType<
-          Omit<P, 'name'> & { name: DeepKeys<TValues> & string }
-        >
+      ? React.ComponentType<Omit<P, 'name'> & { name: DeepKeys<TValues> & string }>
       : C
     : C;
 
@@ -391,12 +366,7 @@ function typedField<TValues extends Record<string, unknown>>() {
 // 7. Exports
 // ---------------------------------------------------------------------------
 
-export type {
-  FieldConfig,
-  FieldValidatorConfig,
-  FieldListenerConfig,
-  WithTypedName
-};
+export type { FieldConfig, FieldValidatorConfig, FieldListenerConfig, WithTypedName };
 
 export {
   fieldContext,

@@ -15,9 +15,7 @@ export default async function Page(props: PageProps) {
   const queryClient = getQueryClient();
 
   if (params.productId !== 'new') {
-    void queryClient.prefetchQuery(
-      productByIdOptions(Number(params.productId))
-    );
+    void queryClient.prefetchQuery(productByIdOptions(Number(params.productId)));
   }
 
   return (

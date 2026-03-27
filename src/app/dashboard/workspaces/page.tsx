@@ -17,8 +17,7 @@ export default function WorkspacesPage() {
             organizationListBox: 'space-y-2',
             organizationPreview: 'rounded-lg border p-4 hover:bg-accent',
             organizationPreviewMainIdentifier: 'text-lg font-semibold',
-            organizationPreviewSecondaryIdentifier:
-              'text-sm text-muted-foreground'
+            organizationPreviewSecondaryIdentifier: 'text-sm text-muted-foreground'
           }
         }}
         afterSelectOrganizationUrl='/dashboard/workspaces/team'

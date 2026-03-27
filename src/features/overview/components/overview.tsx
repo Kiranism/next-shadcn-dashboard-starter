@@ -21,9 +21,7 @@ export default function OverViewPage() {
     <PageContainer>
       <div className='flex flex-1 flex-col space-y-2'>
         <div className='flex items-center justify-between space-y-2'>
-          <h2 className='text-2xl font-bold tracking-tight'>
-            Hi, Welcome back 👋
-          </h2>
+          <h2 className='text-2xl font-bold tracking-tight'>Hi, Welcome back 👋</h2>
           <div className='hidden items-center space-x-2 md:flex'>
             <Button>Download</Button>
           </div>
@@ -52,12 +50,9 @@ export default function OverViewPage() {
                 </CardHeader>
                 <CardFooter className='flex-col items-start gap-1.5 text-sm'>
                   <div className='line-clamp-1 flex gap-2 font-medium'>
-                    Trending up this month{' '}
-                    <Icons.trendingUp className='size-4' />
+                    Trending up this month <Icons.trendingUp className='size-4' />
                   </div>
-                  <div className='text-muted-foreground'>
-                    Visitors for the last 6 months
-                  </div>
+                  <div className='text-muted-foreground'>Visitors for the last 6 months</div>
                 </CardFooter>
               </Card>
               <Card className='@container/card'>
@@ -75,12 +70,9 @@ export default function OverViewPage() {
                 </CardHeader>
                 <CardFooter className='flex-col items-start gap-1.5 text-sm'>
                   <div className='line-clamp-1 flex gap-2 font-medium'>
-                    Down 20% this period{' '}
-                    <Icons.trendingDown className='size-4' />
+                    Down 20% this period <Icons.trendingDown className='size-4' />
                   </div>
-                  <div className='text-muted-foreground'>
-                    Acquisition needs attention
-                  </div>
+                  <div className='text-muted-foreground'>Acquisition needs attention</div>
                 </CardFooter>
               </Card>
               <Card className='@container/card'>
@@ -98,12 +90,9 @@ export default function OverViewPage() {
                 </CardHeader>
                 <CardFooter className='flex-col items-start gap-1.5 text-sm'>
                   <div className='line-clamp-1 flex gap-2 font-medium'>
-                    Strong user retention{' '}
-                    <Icons.trendingUp className='size-4' />
+                    Strong user retention <Icons.trendingUp className='size-4' />
                   </div>
-                  <div className='text-muted-foreground'>
-                    Engagement exceed targets
-                  </div>
+                  <div className='text-muted-foreground'>Engagement exceed targets</div>
                 </CardFooter>
               </Card>
               <Card className='@container/card'>
@@ -121,12 +110,9 @@ export default function OverViewPage() {
                 </CardHeader>
                 <CardFooter className='flex-col items-start gap-1.5 text-sm'>
                   <div className='line-clamp-1 flex gap-2 font-medium'>
-                    Steady performance increase{' '}
-                    <Icons.trendingUp className='size-4' />
+                    Steady performance increase <Icons.trendingUp className='size-4' />
                   </div>
-                  <div className='text-muted-foreground'>
-                    Meets growth projections
-                  </div>
+                  <div className='text-muted-foreground'>Meets growth projections</div>
                 </CardFooter>
               </Card>
             </div>

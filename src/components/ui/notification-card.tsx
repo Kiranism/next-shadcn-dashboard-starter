@@ -24,11 +24,7 @@ export interface NotificationCardProps {
   createdAt?: string | Date;
   actions?: NotificationAction[];
   onMarkAsRead?: (id: string) => void;
-  onAction?: (
-    notificationId: string,
-    actionId: string,
-    actionType: ActionType
-  ) => void;
+  onAction?: (notificationId: string, actionId: string, actionType: ActionType) => void;
   loadingActionId?: string;
   className?: string;
 }
@@ -104,9 +100,7 @@ export const NotificationCard: FC<NotificationCardProps> = ({
               >
                 {title}
               </h3>
-              {isUnread && (
-                <div className='h-1.5 w-1.5 flex-shrink-0 rounded-full bg-sky-500' />
-              )}
+              {isUnread && <div className='h-1.5 w-1.5 flex-shrink-0 rounded-full bg-sky-500' />}
             </div>
 
             {/* Description */}
@@ -139,12 +133,7 @@ export const NotificationCard: FC<NotificationCardProps> = ({
         <div className='mt-3 flex items-end justify-between'>
           {/* Actions */}
           {actions.length > 0 && (
-            <div
-              className={cn(
-                'flex flex-wrap items-center gap-2',
-                !isUnread && 'opacity-60'
-              )}
-            >
+            <div className={cn('flex flex-wrap items-center gap-2', !isUnread && 'opacity-60')}>
               {actions.map((action) => {
                 const isLoading = loadingActionId === action.id;
                 const isExecuted = action.executed || false;

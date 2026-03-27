@@ -1,4 +1,3 @@
-import React from 'react';
 import { InfoButton } from '@/components/ui/info-button';
 import type { InfobarContent } from '@/components/ui/infobar';
 
@@ -8,11 +7,7 @@ interface HeadingProps {
   infoContent?: InfobarContent;
 }
 
-export const Heading: React.FC<HeadingProps> = ({
-  title,
-  description,
-  infoContent
-}) => {
+export function Heading({ title, description, infoContent }: HeadingProps) {
   return (
     <div>
       <div className='flex items-center gap-2'>
@@ -26,4 +21,4 @@ export const Heading: React.FC<HeadingProps> = ({
       <p className='text-muted-foreground text-sm'>{description}</p>
     </div>
   );
-};
+}

@@ -27,10 +27,7 @@ export default async function Page(props: pageProps) {
       pageDescription='Manage products (React Query + nuqs table pattern.)'
       infoContent={productInfoContent}
       pageHeaderAction={
-        <Link
-          href='/dashboard/product/new'
-          className={cn(buttonVariants(), 'text-xs md:text-sm')}
-        >
+        <Link href='/dashboard/product/new' className={cn(buttonVariants(), 'text-xs md:text-sm')}>
           <Icons.add className='mr-2 h-4 w-4' /> Add New
         </Link>
       }

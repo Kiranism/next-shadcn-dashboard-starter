@@ -1,22 +1,23 @@
 import { queryOptions } from '@tanstack/react-query';
-import { fakeProducts, type Product } from '@/constants/mock-api';
+import { getProducts, getProductById } from './service';
+import type { Product, ProductFilters } from './types';
 
 export type { Product };
 
-export const productsQueryOptions = (filters: {
-  page?: number;
-  limit?: number;
-  categories?: string;
-  search?: string;
-  sort?: string;
-}) =>
+export const productKeys = {
+  all: ['products'] as const,
+  list: (filters: ProductFilters) => [...productKeys.all, 'list', filters] as const,
+  detail: (id: number) => [...productKeys.all, 'detail', id] as const
+};
+
+export const productsQueryOptions = (filters: ProductFilters) =>
   queryOptions({
-    queryKey: ['products', filters],
-    queryFn: () => fakeProducts.getProducts(filters)
+    queryKey: productKeys.list(filters),
+    queryFn: () => getProducts(filters)
   });
 
 export const productByIdOptions = (id: number) =>
   queryOptions({
-    queryKey: ['products', id],
-    queryFn: () => fakeProducts.getProductById(id)
+    queryKey: productKeys.detail(id),
+    queryFn: () => getProductById(id)
   });

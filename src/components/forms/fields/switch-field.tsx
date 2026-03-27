@@ -26,11 +26,7 @@ export function SwitchField({ label, description }: SwitchFieldProps) {
           <FieldLabel className='text-base'>{label}</FieldLabel>
           {description && <FieldDescription>{description}</FieldDescription>}
         </div>
-        <Switch
-          checked={value}
-          onCheckedChange={field.handleChange}
-          onBlur={field.handleBlur}
-        />
+        <Switch checked={value} onCheckedChange={field.handleChange} onBlur={field.handleBlur} />
       </FormField>
     </FormFieldSet>
   );

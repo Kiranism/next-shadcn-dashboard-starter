@@ -31,11 +31,11 @@
   --sidebar-accent-foreground: oklch(0.4335 0.0754 182.2315);
   --sidebar-border: oklch(0.9436 0.0051 228.8204);
   --sidebar-ring: oklch(0.761 0.2015 149.7403);
-  --font-sans: 'Segoe UI', 'Helvetica Neue', Helvetica, 'Lucida Grande', Arial,
-    Ubuntu, Cantarell, 'Fira Sans', sans-serif;
+  --font-sans:
+    'Segoe UI', 'Helvetica Neue', Helvetica, 'Lucida Grande', Arial, Ubuntu, Cantarell, 'Fira Sans',
+    sans-serif;
   --font-serif: Georgia, serif;
-  --font-mono: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
-    'Courier New', monospace;
+  --font-mono: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
   --radius: 1rem;
   --shadow-x: 0px;
   --shadow-y: 2px;
@@ -45,16 +45,11 @@
   --shadow-color: rgba(0, 0, 0, 0.1);
   --shadow-2xs: 0px 2px 10px 0px hsl(0 0% 0% / 0.05);
   --shadow-xs: 0px 2px 10px 0px hsl(0 0% 0% / 0.05);
-  --shadow-sm: 0px 2px 10px 0px hsl(0 0% 0% / 0.1),
-    0px 1px 2px -1px hsl(0 0% 0% / 0.1);
-  --shadow: 0px 2px 10px 0px hsl(0 0% 0% / 0.1),
-    0px 1px 2px -1px hsl(0 0% 0% / 0.1);
-  --shadow-md: 0px 2px 10px 0px hsl(0 0% 0% / 0.1),
-    0px 2px 4px -1px hsl(0 0% 0% / 0.1);
-  --shadow-lg: 0px 2px 10px 0px hsl(0 0% 0% / 0.1),
-    0px 4px 6px -1px hsl(0 0% 0% / 0.1);
-  --shadow-xl: 0px 2px 10px 0px hsl(0 0% 0% / 0.1),
-    0px 8px 10px -1px hsl(0 0% 0% / 0.1);
+  --shadow-sm: 0px 2px 10px 0px hsl(0 0% 0% / 0.1), 0px 1px 2px -1px hsl(0 0% 0% / 0.1);
+  --shadow: 0px 2px 10px 0px hsl(0 0% 0% / 0.1), 0px 1px 2px -1px hsl(0 0% 0% / 0.1);
+  --shadow-md: 0px 2px 10px 0px hsl(0 0% 0% / 0.1), 0px 2px 4px -1px hsl(0 0% 0% / 0.1);
+  --shadow-lg: 0px 2px 10px 0px hsl(0 0% 0% / 0.1), 0px 4px 6px -1px hsl(0 0% 0% / 0.1);
+  --shadow-xl: 0px 2px 10px 0px hsl(0 0% 0% / 0.1), 0px 8px 10px -1px hsl(0 0% 0% / 0.1);
   --shadow-2xl: 0px 2px 10px 0px hsl(0 0% 0% / 0.25);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
@@ -93,11 +88,11 @@
   --sidebar-accent-foreground: oklch(0.6509 0.1283 170.4258);
   --sidebar-border: oklch(0.3351 0.0253 234.8586);
   --sidebar-ring: oklch(0.6509 0.1283 170.4258);
-  --font-sans: 'Segoe UI', 'Helvetica Neue', Helvetica, 'Lucida Grande', Arial,
-    Ubuntu, Cantarell, 'Fira Sans', sans-serif;
+  --font-sans:
+    'Segoe UI', 'Helvetica Neue', Helvetica, 'Lucida Grande', Arial, Ubuntu, Cantarell, 'Fira Sans',
+    sans-serif;
   --font-serif: Georgia, serif;
-  --font-mono: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
-    'Courier New', monospace;
+  --font-mono: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
   --radius: 1rem;
   --shadow-x: 0px;
   --shadow-y: 4px;
@@ -107,16 +102,11 @@
   --shadow-color: rgba(0, 0, 0, 0.4);
   --shadow-2xs: 0px 4px 12px 0px hsl(0 0% 0% / 0.2);
   --shadow-xs: 0px 4px 12px 0px hsl(0 0% 0% / 0.2);
-  --shadow-sm: 0px 4px 12px 0px hsl(0 0% 0% / 0.4),
-    0px 1px 2px -1px hsl(0 0% 0% / 0.4);
-  --shadow: 0px 4px 12px 0px hsl(0 0% 0% / 0.4),
-    0px 1px 2px -1px hsl(0 0% 0% / 0.4);
-  --shadow-md: 0px 4px 12px 0px hsl(0 0% 0% / 0.4),
-    0px 2px 4px -1px hsl(0 0% 0% / 0.4);
-  --shadow-lg: 0px 4px 12px 0px hsl(0 0% 0% / 0.4),
-    0px 4px 6px -1px hsl(0 0% 0% / 0.4);
-  --shadow-xl: 0px 4px 12px 0px hsl(0 0% 0% / 0.4),
-    0px 8px 10px -1px hsl(0 0% 0% / 0.4);
+  --shadow-sm: 0px 4px 12px 0px hsl(0 0% 0% / 0.4), 0px 1px 2px -1px hsl(0 0% 0% / 0.4);
+  --shadow: 0px 4px 12px 0px hsl(0 0% 0% / 0.4), 0px 1px 2px -1px hsl(0 0% 0% / 0.4);
+  --shadow-md: 0px 4px 12px 0px hsl(0 0% 0% / 0.4), 0px 2px 4px -1px hsl(0 0% 0% / 0.4);
+  --shadow-lg: 0px 4px 12px 0px hsl(0 0% 0% / 0.4), 0px 4px 6px -1px hsl(0 0% 0% / 0.4);
+  --shadow-xl: 0px 4px 12px 0px hsl(0 0% 0% / 0.4), 0px 8px 10px -1px hsl(0 0% 0% / 0.4);
   --shadow-2xl: 0px 4px 12px 0px hsl(0 0% 0% / 1);
 }
 

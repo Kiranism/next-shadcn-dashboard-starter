@@ -1,9 +1,6 @@
 import { create } from 'zustand';
 // import { persist } from 'zustand/middleware';
-import type {
-  NotificationStatus,
-  NotificationAction
-} from '@/components/ui/notification-card';
+import type { NotificationStatus, NotificationAction } from '@/components/ui/notification-card';
 
 export type Notification = {
   id: string;
@@ -129,14 +126,10 @@ export const useNotificationStore = create<NotificationState>()(
 
     addNotification: (notification) =>
       set((state) => ({
-        notifications: [
-          { ...notification, status: 'unread' as const },
-          ...state.notifications
-        ]
+        notifications: [{ ...notification, status: 'unread' as const }, ...state.notifications]
       })),
 
-    unreadCount: () =>
-      get().notifications.filter((n) => n.status === 'unread').length
+    unreadCount: () => get().notifications.filter((n) => n.status === 'unread').length
   })
   //   ,
   //   { name: 'notifications' }

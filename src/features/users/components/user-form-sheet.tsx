@@ -14,7 +14,9 @@ import {
 } from '@/components/ui/sheet';
 import { Icons } from '@/components/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { fakeUsers, type User } from '@/constants/mock-api-users';
+import { createUser, updateUser } from '../api/service';
+import { userKeys } from '../api/queries';
+import type { User } from '../api/types';
 import { toast } from 'sonner';
 import * as z from 'zod';
 import { userSchema, type UserFormValues } from '../schemas/user';
@@ -32,18 +34,14 @@ interface UserFormSheetProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function UserFormSheet({
-  user,
-  open,
-  onOpenChange
-}: UserFormSheetProps) {
+export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) {
   const queryClient = useQueryClient();
   const isEdit = !!user;
 
   const createMutation = useMutation({
-    mutationFn: (data: UserFormValues) => fakeUsers.createUser(data),
+    mutationFn: (data: UserFormValues) => createUser(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
       toast.success('User created successfully');
       onOpenChange(false);
       form.reset();
@@ -52,10 +50,9 @@ export function UserFormSheet({
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: { id: number; values: UserFormValues }) =>
-      fakeUsers.updateUser(data.id, data.values),
+    mutationFn: (data: { id: number; values: UserFormValues }) => updateUser(data.id, data.values),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
       toast.success('User updated successfully');
       onOpenChange(false);
     },
@@ -109,9 +106,7 @@ export function UserFormSheet({
                   required
                   placeholder='John'
                   validators={{
-                    onBlur: z
-                      .string()
-                      .min(2, 'First name must be at least 2 characters')
+                    onBlur: z.string().min(2, 'First name must be at least 2 characters')
                   }}
                 />
                 <FormTextField
@@ -120,9 +115,7 @@ export function UserFormSheet({
                   required
                   placeholder='Doe'
                   validators={{
-                    onBlur: z
-                      .string()
-                      .min(2, 'Last name must be at least 2 characters')
+                    onBlur: z.string().min(2, 'Last name must be at least 2 characters')
                   }}
                 />
               </div>
@@ -175,15 +168,11 @@ export function UserFormSheet({
         </div>
 
         <SheetFooter>
-          <Button
-            type='button'
-            variant='outline'
-            onClick={() => onOpenChange(false)}
-          >
+          <Button type='button' variant='outline' onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button type='submit' form='user-form-sheet' disabled={isPending}>
-            {isPending ? 'Saving...' : isEdit ? 'Update User' : 'Create User'}
+          <Button type='submit' form='user-form-sheet' isLoading={isPending}>
+            <Icons.check /> {isEdit ? 'Update User' : 'Create User'}
           </Button>
         </SheetFooter>
       </SheetContent>

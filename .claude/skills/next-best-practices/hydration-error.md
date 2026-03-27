@@ -17,16 +17,16 @@ In development, click the hydration error to see the server/client diff.
 
 ```tsx
 // Bad: Causes mismatch - window doesn't exist on server
-<div>{window.innerWidth}</div>
+<div>{window.innerWidth}</div>;
 
 // Good: Use client component with mounted check
-'use client'
-import { useState, useEffect } from 'react'
+('use client');
+import { useState, useEffect } from 'react';
 
 export function ClientOnly({ children }: { children: React.ReactNode }) {
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
-  return mounted ? children : null
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  return mounted ? children : null;
 }
 ```
 
@@ -36,12 +36,12 @@ Server and client may be in different timezones:
 
 ```tsx
 // Bad: Causes mismatch
-<span>{new Date().toLocaleString()}</span>
+<span>{new Date().toLocaleString()}</span>;
 
 // Good: Render on client only
-'use client'
-const [time, setTime] = useState<string>()
-useEffect(() => setTime(new Date().toLocaleString()), [])
+('use client');
+const [time, setTime] = useState<string>();
+useEffect(() => setTime(new Date().toLocaleString()), []);
 ```
 
 ### Random Values or IDs
@@ -78,14 +78,9 @@ Scripts that modify DOM during hydration.
 
 ```tsx
 // Good: Use next/script with afterInteractive
-import Script from 'next/script'
+import Script from 'next/script';
 
 export default function Page() {
-  return (
-    <Script
-      src="https://example.com/script.js"
-      strategy="afterInteractive"
-    />
-  )
+  return <Script src='https://example.com/script.js' strategy='afterInteractive' />;
 }
 ```

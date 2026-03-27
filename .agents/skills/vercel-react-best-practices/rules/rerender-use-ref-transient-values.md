@@ -13,13 +13,13 @@ When a value changes frequently and you don't want a re-render on every update (
 
 ```tsx
 function Tracker() {
-  const [lastX, setLastX] = useState(0)
+  const [lastX, setLastX] = useState(0);
 
   useEffect(() => {
-    const onMove = (e: MouseEvent) => setLastX(e.clientX)
-    window.addEventListener('mousemove', onMove)
-    return () => window.removeEventListener('mousemove', onMove)
-  }, [])
+    const onMove = (e: MouseEvent) => setLastX(e.clientX);
+    window.addEventListener('mousemove', onMove);
+    return () => window.removeEventListener('mousemove', onMove);
+  }, []);
 
   return (
     <div
@@ -29,10 +29,10 @@ function Tracker() {
         left: lastX,
         width: 8,
         height: 8,
-        background: 'black',
+        background: 'black'
       }}
     />
-  )
+  );
 }
 ```
 
@@ -40,20 +40,20 @@ function Tracker() {
 
 ```tsx
 function Tracker() {
-  const lastXRef = useRef(0)
-  const dotRef = useRef<HTMLDivElement>(null)
+  const lastXRef = useRef(0);
+  const dotRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
-      lastXRef.current = e.clientX
-      const node = dotRef.current
+      lastXRef.current = e.clientX;
+      const node = dotRef.current;
       if (node) {
-        node.style.transform = `translateX(${e.clientX}px)`
+        node.style.transform = `translateX(${e.clientX}px)`;
       }
-    }
-    window.addEventListener('mousemove', onMove)
-    return () => window.removeEventListener('mousemove', onMove)
-  }, [])
+    };
+    window.addEventListener('mousemove', onMove);
+    return () => window.removeEventListener('mousemove', onMove);
+  }, []);
 
   return (
     <div
@@ -65,9 +65,9 @@ function Tracker() {
         width: 8,
         height: 8,
         background: 'black',
-        transform: 'translateX(0px)',
+        transform: 'translateX(0px)'
       }}
     />
-  )
+  );
 }
 ```

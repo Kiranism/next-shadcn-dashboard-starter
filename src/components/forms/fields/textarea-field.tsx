@@ -11,11 +11,10 @@ import {
   createFormField
 } from '@/components/ui/form-context';
 
-interface TextareaFieldProps
-  extends Omit<
-    React.ComponentProps<'textarea'>,
-    'value' | 'onChange' | 'onBlur'
-  > {
+interface TextareaFieldProps extends Omit<
+  React.ComponentProps<'textarea'>,
+  'value' | 'onChange' | 'onBlur'
+> {
   label: string;
   description?: string;
   required?: boolean;

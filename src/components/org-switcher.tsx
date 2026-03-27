@@ -35,7 +35,6 @@ export function OrgSwitcher() {
   const { orgId } = useAuth();
 
   useEffect(() => {
-    console.log('revalidating memberships');
     if (userMemberships?.revalidate) {
       void userMemberships.revalidate();
     }
@@ -75,9 +74,7 @@ export function OrgSwitcher() {
               }`}
             >
               <span className='truncate font-medium'>Loading...</span>
-              <span className='text-muted-foreground truncate text-xs'>
-                Organizations
-              </span>
+              <span className='text-muted-foreground truncate text-xs'>Organizations</span>
             </div>
           </SidebarMenuButton>
         </SidebarMenuItem>
@@ -106,9 +103,7 @@ export function OrgSwitcher() {
               }`}
             >
               <span className='truncate font-medium'>Create organization</span>
-              <span className='text-muted-foreground truncate text-xs'>
-                Get started
-              </span>
+              <span className='text-muted-foreground truncate text-xs'>Get started</span>
             </div>
             <Icons.chevronsUpDown
               className={`ml-auto transition-all duration-200 ease-in-out ${
@@ -124,8 +119,7 @@ export function OrgSwitcher() {
   }
 
   // Use active organization or first organization as fallback
-  const displayOrganization =
-    activeOrganization || userMemberships.data[0]?.organization;
+  const displayOrganization = activeOrganization || userMemberships.data[0]?.organization;
 
   if (!displayOrganization) {
     return null;
@@ -141,8 +135,7 @@ export function OrgSwitcher() {
               className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
             >
               <div className='bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg'>
-                {displayOrganization.hasImage &&
-                displayOrganization.imageUrl ? (
+                {displayOrganization.hasImage && displayOrganization.imageUrl ? (
                   <Image
                     src={displayOrganization.imageUrl}
                     alt={displayOrganization.name}
@@ -161,13 +154,10 @@ export function OrgSwitcher() {
                     : 'visible max-w-full opacity-100'
                 }`}
               >
-                <span className='truncate font-medium'>
-                  {displayOrganization.name}
-                </span>
+                <span className='truncate font-medium'>{displayOrganization.name}</span>
                 <span className='text-muted-foreground truncate text-xs'>
-                  {userMemberships.data.find(
-                    (m) => m.organization.id === displayOrganization.id
-                  )?.role || 'Organization'}
+                  {userMemberships.data.find((m) => m.organization.id === displayOrganization.id)
+                    ?.role || 'Organization'}
                 </span>
               </div>
               <Icons.chevronsUpDown
@@ -193,14 +183,11 @@ export function OrgSwitcher() {
               return (
                 <DropdownMenuItem
                   key={membership.id}
-                  onClick={() =>
-                    handleOrganizationSwitch(membership.organization.id)
-                  }
+                  onClick={() => handleOrganizationSwitch(membership.organization.id)}
                   className='gap-2 p-2'
                 >
                   <div className='flex size-6 items-center justify-center overflow-hidden rounded-md border'>
-                    {membership.organization.hasImage &&
-                    membership.organization.imageUrl ? (
+                    {membership.organization.hasImage && membership.organization.imageUrl ? (
                       <Image
                         src={membership.organization.imageUrl}
                         alt={membership.organization.name}
@@ -214,9 +201,7 @@ export function OrgSwitcher() {
                   </div>
                   {membership.organization.name}
                   {isActive && <Icons.check className='ml-auto size-4' />}
-                  {!isActive && (
-                    <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>
-                  )}
+                  {!isActive && <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>}
                 </DropdownMenuItem>
               );
             })}
@@ -230,9 +215,7 @@ export function OrgSwitcher() {
               <div className='flex size-6 items-center justify-center rounded-md border bg-transparent'>
                 <Icons.add className='size-4' />
               </div>
-              <div className='text-muted-foreground font-medium'>
-                Add organization
-              </div>
+              <div className='text-muted-foreground font-medium'>Add organization</div>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

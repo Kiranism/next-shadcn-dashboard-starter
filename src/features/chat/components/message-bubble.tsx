@@ -17,9 +17,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   return (
     <motion.div
       initial={shouldReduceMotion ? false : { opacity: 0, y: 12, scale: 0.98 }}
-      animate={
-        shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }
-      }
+      animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 0 }}
       transition={{ duration: 0.28, ease: 'easeOut' }}
       className='flex flex-col gap-1'
@@ -64,12 +62,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           />
         )}
         <div className='mt-2 flex items-center justify-end gap-1.5 text-[0.65rem] sm:mt-3 sm:gap-2 sm:text-[0.7rem]'>
-          <span
-            className={cn(
-              'text-muted-foreground',
-              isUser && 'text-primary-foreground/80'
-            )}
-          >
+          <span className={cn('text-muted-foreground', isUser && 'text-primary-foreground/80')}>
             {message.timestamp}
           </span>
           {isUser && (

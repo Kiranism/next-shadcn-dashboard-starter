@@ -564,9 +564,7 @@ class FeatureCleanup {
     } else {
       console.log('\n✨ Cleanup complete!\n');
       console.log('📋 Next steps:');
-      console.log(
-        '  1. Run: bun install (or npm install) to sync dependencies'
-      );
+      console.log('  1. Run: bun install (or npm install) to sync dependencies');
       console.log('  2. Review and test your application');
       console.log('  3. To revert: git restore . (or git checkout .)');
       console.log('  4. Delete scripts/cleanup.js if no longer needed\n');
@@ -721,9 +719,7 @@ class FeatureCleanup {
         // Include leading whitespace/newline
         while (
           start > 0 &&
-          (content[start - 1] === ' ' ||
-            content[start - 1] === '\t' ||
-            content[start - 1] === '\n')
+          (content[start - 1] === ' ' || content[start - 1] === '\t' || content[start - 1] === '\n')
         ) {
           start--;
         }
@@ -751,22 +747,17 @@ class FeatureCleanup {
     }
 
     // Clean up empty parent groups (items array with only whitespace)
-    content = content.replace(
-      /,?\s*\{[^{}]*items:\s*\[\s*\]\s*\}/g,
-      (match, offset) => {
-        // Only remove if it looks like a parent group (has url: '#')
-        return match.includes("url: '#'") ? '' : match;
-      }
-    );
+    content = content.replace(/,?\s*\{[^{}]*items:\s*\[\s*\]\s*\}/g, (match, offset) => {
+      // Only remove if it looks like a parent group (has url: '#')
+      return match.includes("url: '#'") ? '' : match;
+    });
 
     content = content.replace(/,(\s*\])/g, '$1');
     content = content.replace(/\n\s*\n\s*\n/g, '\n\n');
 
     if (modified) {
       if (!this.dryRun) fs.writeFileSync(navPath, content, 'utf8');
-      this.log(
-        `✅ Cleaned nav-config.ts (removed ${navItemsToRemove.length} items)`
-      );
+      this.log(`✅ Cleaned nav-config.ts (removed ${navItemsToRemove.length} items)`);
     }
   }
 
@@ -777,10 +768,7 @@ class FeatureCleanup {
     let content = fs.readFileSync(headerPath, 'utf8');
     const before = content;
 
-    content = content.replace(
-      /import\s*\{[^}]*NotificationCenter[^}]*\}[^;]*;\n?/g,
-      ''
-    );
+    content = content.replace(/import\s*\{[^}]*NotificationCenter[^}]*\}[^;]*;\n?/g, '');
     content = content.replace(/\s*<NotificationCenter\s*\/>\n?/g, '');
 
     if (content !== before) {
@@ -802,19 +790,12 @@ class FeatureCleanup {
       if (!fs.existsSync(filePath)) continue;
       let content = fs.readFileSync(filePath, 'utf8');
       const before = content;
-      content = content.replace(
-        /\n*# Clerk Setup Guide[\s\S]*?(?=\n#|\n##|\Z)/gi,
-        '\n'
-      );
+      content = content.replace(/\n*# Clerk Setup Guide[\s\S]*?(?=\n#|\n##|\Z)/gi, '\n');
       content = content.replace(/Clerk['\s]/gi, 'Auth ');
       content = content.replace(/clerk\.com[^\s]*/gi, '');
       if (content !== before) {
         if (!this.dryRun) {
-          fs.writeFileSync(
-            filePath,
-            content.replace(/\n\s*\n\s*\n/g, '\n\n'),
-            'utf8'
-          );
+          fs.writeFileSync(filePath, content.replace(/\n\s*\n\s*\n/g, '\n\n'), 'utf8');
         }
         this.log(`✅ Cleaned doc references: ${path.relative(ROOT, filePath)}`);
       }
@@ -827,9 +808,7 @@ class FeatureCleanup {
     const themesDir = path.join(ROOT, 'src/styles/themes');
     if (!fs.existsSync(themesDir)) return;
 
-    const themeFiles = fs
-      .readdirSync(themesDir)
-      .filter((f) => f.endsWith('.css'));
+    const themeFiles = fs.readdirSync(themesDir).filter((f) => f.endsWith('.css'));
     const themes = themeFiles.map((f) => ({
       file: f,
       value: f.replace('.css', ''),
@@ -845,12 +824,8 @@ class FeatureCleanup {
     }
 
     if (this.dryRun) {
-      this.log(
-        `Found ${themes.length} themes: ${themes.map((t) => t.value).join(', ')}`
-      );
-      this.log(
-        'Would prompt user to pick one theme to keep and remove the rest.'
-      );
+      this.log(`Found ${themes.length} themes: ${themes.map((t) => t.value).join(', ')}`);
+      this.log('Would prompt user to pick one theme to keep and remove the rest.');
       return;
     }
 
@@ -876,8 +851,7 @@ class FeatureCleanup {
       rl.close();
 
       const index = parseInt(answer, 10) - 1;
-      const selected =
-        themes[index] || themes.find((t) => t.value === 'vercel') || themes[0];
+      const selected = themes[index] || themes.find((t) => t.value === 'vercel') || themes[0];
       keepValue = selected.value;
     }
 
@@ -991,11 +965,9 @@ function listFeatures() {
   for (const [key, value] of Object.entries(FEATURES)) {
     console.log(`  ${key}`);
     console.log(`    ${value.name}`);
-    if (value.folders?.length)
-      console.log(`    Folders: ${value.folders.length}`);
+    if (value.folders?.length) console.log(`    Folders: ${value.folders.length}`);
     if (value.files?.length) console.log(`    Files: ${value.files.length}`);
-    if (value.dependencies?.length)
-      console.log(`    Dependencies: ${value.dependencies.length}`);
+    if (value.dependencies?.length) console.log(`    Dependencies: ${value.dependencies.length}`);
     console.log('');
   }
 }

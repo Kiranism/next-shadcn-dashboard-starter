@@ -31,9 +31,7 @@ export const useChatStore = create<ChatState>()(
     selectConversation: (id) =>
       set((state) => ({
         selectedConversationId: id,
-        conversations: state.conversations.map((c) =>
-          c.id === id ? { ...c, unread: 0 } : c
-        )
+        conversations: state.conversations.map((c) => (c.id === id ? { ...c, unread: 0 } : c))
       })),
 
     setDraft: (text) => set({ draft: text }),
@@ -86,9 +84,7 @@ export const useChatStore = create<ChatState>()(
 
     getActiveConversation: () => {
       const state = get();
-      return state.conversations.find(
-        (c) => c.id === state.selectedConversationId
-      );
+      return state.conversations.find((c) => c.id === state.selectedConversationId);
     }
   })
   //   ,

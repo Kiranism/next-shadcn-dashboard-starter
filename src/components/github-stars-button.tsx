@@ -9,24 +9,15 @@ interface GitHubRepo {
   stars: number;
 }
 
-async function fetchGitHubRepo(
-  owner: string,
-  repo: string
-): Promise<GitHubRepo | null> {
+async function fetchGitHubRepo(owner: string, repo: string): Promise<GitHubRepo | null> {
   try {
-    const response = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}`,
-      {
-        headers: { Accept: 'application/vnd.github.v3+json' },
-        next: { revalidate: 3600 }
-      }
-    );
+    const response = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+      headers: { Accept: 'application/vnd.github.v3+json' },
+      next: { revalidate: 3600 }
+    });
     if (!response.ok) return null;
     const data = await response.json();
-    if (
-      typeof data.full_name !== 'string' ||
-      typeof data.stargazers_count !== 'number'
-    ) {
+    if (typeof data.full_name !== 'string' || typeof data.stargazers_count !== 'number') {
       return null;
     }
     return {
@@ -85,8 +76,7 @@ const githubStarsButtonVariants = cva(
       variant: {
         default:
           'rounded-md border border-border bg-muted/50 text-muted-foreground shadow-xs hover:bg-accent hover:text-accent-foreground',
-        primary:
-          'rounded-md bg-primary text-primary-foreground shadow-xs hover:bg-primary/90',
+        primary: 'rounded-md bg-primary text-primary-foreground shadow-xs hover:bg-primary/90',
         secondary:
           'rounded-md border border-transparent bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80',
         outline:
@@ -110,7 +100,8 @@ const githubStarsButtonVariants = cva(
 );
 
 interface GitHubStarsButtonProps
-  extends Omit<React.ComponentProps<'a'>, 'children'>,
+  extends
+    Omit<React.ComponentProps<'a'>, 'children'>,
     VariantProps<typeof githubStarsButtonVariants> {
   owner: string;
   repo: string;
@@ -148,12 +139,7 @@ async function GitHubStarsButton({
       {showRepo && <span>{fullName}</span>}
       {stars !== null && (
         <>
-          {showRepo && (
-            <span
-              className='bg-border h-3.5 w-px shrink-0'
-              aria-hidden='true'
-            />
-          )}
+          {showRepo && <span className='bg-border h-3.5 w-px shrink-0' aria-hidden='true' />}
           <span className='tabular-nums'>{formatCount(stars)}</span>
         </>
       )}
@@ -161,8 +147,4 @@ async function GitHubStarsButton({
   );
 }
 
-export {
-  GitHubStarsButton,
-  githubStarsButtonVariants,
-  type GitHubStarsButtonProps
-};
+export { GitHubStarsButton, githubStarsButtonVariants, type GitHubStarsButtonProps };

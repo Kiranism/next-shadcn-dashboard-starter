@@ -13,13 +13,13 @@ shadcn mcp init   # write config for your editor
 
 Editor config files:
 
-| Editor | Config file |
-|--------|------------|
-| Claude Code | `.mcp.json` |
-| Cursor | `.cursor/mcp.json` |
-| VS Code | `.vscode/mcp.json` |
-| OpenCode | `opencode.json` |
-| Codex | `~/.codex/config.toml` (manual) |
+| Editor      | Config file                     |
+| ----------- | ------------------------------- |
+| Claude Code | `.mcp.json`                     |
+| Cursor      | `.cursor/mcp.json`              |
+| VS Code     | `.vscode/mcp.json`              |
+| OpenCode    | `opencode.json`                 |
+| Codex       | `~/.codex/config.toml` (manual) |
 
 ---
 

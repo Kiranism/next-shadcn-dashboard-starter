@@ -65,15 +65,11 @@ const msg = [
   row(),
   div,
   row(),
-  row(
-    `${c.grn}--dry-run${c.r}  ${c.d}Preview changes without modifying files${c.r}`
-  ),
+  row(`${c.grn}--dry-run${c.r}  ${c.d}Preview changes without modifying files${c.r}`),
   row(`${c.grn}--list${c.r}     ${c.d}Show all removable features${c.r}`),
   row(`${c.grn}--help${c.r}     ${c.d}See all options${c.r}`),
   row(),
-  row(
-    `${c.d}Delete ${c.wht}scripts/cleanup.js${c.d} to remove this message.${c.r}`
-  ),
+  row(`${c.d}Delete ${c.wht}scripts/cleanup.js${c.d} to remove this message.${c.r}`),
   row(),
   bot,
   ''

@@ -8,29 +8,43 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { Product } from '@/constants/data';
+import { deleteProduct } from '../../api/service';
+import { productKeys } from '../../api/queries';
+import type { Product } from '../../api/types';
 import { Icons } from '@/components/icons';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 interface CellActionProps {
   data: Product;
 }
 
-export const CellAction: React.FC<CellActionProps> = ({ data }) => {
-  const [loading] = useState(false);
+export function CellAction({ data }: CellActionProps) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
+  const queryClient = useQueryClient();
 
-  const onConfirm = async () => {};
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deleteProduct(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: productKeys.all });
+      toast.success('Product deleted successfully');
+      setOpen(false);
+    },
+    onError: () => {
+      toast.error('Failed to delete product');
+    }
+  });
 
   return (
     <>
       <AlertModal
         isOpen={open}
         onClose={() => setOpen(false)}
-        onConfirm={onConfirm}
-        loading={loading}
+        onConfirm={() => deleteMutation.mutate(data.id)}
+        loading={deleteMutation.isPending}
       />
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
@@ -41,10 +55,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align='end'>
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-
-          <DropdownMenuItem
-            onClick={() => router.push(`/dashboard/product/${data.id}`)}
-          >
+          <DropdownMenuItem onClick={() => router.push(`/dashboard/product/${data.id}`)}>
             <Icons.edit className='mr-2 h-4 w-4' /> Update
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setOpen(true)}>
@@ -54,4 +65,4 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
       </DropdownMenu>
     </>
   );
-};
+}

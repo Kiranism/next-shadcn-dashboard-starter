@@ -2,15 +2,14 @@
 
 import { useAppForm, useFormFields } from '@/components/ui/tanstack-form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Product, fakeProducts } from '@/constants/mock-api';
+import { createProduct, updateProduct } from '../api/service';
+import { productKeys } from '../api/queries';
+import type { Product } from '../api/types';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import * as z from 'zod';
-import {
-  productSchema,
-  type ProductFormValues
-} from '@/features/products/schemas/product';
+import { productSchema, type ProductFormValues } from '@/features/products/schemas/product';
 import { categoryOptions } from '@/features/products/constants/product-options';
 
 export default function ProductForm({
@@ -24,14 +23,10 @@ export default function ProductForm({
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
-    mutationFn: (data: {
-      name: string;
-      category: string;
-      price: number;
-      description: string;
-    }) => fakeProducts.createProduct(data),
+    mutationFn: (data: { name: string; category: string; price: number; description: string }) =>
+      createProduct(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: productKeys.all });
       toast.success('Product created successfully');
       router.push('/dashboard/product');
     },
@@ -49,9 +44,9 @@ export default function ProductForm({
         price: number;
         description: string;
       };
-    }) => fakeProducts.updateProduct(data.id, data.values),
+    }) => updateProduct(data.id, data.values),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: productKeys.all });
       toast.success('Product updated successfully');
       router.push('/dashboard/product');
     },
@@ -92,21 +87,13 @@ export default function ProductForm({
     }
   });
 
-  const {
-    FormTextField,
-    FormSelectField,
-    FormTextareaField,
-    FormFileUploadField
-  } = useFormFields<ProductFormValues>();
-
-  const isPending = createMutation.isPending || updateMutation.isPending;
+  const { FormTextField, FormSelectField, FormTextareaField, FormFileUploadField } =
+    useFormFields<ProductFormValues>();
 
   return (
     <Card className='mx-auto w-full'>
       <CardHeader>
-        <CardTitle className='text-left text-2xl font-bold'>
-          {pageTitle}
-        </CardTitle>
+        <CardTitle className='text-left text-2xl font-bold'>{pageTitle}</CardTitle>
       </CardHeader>
       <CardContent>
         <form.AppForm>
@@ -126,9 +113,7 @@ export default function ProductForm({
                 required
                 placeholder='Enter product name'
                 validators={{
-                  onBlur: z
-                    .string()
-                    .min(2, 'Product name must be at least 2 characters.')
+                  onBlur: z.string().min(2, 'Product name must be at least 2 characters.')
                 }}
               />
 
@@ -165,22 +150,12 @@ export default function ProductForm({
               maxLength={500}
               rows={4}
               validators={{
-                onBlur: z
-                  .string()
-                  .min(10, 'Description must be at least 10 characters.')
+                onBlur: z.string().min(10, 'Description must be at least 10 characters.')
               }}
             />
 
             <div className='flex justify-end'>
-              <form.SubmitButton
-                label={
-                  isPending
-                    ? 'Saving...'
-                    : isEdit
-                      ? 'Update Product'
-                      : 'Add Product'
-                }
-              />
+              <form.SubmitButton>{isEdit ? 'Update Product' : 'Add Product'}</form.SubmitButton>
             </div>
           </form.Form>
         </form.AppForm>

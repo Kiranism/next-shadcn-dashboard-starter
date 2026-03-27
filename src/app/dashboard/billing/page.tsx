@@ -1,13 +1,7 @@
 'use client';
 
 import PageContainer from '@/components/layout/page-container';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useOrganization } from '@clerk/nextjs';
 import { PricingTable } from '@clerk/nextjs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -26,8 +20,7 @@ export default function BillingPage() {
           <div className='space-y-2 text-center'>
             <h2 className='text-2xl font-semibold'>No Organization Selected</h2>
             <p className='text-muted-foreground'>
-              Please select or create an organization to view billing
-              information.
+              Please select or create an organization to view billing information.
             </p>
           </div>
         </div>
@@ -41,8 +34,8 @@ export default function BillingPage() {
         <Alert>
           <Icons.info className='h-4 w-4' />
           <AlertDescription>
-            Plans and subscriptions are managed through Clerk Billing. Subscribe
-            to a plan to unlock features and higher limits.
+            Plans and subscriptions are managed through Clerk Billing. Subscribe to a plan to unlock
+            features and higher limits.
           </AlertDescription>
         </Alert>
 
@@ -50,9 +43,7 @@ export default function BillingPage() {
         <Card>
           <CardHeader>
             <CardTitle>Available Plans</CardTitle>
-            <CardDescription>
-              Choose a plan that fits your organization's needs
-            </CardDescription>
+            <CardDescription>Choose a plan that fits your organization's needs</CardDescription>
           </CardHeader>
           <CardContent>
             <div className='mx-auto max-w-4xl'>

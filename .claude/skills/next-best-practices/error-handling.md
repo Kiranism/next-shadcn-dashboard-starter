@@ -11,21 +11,21 @@ Reference: https://nextjs.org/docs/app/getting-started/error-handling
 Catches errors in a route segment and its children:
 
 ```tsx
-'use client'
+'use client';
 
 export default function Error({
   error,
-  reset,
+  reset
 }: {
-  error: Error & { digest?: string }
-  reset: () => void
+  error: Error & { digest?: string };
+  reset: () => void;
 }) {
   return (
     <div>
       <h2>Something went wrong!</h2>
       <button onClick={() => reset()}>Try again</button>
     </div>
-  )
+  );
 }
 ```
 
@@ -36,14 +36,14 @@ export default function Error({
 Catches errors in root layout:
 
 ```tsx
-'use client'
+'use client';
 
 export default function GlobalError({
   error,
-  reset,
+  reset
 }: {
-  error: Error & { digest?: string }
-  reset: () => void
+  error: Error & { digest?: string };
+  reset: () => void;
 }) {
   return (
     <html>
@@ -52,7 +52,7 @@ export default function GlobalError({
         <button onClick={() => reset()}>Try again</button>
       </body>
     </html>
-  )
+  );
 }
 ```
 
@@ -107,6 +107,7 @@ async function createPost(formData: FormData) {
 ```
 
 Same applies to:
+
 - `redirect()` - 307 temporary redirect
 - `permanentRedirect()` - 308 permanent redirect
 - `notFound()` - 404 not found
@@ -116,15 +117,15 @@ Same applies to:
 Use `unstable_rethrow()` to re-throw these errors in catch blocks:
 
 ```tsx
-import { unstable_rethrow } from 'next/navigation'
+import { unstable_rethrow } from 'next/navigation';
 
 async function action() {
   try {
     // ...
-    redirect('/success')
+    redirect('/success');
   } catch (error) {
-    unstable_rethrow(error) // Re-throws Next.js internal errors
-    return { error: 'Something went wrong' }
+    unstable_rethrow(error); // Re-throws Next.js internal errors
+    return { error: 'Something went wrong' };
   }
 }
 ```
@@ -132,13 +133,13 @@ async function action() {
 ## Redirects
 
 ```tsx
-import { redirect, permanentRedirect } from 'next/navigation'
+import { redirect, permanentRedirect } from 'next/navigation';
 
 // 307 Temporary - use for most cases
-redirect('/new-path')
+redirect('/new-path');
 
 // 308 Permanent - use for URL migrations (cached by browsers)
-permanentRedirect('/new-url')
+permanentRedirect('/new-url');
 ```
 
 ## Auth Errors
@@ -146,20 +147,20 @@ permanentRedirect('/new-url')
 Trigger auth-related error pages:
 
 ```tsx
-import { forbidden, unauthorized } from 'next/navigation'
+import { forbidden, unauthorized } from 'next/navigation';
 
 async function Page() {
-  const session = await getSession()
+  const session = await getSession();
 
   if (!session) {
-    unauthorized() // Renders unauthorized.tsx (401)
+    unauthorized(); // Renders unauthorized.tsx (401)
   }
 
   if (!session.hasAccess) {
-    forbidden() // Renders forbidden.tsx (403)
+    forbidden(); // Renders forbidden.tsx (403)
   }
 
-  return <Dashboard />
+  return <Dashboard />;
 }
 ```
 
@@ -168,12 +169,12 @@ Create corresponding error pages:
 ```tsx
 // app/forbidden.tsx
 export default function Forbidden() {
-  return <div>You don't have access to this resource</div>
+  return <div>You don't have access to this resource</div>;
 }
 
 // app/unauthorized.tsx
 export default function Unauthorized() {
-  return <div>Please log in to continue</div>
+  return <div>Please log in to continue</div>;
 }
 ```
 
@@ -190,24 +191,24 @@ export default function NotFound() {
       <h2>Not Found</h2>
       <p>Could not find the requested resource</p>
     </div>
-  )
+  );
 }
 ```
 
 ### Triggering Not Found
 
 ```tsx
-import { notFound } from 'next/navigation'
+import { notFound } from 'next/navigation';
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  const post = await getPost(id)
+  const { id } = await params;
+  const post = await getPost(id);
 
   if (!post) {
-    notFound()  // Renders closest not-found.tsx
+    notFound(); // Renders closest not-found.tsx
   }
 
-  return <div>{post.title}</div>
+  return <div>{post.title}</div>;
 }
 ```
 

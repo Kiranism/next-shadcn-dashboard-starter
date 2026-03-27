@@ -1,6 +1,7 @@
 # Theme Creation Guide
 
 ## Table of Contents
+
 1. [Create Theme CSS](#1-create-theme-css)
 2. [Import Theme](#2-import-theme)
 3. [Register Theme](#3-register-theme)
@@ -112,6 +113,7 @@ Create `src/styles/themes/<name>.css`:
 ## 2. Import Theme
 
 Add to `src/styles/theme.css`:
+
 ```css
 @import './themes/your-theme.css';
 ```
@@ -119,6 +121,7 @@ Add to `src/styles/theme.css`:
 ## 3. Register Theme
 
 Add to `THEMES` array in `src/components/themes/theme.config.ts`:
+
 ```typescript
 { name: 'Your Theme', value: 'your-theme' }
 ```
@@ -130,6 +133,7 @@ The `value` must exactly match the `data-theme` attribute in your CSS.
 Only if using a Google Font not already loaded.
 
 In `src/components/themes/font.config.ts`:
+
 ```typescript
 import { Your_Font } from 'next/font/google';
 
@@ -146,6 +150,7 @@ export const fontVariables = cn(
 ```
 
 In your theme CSS, use the font's **display name** (not the CSS variable):
+
 ```css
 --font-sans: 'Your Font', sans-serif;
 ```
@@ -153,6 +158,7 @@ In your theme CSS, use the font's **display name** (not the CSS variable):
 ## 5. Set as Default (Optional)
 
 In `src/components/themes/theme.config.ts`:
+
 ```typescript
 export const DEFAULT_THEME = 'your-theme';
 ```
@@ -166,6 +172,7 @@ Optional: `--chart-*`, `--sidebar-*`, `--font-*`, `--shadow-*`, `--tracking-norm
 ## Color Format Reference
 
 OKLCH: `oklch(lightness chroma hue)`
+
 - Lightness: 0-1 (0=black, 1=white)
 - Chroma: 0+ (0=gray, higher=saturated)
 - Hue: 0-360 (0=red, 120=green, 240=blue)

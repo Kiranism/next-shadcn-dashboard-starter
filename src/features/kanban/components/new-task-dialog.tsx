@@ -38,22 +38,11 @@ export default function NewTaskDialog() {
       <DialogContent className='sm:max-w-[425px]'>
         <DialogHeader>
           <DialogTitle>Add New Task</DialogTitle>
-          <DialogDescription>
-            What do you want to get done today?
-          </DialogDescription>
+          <DialogDescription>What do you want to get done today?</DialogDescription>
         </DialogHeader>
-        <form
-          id='task-form'
-          className='grid gap-4 py-4'
-          onSubmit={handleSubmit}
-        >
+        <form id='task-form' className='grid gap-4 py-4' onSubmit={handleSubmit}>
           <div className='grid grid-cols-4 items-center gap-4'>
-            <Input
-              id='title'
-              name='title'
-              placeholder='Task title...'
-              className='col-span-4'
-            />
+            <Input id='title' name='title' placeholder='Task title...' className='col-span-4' />
           </div>
           <div className='grid grid-cols-4 items-center gap-4'>
             <Textarea

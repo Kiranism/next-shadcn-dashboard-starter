@@ -18,11 +18,7 @@ import {
   InputOTPSlot,
   InputOTPSeparator
 } from '@/components/ui/input-otp';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger
-} from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Command,
   CommandEmpty,
@@ -288,8 +284,7 @@ export default function DemoForm() {
       onSubmit: demoFormSchema
     },
     onSubmit: ({ value }) => {
-      console.log('Form submitted:', value);
-      alert('Form submitted successfully! Check console for data.');
+      alert('Form submitted successfully!');
     }
   });
 
@@ -309,9 +304,7 @@ export default function DemoForm() {
     <div className='grid grid-cols-1 gap-6 xl:grid-cols-[1fr_320px]'>
       <Card>
         <CardHeader>
-          <CardTitle className='text-2xl font-bold'>
-            All Form Inputs Demo
-          </CardTitle>
+          <CardTitle className='text-2xl font-bold'>All Form Inputs Demo</CardTitle>
           <p className='text-muted-foreground'>
             Every possible form input — built with TanStack Form + shadcn/ui
           </p>
@@ -329,9 +322,7 @@ export default function DemoForm() {
                   required
                   placeholder='John Doe'
                   validators={{
-                    onBlur: z
-                      .string()
-                      .min(2, 'Name must be at least 2 characters')
+                    onBlur: z.string().min(2, 'Name must be at least 2 characters')
                   }}
                 />
                 {/* Async validation: simulated server-side email check */}
@@ -362,9 +353,7 @@ export default function DemoForm() {
                   type='password'
                   placeholder='Min 8 characters'
                   validators={{
-                    onBlur: z
-                      .string()
-                      .min(8, 'Password must be at least 8 characters')
+                    onBlur: z.string().min(8, 'Password must be at least 8 characters')
                   }}
                 />
                 <FormTextField
@@ -386,9 +375,7 @@ export default function DemoForm() {
                   type='tel'
                   placeholder='+1 (555) 000-0000'
                   validators={{
-                    onBlur: z
-                      .string()
-                      .min(10, 'Phone must be at least 10 digits')
+                    onBlur: z.string().min(10, 'Phone must be at least 10 digits')
                   }}
                 />
                 <FormTextField
@@ -408,9 +395,7 @@ export default function DemoForm() {
                 maxLength={500}
                 rows={4}
                 validators={{
-                  onBlur: z
-                    .string()
-                    .min(10, 'Bio must be at least 10 characters')
+                  onBlur: z.string().min(10, 'Bio must be at least 10 characters')
                 }}
               />
 
@@ -434,7 +419,7 @@ export default function DemoForm() {
                       // In a real form with state/city fields:
                       //   fieldApi.form.setFieldValue('state', '');
                       //   fieldApi.form.setFieldValue('city', '');
-                      console.log('Country changed to:', value);
+                      void value;
                     }
                   }}
                 />
@@ -476,10 +461,7 @@ export default function DemoForm() {
                       <FieldDescription>Select all that apply</FieldDescription>
                       <div className='grid grid-cols-2 gap-3 md:grid-cols-3'>
                         {interestOptions.map((opt) => (
-                          <div
-                            key={opt.value}
-                            className='flex items-center space-x-2'
-                          >
+                          <div key={opt.value} className='flex items-center space-x-2'>
                             <Checkbox
                               id={`interests-${opt.value}`}
                               checked={values.includes(opt.value)}
@@ -492,9 +474,7 @@ export default function DemoForm() {
                                 }
                               }}
                             />
-                            <Label htmlFor={`interests-${opt.value}`}>
-                              {opt.label}
-                            </Label>
+                            <Label htmlFor={`interests-${opt.value}`}>{opt.label}</Label>
                           </div>
                         ))}
                       </div>
@@ -502,8 +482,7 @@ export default function DemoForm() {
                         <div className='flex flex-wrap gap-2'>
                           {values.map((v) => (
                             <Badge key={v} variant='secondary'>
-                              {interestOptions.find((o) => o.value === v)
-                                ?.label || v}
+                              {interestOptions.find((o) => o.value === v)?.label || v}
                             </Badge>
                           ))}
                         </div>
@@ -549,9 +528,7 @@ export default function DemoForm() {
                           type='multiple'
                           variant='outline'
                           value={values}
-                          onValueChange={(val) =>
-                            field.form.setFieldValue('formatting', val)
-                          }
+                          onValueChange={(val) => field.form.setFieldValue('formatting', val)}
                         >
                           <ToggleGroupItem value='bold' aria-label='Bold'>
                             <Icons.bold className='h-4 w-4' />
@@ -559,16 +536,11 @@ export default function DemoForm() {
                           <ToggleGroupItem value='italic' aria-label='Italic'>
                             <Icons.italic className='h-4 w-4' />
                           </ToggleGroupItem>
-                          <ToggleGroupItem
-                            value='underline'
-                            aria-label='Underline'
-                          >
+                          <ToggleGroupItem value='underline' aria-label='Underline'>
                             <Icons.underline className='h-4 w-4' />
                           </ToggleGroupItem>
                         </ToggleGroup>
-                        <FieldDescription>
-                          Multi-select toggle group
-                        </FieldDescription>
+                        <FieldDescription>Multi-select toggle group</FieldDescription>
                       </field.Field>
                     </field.FieldSet>
                   );
@@ -583,13 +555,8 @@ export default function DemoForm() {
                     <field.Field orientation='horizontal'>
                       <Checkbox
                         checked={field.state.value}
-                        onCheckedChange={(checked) =>
-                          field.handleChange(checked as boolean)
-                        }
-                        aria-invalid={
-                          field.state.meta.isTouched &&
-                          !field.state.meta.isValid
-                        }
+                        onCheckedChange={(checked) => field.handleChange(checked as boolean)}
+                        aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
                       />
                       <field.FieldContent>
                         <field.FieldLabel className='space-y-1 leading-none'>
@@ -663,9 +630,7 @@ export default function DemoForm() {
                   children={(field) => (
                     <field.FieldSet>
                       <field.Field>
-                        <field.FieldLabel htmlFor={field.name}>
-                          Event Time
-                        </field.FieldLabel>
+                        <field.FieldLabel htmlFor={field.name}>Event Time</field.FieldLabel>
                         <Input
                           id={field.name}
                           type='time'
@@ -769,9 +734,7 @@ export default function DemoForm() {
                   children={(field) => (
                     <field.FieldSet>
                       <field.Field>
-                        <field.FieldLabel htmlFor={field.name}>
-                          Favorite Color
-                        </field.FieldLabel>
+                        <field.FieldLabel htmlFor={field.name}>Favorite Color</field.FieldLabel>
                         <div className='flex items-center gap-3'>
                           <input
                             id={field.name}
@@ -787,9 +750,7 @@ export default function DemoForm() {
                             placeholder='#000000'
                           />
                         </div>
-                        <FieldDescription>
-                          Native color picker with hex
-                        </FieldDescription>
+                        <FieldDescription>Native color picker with hex</FieldDescription>
                       </field.Field>
                     </field.FieldSet>
                   )}
@@ -811,9 +772,7 @@ export default function DemoForm() {
                           onPush={(val) => field.pushValue(val)}
                           onRemove={(idx) => field.removeValue(idx)}
                         />
-                        <FieldDescription>
-                          Press Enter or click Add to create tags
-                        </FieldDescription>
+                        <FieldDescription>Press Enter or click Add to create tags</FieldDescription>
                       </field.Field>
                       <field.FieldError />
                     </field.FieldSet>
@@ -843,7 +802,7 @@ export default function DemoForm() {
                 >
                   Reset
                 </Button>
-                <form.SubmitButton label='Submit Form' className='flex-1' />
+                <form.SubmitButton className='flex-1'>Submit Form</form.SubmitButton>
               </div>
             </form.Form>
           </form.AppForm>

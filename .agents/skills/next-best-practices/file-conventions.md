@@ -27,16 +27,16 @@ app/
 
 ## Special Files
 
-| File | Purpose |
-|------|---------|
-| `page.tsx` | UI for a route segment |
-| `layout.tsx` | Shared UI for segment and children |
-| `loading.tsx` | Loading UI (Suspense boundary) |
-| `error.tsx` | Error UI (Error boundary) |
-| `not-found.tsx` | 404 UI |
-| `route.ts` | API endpoint |
-| `template.tsx` | Like layout but re-renders on navigation |
-| `default.tsx` | Fallback for parallel routes |
+| File            | Purpose                                  |
+| --------------- | ---------------------------------------- |
+| `page.tsx`      | UI for a route segment                   |
+| `layout.tsx`    | Shared UI for segment and children       |
+| `loading.tsx`   | Loading UI (Suspense boundary)           |
+| `error.tsx`     | Error UI (Error boundary)                |
+| `not-found.tsx` | 404 UI                                   |
+| `route.ts`      | API endpoint                             |
+| `template.tsx`  | Like layout but re-renders on navigation |
+| `default.tsx`   | Fallback for parallel routes             |
 
 ## Route Segments
 
@@ -74,6 +74,7 @@ app/
 ```
 
 Conventions:
+
 - `(.)` - same level
 - `(..)` - one level up
 - `(..)(..)` - two levels up
@@ -105,7 +106,7 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/api/:path*'],
+  matcher: ['/dashboard/:path*', '/api/:path*']
 };
 ```
 
@@ -124,14 +125,14 @@ export function proxy(request: NextRequest) {
 }
 
 export const proxyConfig = {
-  matcher: ['/dashboard/:path*', '/api/:path*'],
+  matcher: ['/dashboard/:path*', '/api/:path*']
 };
 ```
 
-| Version | File | Export | Config |
-|---------|------|--------|--------|
-| v14-15 | `middleware.ts` | `middleware()` | `config` |
-| v16+ | `proxy.ts` | `proxy()` | `proxyConfig` |
+| Version | File            | Export         | Config        |
+| ------- | --------------- | -------------- | ------------- |
+| v14-15  | `middleware.ts` | `middleware()` | `config`      |
+| v16+    | `proxy.ts`      | `proxy()`      | `proxyConfig` |
 
 **Migration**: Run `npx @next/codemod@latest upgrade` to auto-rename.
 

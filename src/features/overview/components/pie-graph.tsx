@@ -2,13 +2,7 @@
 
 import { LabelList, Pie, PieChart } from 'recharts';
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ChartConfig,
   ChartContainer,
@@ -71,9 +65,7 @@ export function PieGraph() {
           className='[&_.recharts-text]:fill-background mx-auto aspect-square max-h-[300px] min-h-[250px]'
         >
           <PieChart>
-            <ChartTooltip
-              content={<ChartTooltipContent nameKey='visitors' hideLabel />}
-            />
+            <ChartTooltip content={<ChartTooltipContent nameKey='visitors' hideLabel />} />
             <Pie
               data={chartData}
               innerRadius={30}

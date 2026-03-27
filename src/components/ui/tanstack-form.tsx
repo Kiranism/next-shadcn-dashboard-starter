@@ -18,11 +18,7 @@ import {
   FieldSeparator,
   FieldTitle
 } from '@/components/ui/field';
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput
-} from '@/components/ui/input-group';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group';
 import {
   TextField,
   TextareaField,
@@ -41,7 +37,6 @@ import {
   FormSliderField,
   FormFileUploadField
 } from '@/components/forms/fields';
-import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import {
   fieldContext,
@@ -74,10 +69,7 @@ function Form({
   return (
     <form
       onSubmit={handleSubmit}
-      className={cn(
-        'mx-auto flex w-full flex-col gap-2 p-2 md:p-5',
-        props.className
-      )}
+      className={cn('mx-auto flex w-full flex-col gap-2 p-2 md:p-5', props.className)}
       noValidate
       {...props}
     >
@@ -87,29 +79,24 @@ function Form({
 }
 
 function SubmitButton({
-  label,
+  children,
   className,
   size,
   ...props
-}: React.ComponentProps<'button'> &
-  VariantProps<typeof buttonVariants> & {
-    label: string;
-  }) {
+}: React.ComponentProps<'button'> & VariantProps<typeof buttonVariants>) {
   const form = useFormContext();
   return (
-    <form.Subscribe
-      selector={(state) => [state.canSubmit, state.isSubmitting] as const}
-    >
+    <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting] as const}>
       {([canSubmit, isSubmitting]) => (
         <Button
           className={className}
           size={size}
           type='submit'
           disabled={!canSubmit}
+          isLoading={isSubmitting}
           {...props}
         >
-          {isSubmitting && <Spinner />}
-          {label}
+          {children}
         </Button>
       )}
     </form.Subscribe>
@@ -126,13 +113,7 @@ function StepButton({
     handleMovement: () => void;
   }) {
   return (
-    <Button
-      size='sm'
-      variant='ghost'
-      type='button'
-      onClick={handleMovement}
-      {...props}
-    >
+    <Button size='sm' variant='ghost' type='button' onClick={handleMovement} {...props}>
       {label}
     </Button>
   );
@@ -216,27 +197,13 @@ function useFormFields<TValues extends Record<string, unknown>>() {
   type Typed<C> = WithTypedName<C, TValues>;
   return {
     FormTextField: FormTextField as unknown as Typed<typeof FormTextField>,
-    FormTextareaField: FormTextareaField as unknown as Typed<
-      typeof FormTextareaField
-    >,
-    FormSelectField: FormSelectField as unknown as Typed<
-      typeof FormSelectField
-    >,
-    FormCheckboxField: FormCheckboxField as unknown as Typed<
-      typeof FormCheckboxField
-    >,
-    FormSwitchField: FormSwitchField as unknown as Typed<
-      typeof FormSwitchField
-    >,
-    FormRadioGroupField: FormRadioGroupField as unknown as Typed<
-      typeof FormRadioGroupField
-    >,
-    FormSliderField: FormSliderField as unknown as Typed<
-      typeof FormSliderField
-    >,
-    FormFileUploadField: FormFileUploadField as unknown as Typed<
-      typeof FormFileUploadField
-    >
+    FormTextareaField: FormTextareaField as unknown as Typed<typeof FormTextareaField>,
+    FormSelectField: FormSelectField as unknown as Typed<typeof FormSelectField>,
+    FormCheckboxField: FormCheckboxField as unknown as Typed<typeof FormCheckboxField>,
+    FormSwitchField: FormSwitchField as unknown as Typed<typeof FormSwitchField>,
+    FormRadioGroupField: FormRadioGroupField as unknown as Typed<typeof FormRadioGroupField>,
+    FormSliderField: FormSliderField as unknown as Typed<typeof FormSliderField>,
+    FormFileUploadField: FormFileUploadField as unknown as Typed<typeof FormFileUploadField>
   };
 }
 

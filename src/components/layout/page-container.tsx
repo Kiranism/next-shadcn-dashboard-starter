@@ -64,9 +64,7 @@ export default function PageContainer({
             description={pageDescription ?? ''}
             infoContent={infoContent}
           />
-          {pageHeaderAction && (
-            <div className='shrink-0'>{pageHeaderAction}</div>
-          )}
+          {pageHeaderAction && <div className='shrink-0'>{pageHeaderAction}</div>}
         </div>
       )}
       {content}

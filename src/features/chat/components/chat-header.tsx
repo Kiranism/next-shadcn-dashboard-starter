@@ -34,12 +34,8 @@ export function ChatHeader({ conversation }: ChatHeaderProps) {
           />
         </div>
         <div>
-          <p className='text-foreground text-sm font-semibold sm:text-base'>
-            {conversation.name}
-          </p>
-          <p className='text-muted-foreground text-xs sm:text-sm'>
-            {conversation.title}
-          </p>
+          <p className='text-foreground text-sm font-semibold sm:text-base'>{conversation.name}</p>
+          <p className='text-muted-foreground text-xs sm:text-sm'>{conversation.title}</p>
         </div>
       </div>
 

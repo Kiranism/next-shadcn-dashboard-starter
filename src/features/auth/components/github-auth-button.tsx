@@ -9,12 +9,7 @@ export default function GithubSignInButton() {
   const callbackUrl = searchParams.get('callbackUrl');
 
   return (
-    <Button
-      className='w-full'
-      variant='outline'
-      type='button'
-      onClick={() => console.log('continue with github clicked')}
-    >
+    <Button className='w-full' variant='outline' type='button' onClick={() => void 0}>
       <Icons.github className='mr-2 h-4 w-4' />
       Continue with Github
     </Button>

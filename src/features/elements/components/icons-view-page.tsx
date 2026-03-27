@@ -45,9 +45,7 @@ export default function IconsViewPage() {
               className='hover:bg-accent flex flex-col items-center gap-2 rounded-lg border p-4 text-center transition-colors'
             >
               <IconComponent className='h-6 w-6' />
-              <span className='text-muted-foreground text-xs break-all'>
-                {name}
-              </span>
+              <span className='text-muted-foreground text-xs break-all'>{name}</span>
             </div>
           ))}
         </div>

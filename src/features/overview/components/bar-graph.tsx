@@ -2,13 +2,7 @@
 
 import { Bar, BarChart, XAxis } from 'recharts';
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ChartConfig,
   ChartContainer,
@@ -144,13 +138,7 @@ const DottedBackgroundPattern = () => {
       height='10'
       patternUnits='userSpaceOnUse'
     >
-      <circle
-        className='dark:text-muted/40 text-muted'
-        cx='2'
-        cy='2'
-        r='1'
-        fill='currentColor'
-      />
+      <circle className='dark:text-muted/40 text-muted' cx='2' cy='2' r='1' fill='currentColor' />
     </pattern>
   );
 };

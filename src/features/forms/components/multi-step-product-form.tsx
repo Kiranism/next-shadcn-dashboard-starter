@@ -50,17 +50,11 @@ const Step1Group = withFieldGroup({
     return (
       <div className='space-y-4'>
         <h3 className='text-lg font-semibold'>Basic Info</h3>
-        <FieldDescription>
-          Enter the product name, category, and price.
-        </FieldDescription>
+        <FieldDescription>Enter the product name, category, and price.</FieldDescription>
 
         <group.AppField name='name'>
           {(field) => (
-            <field.TextField
-              label='Product Name'
-              required
-              placeholder='Enter product name'
-            />
+            <field.TextField label='Product Name' required placeholder='Enter product name' />
           )}
         </group.AppField>
 
@@ -124,9 +118,7 @@ const Step3Group = withFieldGroup({
     return (
       <div className='space-y-4'>
         <h3 className='text-lg font-semibold'>Review & Submit</h3>
-        <FieldDescription>
-          Review the details below before submitting.
-        </FieldDescription>
+        <FieldDescription>Review the details below before submitting.</FieldDescription>
       </div>
     );
   }
@@ -149,29 +141,19 @@ function ReviewSummary({
       <Separator />
       <div className='grid gap-3'>
         <div>
-          <p className='text-muted-foreground text-xs font-medium uppercase'>
-            Name
-          </p>
+          <p className='text-muted-foreground text-xs font-medium uppercase'>Name</p>
           <p className='text-sm'>{values.name || '—'}</p>
         </div>
         <div>
-          <p className='text-muted-foreground text-xs font-medium uppercase'>
-            Category
-          </p>
+          <p className='text-muted-foreground text-xs font-medium uppercase'>Category</p>
           <p className='text-sm capitalize'>{values.category || '—'}</p>
         </div>
         <div>
-          <p className='text-muted-foreground text-xs font-medium uppercase'>
-            Price
-          </p>
-          <p className='text-sm'>
-            {values.price != null ? `$${values.price}` : '—'}
-          </p>
+          <p className='text-muted-foreground text-xs font-medium uppercase'>Price</p>
+          <p className='text-sm'>{values.price != null ? `$${values.price}` : '—'}</p>
         </div>
         <div>
-          <p className='text-muted-foreground text-xs font-medium uppercase'>
-            Description
-          </p>
+          <p className='text-muted-foreground text-xs font-medium uppercase'>Description</p>
           <p className='text-sm'>{values.description || '—'}</p>
         </div>
       </div>
@@ -211,7 +193,6 @@ export default function MultiStepProductForm() {
       onDynamicAsyncDebounceMs: 500
     },
     onSubmit: ({ value }) => {
-      console.log('Multi-step form submitted:', value);
       toast.success('Product created successfully!');
     }
   });
@@ -220,12 +201,7 @@ export default function MultiStepProductForm() {
   const formValues = useStore(form.store, (state) => state.values);
 
   const groups: Record<number, React.ReactNode> = {
-    1: (
-      <Step1Group
-        form={form}
-        fields={{ name: 'name', category: 'category', price: 'price' }}
-      />
-    ),
+    1: <Step1Group form={form} fields={{ name: 'name', category: 'category', price: 'price' }} />,
     2: <Step2Group form={form} fields={{ description: 'description' }} />,
     3: (
       <>
@@ -249,9 +225,7 @@ export default function MultiStepProductForm() {
             <span className='text-muted-foreground text-sm'>
               Step {currentStep} of {Object.keys(groups).length}
             </span>
-            <Progress
-              value={(currentStep / Object.keys(groups).length) * 100}
-            />
+            <Progress value={(currentStep / Object.keys(groups).length) * 100} />
           </div>
 
           <AnimatePresence mode='popLayout'>
@@ -294,7 +268,7 @@ export default function MultiStepProductForm() {
                     Reset
                   </Button>
                 )}
-                <form.SubmitButton label='Submit' />
+                <form.SubmitButton>Submit</form.SubmitButton>
               </div>
             ) : (
               <div className='flex w-full items-center justify-end gap-3 pt-3'>

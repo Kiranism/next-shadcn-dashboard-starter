@@ -32,6 +32,7 @@ export const runtime = 'edge'
 ## Detection
 
 **Before adding `runtime = 'edge'`**, check:
+
 1. Does the project already use Edge runtime?
 2. Is there a specific latency requirement?
 3. Are all dependencies Edge-compatible?

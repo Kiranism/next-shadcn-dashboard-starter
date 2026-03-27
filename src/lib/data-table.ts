@@ -1,8 +1,4 @@
-import type {
-  ExtendedColumnFilter,
-  FilterOperator,
-  FilterVariant
-} from '@/types/data-table';
+import type { ExtendedColumnFilter, FilterOperator, FilterVariant } from '@/types/data-table';
 import type { Column } from '@tanstack/react-table';
 
 import { dataTableConfig } from '@/config/data-table';
@@ -13,10 +9,8 @@ export function getCommonPinningStyles<TData>({
   column: Column<TData>;
 }): React.CSSProperties {
   const isPinned = column.getIsPinned();
-  const isLastLeftPinnedColumn =
-    isPinned === 'left' && column.getIsLastColumn('left');
-  const isFirstRightPinnedColumn =
-    isPinned === 'right' && column.getIsFirstColumn('right');
+  const isLastLeftPinnedColumn = isPinned === 'left' && column.getIsLastColumn('left');
+  const isFirstRightPinnedColumn = isPinned === 'right' && column.getIsFirstColumn('right');
 
   return {
     boxShadow: isLastLeftPinnedColumn
@@ -34,10 +28,7 @@ export function getCommonPinningStyles<TData>({
 }
 
 export function getFilterOperators(filterVariant: FilterVariant) {
-  const operatorMap: Record<
-    FilterVariant,
-    { label: string; value: FilterOperator }[]
-  > = {
+  const operatorMap: Record<FilterVariant, { label: string; value: FilterOperator }[]> = {
     text: dataTableConfig.textOperators,
     number: dataTableConfig.numericOperators,
     range: dataTableConfig.numericOperators,
@@ -66,8 +57,6 @@ export function getValidFilters<TData>(
       filter.operator === 'isNotEmpty' ||
       (Array.isArray(filter.value)
         ? filter.value.length > 0
-        : filter.value !== '' &&
-          filter.value !== null &&
-          filter.value !== undefined)
+        : filter.value !== '' && filter.value !== null && filter.value !== undefined)
   );
 }

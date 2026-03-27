@@ -20,19 +20,14 @@ interface ConversationListProps {
   onSelect: (id: string) => void;
 }
 
-export function ConversationList({
-  conversations,
-  selectedId,
-  onSelect
-}: ConversationListProps) {
+export function ConversationList({ conversations, selectedId, onSelect }: ConversationListProps) {
   const [search, setSearch] = useState('');
 
   const filtered = useMemo(() => {
     if (!search.trim()) return conversations;
     const q = search.toLowerCase();
     return conversations.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) || c.title.toLowerCase().includes(q)
+      (c) => c.name.toLowerCase().includes(q) || c.title.toLowerCase().includes(q)
     );
   }, [conversations, search]);
 
@@ -78,14 +73,11 @@ export function ConversationList({
         role='list'
       >
         {filtered.length === 0 ? (
-          <p className='text-muted-foreground py-8 text-center text-xs'>
-            No conversations found
-          </p>
+          <p className='text-muted-foreground py-8 text-center text-xs'>No conversations found</p>
         ) : null}
         {filtered.map((conversation) => {
           const isActive = conversation.id === selectedId;
-          const lastMessage =
-            conversation.messages[conversation.messages.length - 1];
+          const lastMessage = conversation.messages[conversation.messages.length - 1];
           return (
             <motion.button
               key={conversation.id}
@@ -111,20 +103,14 @@ export function ConversationList({
                     'border-background absolute right-0 bottom-0 inline-flex h-3 w-3 rounded-full border-2',
                     statusDotColor[conversation.status]
                   )}
-                  aria-label={
-                    conversation.status === 'online' ? 'Online' : 'Offline'
-                  }
+                  aria-label={conversation.status === 'online' ? 'Online' : 'Offline'}
                 />
               </div>
               <div className='min-w-0 flex-1 space-y-1'>
                 <div className='flex items-start justify-between gap-2'>
                   <div className='min-w-0 flex-1'>
-                    <p className='text-foreground text-sm font-semibold'>
-                      {conversation.name}
-                    </p>
-                    <p className='text-muted-foreground text-xs'>
-                      {conversation.title}
-                    </p>
+                    <p className='text-foreground text-sm font-semibold'>{conversation.name}</p>
+                    <p className='text-muted-foreground text-xs'>{conversation.title}</p>
                   </div>
                   {lastMessage && (
                     <span className='text-muted-foreground shrink-0 text-[0.65rem]'>
@@ -137,9 +123,7 @@ export function ConversationList({
                     {lastMessage.author}: {lastMessage.text}
                   </p>
                 ) : (
-                  <p className='text-muted-foreground text-xs'>
-                    No messages yet
-                  </p>
+                  <p className='text-muted-foreground text-xs'>No messages yet</p>
                 )}
               </div>
               {conversation.unread > 0 && (

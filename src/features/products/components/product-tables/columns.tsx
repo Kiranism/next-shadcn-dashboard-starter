@@ -1,7 +1,7 @@
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-header';
-import { Product } from '@/constants/data';
+import type { Product } from '../../api/types';
 import { Column, ColumnDef } from '@tanstack/react-table';
 import { Icons } from '@/components/icons';
 import Image from 'next/image';
@@ -19,6 +19,7 @@ export const columns: ColumnDef<Product>[] = [
             src={row.getValue('photo_url')}
             alt={row.getValue('name')}
             fill
+            sizes='80px'
             className='rounded-lg'
           />
         </div>

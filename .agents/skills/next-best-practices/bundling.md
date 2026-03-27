@@ -21,21 +21,21 @@ If the package is only needed on client:
 
 ```tsx
 // Bad: Fails - package uses window
-import SomeChart from 'some-chart-library'
+import SomeChart from 'some-chart-library';
 
 export default function Page() {
-  return <SomeChart />
+  return <SomeChart />;
 }
 
 // Good: Use dynamic import with ssr: false
-import dynamic from 'next/dynamic'
+import dynamic from 'next/dynamic';
 
 const SomeChart = dynamic(() => import('some-chart-library'), {
-  ssr: false,
-})
+  ssr: false
+});
 
 export default function Page() {
-  return <SomeChart />
+  return <SomeChart />;
 }
 ```
 
@@ -46,11 +46,12 @@ For packages that should run on server but have bundling issues:
 ```js
 // next.config.js
 module.exports = {
-  serverExternalPackages: ['problematic-package'],
-}
+  serverExternalPackages: ['problematic-package']
+};
 ```
 
 Use this for:
+
 - Packages with native bindings (sharp, bcrypt)
 - Packages that don't bundle well (some ORMs)
 - Packages with circular dependencies
@@ -61,19 +62,19 @@ Wrap the entire usage in a client component:
 
 ```tsx
 // components/ChartWrapper.tsx
-'use client'
+'use client';
 
-import { Chart } from 'chart-library'
+import { Chart } from 'chart-library';
 
 export function ChartWrapper(props) {
-  return <Chart {...props} />
+  return <Chart {...props} />;
 }
 
 // app/page.tsx (server component)
-import { ChartWrapper } from '@/components/ChartWrapper'
+import { ChartWrapper } from '@/components/ChartWrapper';
 
 export default function Page() {
-  return <ChartWrapper data={data} />
+  return <ChartWrapper data={data} />;
 }
 ```
 
@@ -83,13 +84,13 @@ Import CSS files instead of using `<link>` tags. Next.js handles bundling and op
 
 ```tsx
 // Bad: Manual link tag
-<link rel="stylesheet" href="/styles.css" />
+<link rel='stylesheet' href='/styles.css' />;
 
 // Good: Import CSS
-import './styles.css'
+import './styles.css';
 
 // Good: CSS Modules
-import styles from './Button.module.css'
+import styles from './Button.module.css';
 ```
 
 ## Polyfills
@@ -100,7 +101,7 @@ Already included: `Array.from`, `Object.assign`, `Promise`, `fetch`, `Map`, `Set
 
 ```tsx
 // Bad: Redundant polyfills
-<script src="https://polyfill.io/v3/polyfill.min.js?features=fetch,Promise,Array.from" />
+<script src='https://polyfill.io/v3/polyfill.min.js?features=fetch,Promise,Array.from' />
 
 // Good: Next.js includes these automatically
 ```
@@ -120,22 +121,22 @@ Module not found: ESM packages need to be imported
 ```js
 // next.config.js
 module.exports = {
-  transpilePackages: ['some-esm-package', 'another-package'],
-}
+  transpilePackages: ['some-esm-package', 'another-package']
+};
 ```
 
 ## Common Problematic Packages
 
-| Package | Issue | Solution |
-|---------|-------|----------|
-| `sharp` | Native bindings | `serverExternalPackages: ['sharp']` |
-| `bcrypt` | Native bindings | `serverExternalPackages: ['bcrypt']` or use `bcryptjs` |
-| `canvas` | Native bindings | `serverExternalPackages: ['canvas']` |
-| `recharts` | Uses window | `dynamic(() => import('recharts'), { ssr: false })` |
-| `react-quill` | Uses document | `dynamic(() => import('react-quill'), { ssr: false })` |
-| `mapbox-gl` | Uses window | `dynamic(() => import('mapbox-gl'), { ssr: false })` |
-| `monaco-editor` | Uses window | `dynamic(() => import('@monaco-editor/react'), { ssr: false })` |
-| `lottie-web` | Uses document | `dynamic(() => import('lottie-react'), { ssr: false })` |
+| Package         | Issue           | Solution                                                        |
+| --------------- | --------------- | --------------------------------------------------------------- |
+| `sharp`         | Native bindings | `serverExternalPackages: ['sharp']`                             |
+| `bcrypt`        | Native bindings | `serverExternalPackages: ['bcrypt']` or use `bcryptjs`          |
+| `canvas`        | Native bindings | `serverExternalPackages: ['canvas']`                            |
+| `recharts`      | Uses window     | `dynamic(() => import('recharts'), { ssr: false })`             |
+| `react-quill`   | Uses document   | `dynamic(() => import('react-quill'), { ssr: false })`          |
+| `mapbox-gl`     | Uses window     | `dynamic(() => import('mapbox-gl'), { ssr: false })`            |
+| `monaco-editor` | Uses window     | `dynamic(() => import('@monaco-editor/react'), { ssr: false })` |
+| `lottie-web`    | Uses document   | `dynamic(() => import('lottie-react'), { ssr: false })`         |
 
 ## Bundle Analysis
 
@@ -146,6 +147,7 @@ next experimental-analyze
 ```
 
 This opens an interactive UI to:
+
 - Filter by route, environment (client/server), and type
 - Inspect module sizes and import chains
 - View treemap visualization
@@ -173,8 +175,8 @@ module.exports = {
   // Bad: Webpack-only - migrate away from this
   webpack: (config) => {
     // custom webpack config
-  },
-}
+  }
+};
 ```
 
 Reference: https://nextjs.org/docs/app/building-your-application/upgrading/from-webpack-to-turbopack

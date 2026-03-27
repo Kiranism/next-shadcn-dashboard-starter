@@ -28,8 +28,8 @@ export function PokemonInfo() {
         <CardHeader>
           <CardTitle>Pick a Pokemon</CardTitle>
           <CardDescription>
-            Each selection triggers <code>useSuspenseQuery</code> — cached
-            results are instant, new fetches show the Suspense fallback.
+            Each selection triggers <code>useSuspenseQuery</code> — cached results are instant, new
+            fetches show the Suspense fallback.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -79,9 +79,7 @@ export function PokemonInfo() {
               {data.stats.map((s) => (
                 <div key={s.stat.name} className='space-y-1'>
                   <div className='flex justify-between text-sm'>
-                    <span className='text-muted-foreground capitalize'>
-                      {s.stat.name}
-                    </span>
+                    <span className='text-muted-foreground capitalize'>{s.stat.name}</span>
                     <span className='font-medium'>{s.base_stat}</span>
                   </div>
                   <Progress value={Math.min(s.base_stat, 150) / 1.5} />

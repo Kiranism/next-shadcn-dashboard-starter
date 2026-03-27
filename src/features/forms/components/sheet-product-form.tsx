@@ -45,8 +45,7 @@ export default function SheetProductForm() {
       onSubmit: productSchema as any
     },
     onSubmit: ({ value }) => {
-      console.log('Sheet form submitted:', value);
-      alert('Product created successfully! Check console for data.');
+      alert('Product created successfully!');
       setOpen(false);
       form.reset();
     }
@@ -63,9 +62,7 @@ export default function SheetProductForm() {
       <SheetContent className='flex flex-col'>
         <SheetHeader>
           <SheetTitle>New Product</SheetTitle>
-          <SheetDescription>
-            Fill in the details to create a new product.
-          </SheetDescription>
+          <SheetDescription>Fill in the details to create a new product.</SheetDescription>
         </SheetHeader>
 
         <div className='flex-1 overflow-auto'>
@@ -74,14 +71,11 @@ export default function SheetProductForm() {
               <form.AppField
                 name='name'
                 children={(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid;
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                     <field.FieldSet>
                       <field.Field>
-                        <field.FieldLabel htmlFor={field.name}>
-                          Product Name *
-                        </field.FieldLabel>
+                        <field.FieldLabel htmlFor={field.name}>Product Name *</field.FieldLabel>
                         <Input
                           id={field.name}
                           name={field.name}
@@ -101,36 +95,24 @@ export default function SheetProductForm() {
               <form.AppField
                 name='category'
                 children={(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid;
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                     <field.FieldSet>
                       <field.Field>
-                        <field.FieldLabel htmlFor={field.name}>
-                          Category *
-                        </field.FieldLabel>
+                        <field.FieldLabel htmlFor={field.name}>Category *</field.FieldLabel>
                         <Select
                           name={field.name}
                           value={field.state.value}
                           onValueChange={field.handleChange}
                         >
-                          <SelectTrigger
-                            id={field.name}
-                            aria-invalid={isInvalid}
-                          >
+                          <SelectTrigger id={field.name} aria-invalid={isInvalid}>
                             <SelectValue placeholder='Select category' />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value='beauty'>
-                              Beauty Products
-                            </SelectItem>
-                            <SelectItem value='electronics'>
-                              Electronics
-                            </SelectItem>
+                            <SelectItem value='beauty'>Beauty Products</SelectItem>
+                            <SelectItem value='electronics'>Electronics</SelectItem>
                             <SelectItem value='home'>Home & Garden</SelectItem>
-                            <SelectItem value='sports'>
-                              Sports & Outdoors
-                            </SelectItem>
+                            <SelectItem value='sports'>Sports & Outdoors</SelectItem>
                           </SelectContent>
                         </Select>
                       </field.Field>
@@ -143,14 +125,11 @@ export default function SheetProductForm() {
               <form.AppField
                 name='price'
                 children={(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid;
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                     <field.FieldSet>
                       <field.Field>
-                        <field.FieldLabel htmlFor={field.name}>
-                          Price *
-                        </field.FieldLabel>
+                        <field.FieldLabel htmlFor={field.name}>Price *</field.FieldLabel>
                         <Input
                           id={field.name}
                           name={field.name}
@@ -161,9 +140,7 @@ export default function SheetProductForm() {
                           onBlur={field.handleBlur}
                           onChange={(e) => {
                             const v = e.target.value;
-                            field.handleChange(
-                              v === '' ? undefined : parseFloat(v)
-                            );
+                            field.handleChange(v === '' ? undefined : parseFloat(v));
                           }}
                           placeholder='Enter price'
                           aria-invalid={isInvalid}
@@ -178,14 +155,11 @@ export default function SheetProductForm() {
               <form.AppField
                 name='description'
                 children={(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid;
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                     <field.FieldSet>
                       <field.Field>
-                        <field.FieldLabel htmlFor={field.name}>
-                          Description *
-                        </field.FieldLabel>
+                        <field.FieldLabel htmlFor={field.name}>Description *</field.FieldLabel>
                         <Textarea
                           id={field.name}
                           name={field.name}
@@ -211,11 +185,7 @@ export default function SheetProductForm() {
         </div>
 
         <SheetFooter>
-          <Button
-            type='button'
-            variant='outline'
-            onClick={() => setOpen(false)}
-          >
+          <Button type='button' variant='outline' onClick={() => setOpen(false)}>
             Cancel
           </Button>
           <Button type='submit' form='sheet-product-form'>

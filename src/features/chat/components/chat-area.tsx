@@ -51,11 +51,7 @@ export function ChatArea({
     const lastMessage = conversation.messages[conversation.messages.length - 1];
     if (!lastMessage) return;
     liveRegionRef.current.textContent =
-      lastMessage.author +
-      ' at ' +
-      lastMessage.timestamp +
-      ': ' +
-      lastMessage.text;
+      lastMessage.author + ' at ' + lastMessage.timestamp + ': ' + lastMessage.text;
   }, [conversation.messages]);
 
   return (
@@ -96,12 +92,7 @@ export function ChatArea({
           />
         </motion.div>
       </AnimatePresence>
-      <div
-        ref={liveRegionRef}
-        className='sr-only'
-        aria-live='polite'
-        aria-atomic='true'
-      />
+      <div ref={liveRegionRef} className='sr-only' aria-live='polite' aria-atomic='true' />
     </>
   );
 }

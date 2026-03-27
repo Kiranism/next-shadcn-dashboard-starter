@@ -116,9 +116,7 @@ export function useFilteredNavItems(items: NavItem[]) {
               if (!accessContext.hasOrg) {
                 return false;
               }
-              if (
-                !accessContext.permissions.includes(childItem.access.permission)
-              ) {
+              if (!accessContext.permissions.includes(childItem.access.permission)) {
                 return false;
               }
             }
@@ -173,9 +171,7 @@ export function useFilteredNavGroups(groups: NavGroup[]) {
       .map((group) => ({
         ...group,
         items: filteredItems.filter((item) =>
-          group.items.some(
-            (gi) => gi.title === item.title && filteredSet.has(gi.title)
-          )
+          group.items.some((gi) => gi.title === item.title && filteredSet.has(gi.title))
         )
       }))
       .filter((group) => group.items.length > 0);

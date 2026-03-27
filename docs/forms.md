@@ -62,12 +62,12 @@ form-context.tsx             fields/*.tsx
 
 **Key files:**
 
-| File | What it provides |
-|------|-----------------|
-| `src/components/ui/form-context.tsx` | Shared primitives — contexts, `useFieldContext`, structural components (`FormFieldSet`, `FormField`, `FormFieldError`), `createFormField`, `FieldConfig` types, `typedField`, `FormErrors`, `scrollToFirstError` |
-| `src/components/ui/tanstack-form.tsx` | Main entry point — `useAppForm`, `useFormFields`, `Form`, `SubmitButton`, `StepButton`, `withForm`, `withFieldGroup` |
-| `src/components/forms/fields/*.tsx` | 8 field components, each exporting a base (`TextField`) and composed (`FormTextField`) variant |
-| `src/components/forms/fields/index.tsx` | Barrel re-exports for all fields |
+| File                                    | What it provides                                                                                                                                                                                                 |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/components/ui/form-context.tsx`    | Shared primitives — contexts, `useFieldContext`, structural components (`FormFieldSet`, `FormField`, `FormFieldError`), `createFormField`, `FieldConfig` types, `typedField`, `FormErrors`, `scrollToFirstError` |
+| `src/components/ui/tanstack-form.tsx`   | Main entry point — `useAppForm`, `useFormFields`, `Form`, `SubmitButton`, `StepButton`, `withForm`, `withFieldGroup`                                                                                             |
+| `src/components/forms/fields/*.tsx`     | 8 field components, each exporting a base (`TextField`) and composed (`FormTextField`) variant                                                                                                                   |
+| `src/components/forms/fields/index.tsx` | Barrel re-exports for all fields                                                                                                                                                                                 |
 
 ---
 
@@ -88,12 +88,12 @@ src/features/products/
 
 **Why split?**
 
-| Concern | File | Benefit |
-|---------|------|---------|
-| **Schema** | `schemas/product.ts` | Reusable in API routes, server actions, data tables, tests — no `'use client'` |
-| **Type** | `schemas/product.ts` | `ProductFormValues` used in form, API, list components — single source of truth |
-| **Options** | `constants/product-options.ts` | Shared between form selects, table filters, search facets |
-| **Form UI** | `components/product-form.tsx` | Pure UI — opens clean, no validation logic clutter |
+| Concern     | File                           | Benefit                                                                         |
+| ----------- | ------------------------------ | ------------------------------------------------------------------------------- |
+| **Schema**  | `schemas/product.ts`           | Reusable in API routes, server actions, data tables, tests — no `'use client'`  |
+| **Type**    | `schemas/product.ts`           | `ProductFormValues` used in form, API, list components — single source of truth |
+| **Options** | `constants/product-options.ts` | Shared between form selects, table filters, search facets                       |
+| **Form UI** | `components/product-form.tsx`  | Pure UI — opens clean, no validation logic clutter                              |
 
 **Schema file example:**
 
@@ -105,7 +105,7 @@ export const productSchema = z.object({
   name: z.string().min(2, 'Product name must be at least 2 characters.'),
   category: z.string().min(1, 'Please select a category'),
   price: z.number({ message: 'Price is required' }),
-  description: z.string().min(10, 'Description must be at least 10 characters.'),
+  description: z.string().min(10, 'Description must be at least 10 characters.')
 });
 
 // Always prefer z.infer — guarantees the type matches the schema exactly.
@@ -170,7 +170,7 @@ import * as z from 'zod';
 
 const schema = z.object({
   name: z.string().min(2, 'Name is required'),
-  email: z.string().email('Invalid email'),
+  email: z.string().email('Invalid email')
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -179,7 +179,7 @@ export default function MyForm() {
   const form = useAppForm({
     defaultValues: { name: '', email: '' } as FormValues,
     validators: { onSubmit: schema },
-    onSubmit: ({ value }) => console.log(value),
+    onSubmit: ({ value }) => console.log(value)
   });
 
   const { FormTextField } = useFormFields<FormValues>();
@@ -187,13 +187,20 @@ export default function MyForm() {
   return (
     <form.AppForm>
       <form.Form>
-        <FormTextField name="name" label="Name" required
+        <FormTextField
+          name='name'
+          label='Name'
+          required
           validators={{ onBlur: z.string().min(2, 'Name is required') }}
         />
-        <FormTextField name="email" label="Email" required type="email"
+        <FormTextField
+          name='email'
+          label='Email'
+          required
+          type='email'
           validators={{ onBlur: z.string().email('Invalid email') }}
         />
-        <form.SubmitButton label="Save" />
+        <form.SubmitButton label='Save' />
       </form.Form>
     </form.AppForm>
   );
@@ -227,15 +234,15 @@ const { FormTextField, FormSelectField } = useFormFields<FormValues>();
 
 **Props available on every `FormXxxField`:**
 
-| Prop | Type | Description |
-|------|------|-------------|
-| `name` | `DeepKeys<T>` (via `useFormFields`) or `string` | Field path |
-| `validators` | `FieldValidatorConfig` | `onBlur`, `onChange`, `onChangeAsync`, `onSubmit`, `onChangeListenTo`, etc. |
-| `asyncDebounceMs` | `number` | Default debounce for all async validators |
-| `listeners` | `FieldListenerConfig` | `onChange`, `onBlur`, `onMount`, `onSubmit` + debounce options |
-| `mode` | `'value' \| 'array'` | Set to `'array'` for array fields |
-| `defaultValue` | `unknown` | Initial value (for dynamically added fields) |
-| ...component props | varies | `label`, `required`, `placeholder`, `options`, etc. |
+| Prop               | Type                                            | Description                                                                 |
+| ------------------ | ----------------------------------------------- | --------------------------------------------------------------------------- |
+| `name`             | `DeepKeys<T>` (via `useFormFields`) or `string` | Field path                                                                  |
+| `validators`       | `FieldValidatorConfig`                          | `onBlur`, `onChange`, `onChangeAsync`, `onSubmit`, `onChangeListenTo`, etc. |
+| `asyncDebounceMs`  | `number`                                        | Default debounce for all async validators                                   |
+| `listeners`        | `FieldListenerConfig`                           | `onChange`, `onBlur`, `onMount`, `onSubmit` + debounce options              |
+| `mode`             | `'value' \| 'array'`                            | Set to `'array'` for array fields                                           |
+| `defaultValue`     | `unknown`                                       | Initial value (for dynamically added fields)                                |
+| ...component props | varies                                          | `label`, `required`, `placeholder`, `options`, etc.                         |
 
 ### Pattern 2: `form.AppField` render prop — Full control
 
@@ -243,7 +250,7 @@ Type-safe names (native TanStack Form). Full field API access. **Use for custom 
 
 ```tsx
 <form.AppField
-  name="framework"                     // ✅ type-safe
+  name='framework' // ✅ type-safe
   validators={{ onBlur: z.string().min(1, 'Required') }}
 >
   {(field) => (
@@ -264,61 +271,61 @@ Type-safe names (native TanStack Form). Full field API access. **Use for custom 
 
 **Components available inside the render prop (`field.XxxField`):**
 
-| Component | Purpose |
-|-----------|---------|
-| `field.FieldSet` | Wrapper — generates unique accessibility IDs |
-| `field.Field` | Container — wires `aria-invalid`, `aria-describedby` |
-| `field.FieldLabel` | `<label>` connected to the field |
-| `field.FieldError` | Renders validation errors (shows after touch or submit) |
-| `field.FieldContent` | Flex container for label + description (horizontal layouts) |
-| `field.FieldDescription` | Helper text below the field |
-| `field.TextField` | Pre-built text input |
-| `field.TextareaField` | Pre-built textarea |
-| `field.SelectField` | Pre-built select |
-| `field.CheckboxField` | Pre-built checkbox |
-| `field.SwitchField` | Pre-built switch |
-| `field.RadioGroupField` | Pre-built radio group |
-| `field.SliderField` | Pre-built slider |
-| `field.FileUploadField` | Pre-built file uploader |
+| Component                | Purpose                                                     |
+| ------------------------ | ----------------------------------------------------------- |
+| `field.FieldSet`         | Wrapper — generates unique accessibility IDs                |
+| `field.Field`            | Container — wires `aria-invalid`, `aria-describedby`        |
+| `field.FieldLabel`       | `<label>` connected to the field                            |
+| `field.FieldError`       | Renders validation errors (shows after touch or submit)     |
+| `field.FieldContent`     | Flex container for label + description (horizontal layouts) |
+| `field.FieldDescription` | Helper text below the field                                 |
+| `field.TextField`        | Pre-built text input                                        |
+| `field.TextareaField`    | Pre-built textarea                                          |
+| `field.SelectField`      | Pre-built select                                            |
+| `field.CheckboxField`    | Pre-built checkbox                                          |
+| `field.SwitchField`      | Pre-built switch                                            |
+| `field.RadioGroupField`  | Pre-built radio group                                       |
+| `field.SliderField`      | Pre-built slider                                            |
+| `field.FileUploadField`  | Pre-built file uploader                                     |
 
 **Field API (`field.state`, `field.handleChange`, etc.):**
 
-| Property/Method | Description |
-|----------------|-------------|
-| `field.state.value` | Current field value |
-| `field.state.meta.isTouched` | User has interacted |
-| `field.state.meta.isDirty` | Value differs from default |
-| `field.state.meta.isValid` | No validation errors |
-| `field.state.meta.isValidating` | Async validation in progress |
-| `field.state.meta.errors` | Array of error messages |
-| `field.handleChange(value)` | Update field value |
-| `field.handleBlur()` | Mark as touched + trigger onBlur validation |
-| `field.pushValue(item)` | Array mode: add item |
-| `field.removeValue(index)` | Array mode: remove item |
-| `field.swapValues(a, b)` | Array mode: swap items |
-| `field.insertValue(index, item)` | Array mode: insert at index |
-| `field.form.setFieldValue(name, val)` | Set another field's value |
-| `field.form.getFieldValue(name)` | Read another field's value |
+| Property/Method                       | Description                                 |
+| ------------------------------------- | ------------------------------------------- |
+| `field.state.value`                   | Current field value                         |
+| `field.state.meta.isTouched`          | User has interacted                         |
+| `field.state.meta.isDirty`            | Value differs from default                  |
+| `field.state.meta.isValid`            | No validation errors                        |
+| `field.state.meta.isValidating`       | Async validation in progress                |
+| `field.state.meta.errors`             | Array of error messages                     |
+| `field.handleChange(value)`           | Update field value                          |
+| `field.handleBlur()`                  | Mark as touched + trigger onBlur validation |
+| `field.pushValue(item)`               | Array mode: add item                        |
+| `field.removeValue(index)`            | Array mode: remove item                     |
+| `field.swapValues(a, b)`              | Array mode: swap items                      |
+| `field.insertValue(index, item)`      | Array mode: insert at index                 |
+| `field.form.setFieldValue(name, val)` | Set another field's value                   |
+| `field.form.getFieldValue(name)`      | Read another field's value                  |
 
 ### Pattern 3: Direct import — No type safety, zero boilerplate
 
 ```tsx
 import { FormTextField } from '@/components/forms/fields';
 
-<FormTextField name="name" label="Name" />   // name is `string` — no type check
+<FormTextField name='name' label='Name' />; // name is `string` — no type check
 ```
 
 ### When to use which
 
-| Scenario | Pattern | Why |
-|----------|---------|-----|
-| Standard fields (text, select, checkbox, etc.) | **Pattern 1** | Type-safe + concise |
-| Custom one-off fields (date picker, OTP, combobox) | **Pattern 2** | Full field API access |
-| Array fields with custom row layout | **Pattern 2** | Need `pushValue`, `removeValue`, sub-fields |
-| Array fields with composed component | **Pattern 1** | Pass `mode="array"` |
-| Multi-step form steps | **Pattern 2** | `group.AppField` + `field.TextField` |
-| Linked field validation (`onChangeListenTo`) | **Pattern 2** | Need `fieldApi` in validator |
-| Quick prototype / dynamic field names | **Pattern 3** | Fastest |
+| Scenario                                           | Pattern       | Why                                         |
+| -------------------------------------------------- | ------------- | ------------------------------------------- |
+| Standard fields (text, select, checkbox, etc.)     | **Pattern 1** | Type-safe + concise                         |
+| Custom one-off fields (date picker, OTP, combobox) | **Pattern 2** | Full field API access                       |
+| Array fields with custom row layout                | **Pattern 2** | Need `pushValue`, `removeValue`, sub-fields |
+| Array fields with composed component               | **Pattern 1** | Pass `mode="array"`                         |
+| Multi-step form steps                              | **Pattern 2** | `group.AppField` + `field.TextField`        |
+| Linked field validation (`onChangeListenTo`)       | **Pattern 2** | Need `fieldApi` in validator                |
+| Quick prototype / dynamic field names              | **Pattern 3** | Fastest                                     |
 
 ---
 
@@ -326,16 +333,16 @@ import { FormTextField } from '@/components/forms/fields';
 
 Each field has two variants:
 
-| Base (for render props) | Composed (for flat use) | Input type |
-|------------------------|------------------------|------------|
-| `TextField` | `FormTextField` | Text, email, password, tel, url, number |
-| `TextareaField` | `FormTextareaField` | Multi-line text with optional character count |
-| `SelectField` | `FormSelectField` | Single-value dropdown (`options` prop) |
-| `CheckboxField` | `FormCheckboxField` | Boolean checkbox with label |
-| `SwitchField` | `FormSwitchField` | Toggle switch with label + description |
-| `RadioGroupField` | `FormRadioGroupField` | Radio button group (`options` prop) |
-| `SliderField` | `FormSliderField` | Range slider with min/max display |
-| `FileUploadField` | `FormFileUploadField` | Drag-and-drop file upload |
+| Base (for render props) | Composed (for flat use) | Input type                                    |
+| ----------------------- | ----------------------- | --------------------------------------------- |
+| `TextField`             | `FormTextField`         | Text, email, password, tel, url, number       |
+| `TextareaField`         | `FormTextareaField`     | Multi-line text with optional character count |
+| `SelectField`           | `FormSelectField`       | Single-value dropdown (`options` prop)        |
+| `CheckboxField`         | `FormCheckboxField`     | Boolean checkbox with label                   |
+| `SwitchField`           | `FormSwitchField`       | Toggle switch with label + description        |
+| `RadioGroupField`       | `FormRadioGroupField`   | Radio button group (`options` prop)           |
+| `SliderField`           | `FormSliderField`       | Range slider with min/max display             |
+| `FileUploadField`       | `FormFileUploadField`   | Drag-and-drop file upload                     |
 
 **TextField** supports `type` prop: `'text'`, `'email'`, `'password'`, `'tel'`, `'url'`, `'number'`. Shows a spinner during async validation.
 
@@ -355,14 +362,14 @@ Each field has two variants:
 
 ### Validator timing
 
-| Validator | When it runs | Use for |
-|-----------|-------------|---------|
-| `onChange` | Every keystroke | Instant feedback (use sparingly) |
-| `onBlur` | When field loses focus | Required checks, format validation |
-| `onChangeAsync` | After debounce on keystroke | Server-side uniqueness checks |
-| `onBlurAsync` | After debounce on blur | Expensive server validation |
-| `onSubmit` | On form submission | Final catch-all |
-| `onMount` | When field mounts | Pre-validation |
+| Validator       | When it runs                | Use for                            |
+| --------------- | --------------------------- | ---------------------------------- |
+| `onChange`      | Every keystroke             | Instant feedback (use sparingly)   |
+| `onBlur`        | When field loses focus      | Required checks, format validation |
+| `onChangeAsync` | After debounce on keystroke | Server-side uniqueness checks      |
+| `onBlurAsync`   | After debounce on blur      | Expensive server validation        |
+| `onSubmit`      | On form submission          | Final catch-all                    |
+| `onMount`       | When field mounts           | Pre-validation                     |
 
 ### Zod schemas vs functions
 
@@ -390,17 +397,17 @@ validators={{
 
 ```tsx
 <FormTextField
-  name="username"
-  label="Username"
+  name='username'
+  label='Username'
   validators={{
     onBlur: z.string().min(3, 'Too short'),
     onChangeAsync: async ({ value }: { value: string }) => {
       if (!value || value.length < 3) return undefined;
-      await new Promise((r) => setTimeout(r, 500));  // simulated API
+      await new Promise((r) => setTimeout(r, 500)); // simulated API
       if (value === 'admin') return 'Username is taken';
       return undefined;
     },
-    onChangeAsyncDebounceMs: 500,
+    onChangeAsyncDebounceMs: 500
   }}
 />
 ```
@@ -413,16 +420,16 @@ Use `onChangeListenTo` to re-run validation when another field changes:
 
 ```tsx
 <form.AppField
-  name="confirmPassword"
+  name='confirmPassword'
   validators={{
     onChangeListenTo: ['password'],
     onChange: ({ value, fieldApi }) => {
       const password = fieldApi.form.getFieldValue('password');
       return value !== password ? 'Passwords do not match' : undefined;
-    },
+    }
   }}
 >
-  {(field) => <field.TextField label="Confirm Password" type="password" />}
+  {(field) => <field.TextField label='Confirm Password' type='password' />}
 </form.AppField>
 ```
 
@@ -463,24 +470,24 @@ Listeners run side effects without affecting validation. Use them to reset depen
 
 ```tsx
 <FormSelectField
-  name="country"
-  label="Country"
+  name='country'
+  label='Country'
   options={countries}
   listeners={{
     onChange: ({ value, fieldApi }) => {
       fieldApi.form.setFieldValue('state', '');
       fieldApi.form.setFieldValue('city', '');
-    },
+    }
   }}
 />
 ```
 
-| Listener | When it fires |
-|----------|--------------|
+| Listener   | When it fires             |
+| ---------- | ------------------------- |
 | `onChange` | After field value changes |
-| `onBlur` | When field loses focus |
-| `onMount` | When field mounts |
-| `onSubmit` | On form submission |
+| `onBlur`   | When field loses focus    |
+| `onMount`  | When field mounts         |
+| `onSubmit` | On form submission        |
 
 Each has an optional `*DebounceMs` companion (e.g., `onChangeDebounceMs: 300`).
 
@@ -497,22 +504,24 @@ const form = useAppForm({
   onSubmit: async ({ value }) => {
     await saveToApi(value);
     toast.success('Saved!');
-  },
+  }
 });
 
 const { FormTextField } = useFormFields<FormValues>();
 
 <form.AppForm>
   <form.Form>
-    <FormTextField name="name" label="Name" required
-      validators={{ onBlur: z.string().min(2) }}
-    />
-    <FormTextField name="email" label="Email" required type="email"
+    <FormTextField name='name' label='Name' required validators={{ onBlur: z.string().min(2) }} />
+    <FormTextField
+      name='email'
+      label='Email'
+      required
+      type='email'
       validators={{ onBlur: z.string().email() }}
     />
-    <form.SubmitButton label="Save" />
+    <form.SubmitButton label='Save' />
   </form.Form>
-</form.AppForm>
+</form.AppForm>;
 ```
 
 ### Form in a Sheet or Dialog
@@ -621,19 +630,20 @@ type FormValues = {
   members: Array<{ name: string; role: string }>;
 };
 
-<form.AppField name="members" mode="array">
+<form.AppField name='members' mode='array'>
   {(field) => (
-    <div className="space-y-3">
+    <div className='space-y-3'>
       {field.state.value.map((_, i) => (
-        <div key={i} className="flex gap-2">
-          <form.AppField name={`members[${i}].name`}
+        <div key={i} className='flex gap-2'>
+          <form.AppField
+            name={`members[${i}].name`}
             validators={{ onBlur: z.string().min(1, 'Required') }}
           >
             {(sub) => (
-              <sub.FieldSet className="flex-1">
+              <sub.FieldSet className='flex-1'>
                 <sub.Field>
                   <Input
-                    placeholder="Name"
+                    placeholder='Name'
                     value={sub.state.value}
                     onChange={(e) => sub.handleChange(e.target.value)}
                     onBlur={sub.handleBlur}
@@ -643,21 +653,17 @@ type FormValues = {
               </sub.FieldSet>
             )}
           </form.AppField>
-          <Button variant="ghost" size="icon"
-            onClick={() => field.removeValue(i)}
-          >
-            <Icons.close className="h-4 w-4" />
+          <Button variant='ghost' size='icon' onClick={() => field.removeValue(i)}>
+            <Icons.close className='h-4 w-4' />
           </Button>
         </div>
       ))}
-      <Button variant="outline" size="sm"
-        onClick={() => field.pushValue({ name: '', role: '' })}
-      >
+      <Button variant='outline' size='sm' onClick={() => field.pushValue({ name: '', role: '' })}>
         Add Member
       </Button>
     </div>
   )}
-</form.AppField>
+</form.AppField>;
 ```
 
 Array methods: `pushValue`, `removeValue`, `insertValue`, `replaceValue`, `swapValues`, `moveValue`.
@@ -693,19 +699,17 @@ const stateOptions = countryStateMap[selectedCountry] ?? [];
 
 ```tsx
 <form.AppField
-  name="confirmPassword"
+  name='confirmPassword'
   validators={{
     onChangeListenTo: ['password'],
     onChange: ({ value, fieldApi }) => {
       const password = fieldApi.form.getFieldValue('password');
       return value !== password ? 'Passwords do not match' : undefined;
     },
-    onBlur: z.string().min(1, 'Required'),
+    onBlur: z.string().min(1, 'Required')
   }}
 >
-  {(field) => (
-    <field.TextField label="Confirm Password" required type="password" />
-  )}
+  {(field) => <field.TextField label='Confirm Password' required type='password' />}
 </form.AppField>
 ```
 
@@ -717,18 +721,18 @@ For selecting multiple values from a list, use `form.AppField` with `mode="array
 const positionOptions = [
   { value: 'frontend', label: 'Frontend Developer' },
   { value: 'backend', label: 'Backend Developer' },
-  { value: 'fullstack', label: 'Full Stack Developer' },
+  { value: 'fullstack', label: 'Full Stack Developer' }
 ];
 
-<form.AppField name="position" mode="array">
+<form.AppField name='position' mode='array'>
   {(field) => {
     const values: string[] = field.state.value || [];
     return (
       <field.FieldSet>
         <FieldLabel>Position(s) *</FieldLabel>
-        <div className="grid grid-cols-2 gap-3">
+        <div className='grid grid-cols-2 gap-3'>
           {positionOptions.map((opt) => (
-            <div key={opt.value} className="flex items-center space-x-2">
+            <div key={opt.value} className='flex items-center space-x-2'>
               <Checkbox
                 id={`position-${opt.value}`}
                 checked={values.includes(opt.value)}
@@ -748,7 +752,7 @@ const positionOptions = [
       </field.FieldSet>
     );
   }}
-</form.AppField>
+</form.AppField>;
 ```
 
 ### Date picker field (Calendar popover)
@@ -757,7 +761,7 @@ For date selection, use `form.AppField` with a Calendar popover. Store as ISO st
 
 ```tsx
 <form.AppField
-  name="available-date"
+  name='available-date'
   validators={{ onBlur: z.string().min(1, 'Please select a date') }}
 >
   {(field) => (
@@ -766,19 +770,20 @@ For date selection, use `form.AppField` with a Calendar popover. Store as ISO st
         <field.FieldLabel>Available Date *</field.FieldLabel>
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" className={cn(
-              'w-full justify-start text-left font-normal',
-              !field.state.value && 'text-muted-foreground'
-            )}>
-              <Icons.calendar className="mr-2 h-4 w-4" />
-              {field.state.value
-                ? format(new Date(field.state.value), 'PPP')
-                : 'Pick a date'}
+            <Button
+              variant='outline'
+              className={cn(
+                'w-full justify-start text-left font-normal',
+                !field.state.value && 'text-muted-foreground'
+              )}
+            >
+              <Icons.calendar className='mr-2 h-4 w-4' />
+              {field.state.value ? format(new Date(field.state.value), 'PPP') : 'Pick a date'}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
+          <PopoverContent className='w-auto p-0' align='start'>
             <Calendar
-              mode="single"
+              mode='single'
               selected={field.state.value ? new Date(field.state.value) : undefined}
               onSelect={(date) => {
                 field.handleChange(date ? date.toISOString() : '');
@@ -807,6 +812,7 @@ src/features/applications/
 ```
 
 **Schema** (`schemas/application.ts`):
+
 ```ts
 export const applicationSchema = z.object({
   firstName: z.string({ error: 'This field is required' }),
@@ -825,6 +831,7 @@ export type ApplicationFormValues = z.infer<typeof applicationSchema>;
 ```
 
 **Form** (`components/application-form.tsx`):
+
 ```tsx
 import { applicationSchema, type ApplicationFormValues } from '../schemas/application';
 import { positionOptions, experienceOptions } from '../constants/application-options';
@@ -865,7 +872,7 @@ import { FormErrors } from '@/components/ui/tanstack-form';
     <FormErrors />
     {/* fields */}
   </form.Form>
-</form.AppForm>
+</form.AppForm>;
 ```
 
 ### scrollToFirstError — auto-scroll on failed submit
@@ -896,7 +903,11 @@ Creating a new field (e.g., `DatePickerField`) requires **2 touchpoints**:
 import { useStore } from '@tanstack/react-form';
 import { FieldLabel } from '@/components/ui/field';
 import {
-  useFieldContext, FormFieldSet, FormField, FormFieldError, createFormField
+  useFieldContext,
+  FormFieldSet,
+  FormField,
+  FormFieldError,
+  createFormField
 } from '@/components/ui/form-context';
 
 interface DatePickerFieldProps {
@@ -911,7 +922,10 @@ export function DatePickerField({ label, required }: DatePickerFieldProps) {
   return (
     <FormFieldSet>
       <FormField>
-        <FieldLabel>{label}{required && ' *'}</FieldLabel>
+        <FieldLabel>
+          {label}
+          {required && ' *'}
+        </FieldLabel>
         {/* Your date picker UI here — call field.handleChange and field.handleBlur */}
       </FormField>
       <FormFieldError />
@@ -935,13 +949,13 @@ export { FormDatePickerField } from './date-picker-field';
 ```tsx
 // Direct import (Pattern 3)
 import { FormDatePickerField } from '@/components/forms/fields';
-<FormDatePickerField name="birthDate" label="Birth Date" />
+<FormDatePickerField name='birthDate' label='Birth Date' />;
 
 // Type-safe with typedField (Pattern 1 for custom fields)
 import { typedField } from '@/components/ui/tanstack-form';
 const narrow = typedField<FormValues>();
 const TypedDatePicker = narrow(FormDatePickerField);
-<TypedDatePicker name="birthDate" label="Birth Date" />
+<TypedDatePicker name='birthDate' label='Birth Date' />;
 
 // Or add to useFormFields in tanstack-form.tsx for built-in support
 ```
@@ -956,16 +970,16 @@ To include in `useFormFields`, add to its return object.
 
 ## Type Safety Reference
 
-| What | Type-safe? | How |
-|------|:---:|------|
-| Field names via `useFormFields<T>()` | Yes | `DeepKeys<T>` narrows `name` |
-| Field names via `form.AppField` | Yes | Native TanStack Form typing |
-| Field names via `typedField<T>()(Component)` | Yes | `DeepKeys<T>` narrowing for custom fields |
-| Field names via direct `FormTextField` import | No | `name` is `string` |
-| Nested paths (`team.name`, `members[0].role`) | Yes | `DeepKeys<T>` resolves dot/bracket notation |
-| Validator values (Zod schema) | Yes | StandardSchemaV1 pass-through |
-| Validator functions | Partial | `value` typed as `unknown` — cast in function |
-| Listener callbacks | Partial | `value` typed as `unknown` — cast in callback |
+| What                                          | Type-safe? | How                                           |
+| --------------------------------------------- | :--------: | --------------------------------------------- |
+| Field names via `useFormFields<T>()`          |    Yes     | `DeepKeys<T>` narrows `name`                  |
+| Field names via `form.AppField`               |    Yes     | Native TanStack Form typing                   |
+| Field names via `typedField<T>()(Component)`  |    Yes     | `DeepKeys<T>` narrowing for custom fields     |
+| Field names via direct `FormTextField` import |     No     | `name` is `string`                            |
+| Nested paths (`team.name`, `members[0].role`) |    Yes     | `DeepKeys<T>` resolves dot/bracket notation   |
+| Validator values (Zod schema)                 |    Yes     | StandardSchemaV1 pass-through                 |
+| Validator functions                           |  Partial   | `value` typed as `unknown` — cast in function |
+| Listener callbacks                            |  Partial   | `value` typed as `unknown` — cast in callback |
 
 ---
 
@@ -973,39 +987,39 @@ To include in `useFormFields`, add to its return object.
 
 ### From `@/components/ui/tanstack-form`
 
-| Export | Type | Purpose |
-|--------|------|---------|
-| `useAppForm` | Hook | Create a form instance |
-| `useFormFields<T>()` | Hook | Get type-safe composed field components |
-| `withForm` | HOC | Wrap a component with form context |
-| `withFieldGroup` | HOC | Create multi-step field groups |
-| `useFormContext` | Hook | Access form instance from context |
-| `useFieldContext` | Hook | Access field API from context |
-| `createFormField` | Utility | Create a composed field from a base field |
-| `typedField<T>()` | Utility | Narrow any composed field's name to `DeepKeys<T>` |
-| `revalidateLogic` | Utility | Dynamic validation logic for multi-step |
-| `scrollToFirstError` | Utility | Scroll + focus first invalid field |
-| `FormFieldSet` | Component | Structural — accessibility ID wrapper |
-| `FormField` | Component | Structural — aria-invalid, aria-describedby |
-| `FormFieldError` | Component | Renders field-level errors |
-| `FormErrors` | Component | Renders form-level errors |
-| `FieldConfig` | Type | `validators` + `asyncDebounceMs` + `listeners` + `mode` + `defaultValue` |
-| `FieldValidatorConfig` | Type | Validator timing options |
-| `FieldListenerConfig` | Type | Listener options |
-| `WithTypedName` | Type | Narrow component's `name` prop |
+| Export                 | Type      | Purpose                                                                  |
+| ---------------------- | --------- | ------------------------------------------------------------------------ |
+| `useAppForm`           | Hook      | Create a form instance                                                   |
+| `useFormFields<T>()`   | Hook      | Get type-safe composed field components                                  |
+| `withForm`             | HOC       | Wrap a component with form context                                       |
+| `withFieldGroup`       | HOC       | Create multi-step field groups                                           |
+| `useFormContext`       | Hook      | Access form instance from context                                        |
+| `useFieldContext`      | Hook      | Access field API from context                                            |
+| `createFormField`      | Utility   | Create a composed field from a base field                                |
+| `typedField<T>()`      | Utility   | Narrow any composed field's name to `DeepKeys<T>`                        |
+| `revalidateLogic`      | Utility   | Dynamic validation logic for multi-step                                  |
+| `scrollToFirstError`   | Utility   | Scroll + focus first invalid field                                       |
+| `FormFieldSet`         | Component | Structural — accessibility ID wrapper                                    |
+| `FormField`            | Component | Structural — aria-invalid, aria-describedby                              |
+| `FormFieldError`       | Component | Renders field-level errors                                               |
+| `FormErrors`           | Component | Renders form-level errors                                                |
+| `FieldConfig`          | Type      | `validators` + `asyncDebounceMs` + `listeners` + `mode` + `defaultValue` |
+| `FieldValidatorConfig` | Type      | Validator timing options                                                 |
+| `FieldListenerConfig`  | Type      | Listener options                                                         |
+| `WithTypedName`        | Type      | Narrow component's `name` prop                                           |
 
 ### From `@/components/forms/fields`
 
-| Base (render prop) | Composed (flat) |
-|---|---|
-| `TextField` | `FormTextField` |
-| `TextareaField` | `FormTextareaField` |
-| `SelectField` | `FormSelectField` |
-| `CheckboxField` | `FormCheckboxField` |
-| `SwitchField` | `FormSwitchField` |
-| `RadioGroupField` | `FormRadioGroupField` |
-| `SliderField` | `FormSliderField` |
-| `FileUploadField` | `FormFileUploadField` |
+| Base (render prop) | Composed (flat)       |
+| ------------------ | --------------------- |
+| `TextField`        | `FormTextField`       |
+| `TextareaField`    | `FormTextareaField`   |
+| `SelectField`      | `FormSelectField`     |
+| `CheckboxField`    | `FormCheckboxField`   |
+| `SwitchField`      | `FormSwitchField`     |
+| `RadioGroupField`  | `FormRadioGroupField` |
+| `SliderField`      | `FormSliderField`     |
+| `FileUploadField`  | `FormFileUploadField` |
 
 ---
 
@@ -1013,17 +1027,17 @@ To include in `useFormFields`, add to its return object.
 
 ### Form Pages (`/dashboard/forms/...`)
 
-| Page | Route | Patterns demonstrated |
-|------|-------|----------------------|
-| **Basic Form** | `/dashboard/forms/basic` | All 8 field types, `useFormFields`, `onBlur` + async validation, listeners, form data preview |
-| **Multi-Step Form** | `/dashboard/forms/multi-step` | `withFieldGroup`, per-step Zod schemas, `revalidateLogic`, step navigation, review summary |
-| **Sheet & Dialog** | `/dashboard/forms/sheet-form` | Form in Sheet with external submit button, form in Dialog, close + reset on success |
-| **Advanced Patterns** | `/dashboard/forms/advanced` | Async validation (username check), linked fields (`onChangeListenTo` for password confirm), nested objects (`team.name`), dynamic array rows (members), dependent dropdowns (country → state with listener), `FormErrors`, `scrollToFirstError` |
+| Page                  | Route                         | Patterns demonstrated                                                                                                                                                                                                                           |
+| --------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Basic Form**        | `/dashboard/forms/basic`      | All 8 field types, `useFormFields`, `onBlur` + async validation, listeners, form data preview                                                                                                                                                   |
+| **Multi-Step Form**   | `/dashboard/forms/multi-step` | `withFieldGroup`, per-step Zod schemas, `revalidateLogic`, step navigation, review summary                                                                                                                                                      |
+| **Sheet & Dialog**    | `/dashboard/forms/sheet-form` | Form in Sheet with external submit button, form in Dialog, close + reset on success                                                                                                                                                             |
+| **Advanced Patterns** | `/dashboard/forms/advanced`   | Async validation (username check), linked fields (`onChangeListenTo` for password confirm), nested objects (`team.name`), dynamic array rows (members), dependent dropdowns (country → state with listener), `FormErrors`, `scrollToFirstError` |
 
 ### Other Forms
 
-| Form | File | Patterns |
-|------|------|----------|
-| Product CRUD | `src/features/products/components/product-form.tsx` | Pattern 1, split schema, onBlur validators |
-| Sheet Product | `src/features/forms/components/sheet-product-form.tsx` | Pattern 2 in Sheet |
-| Auth | `src/features/auth/components/user-auth-form.tsx` | Pattern 2, minimal |
+| Form          | File                                                   | Patterns                                   |
+| ------------- | ------------------------------------------------------ | ------------------------------------------ |
+| Product CRUD  | `src/features/products/components/product-form.tsx`    | Pattern 1, split schema, onBlur validators |
+| Sheet Product | `src/features/forms/components/sheet-product-form.tsx` | Pattern 2 in Sheet                         |
+| Auth          | `src/features/auth/components/user-auth-form.tsx`      | Pattern 2, minimal                         |
