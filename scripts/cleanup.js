@@ -420,8 +420,6 @@ const FEATURES = {
     ],
     files: [
       'docs/clerk_setup.md',
-      'src/middleware.ts',
-      'middleware.ts',
       'src/components/org-switcher.tsx',
       'src/components/user-avatar-profile.tsx'
     ],

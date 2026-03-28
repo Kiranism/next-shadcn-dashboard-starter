@@ -1,6 +1,7 @@
 'use client';
 
 import { useAppForm, useFormFields } from '@/components/ui/tanstack-form';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createProductMutation, updateProductMutation } from '../api/mutations';
 import type { Product } from '../api/types';
@@ -137,7 +138,10 @@ export default function ProductForm({
               }}
             />
 
-            <div className='flex justify-end'>
+            <div className='flex justify-end gap-2'>
+              <Button type='button' variant='outline' onClick={() => router.back()}>
+                Back
+              </Button>
               <form.SubmitButton>{isEdit ? 'Update Product' : 'Add Product'}</form.SubmitButton>
             </div>
           </form.Form>
