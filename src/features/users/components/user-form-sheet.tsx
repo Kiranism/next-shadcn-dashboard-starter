@@ -12,9 +12,8 @@ import {
   SheetTitle
 } from '@/components/ui/sheet';
 import { Icons } from '@/components/icons';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createUser, updateUser } from '../api/service';
-import { userKeys } from '../api/queries';
+import { useMutation } from '@tanstack/react-query';
+import { createUserMutation, updateUserMutation } from '../api/mutations';
 import type { User } from '../api/types';
 import { toast } from 'sonner';
 import * as z from 'zod';
@@ -34,13 +33,11 @@ interface UserFormSheetProps {
 }
 
 export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) {
-  const queryClient = useQueryClient();
   const isEdit = !!user;
 
   const createMutation = useMutation({
-    mutationFn: (data: UserFormValues) => createUser(data),
+    ...createUserMutation,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userKeys.all });
       toast.success('User created successfully');
       onOpenChange(false);
       form.reset();
@@ -49,9 +46,8 @@ export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) 
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: { id: number; values: UserFormValues }) => updateUser(data.id, data.values),
+    ...updateUserMutation,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userKeys.all });
       toast.success('User updated successfully');
       onOpenChange(false);
     },

@@ -2,11 +2,10 @@
 
 import { useAppForm, useFormFields } from '@/components/ui/tanstack-form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { createProduct, updateProduct } from '../api/service';
-import { productKeys } from '../api/queries';
+import { createProductMutation, updateProductMutation } from '../api/mutations';
 import type { Product } from '../api/types';
+import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import * as z from 'zod';
 import { productSchema, type ProductFormValues } from '@/features/products/schemas/product';
@@ -20,13 +19,11 @@ export default function ProductForm({
   pageTitle: string;
 }) {
   const router = useRouter();
-  const queryClient = useQueryClient();
+  const isEdit = !!initialData;
 
   const createMutation = useMutation({
-    mutationFn: (data: { name: string; category: string; price: number; description: string }) =>
-      createProduct(data),
+    ...createProductMutation,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productKeys.all });
       toast.success('Product created successfully');
       router.push('/dashboard/product');
     },
@@ -36,17 +33,8 @@ export default function ProductForm({
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: {
-      id: number;
-      values: {
-        name: string;
-        category: string;
-        price: number;
-        description: string;
-      };
-    }) => updateProduct(data.id, data.values),
+    ...updateProductMutation,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productKeys.all });
       toast.success('Product updated successfully');
       router.push('/dashboard/product');
     },
@@ -54,8 +42,6 @@ export default function ProductForm({
       toast.error('Failed to update product');
     }
   });
-
-  const isEdit = !!initialData;
 
   const form = useAppForm({
     defaultValues: {
@@ -68,7 +54,7 @@ export default function ProductForm({
     validators: {
       onSubmit: productSchema
     },
-    onSubmit: async ({ value }) => {
+    onSubmit: ({ value }) => {
       const payload = {
         name: value.name,
         category: value.category,
@@ -77,12 +63,9 @@ export default function ProductForm({
       };
 
       if (isEdit) {
-        await updateMutation.mutateAsync({
-          id: initialData.id,
-          values: payload
-        });
+        updateMutation.mutate({ id: initialData.id, values: payload });
       } else {
-        await createMutation.mutateAsync(payload);
+        createMutation.mutate(payload);
       }
     }
   });

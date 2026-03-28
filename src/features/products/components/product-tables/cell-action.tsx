@@ -8,13 +8,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { deleteProduct } from '../../api/service';
-import { productKeys } from '../../api/queries';
+import { deleteProductMutation } from '../../api/mutations';
 import type { Product } from '../../api/types';
 import { Icons } from '@/components/icons';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 interface CellActionProps {
@@ -24,12 +23,10 @@ interface CellActionProps {
 export function CellAction({ data }: CellActionProps) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
-  const queryClient = useQueryClient();
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => deleteProduct(id),
+    ...deleteProductMutation,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productKeys.all });
       toast.success('Product deleted successfully');
       setOpen(false);
     },

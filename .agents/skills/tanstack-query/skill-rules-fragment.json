@@ -1,0 +1,86 @@
+{
+  "tanstack-query": {
+    "type": "domain",
+    "enforcement": "suggest",
+    "priority": "high",
+    "promptTriggers": {
+      "keywords": [
+        "tanstack query",
+        "react query",
+        "@tanstack/react-query",
+        "useQuery",
+        "useMutation",
+        "useSuspenseQuery",
+        "useInfiniteQuery",
+        "useQueries",
+        "useQueryClient",
+        "useIsFetching",
+        "useIsMutating",
+        "useMutationState",
+        "QueryClient",
+        "QueryClientProvider",
+        "queryKey",
+        "queryFn",
+        "mutationFn",
+        "invalidateQueries",
+        "setQueryData",
+        "getQueryData",
+        "removeQueries",
+        "resetQueries",
+        "staleTime",
+        "cacheTime",
+        "refetchInterval",
+        "refetchOnWindowFocus",
+        "refetchOnReconnect",
+        "isLoading",
+        "isError",
+        "isFetching",
+        "isSuccess",
+        "queryCache",
+        "mutationCache"
+      ],
+      "intentPatterns": [
+        "use.*tanstack.*query",
+        "use.*react.*query",
+        "create.*tanstack.*(query|mutation)",
+        "invalidate.*query.*cache",
+        "invalidate.*tanstack.*queries",
+        "prefetch.*query",
+        "setup.*query.*client",
+        "configure.*tanstack.*query",
+        "use.*(useQuery|useMutation|useInfiniteQuery)",
+        "implement.*query.*invalidation",
+        "add.*query.*key",
+        "set.*query.*data"
+      ]
+    },
+    "fileTriggers": {
+      "pathPatterns": [
+        "**/api/**/*.ts",
+        "**/api/**/*.tsx",
+        "**/queries/**/*.ts",
+        "**/queries/**/*.tsx",
+        "**/hooks/**/*.ts",
+        "**/hooks/**/*.tsx",
+        "**/mutations/**/*.ts",
+        "**/mutations/**/*.tsx"
+      ],
+      "contentPatterns": [
+        "useQuery\\(",
+        "useMutation\\(",
+        "useSuspenseQuery\\(",
+        "useInfiniteQuery\\(",
+        "useQueryClient\\(",
+        "queryClient\\.",
+        "import.*@tanstack/react-query",
+        "from '@tanstack/react-query'",
+        "QueryClientProvider",
+        "new QueryClient\\(",
+        "invalidateQueries\\(",
+        "setQueryData\\(",
+        "queryKey:",
+        "queryFn:"
+      ]
+    }
+  }
+}

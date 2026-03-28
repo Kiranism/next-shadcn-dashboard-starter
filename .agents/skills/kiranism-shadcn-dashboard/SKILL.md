@@ -18,6 +18,7 @@ This skill encodes the exact patterns and conventions used in this Next.js 16 + 
 | API types             | `src/features/<name>/api/types.ts`      |
 | Service layer         | `src/features/<name>/api/service.ts`    |
 | Query options         | `src/features/<name>/api/queries.ts`    |
+| Mutation options      | `src/features/<name>/api/mutations.ts`  |
 | Zod schemas           | `src/features/<name>/schemas/<name>.ts` |
 | Filter/select options | `src/features/<name>/constants/`        |
 | Nav config            | `src/config/nav-config.ts`              |
@@ -82,7 +83,7 @@ Every method should call `await delay(800)` to simulate network latency. Use `ma
 
 ### Step 2: API Layer (`src/features/<name>/api/`)
 
-Each feature has 3 API files: **types** → **service** → **queries**.
+Each feature has 4 API files: **types** → **service** → **queries** → **mutations**.
 
 **Types** (`api/types.ts`) — re-export the entity type from mock API, plus filter/response/payload types:
 
@@ -143,6 +144,40 @@ export const orderByIdOptions = (id: number) =>
     queryFn: () => getOrderById(id)
   });
 ```
+
+**Mutations** (`api/mutations.ts`) — use `mutationOptions` + `getQueryClient()` (not custom hooks with `useQueryClient()`):
+
+```tsx
+import { mutationOptions } from '@tanstack/react-query';
+import { getQueryClient } from '@/lib/query-client';
+import { createOrder, updateOrder, deleteOrder } from './service';
+import { orderKeys } from './queries';
+import type { OrderMutationPayload } from './types';
+
+export const createOrderMutation = mutationOptions({
+  mutationFn: (data: OrderMutationPayload) => createOrder(data),
+  onSuccess: () => {
+    getQueryClient().invalidateQueries({ queryKey: orderKeys.all });
+  }
+});
+
+export const updateOrderMutation = mutationOptions({
+  mutationFn: ({ id, values }: { id: number; values: OrderMutationPayload }) =>
+    updateOrder(id, values),
+  onSuccess: () => {
+    getQueryClient().invalidateQueries({ queryKey: orderKeys.all });
+  }
+});
+
+export const deleteOrderMutation = mutationOptions({
+  mutationFn: (id: number) => deleteOrder(id),
+  onSuccess: () => {
+    getQueryClient().invalidateQueries({ queryKey: orderKeys.all });
+  }
+});
+```
+
+`mutationOptions` is the right abstraction because it works outside React (event handlers, tests, utilities), composes via spread at the call site, and uses `getQueryClient()` which handles both SSR (fresh per request) and client (singleton) correctly. See [references/query-abstractions.md](references/query-abstractions.md) for the full rationale.
 
 ### Step 3: Zod Schema (`src/features/<name>/schemas/<name>.ts`)
 
@@ -293,13 +328,13 @@ Filter `meta.variant` options: `text`, `number`, `range`, `date`, `dateRange`, `
 Pattern: `DropdownMenu` with edit/delete items + `AlertModal` for delete confirmation + `useMutation` for the delete API call.
 
 ```tsx
+import { deleteOrderMutation } from '../../api/mutations';
+
 export const CellAction: React.FC<{ data: Order }> = ({ data }) => {
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const queryClient = useQueryClient();
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => deleteOrder(id),
+    ...deleteOrderMutation,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: orderKeys.all });
       toast.success('Deleted');
       setDeleteOpen(false);
     }
@@ -436,7 +471,7 @@ The full pattern is shown in Steps 1-4 above. The key structure:
 
 1. **Schema** — Zod schema + inferred type in `schemas/<name>.ts`
 2. **Form component** — `useAppForm({ defaultValues, validators: { onSubmit: schema }, onSubmit })` + `useFormFields<T>()` for typed fields
-3. **Mutations** — separate `createMutation` / `updateMutation` with `useMutation`, call service functions (from `api/service.ts`), `invalidateQueries({ queryKey: orderKeys.all })` on success, `router.push` to navigate back
+3. **Mutations** — `useMutation({ ...createOrderMutation, onSuccess: () => { toast(); router.push() } })`, spread shared mutation options from `api/mutations.ts` and layer on UI callbacks
 4. **View page** — client component that checks `id === 'new'` for create vs `useSuspenseQuery(byIdOptions)` for edit
 
 ### Sheet Form (Inline create/edit in a side panel)
@@ -458,9 +493,8 @@ export function OrderFormSheet({
 }) {
   const isEdit = !!order;
   const mutation = useMutation({
-    mutationFn: isEdit ? (v: OrderFormValues) => updateOrder(order.id, v) : createOrder,
+    ...(isEdit ? updateOrderMutation : createOrderMutation),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: orderKeys.all });
       onOpenChange(false);
     }
   });
@@ -518,20 +552,25 @@ The pattern is: server prefetch → HydrationBoundary → client useSuspenseQuer
 
 **Why `useSuspenseQuery` not `useQuery`:** `useQuery` doesn't integrate with Suspense — it shows loading even when data is prefetched. `useSuspenseQuery` picks up the dehydrated pending query. Once cached (within `staleTime: 60s`), subsequent visits are instant.
 
-**Mutations** always use `useMutation` + service functions + key factory invalidation:
+**Mutations** use `mutationOptions` + `getQueryClient()` in `mutations.ts`, composed via spread at the call site:
 
 ```tsx
-import { createOrder } from '../api/service';
-import { orderKeys } from '../api/queries';
-
-const mutation = useMutation({
+// In mutations.ts — shared config
+export const createOrderMutation = mutationOptions({
   mutationFn: (data) => createOrder(data),
   onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: orderKeys.all });
-    toast.success('Created');
+    getQueryClient().invalidateQueries({ queryKey: orderKeys.all });
   }
 });
+
+// In component — spread + layer UI callbacks
+const mutation = useMutation({
+  ...createOrderMutation,
+  onSuccess: () => toast.success('Created')
+});
 ```
+
+See [references/query-abstractions.md](references/query-abstractions.md) for why `mutationOptions`/`queryOptions` are the right abstraction over custom hooks.
 
 ---
 
@@ -567,7 +606,7 @@ See [references/theming-guide.md](references/theming-guide.md) for the complete 
 - **`cn()`** for class merging — never concatenate className strings
 - **Server components by default** — only add `'use client'` when needed
 - **React Query** — `void prefetchQuery()` on server + `useSuspenseQuery` on client
-- **API layer** — `types.ts` → `service.ts` → `queries.ts` per feature; key factories (`entityKeys.all/list/detail`); components never import mock APIs directly
+- **API layer** — `types.ts` → `service.ts` → `queries.ts` → `mutations.ts` per feature; `queryOptions`/`mutationOptions` as base abstractions (not custom hooks); `getQueryClient()` in mutations (not `useQueryClient()`); key factories (`entityKeys.all/list/detail`); components never import mock APIs directly
 - **nuqs** — `searchParamsCache` on server, `useQueryStates` on client with `shallow: true`
 - **Icons** — only from `@/components/icons`, never from `@tabler/icons-react` directly
 - **Forms** — `useAppForm` + `useFormFields<T>()` from `@/components/ui/tanstack-form`
