@@ -24,13 +24,12 @@ import { navGroups } from '@/config/nav-config';
 import { useUser } from '@clerk/nextjs';
 import { SignOutButton } from '@clerk/nextjs';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { Icons } from '../icons';
 
 export default function AppSidebar() {
   const pathname = usePathname();
   const { user } = useUser();
-  const router = useRouter();
 
   return (
     <Sidebar collapsible='icon'>
@@ -89,16 +88,6 @@ export default function AppSidebar() {
                     )}
                   </div>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem onClick={() => router.push('/dashboard/profile')}>
-                  <Icons.account className='mr-2 h-4 w-4' />
-                  Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push('/dashboard/notifications')}>
-                  <Icons.notification className='mr-2 h-4 w-4' />
-                  Notifications
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
                   <Icons.logout className='mr-2 h-4 w-4' />

@@ -38,14 +38,14 @@ const mockNotifications: Notification[] = [
   },
   {
     id: '2',
-    title: 'New product added',
-    body: 'A new product "Dashboard Pro" has been added to the catalog.',
+    title: 'New chat thread started',
+    body: 'A new conversation is available in chat.',
     status: 'unread',
     createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
     actions: [
       {
-        id: 'view-product',
-        label: 'View products',
+        id: 'open-chat',
+        label: 'Open chat',
         type: 'redirect',
         style: 'primary'
       }
@@ -68,14 +68,14 @@ const mockNotifications: Notification[] = [
   },
   {
     id: '4',
-    title: 'Task assigned to you',
-    body: 'You have been assigned "Update dashboard analytics" on the Kanban board.',
+    title: 'Overview refresh completed',
+    body: 'Your dashboard overview has been refreshed.',
     status: 'read',
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
     actions: [
       {
-        id: 'open',
-        label: 'Open kanban',
+        id: 'view',
+        label: 'View dashboard',
         type: 'redirect',
         style: 'primary'
       }

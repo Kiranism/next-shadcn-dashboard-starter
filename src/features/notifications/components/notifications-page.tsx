@@ -10,8 +10,6 @@ import { useNotificationStore } from '../utils/store';
 
 const actionRoutes: Record<string, string> = {
   view: '/dashboard/overview',
-  'view-product': '/dashboard/product',
-  open: '/dashboard/kanban',
   'open-chat': '/dashboard/chat'
 };
 
