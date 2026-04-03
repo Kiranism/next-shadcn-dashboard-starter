@@ -1,27 +1,196 @@
 "use client";
 
 import { useState } from "react";
+import { Place } from "./map";
 
 type Message = {
-  sender: string;
+  sender: "You" | "Assistant";
   text: string;
+};
+
+type PendingAction = {
+  action_type: "update" | "delete" | "add" | "none";
+  summary: string;
+  operations: Array<{
+    target_name: string;
+    action: "update" | "delete" | "add";
+    name?: string;
+    city?: string;
+    category?: string;
+    day?: string;
+    date?: string;
+    startTime?: string;
+    endTime?: string;
+  }>;
 };
 
 type ChatAsideProps = {
   isOpen: boolean;
   onClose: () => void;
+  places: Place[];
+  taggedPlace: Place | null;
+  onClearTaggedPlace: () => void;
+  onApplyPlaces: (places: Place[]) => void;
+  onSelectPlace: (place: Place) => void;
 };
 
-export default function ChatAside({ isOpen, onClose }: ChatAsideProps) {
+export default function ChatAside({
+  isOpen,
+  onClose,
+  places,
+  taggedPlace,
+  onClearTaggedPlace,
+  onApplyPlaces,
+  onSelectPlace,
+}: ChatAsideProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     const text = inputText.trim();
-    if (!text) return;
+    if (!text || isSending || pendingAction) return;
 
     setMessages((prev) => [...prev, { sender: "You", text }]);
     setInputText("");
+
+    setIsSending(true);
+    try {
+      const response = await fetch("/api/trips/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: text,
+          taggedPlaceName: taggedPlace?.name,
+          places,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update trip details.");
+      }
+
+      const payload = (await response.json()) as {
+        assistant_message?: string;
+        places?: Place[];
+        needs_confirmation?: boolean;
+        pending_action?: PendingAction | null;
+      };
+
+      if (payload.needs_confirmation && payload.pending_action) {
+        setPendingAction(payload.pending_action);
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: "Assistant",
+            text:
+              payload.assistant_message ||
+              `I found a ${payload.pending_action?.action_type ?? "change"} request. Do you want me to apply it?`,
+          },
+        ]);
+        return;
+      }
+
+      if (payload.places && payload.places.length > 0) {
+        onApplyPlaces(payload.places);
+
+        if (taggedPlace) {
+          const updatedTagged = payload.places.find(
+            (place) => place.name.toLowerCase() === taggedPlace.name.toLowerCase(),
+          );
+          if (updatedTagged) {
+            onSelectPlace(updatedTagged);
+          }
+        }
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "Assistant",
+          text:
+            payload.assistant_message ||
+            "Updated your trip details based on your request.",
+        },
+      ]);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update trip details.";
+      setMessages((prev) => [
+        ...prev,
+        { sender: "Assistant", text: `I could not apply that update. ${errorMessage}` },
+      ]);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const confirmPendingAction = async (confirmed: boolean) => {
+    if (!pendingAction || isSending) return;
+
+    if (!confirmed) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "Assistant",
+          text: "Cancelled the requested update.",
+        },
+      ]);
+      setPendingAction(null);
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      const response = await fetch("/api/trips/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: pendingAction.summary,
+          taggedPlaceName: taggedPlace?.name,
+          places,
+          confirm: true,
+          pendingAction,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to apply the confirmed update.");
+      }
+
+      const payload = (await response.json()) as {
+        assistant_message?: string;
+        places?: Place[];
+      };
+
+      if (payload.places && payload.places.length > 0) {
+        onApplyPlaces(payload.places);
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "Assistant",
+          text:
+            payload.assistant_message || "Applied the confirmed update to your trip.",
+        },
+      ]);
+      setPendingAction(null);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to apply the confirmed update.";
+      setMessages((prev) => [
+        ...prev,
+        { sender: "Assistant", text: errorMessage },
+      ]);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const onKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (event) => {
@@ -63,6 +232,20 @@ export default function ChatAside({ isOpen, onClose }: ChatAsideProps) {
             <p className="mt-1 text-sm text-slate-300">
               Ask for the best route, a stay nearby, or a shorter trip view.
             </p>
+            {taggedPlace ? (
+              <div className="mt-2 flex items-center gap-2">
+                <span className="rounded-full border border-amber-300/40 bg-amber-300/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-200">
+                  Tagged: {taggedPlace.name}
+                </span>
+                <button
+                  type="button"
+                  onClick={onClearTaggedPlace}
+                  className="text-xs text-slate-300 underline-offset-2 transition hover:text-white hover:underline"
+                >
+                  Clear
+                </button>
+              </div>
+            ) : null}
           </div>
           <button
             type="button"
@@ -75,9 +258,42 @@ export default function ChatAside({ isOpen, onClose }: ChatAsideProps) {
 
         <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4">
           <div className="space-y-3">
+            {pendingAction ? (
+              <div className="rounded-[24px] border border-amber-300/30 bg-amber-300/10 px-4 py-4 text-sm text-amber-100">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-200/90">
+                  Confirmation required
+                </p>
+                <p className="mt-2 leading-relaxed text-slate-100">
+                  {pendingAction.action_type === "delete"
+                    ? `Delete the selected place(s)? ${pendingAction.summary}`
+                    : pendingAction.action_type === "add"
+                      ? `Add the new event(s)? ${pendingAction.summary}`
+                    : `Apply these place updates? ${pendingAction.summary}`}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => confirmPendingAction(true)}
+                    disabled={isSending}
+                    className="rounded-full bg-amber-400 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-950 transition hover:brightness-105 disabled:opacity-60"
+                  >
+                    Yes, apply
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => confirmPendingAction(false)}
+                    disabled={isSending}
+                    className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-white/10 disabled:opacity-60"
+                  >
+                    No, cancel
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
             {messages.length === 0 ? (
               <div className="rounded-[24px] border border-dashed border-white/12 bg-white/5 px-4 py-4 text-sm text-slate-300">
-                Start with a destination or ask for a route recommendation.
+                Start with a destination, ask for route help, or request a place update.
               </div>
             ) : (
               messages.map((message, index) => (
@@ -110,15 +326,17 @@ export default function ChatAside({ isOpen, onClose }: ChatAsideProps) {
               value={inputText}
               onChange={(event) => setInputText(event.target.value)}
               onKeyDown={onKeyDown}
-              placeholder="Ask about routes, hotels, or timing"
+              placeholder={pendingAction ? "Confirm or cancel the pending change above" : "Ask about routes, hotels, or timing"}
               className="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm text-white placeholder:text-slate-400 focus:outline-none"
+              disabled={isSending || Boolean(pendingAction)}
             />
             <button
               type="button"
               onClick={sendMessage}
+              disabled={isSending || Boolean(pendingAction)}
               className="rounded-[18px] bg-gradient-to-r from-amber-400 to-orange-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:brightness-105"
             >
-              Send
+              {isSending ? "Updating..." : "Send"}
             </button>
           </div>
         </div>

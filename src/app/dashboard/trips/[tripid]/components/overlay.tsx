@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { Icons } from "@/components/icons";
 import { Place } from "./map";
 
 type OverlayProps = {
@@ -13,6 +14,9 @@ type OverlayProps = {
   onToggleRouteMode: () => void;
   onSelectPlace: (place: Place) => void;
   onEditPlace: (place: Place) => void;
+  onOpenChatForPlace: (place: Place) => void;
+  onExportCalendar: () => void;
+  isExportingCalendar: boolean;
 };
 
 export default function Overlay({
@@ -25,6 +29,9 @@ export default function Overlay({
   onToggleRouteMode,
   onSelectPlace,
   onEditPlace,
+  onOpenChatForPlace,
+  onExportCalendar,
+  isExportingCalendar,
 }: OverlayProps) {
   return (
     <div className="flex h-full flex-col bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_48%,#eef2f7_100%)] text-slate-900">
@@ -71,6 +78,22 @@ export default function Overlay({
           >
             {preferRoadRoute ? "Road Mode" : "Direct Mode"}
           </button>
+
+          <button
+            type="button"
+            onClick={onExportCalendar}
+            disabled={isExportingCalendar}
+            className="col-span-2 flex items-center justify-center gap-2 rounded-[14px] border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-70"
+            title="Export all trip events to Google Calendar"
+            aria-label="Export all trip events to Google Calendar"
+          >
+            {isExportingCalendar ? (
+              <Icons.spinner className="h-4 w-4 animate-spin" />
+            ) : (
+              <Icons.calendar className="h-4 w-4" />
+            )}
+            {isExportingCalendar ? "Exporting..." : "Export to Google Calendar"}
+          </button>
         </div>
       </div>
 
@@ -90,11 +113,7 @@ export default function Overlay({
                         : "border-slate-200 bg-white"
                     }`}
                   >
-                    <button
-                      type="button"
-                      onClick={() => onSelectPlace(place)}
-                      className="block w-full text-left"
-                    >
+                    <div className="block w-full text-left">
                       <div className="relative aspect-[16/10] w-full overflow-hidden">
                         <Image
                           src={place.image}
@@ -139,17 +158,50 @@ export default function Overlay({
                             />
                           </svg>
                         </button>
+
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onOpenChatForPlace(place);
+                          }}
+                          className="absolute right-2 top-12 flex h-8 w-8 items-center justify-center rounded-md border border-white/10 bg-white text-slate-700 shadow-md transition hover:bg-slate-50"
+                          aria-label={`Chat about ${place.name}`}
+                          title="Chat update"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            className="h-4 w-4"
+                            aria-hidden="true"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M8 10h8M8 14h5M4 6h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H8l-4 3V7a1 1 0 0 1 1-1Z"
+                            />
+                          </svg>
+                        </button>
                       </div>
 
                       <div className="p-3">
-                        <p className="line-clamp-2 text-sm font-semibold leading-tight text-slate-950">
-                          {place.name}
-                        </p>
-                        <p className="mt-1 truncate text-xs text-slate-500">
-                          {place.city}
-                        </p>
+                        <button
+                          type="button"
+                          onClick={() => onSelectPlace(place)}
+                          className="w-full text-left"
+                        >
+                          <p className="line-clamp-2 text-sm font-semibold leading-tight text-slate-950">
+                            {place.name}
+                          </p>
+                          <p className="mt-1 truncate text-xs text-slate-500">
+                            {place.city}
+                          </p>
+                        </button>
                       </div>
-                    </button>
+                    </div>
                   </div>
                 );
               })}
@@ -207,7 +259,7 @@ export default function Overlay({
                     </div>
                   </button>
 
-                  <div className="flex items-start pt-1 pr-1">
+                  <div className="flex flex-col items-start gap-2 pt-1 pr-1">
                     <button
                       type="button"
                       onClick={(event) => {
@@ -236,6 +288,33 @@ export default function Overlay({
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           d="M19.5 7.125 16.875 4.5"
+                        />
+                      </svg>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onOpenChatForPlace(place);
+                      }}
+                      className="flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
+                      aria-label={`Chat about ${place.name}`}
+                      title="Chat update"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className="h-4 w-4"
+                        aria-hidden="true"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M8 10h8M8 14h5M4 6h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H8l-4 3V7a1 1 0 0 1 1-1Z"
                         />
                       </svg>
                     </button>

@@ -1,12 +1,47 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import BotIcon from "./components/bot-icon";
 import ChatAside from "./components/chat-aside";
 import Overlay from "./components/overlay";
 import Map, { Place } from "./components/map";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { getTripById } from "@/features/trips/data";
+import { DEFAULT_TRIP_PLACES } from "@/features/trips/constants/default-places";
+import {
+  readStoredTrips,
+  updateStoredTripPlaces,
+} from "@/features/trips/lib/custom-trips-storage";
+import { sortPlacesByTimeline } from "@/features/trips/lib/place-timeline";
+
+function normalizePlaceForEdit(place: Place): Place {
+  return {
+    ...place,
+    day: place.day ?? "Mon",
+    date: place.date ?? new Date().toISOString().slice(0, 10),
+    startTime: place.startTime ?? "09:00",
+    endTime: place.endTime ?? "10:30",
+  };
+}
 
 export default function Home() {
+  const params = useParams<{ tripid: string }>();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tripId = params?.tripid ?? "";
+  const isCustomTrip = tripId.startsWith("custom-");
+  const autoExportTriggeredRef = useRef(false);
+
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [showRoute, setShowRoute] = useState(true);
@@ -18,158 +53,227 @@ export default function Home() {
   const [editingPlaceSourceName, setEditingPlaceSourceName] = useState<
     string | null
   >(null);
+  const [chatTaggedPlace, setChatTaggedPlace] = useState<Place | null>(null);
   const [editingQuery, setEditingQuery] = useState("");
-  const [places, setPlaces] = useState<Place[]>([
-    {
-      name: "Kuriftu Resort & Spa Bishoftu",
-      city: "Bishoftu",
-      category: "Lakeside Resort",
-      lng: 38.9798,
-      lat: 8.7527,
-      image: "/images/1.jpg",
-      day: "Mon",
-      date: "2026-04-10",
-      startTime: "09:00",
-      endTime: "17:00",
-    },
-    {
-      name: "Kuriftu Resort & Spa Bahir Dar",
-      city: "Bahir Dar",
-      category: "Lakefront Resort",
-      lng: 37.3957,
-      lat: 11.6006,
-      image: "/images/2.jpg",
-      day: "Tue",
-      date: "2026-04-11",
-      startTime: "10:00",
-      endTime: "16:30",
-    },
-    {
-      name: "Haile Resort Arbaminch",
-      city: "Arba Minch",
-      category: "Garden Resort",
-      lng: 37.5485,
-      lat: 6.0376,
-      image: "/images/4.jpg",
-      day: "Wed",
-      date: "2026-04-12",
-      startTime: "08:30",
-      endTime: "15:30",
-    },
-    {
-      name: "Skylight In-Terminal Hotel",
-      city: "Addis Ababa",
-      category: "Airport Hotel",
-      lng: 38.7996,
-      lat: 8.9891,
-      image: "/images/5.jpg",
-      day: "Thu",
-      date: "2026-04-13",
-      startTime: "12:00",
-      endTime: "18:00",
-    },
-    {
-      name: "Limalimo Lodge",
-      city: "Simien Mountains",
-      category: "Eco Lodge",
-      lng: 38.0658,
-      lat: 13.1884,
-      image: "/images/6.jpg",
-      day: "Fri",
-      date: "2026-04-14",
-      startTime: "07:00",
-      endTime: "14:00",
-    },
-    {
-      name: "Kuriftu Resort & Spa Adama",
-      city: "Adama",
-      category: "City Resort",
-      lng: 39.2707,
-      lat: 8.5414,
-      image: "/images/7.jpg",
-      day: "Sat",
-      date: "2026-04-15",
-      startTime: "09:30",
-      endTime: "17:00",
-    },
-    {
-      name: "Jinka Resort",
-      city: "Jinka",
-      category: "Nature Resort",
-      lng: 36.5607,
-      lat: 5.7901,
-      image: "/images/3.jpg",
-      day: "Sun",
-      date: "2026-04-16",
-      startTime: "08:00",
-      endTime: "15:00",
-    },
-    {
-      name: "Goha Hotel",
-      city: "Gondar",
-      category: "City Hotel",
-      lng: 37.4666,
-      lat: 12.6096,
-      image: "/images/2.jpg",
-      day: "Mon",
-      date: "2026-04-17",
-      startTime: "10:00",
-      endTime: "16:00",
-    },
-    {
-      name: "Paradise Lodge",
-      city: "Arba Minch",
-      category: "Lake View Lodge",
-      lng: 37.5711,
-      lat: 6.0358,
-      image: "/images/4.jpg",
-      day: "Tue",
-      date: "2026-04-18",
-      startTime: "08:30",
-      endTime: "14:30",
-    },
-    {
-      name: "Mezena Lodge",
-      city: "Lalibela",
-      category: "Heritage Lodge",
-      lng: 39.0468,
-      lat: 12.0324,
-      image: "/images/5.jpg",
-      day: "Wed",
-      date: "2026-04-19",
-      startTime: "09:00",
-      endTime: "15:30",
-    },
-  ]);
+  const [tripName, setTripName] = useState("Trip itinerary");
+  const [isExportingCalendar, setIsExportingCalendar] = useState(false);
+  const [isCalendarPermissionOpen, setIsCalendarPermissionOpen] = useState(false);
+  const [isCalendarConnected, setIsCalendarConnected] = useState(false);
+  const [isCalendarStatusLoading, setIsCalendarStatusLoading] = useState(true);
+  const [places, setPlaces] = useState<Place[]>(DEFAULT_TRIP_PLACES);
+
+  useEffect(() => {
+    if (!tripId) return;
+
+    const storedTrip = readStoredTrips().find((item) => item.trip.id === tripId)?.trip;
+    const staticTrip = getTripById(tripId);
+    const resolvedPlaces = sortPlacesByTimeline(
+      storedTrip?.places ?? staticTrip?.places ?? DEFAULT_TRIP_PLACES,
+    );
+
+    setTripName(storedTrip?.name ?? staticTrip?.name ?? "Trip itinerary");
+    setPlaces(resolvedPlaces);
+    setSelectedPlace(null);
+    setChatTaggedPlace(null);
+    setEditingPlace(null);
+    setEditingPlaceSourceName(null);
+  }, [tripId]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const loadCalendarStatus = async () => {
+      try {
+        const response = await fetch('/api/google-calendar/status');
+        if (!response.ok) {
+          throw new Error('Unable to read Google Calendar connection status.');
+        }
+
+        const payload = (await response.json()) as { connected?: boolean };
+
+        if (isActive) {
+          setIsCalendarConnected(Boolean(payload.connected));
+        }
+      } catch {
+        if (isActive) {
+          setIsCalendarConnected(false);
+        }
+      } finally {
+        if (isActive) {
+          setIsCalendarStatusLoading(false);
+        }
+      }
+    };
+
+    void loadCalendarStatus();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const connected = searchParams.get('calendar_connected');
+    const error = searchParams.get('calendar_error');
+    const shouldAutoExport = searchParams.get('calendar_export') === '1';
+
+    if (error) {
+      toast.error(`Google Calendar connection failed: ${error}`);
+      router.replace(`/dashboard/trips/${tripId}`);
+      return;
+    }
+
+    if (shouldAutoExport && isCalendarConnected && !autoExportTriggeredRef.current) {
+      autoExportTriggeredRef.current = true;
+      setIsCalendarPermissionOpen(false);
+      void handleExportCalendar().finally(() => {
+        router.replace(`/dashboard/trips/${tripId}`);
+      });
+      return;
+    }
+
+    if (connected) {
+      toast.success('Google Calendar connected successfully.');
+      router.replace(`/dashboard/trips/${tripId}`);
+    }
+  }, [isCalendarConnected, router, searchParams, tripId]);
 
   const dayOptions = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   const handleEditPlace = (place: Place) => {
-    setEditingPlace(place);
+    setEditingPlace(normalizePlaceForEdit(place));
     setEditingPlaceSourceName(place.name);
     setEditingQuery("");
   };
 
   const handleSavePlace = (updatedPlace: Place) => {
-    setPlaces((currentPlaces) =>
-      currentPlaces.map((place) =>
+    setPlaces((currentPlaces) => {
+      const nextPlaces = currentPlaces.map((place) =>
         place.name === editingPlaceSourceName ? updatedPlace : place,
-      ),
-    );
+      );
+      const sortedPlaces = sortPlacesByTimeline(nextPlaces);
+
+      if (isCustomTrip) {
+        updateStoredTripPlaces(tripId, sortedPlaces);
+      }
+
+      return sortedPlaces;
+    });
+
     setSelectedPlace(updatedPlace);
     setEditingPlaceSourceName(null);
     setEditingPlace(null);
   };
 
   const handleDeletePlace = (placeName: string) => {
-    setPlaces((currentPlaces) =>
-      currentPlaces.filter((place) => place.name !== placeName),
-    );
+    setPlaces((currentPlaces) => {
+      const nextPlaces = currentPlaces.filter((place) => place.name !== placeName);
+      const sortedPlaces = sortPlacesByTimeline(nextPlaces);
+
+      if (isCustomTrip) {
+        updateStoredTripPlaces(tripId, sortedPlaces);
+      }
+
+      return sortedPlaces;
+    });
+
     setSelectedPlace((currentPlace) =>
       currentPlace?.name === placeName ? null : currentPlace,
     );
     setEditingPlaceSourceName(null);
     setEditingPlace(null);
+  };
+
+  const handleChatPlacesUpdate = (nextPlaces: Place[]) => {
+    const sortedPlaces = sortPlacesByTimeline(nextPlaces);
+    setPlaces(sortedPlaces);
+
+    if (isCustomTrip) {
+      updateStoredTripPlaces(tripId, sortedPlaces);
+    }
+  };
+
+  const handleOpenChatForPlace = (place: Place) => {
+    setSelectedPlace(place);
+    setChatTaggedPlace(place);
+    setIsChatOpen(true);
+  };
+
+  const handleExportCalendar = async () => {
+    if (places.length === 0) {
+      toast.error("There are no events to export.");
+      return;
+    }
+
+    setIsExportingCalendar(true);
+
+    try {
+      const response = await fetch("/api/trips/calendar/export", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tripName,
+          places,
+        }),
+      });
+
+      const payload = (await response.json()) as {
+        createdCount?: number;
+        failedCount?: number;
+        error?: string;
+        message?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(
+          payload.error ?? payload.message ?? "Failed to export events to Google Calendar.",
+        );
+      }
+
+      const createdCount = payload.createdCount ?? places.length;
+      const failedCount = payload.failedCount ?? 0;
+
+      if (failedCount > 0) {
+        toast.warning(
+          `Exported ${createdCount} event${createdCount === 1 ? "" : "s"} with ${failedCount} skipped.`,
+        );
+        return;
+      }
+
+      toast.success(
+        `Exported ${createdCount} event${createdCount === 1 ? "" : "s"} to Google Calendar.`,
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to export events to Google Calendar.";
+      toast.error(message);
+    } finally {
+      setIsExportingCalendar(false);
+    }
+  };
+
+  const requestCalendarExport = () => {
+    if (places.length === 0) {
+      toast.error("There are no events to export.");
+      return;
+    }
+
+    setIsCalendarPermissionOpen(true);
+  };
+
+  const confirmCalendarExport = async () => {
+    if (!isCalendarConnected) {
+      const returnTo = `/dashboard/trips/${tripId}?calendar_export=1`;
+      window.location.assign(
+        `/api/google-calendar/oauth/start?returnTo=${encodeURIComponent(returnTo)}`,
+      );
+      return;
+    }
+
+    setIsCalendarPermissionOpen(false);
+    await handleExportCalendar();
   };
 
   const filteredEditPlaces = useMemo(() => {
@@ -347,10 +451,71 @@ export default function Home() {
             onToggleRouteMode={() => setPreferRoadRoute((prev) => !prev)}
             onSelectPlace={setSelectedPlace}
             onEditPlace={handleEditPlace}
+            onOpenChatForPlace={handleOpenChatForPlace}
+            onExportCalendar={requestCalendarExport}
+            isExportingCalendar={isExportingCalendar}
           />
         </aside>
 
-        <ChatAside isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+        <Dialog open={isCalendarPermissionOpen} onOpenChange={setIsCalendarPermissionOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Grant Google Calendar access?</DialogTitle>
+              <DialogDescription>
+                Connect Google Calendar first, then export this trip after you approve the access.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+              {isCalendarStatusLoading ? (
+                <span>Checking Google Calendar connection...</span>
+              ) : isCalendarConnected ? (
+                <span>
+                  {places.length} event{places.length === 1 ? "" : "s"} will be created from this trip.
+                </span>
+              ) : (
+                <span>You need to connect Google Calendar before exporting these events.</span>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsCalendarPermissionOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={confirmCalendarExport}
+                disabled={isExportingCalendar || isCalendarStatusLoading}
+              >
+                {isCalendarConnected
+                  ? isExportingCalendar
+                    ? "Exporting..."
+                    : "Export events"
+                  : "Connect Google Calendar"}
+              </Button>
+            </DialogFooter>
+
+            <p className="text-muted-foreground text-xs">
+              {isCalendarConnected
+                ? 'Google access is already connected. Export will use the granted calendar session.'
+                : 'You will be redirected to Google to approve calendar access, then returned here.'}
+            </p>
+          </DialogContent>
+        </Dialog>
+
+        <ChatAside
+          isOpen={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+          places={places}
+          taggedPlace={chatTaggedPlace}
+          onClearTaggedPlace={() => setChatTaggedPlace(null)}
+          onApplyPlaces={handleChatPlacesUpdate}
+          onSelectPlace={setSelectedPlace}
+        />
 
         <BotIcon
           isChatOpen={isChatOpen}
@@ -415,18 +580,8 @@ export default function Home() {
                           key={place.name}
                           type="button"
                           onClick={() => {
-                            setEditingPlace((current) =>
-                              current
-                                ? {
-                                    ...place,
-                                    day: current.day ?? place.day,
-                                    date: current.date ?? place.date,
-                                    startTime:
-                                      current.startTime ?? place.startTime,
-                                    endTime: current.endTime ?? place.endTime,
-                                  }
-                                : place,
-                            );
+                            setEditingPlace(normalizePlaceForEdit(place));
+                            setEditingPlaceSourceName(place.name);
                             setSelectedPlace(place);
                           }}
                           className={`mb-2 flex w-full items-center gap-3 rounded-md border px-3 py-3 text-left transition last:mb-0 ${
@@ -465,6 +620,24 @@ export default function Home() {
                     <p className="mt-1 text-sm text-slate-600">
                       {editingPlace.city} · {editingPlace.category}
                     </p>
+                    <div className="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
+                      <div className="rounded-md border border-slate-200 bg-white px-3 py-2">
+                        <span className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                          Date
+                        </span>
+                        <span className="mt-1 block font-medium text-slate-900">
+                          {editingPlace.date || "Not set"}
+                        </span>
+                      </div>
+                      <div className="rounded-md border border-slate-200 bg-white px-3 py-2">
+                        <span className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                          Time
+                        </span>
+                        <span className="mt-1 block font-medium text-slate-900">
+                          {editingPlace.startTime || "--:--"} - {editingPlace.endTime || "--:--"}
+                        </span>
+                      </div>
+                    </div>
                     <p className="mt-3 text-sm text-slate-600">
                       Use the schedule controls below. The place itself comes
                       from the search list.
