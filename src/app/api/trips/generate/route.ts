@@ -209,7 +209,8 @@ Output JSON only.`;
         day: sanitizeDay(item.day, anchor.day),
         date: futureDate,
         startTime: range.startTime,
-        endTime: range.endTime
+        endTime: range.endTime,
+        loyaltyPoints: selectedEvent.reward
       };
     });
 
@@ -223,7 +224,8 @@ Output JSON only.`;
       day: DEFAULT_TRIP_PLACES[index % DEFAULT_TRIP_PLACES.length].day,
       date: createFutureDate(tripCreationDate, index),
       startTime: DEFAULT_TRIP_PLACES[index % DEFAULT_TRIP_PLACES.length].startTime,
-      endTime: DEFAULT_TRIP_PLACES[index % DEFAULT_TRIP_PLACES.length].endTime
+      endTime: DEFAULT_TRIP_PLACES[index % DEFAULT_TRIP_PLACES.length].endTime,
+      loyaltyPoints: event.reward
     }));
 
     const places = resolvedPlaces.length > 0 ? resolvedPlaces : fallbackPlaces;

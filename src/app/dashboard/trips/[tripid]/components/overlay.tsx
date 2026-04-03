@@ -10,6 +10,7 @@ type OverlayProps = {
   showRoute: boolean;
   preferRoadRoute: boolean;
   isListMinimized: boolean;
+  completedPlaceNames: string[];
   onToggleRoute: () => void;
   onToggleRouteMode: () => void;
   onSelectPlace: (place: Place) => void;
@@ -25,6 +26,7 @@ export default function Overlay({
   showRoute,
   preferRoadRoute,
   isListMinimized,
+  completedPlaceNames,
   onToggleRoute,
   onToggleRouteMode,
   onSelectPlace,
@@ -103,6 +105,7 @@ export default function Overlay({
             <div className="flex gap-3 snap-x snap-mandatory">
               {places.map((place) => {
                 const isSelected = selectedPlace?.name === place.name;
+                const isCompleted = completedPlaceNames.includes(place.name);
 
                 return (
                   <div
@@ -110,10 +113,12 @@ export default function Overlay({
                     className={`relative w-[190px] shrink-0 snap-start overflow-hidden rounded-[16px] border text-left shadow-[0_10px_30px_rgba(15,23,42,0.08)] transition duration-200 ${
                       isSelected
                         ? "border-sky-500 bg-sky-50 ring-2 ring-sky-200"
-                        : "border-slate-200 bg-white"
+                        : isCompleted
+                          ? "border-emerald-200 bg-emerald-50"
+                          : "border-slate-200 bg-white"
                     }`}
                   >
-                    <div className="block w-full text-left">
+                    <div className={`block w-full text-left ${isCompleted ? "opacity-80" : ""}`}>
                       <div className="relative aspect-[16/10] w-full overflow-hidden">
                         <Image
                           src={place.image}
@@ -129,11 +134,12 @@ export default function Overlay({
 
                         <button
                           type="button"
+                          disabled={isCompleted}
                           onClick={(event) => {
                             event.stopPropagation();
                             onEditPlace(place);
                           }}
-                          className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-md border border-white/10 bg-white text-slate-700 shadow-md transition hover:bg-slate-50"
+                          className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-md border border-white/10 bg-white text-slate-700 shadow-md transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                           aria-label={`Edit ${place.name}`}
                           title="Edit place"
                         >
@@ -161,11 +167,12 @@ export default function Overlay({
 
                         <button
                           type="button"
+                          disabled={isCompleted}
                           onClick={(event) => {
                             event.stopPropagation();
                             onOpenChatForPlace(place);
                           }}
-                          className="absolute right-2 top-12 flex h-8 w-8 items-center justify-center rounded-md border border-white/10 bg-white text-slate-700 shadow-md transition hover:bg-slate-50"
+                          className="absolute right-2 top-12 flex h-8 w-8 items-center justify-center rounded-md border border-white/10 bg-white text-slate-700 shadow-md transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                           aria-label={`Chat about ${place.name}`}
                           title="Chat update"
                         >
@@ -190,8 +197,9 @@ export default function Overlay({
                       <div className="p-3">
                         <button
                           type="button"
+                          disabled={isCompleted}
                           onClick={() => onSelectPlace(place)}
-                          className="w-full text-left"
+                          className="w-full text-left disabled:cursor-not-allowed"
                         >
                           <p className="line-clamp-2 text-sm font-semibold leading-tight text-slate-950">
                             {place.name}
@@ -199,6 +207,11 @@ export default function Overlay({
                           <p className="mt-1 truncate text-xs text-slate-500">
                             {place.city}
                           </p>
+                          {isCompleted ? (
+                            <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700">
+                              Completed
+                            </p>
+                          ) : null}
                         </button>
                       </div>
                     </div>
@@ -211,6 +224,7 @@ export default function Overlay({
           <div className="hidden md:block">
             {places.map((place) => {
               const isSelected = selectedPlace?.name === place.name;
+              const isCompleted = completedPlaceNames.includes(place.name);
 
               return (
                 <div
@@ -218,13 +232,16 @@ export default function Overlay({
                   className={`mb-2 flex w-full items-stretch gap-3 rounded-[16px] border p-2 text-left shadow-[0_8px_24px_rgba(15,23,42,0.08)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(15,23,42,0.14)] ${
                     isSelected
                       ? "border-sky-500 bg-sky-50 ring-2 ring-sky-200"
-                      : "border-slate-200 bg-white hover:border-slate-300"
+                      : isCompleted
+                        ? "border-emerald-200 bg-emerald-50"
+                        : "border-slate-200 bg-white hover:border-slate-300"
                   }`}
                 >
                   <button
                     type="button"
+                    disabled={isCompleted}
                     onClick={() => onSelectPlace(place)}
-                    className="relative aspect-[4/3] w-24 shrink-0 overflow-hidden rounded-[14px] sm:w-28"
+                    className="relative aspect-[4/3] w-24 shrink-0 overflow-hidden rounded-[14px] sm:w-28 disabled:cursor-not-allowed"
                   >
                     <Image
                       src={place.image}
@@ -238,8 +255,9 @@ export default function Overlay({
 
                   <button
                     type="button"
+                    disabled={isCompleted}
                     onClick={() => onSelectPlace(place)}
-                    className="min-w-0 flex-1 py-1 pr-1 text-left"
+                    className="min-w-0 flex-1 py-1 pr-1 text-left disabled:cursor-not-allowed"
                   >
                     <p className="line-clamp-2 text-sm font-semibold leading-tight text-slate-950 sm:text-[15px]">
                       {place.name}
@@ -256,17 +274,23 @@ export default function Overlay({
                           Active
                         </span>
                       ) : null}
+                      {isCompleted ? (
+                        <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-medium text-emerald-700">
+                          Completed
+                        </span>
+                      ) : null}
                     </div>
                   </button>
 
                   <div className="flex flex-col items-start gap-2 pt-1 pr-1">
                     <button
                       type="button"
+                      disabled={isCompleted}
                       onClick={(event) => {
                         event.stopPropagation();
                         onEditPlace(place);
                       }}
-                      className="flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
+                      className="flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                       aria-label={`Edit ${place.name}`}
                       title="Edit place"
                     >
@@ -294,11 +318,12 @@ export default function Overlay({
 
                     <button
                       type="button"
+                      disabled={isCompleted}
                       onClick={(event) => {
                         event.stopPropagation();
                         onOpenChatForPlace(place);
                       }}
-                      className="flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
+                      className="flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                       aria-label={`Chat about ${place.name}`}
                       title="Chat update"
                     >

@@ -22,6 +22,12 @@ import {
   readStoredTrips,
   updateStoredTripPlaces,
 } from "@/features/trips/lib/custom-trips-storage";
+import {
+  addLoyaltyPoints,
+  getPlaceLoyaltyPoints,
+  markPlaceCompleted,
+  readCompletedPlaceNames,
+} from "@/features/trips/lib/trip-progress-storage";
 import { sortPlacesByTimeline } from "@/features/trips/lib/place-timeline";
 
 function normalizePlaceForEdit(place: Place): Place {
@@ -60,6 +66,7 @@ export default function Home() {
   const [isCalendarPermissionOpen, setIsCalendarPermissionOpen] = useState(false);
   const [isCalendarConnected, setIsCalendarConnected] = useState(false);
   const [isCalendarStatusLoading, setIsCalendarStatusLoading] = useState(true);
+  const [completedPlaceNames, setCompletedPlaceNames] = useState<string[]>([]);
   const [places, setPlaces] = useState<Place[]>(DEFAULT_TRIP_PLACES);
 
   useEffect(() => {
@@ -77,6 +84,7 @@ export default function Home() {
     setChatTaggedPlace(null);
     setEditingPlace(null);
     setEditingPlaceSourceName(null);
+    setCompletedPlaceNames(readCompletedPlaceNames(tripId));
   }, [tripId]);
 
   useEffect(() => {
@@ -141,6 +149,11 @@ export default function Home() {
   const dayOptions = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   const handleEditPlace = (place: Place) => {
+    if (completedPlaceNames.includes(place.name)) {
+      toast.info(`${place.name} is completed and cannot be edited.`);
+      return;
+    }
+
     setEditingPlace(normalizePlaceForEdit(place));
     setEditingPlaceSourceName(place.name);
     setEditingQuery("");
@@ -194,13 +207,38 @@ export default function Home() {
   };
 
   const handleOpenChatForPlace = (place: Place) => {
+    if (completedPlaceNames.includes(place.name)) {
+      toast.info(`${place.name} is completed and cannot be updated.`);
+      return;
+    }
+
     setSelectedPlace(place);
     setChatTaggedPlace(place);
     setIsChatOpen(true);
   };
 
+  const handleCompletePlace = (place: Place) => {
+    const wasMarkedCompleted = markPlaceCompleted(tripId, place.name);
+    if (!wasMarkedCompleted) {
+      toast.info(`${place.name} is already completed.`);
+      return;
+    }
+
+    const awardedPoints = getPlaceLoyaltyPoints(place);
+    const totalPoints = addLoyaltyPoints(awardedPoints);
+
+    setCompletedPlaceNames(readCompletedPlaceNames(tripId));
+    setChatTaggedPlace((currentTaggedPlace) =>
+      currentTaggedPlace?.name === place.name ? null : currentTaggedPlace,
+    );
+
+    toast.success(
+      `${place.name} completed. +${awardedPoints} loyalty points added. Total: ${totalPoints}.`,
+    );
+  };
+
   const handleExportCalendar = async () => {
-    if (places.length === 0) {
+    if (visiblePlaces.length === 0) {
       toast.error("There are no events to export.");
       return;
     }
@@ -215,7 +253,7 @@ export default function Home() {
         },
         body: JSON.stringify({
           tripName,
-          places,
+          places: visiblePlaces,
         }),
       });
 
@@ -232,7 +270,7 @@ export default function Home() {
         );
       }
 
-      const createdCount = payload.createdCount ?? places.length;
+      const createdCount = payload.createdCount ?? visiblePlaces.length;
       const failedCount = payload.failedCount ?? 0;
 
       if (failedCount > 0) {
@@ -255,7 +293,7 @@ export default function Home() {
   };
 
   const requestCalendarExport = () => {
-    if (places.length === 0) {
+    if (visiblePlaces.length === 0) {
       toast.error("There are no events to export.");
       return;
     }
@@ -289,6 +327,14 @@ export default function Home() {
       return haystack.includes(search);
     });
   }, [editingQuery, places]);
+
+  const visiblePlaces = places;
+
+  useEffect(() => {
+    if (selectedPlace && !places.some((place) => place.name === selectedPlace.name)) {
+      setSelectedPlace(null);
+    }
+  }, [places, selectedPlace]);
 
   return (
     <div className="relative isolate h-[calc(100dvh-4rem)] w-full overflow-hidden [transform:translateZ(0)]">
@@ -447,6 +493,7 @@ export default function Home() {
             showRoute={showRoute}
             preferRoadRoute={preferRoadRoute}
             isListMinimized={isTripListMinimized}
+            completedPlaceNames={completedPlaceNames}
             onToggleRoute={() => setShowRoute((prev) => !prev)}
             onToggleRouteMode={() => setPreferRoadRoute((prev) => !prev)}
             onSelectPlace={setSelectedPlace}
@@ -528,6 +575,8 @@ export default function Home() {
             selectedPlace={selectedPlace}
             showRoute={showRoute}
             preferRoadRoute={preferRoadRoute}
+            completedPlaceNames={completedPlaceNames}
+            onCompletePlace={handleCompletePlace}
           />
         </div>
 
@@ -574,12 +623,18 @@ export default function Home() {
                   <div className="max-h-72 overflow-y-auto rounded-md border border-slate-200 bg-white p-2">
                     {filteredEditPlaces.map((place) => {
                       const isActive = place.name === editingPlace.name;
+                      const isCompleted = completedPlaceNames.includes(place.name);
 
                       return (
                         <button
                           key={place.name}
                           type="button"
+                          disabled={isCompleted}
                           onClick={() => {
+                            if (isCompleted) {
+                              return;
+                            }
+
                             setEditingPlace(normalizePlaceForEdit(place));
                             setEditingPlaceSourceName(place.name);
                             setSelectedPlace(place);
@@ -587,7 +642,9 @@ export default function Home() {
                           className={`mb-2 flex w-full items-center gap-3 rounded-md border px-3 py-3 text-left transition last:mb-0 ${
                             isActive
                               ? "border-sky-500 bg-sky-50"
-                              : "border-slate-200 bg-white hover:bg-slate-50"
+                              : isCompleted
+                                ? "border-emerald-200 bg-emerald-50"
+                                : "border-slate-200 bg-white hover:bg-slate-50"
                           }`}
                         >
                           <img
@@ -602,6 +659,11 @@ export default function Home() {
                             <p className="truncate text-xs text-slate-500">
                               {place.city} · {place.category}
                             </p>
+                            {isCompleted ? (
+                              <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700">
+                                Completed
+                              </p>
+                            ) : null}
                           </div>
                         </button>
                       );
@@ -610,6 +672,12 @@ export default function Home() {
                 </section>
 
                 <section className="space-y-4 rounded-[16px] border border-slate-200 bg-white p-4">
+                  {completedPlaceNames.includes(editingPlace.name) ? (
+                    <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                      This place is completed. It stays visible, but editing is disabled.
+                    </div>
+                  ) : null}
+
                   <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
                       Current selection
@@ -651,6 +719,7 @@ export default function Home() {
                       </label>
                       <select
                         value={editingPlace.day ?? "Mon"}
+                        disabled={completedPlaceNames.includes(editingPlace.name)}
                         onChange={(event) =>
                           setEditingPlace((current) =>
                             current
@@ -658,7 +727,7 @@ export default function Home() {
                               : current,
                           )
                         }
-                        className="w-full rounded-md border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition focus:border-amber-400"
+                        className="w-full rounded-md border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition focus:border-amber-400 disabled:cursor-not-allowed disabled:bg-slate-100"
                       >
                         {dayOptions.map((day) => (
                           <option key={day} value={day}>
@@ -675,6 +744,7 @@ export default function Home() {
                       <input
                         type="date"
                         value={editingPlace.date ?? ""}
+                        disabled={completedPlaceNames.includes(editingPlace.name)}
                         onChange={(event) =>
                           setEditingPlace((current) =>
                             current
@@ -682,7 +752,7 @@ export default function Home() {
                               : current,
                           )
                         }
-                        className="w-full rounded-md border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition focus:border-amber-400"
+                        className="w-full rounded-md border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition focus:border-amber-400 disabled:cursor-not-allowed disabled:bg-slate-100"
                       />
                     </div>
                   </div>
@@ -695,6 +765,7 @@ export default function Home() {
                       <input
                         type="time"
                         value={editingPlace.startTime ?? ""}
+                        disabled={completedPlaceNames.includes(editingPlace.name)}
                         onChange={(event) =>
                           setEditingPlace((current) =>
                             current
@@ -702,11 +773,12 @@ export default function Home() {
                               : current,
                           )
                         }
-                        className="w-full rounded-md border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition focus:border-amber-400"
+                        className="w-full rounded-md border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition focus:border-amber-400 disabled:cursor-not-allowed disabled:bg-slate-100"
                       />
                       <input
                         type="time"
                         value={editingPlace.endTime ?? ""}
+                        disabled={completedPlaceNames.includes(editingPlace.name)}
                         onChange={(event) =>
                           setEditingPlace((current) =>
                             current
@@ -714,7 +786,7 @@ export default function Home() {
                               : current,
                           )
                         }
-                        className="w-full rounded-md border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition focus:border-amber-400"
+                        className="w-full rounded-md border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition focus:border-amber-400 disabled:cursor-not-allowed disabled:bg-slate-100"
                       />
                     </div>
                   </div>
@@ -722,19 +794,21 @@ export default function Home() {
                   <div className="flex flex-wrap gap-3 pt-1">
                     <button
                       type="button"
+                      disabled={completedPlaceNames.includes(editingPlace.name)}
                       onClick={() => handleSavePlace(editingPlace)}
-                      className="rounded-md bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                      className="rounded-md bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
                     >
                       Save Changes
                     </button>
                     <button
                       type="button"
+                      disabled={completedPlaceNames.includes(editingPlace.name)}
                       onClick={() =>
                         handleDeletePlace(
                           editingPlaceSourceName ?? editingPlace.name,
                         )
                       }
-                      className="rounded-md border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
+                      className="rounded-md border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:bg-rose-100 disabled:text-rose-300"
                     >
                       Delete Place
                     </button>

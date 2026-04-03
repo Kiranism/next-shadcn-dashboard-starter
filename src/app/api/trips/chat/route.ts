@@ -13,6 +13,7 @@ type TripPlace = {
   date?: string;
   startTime?: string;
   endTime?: string;
+  loyaltyPoints?: number;
 };
 
 type ChatRequestBody = {
@@ -44,8 +45,11 @@ type PendingAction = {
 type ChatResponsePayload = {
   assistant_message: string;
   needs_confirmation: boolean;
+  action_type?: 'update' | 'delete' | 'add' | 'none';
+  summary?: string;
   pending_action: PendingAction | null;
   places: TripPlace[];
+  updates?: PlaceOperation[];
 };
 
 type PlaceUpdate = {
@@ -185,7 +189,8 @@ function createAddedPlace(operation: PlaceOperation, anchor: TripPlace, index: n
     day: sanitizeDay(operation.day, anchor.day || 'Mon'),
     date: sanitizeDate(operation.date, anchor.date || '2026-04-10'),
     startTime: range.startTime,
-    endTime: range.endTime
+    endTime: range.endTime,
+    loyaltyPoints: 25
   };
 }
 

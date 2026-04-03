@@ -249,7 +249,10 @@ export function TripsDashboardClient() {
       const now = new Date();
       const tripGoal = getSingle(selections, 'interests_goal') || 'Relaxation';
       const basecampName = getSingle(selections, 'logistics_basecamp') || 'Kuriftu Bishoftu';
-      const basecamp = BASECAMPS[basecampName] ?? BASECAMPS['Kuriftu Bishoftu'];
+      const basecamp =
+        basecampName in BASECAMPS
+          ? BASECAMPS[basecampName as keyof typeof BASECAMPS]
+          : BASECAMPS['Kuriftu Bishoftu'];
       const travelDates = getSingle(selections, 'logistics_dates') || 'Specific Dates Later';
 
       const resolvedPlaces =

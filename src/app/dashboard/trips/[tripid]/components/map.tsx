@@ -16,6 +16,7 @@ export type Place = {
   date?: string;
   startTime?: string;
   endTime?: string;
+  loyaltyPoints?: number;
 };
 
 type MapProps = {
@@ -23,6 +24,8 @@ type MapProps = {
   selectedPlace: Place | null;
   showRoute: boolean;
   preferRoadRoute: boolean;
+  completedPlaceNames: string[];
+  onCompletePlace: (place: Place) => void;
 };
 
 const ROUTE_SOURCE_ID = "user-to-destination-route-source";
@@ -54,7 +57,14 @@ function haversineKm(from: [number, number], to: [number, number]): number {
   return earthRadiusKm * c;
 }
 
-function Map({ places, selectedPlace, showRoute, preferRoadRoute }: MapProps) {
+function Map({
+  places,
+  selectedPlace,
+  showRoute,
+  preferRoadRoute,
+  completedPlaceNames,
+  onCompletePlace,
+}: MapProps) {
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const popupsRef = useRef<mapboxgl.Popup[]>([]);
@@ -193,37 +203,63 @@ function Map({ places, selectedPlace, showRoute, preferRoadRoute }: MapProps) {
 
     popupsRef.current.forEach((popup) => popup.remove());
 
-    popupsRef.current = places.map((place) => {
-      const popupHtml = `
-        <div style="width: min(72vw, 250px); max-width: 250px; border-radius: 20px; overflow: hidden; font-family: var(--font-geist-sans, Arial, sans-serif); color: #0f172a; background: rgba(255, 255, 255, 0.98); box-shadow: 0 18px 50px rgba(15, 23, 42, 0.18); border: 1px solid rgba(255, 255, 255, 0.75);">
-          <div style="position: relative;">
-            <img src="${place.image}" alt="${place.name}" style="width: 100%; height: 128px; object-fit: cover; display: block;" />
-            <div style="position: absolute; left: 10px; top: 10px; border-radius: 999px; background: rgba(15, 23, 42, 0.78); color: #fff; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; padding: 5px 9px;">${place.category ?? "Stay"}</div>
-          </div>
-          <div style="padding: 12px 13px 13px 13px;">
-            <div style="font-weight: 700; font-size: 14px; line-height: 1.3; margin-bottom: 4px;">${place.name}</div>
-            <div style="font-size: 12px; color: #475569;">${place.city ?? "Ethiopia"}</div>
+    if (!selectedPlace) {
+      popupsRef.current = [];
+      return;
+    }
+
+    const activePlace = places.find((place) => place.name === selectedPlace.name) ?? selectedPlace;
+
+    const loyaltyPoints = activePlace.loyaltyPoints ?? 25;
+    const isCompleted = completedPlaceNames.includes(activePlace.name);
+    const popupHtml = `
+      <div style="width: min(72vw, 250px); max-width: 250px; border-radius: 20px; overflow: hidden; font-family: var(--font-geist-sans, Arial, sans-serif); color: #0f172a; background: rgba(255, 255, 255, 0.98); box-shadow: 0 18px 50px rgba(15, 23, 42, 0.18); border: 1px solid rgba(255, 255, 255, 0.75);">
+        <div style="position: relative;">
+          <img src="${activePlace.image}" alt="${activePlace.name}" style="width: 100%; height: 128px; object-fit: cover; display: block;" />
+          <div style="position: absolute; left: 10px; top: 10px; border-radius: 999px; background: rgba(15, 23, 42, 0.78); color: #fff; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; padding: 5px 9px;">${activePlace.category ?? "Stay"}</div>
+        </div>
+        <div style="padding: 12px 13px 13px 13px;">
+          <div style="font-weight: 700; font-size: 14px; line-height: 1.3; margin-bottom: 4px;">${activePlace.name}</div>
+          <div style="font-size: 12px; color: #475569;">${activePlace.city ?? "Ethiopia"}</div>
+          <div style="margin-top: 10px; border-top: 1px solid rgba(148, 163, 184, 0.24); padding-top: 10px;">
+            <button
+              type="button"
+              data-complete-place-button="true"
+              ${isCompleted ? 'disabled' : ''}
+              style="width: 100%; border-radius: 14px; border: 0; padding: 10px 12px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: ${isCompleted ? '#64748b' : '#ffffff'}; background: ${isCompleted ? '#e2e8f0' : '#2563eb'}; cursor: ${isCompleted ? 'not-allowed' : 'pointer'}; pointer-events: ${isCompleted ? 'none' : 'auto'};">
+              ${isCompleted ? 'Completed' : `Complete +${loyaltyPoints} points`}
+            </button>
           </div>
         </div>
-      `;
+      </div>
+    `;
 
-      return new mapboxgl.Popup({
+    popupsRef.current = [
+      new mapboxgl.Popup({
         offset: 18,
         closeButton: false,
         closeOnClick: false,
         maxWidth: "300px",
         className: "place-popup",
       })
-        .setLngLat([place.lng, place.lat])
+        .setLngLat([activePlace.lng, activePlace.lat])
         .setHTML(popupHtml)
-        .addTo(map);
-    });
+        .addTo(map),
+    ];
+
+    const popupElement = popupsRef.current[0]?.getElement();
+    const completeButton = popupElement?.querySelector<HTMLButtonElement>('[data-complete-place-button="true"]');
+
+    const onClickComplete = () => onCompletePlace(activePlace);
+
+    completeButton?.addEventListener('click', onClickComplete);
 
     return () => {
+      completeButton?.removeEventListener('click', onClickComplete);
       popupsRef.current.forEach((popup) => popup.remove());
       popupsRef.current = [];
     };
-  }, [places]);
+  }, [places, selectedPlace, completedPlaceNames, onCompletePlace]);
 
   useEffect(() => {
     const map = mapRef.current;

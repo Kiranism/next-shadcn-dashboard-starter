@@ -1,8 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { Icons } from '@/components/icons';
+import {
+  readLoyaltyPoints,
+  subscribeToLoyaltyPointsChanges
+} from '@/features/trips/lib/trip-progress-storage';
 
 type Reward = {
   name: string;
@@ -49,10 +53,25 @@ export default function MyPointsClient() {
   const [points, setPoints] = useState(initialPoints);
   const [redeemedCounts, setRedeemedCounts] = useState<Record<string, number>>({});
 
+  useEffect(() => {
+    setPoints(readLoyaltyPoints(initialPoints));
+
+    return subscribeToLoyaltyPointsChanges(() => {
+      setPoints(readLoyaltyPoints(initialPoints));
+    });
+  }, []);
+
   function handleRedeem(reward: Reward) {
     if (points < reward.coinCost) return;
 
-    setPoints((currentPoints) => currentPoints - reward.coinCost);
+    const nextPoints = points - reward.coinCost;
+
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('dashboard.loyalty.points.v1', String(nextPoints));
+      window.dispatchEvent(new Event('loyalty-points-change'));
+    }
+
+    setPoints(nextPoints);
     setRedeemedCounts((currentCounts) => ({
       ...currentCounts,
       [reward.name]: (currentCounts[reward.name] ?? 0) + 1

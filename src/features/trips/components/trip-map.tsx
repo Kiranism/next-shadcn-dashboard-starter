@@ -16,6 +16,7 @@ export type Place = {
   date?: string;
   startTime?: string;
   endTime?: string;
+  loyaltyPoints?: number;
 };
 
 type MapProps = {
