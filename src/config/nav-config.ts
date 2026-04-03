@@ -19,6 +19,14 @@ export const navGroups: NavGroup[] = [
         shortcut: ['c', 'c'],
         isActive: false,
         items: []
+      },
+      {
+        title: 'Trips',
+        url: '/dashboard/trips',
+        icon: 'mapPin',
+        shortcut: ['t', 't'],
+        isActive: false,
+        items: []
       }
     ]
   }

@@ -31,6 +31,7 @@ import {
   IconDeviceLaptop,
   IconDots,
   IconDotsVertical,
+  IconCompass,
   IconEdit,
   IconExternalLink,
   IconEyeOff,
@@ -48,6 +49,7 @@ import {
   IconLayoutDashboard,
   IconLayoutKanban,
   IconLayoutSidebar,
+  IconMapPin,
   IconLoader2,
   IconLock,
   IconLogin,
@@ -80,6 +82,7 @@ import {
   IconTypography,
   IconUnderline,
   IconUpload,
+  IconWallet,
   IconUser,
   IconUserCircle,
   IconUserEdit,
@@ -87,8 +90,8 @@ import {
   IconUsers,
   IconVideo,
   IconCrown,
-  IconX
-} from '@tabler/icons-react';
+  IconX,
+} from "@tabler/icons-react";
 
 export type Icon = React.ComponentType<IconProps>;
 
@@ -127,6 +130,8 @@ export const Icons = {
   dashboard: IconLayoutDashboard,
   kanban: IconLayoutKanban,
   panelLeft: IconLayoutSidebar,
+  compass: IconCompass,
+  mapPin: IconMapPin,
 
   // User
   user: IconUser,
@@ -188,12 +193,14 @@ export const Icons = {
   product: IconBox,
   badgeCheck: IconRosetteDiscountCheck,
   lock: IconLock,
+  wallet: IconWallet,
 
   // Data / Charts
   trendingDown: IconTrendingDown,
   trendingUp: IconTrendingUp,
   eyeOff: IconEyeOff,
   adjustments: IconAdjustmentsHorizontal,
+  sparkles: IconSparkles,
 
   // Text formatting
   bold: IconBold,
@@ -208,5 +215,5 @@ export const Icons = {
   slash: IconSlash,
   calendar: IconCalendar,
   galleryVerticalEnd: IconStack2,
-  moreHorizontal: IconDots
+  moreHorizontal: IconDots,
 };
