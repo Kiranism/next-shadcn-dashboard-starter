@@ -71,19 +71,8 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem>
-                <Icons.sparkles className='mr-2 h-4 w-4' />
-                Upgrade to Pro
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
                 <Icons.circleCheck className='mr-2 h-4 w-4' />
                 Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Icons.creditCard className='mr-2 h-4 w-4' />
-                Billing
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <Icons.notification className='mr-2 h-4 w-4' />

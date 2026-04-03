@@ -184,12 +184,8 @@ export const Icons = {
   palette: IconPalette,
 
   // Commerce / Plans
-  billing: IconCreditCard,
   creditCard: IconCreditCard,
   product: IconBox,
-  pro: IconCrown,
-  exclusive: IconStar,
-  sparkles: IconSparkles,
   badgeCheck: IconRosetteDiscountCheck,
   lock: IconLock,
 

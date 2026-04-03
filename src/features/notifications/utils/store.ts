@@ -23,14 +23,14 @@ type NotificationState = {
 const mockNotifications: Notification[] = [
   {
     id: '1',
-    title: 'New team member joined',
-    body: 'Sarah Connor has joined the Engineering workspace.',
+    title: 'New dashboard insight ready',
+    body: 'A fresh performance summary is ready for review.',
     status: 'unread',
     createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
     actions: [
       {
         id: 'view',
-        label: 'View workspace',
+        label: 'View dashboard',
         type: 'redirect',
         style: 'primary'
       }
@@ -53,14 +53,14 @@ const mockNotifications: Notification[] = [
   },
   {
     id: '3',
-    title: 'Billing cycle updated',
-    body: 'Your Pro plan has been renewed. Next invoice on April 24, 2026.',
+    title: 'System settings updated',
+    body: 'Your dashboard preferences were saved successfully.',
     status: 'unread',
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
     actions: [
       {
-        id: 'billing',
-        label: 'View billing',
+        id: 'view',
+        label: 'View dashboard',
         type: 'redirect',
         style: 'primary'
       }
