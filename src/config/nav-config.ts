@@ -2,14 +2,14 @@ import { NavGroup } from '@/types';
 
 export const navGroups: NavGroup[] = [
   {
-    label: 'Overview',
+    label: '',
     items: [
-      {
-        title: 'Dashboard',
-        url: '/dashboard/overview',
-        icon: 'dashboard',
+     {
+        title: 'Trips',
+        url: '/dashboard/trips',
+        icon: 'mapPin',
+        shortcut: ['t', 't'],
         isActive: false,
-        shortcut: ['d', 'd'],
         items: []
       },
       {
@@ -20,14 +20,16 @@ export const navGroups: NavGroup[] = [
         isActive: false,
         items: []
       },
-      {
-        title: 'Trips',
-        url: '/dashboard/trips',
-        icon: 'mapPin',
-        shortcut: ['t', 't'],
+
+            {
+        title: 'Dashboard',
+        url: '/dashboard/overview',
+        icon: 'dashboard',
         isActive: false,
+        shortcut: ['d', 'd'],
         items: []
       },
+ 
       {
         title: 'Rewards',
         url: '/dashboard/rewards',

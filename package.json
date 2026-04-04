@@ -68,6 +68,7 @@
     "googleapis": "^171.4.0",
     "input-otp": "^1.4.2",
     "kbar": "^0.1.0-beta.48",
+    "lottie-react": "^2.4.1",
     "mapbox-gl": "^3.21.0",
     "match-sorter": "^8.2.0",
     "motion": "^11.18.2",
