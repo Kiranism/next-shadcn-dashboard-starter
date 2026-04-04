@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Icons } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,11 @@ export default function ChatViewPage() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const canSubmit = input.trim().length > 0 && !isLoading;
+  const scrollAnchorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    scrollAnchorRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isLoading]);
 
   useEffect(() => {
     try {
@@ -190,6 +195,7 @@ export default function ChatViewPage() {
                     </div>
                   </div>
                 )}
+                <div ref={scrollAnchorRef} />
               </div>
             )}
           </ScrollArea>
