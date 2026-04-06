@@ -205,6 +205,13 @@ export const Icons = {
   underline: IconUnderline,
   text: IconTypography,
 
+  // Toast
+  toastSuccess: IconCircleCheck,
+  toastInfo: IconInfoCircle,
+  toastWarning: IconAlertTriangle,
+  toastError: IconCircleX,
+  toastLoading: IconLoader2,
+
   // Misc
   pizza: IconPizza,
   workspace: IconFolder,

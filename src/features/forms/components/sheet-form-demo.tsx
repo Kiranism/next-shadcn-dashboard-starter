@@ -260,6 +260,57 @@ function DialogFormSection() {
 }
 
 // ---------------------------------------------------------------------------
+// Toast Demo
+// ---------------------------------------------------------------------------
+
+function ToastDemoSection() {
+  return (
+    <Card className='md:col-span-2'>
+      <CardHeader>
+        <CardTitle>Toast Notifications</CardTitle>
+        <CardDescription>
+          Trigger different toast variants to preview notification styles.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className='flex flex-wrap gap-2'>
+        <Button variant='outline' onClick={() => toast('Default toast notification')}>
+          Default
+        </Button>
+        <Button variant='outline' onClick={() => toast.success('Action completed successfully!')}>
+          <Icons.circleCheck className='mr-2 h-4 w-4' />
+          Success
+        </Button>
+        <Button variant='outline' onClick={() => toast.error('Something went wrong.')}>
+          <Icons.circleX className='mr-2 h-4 w-4' />
+          Error
+        </Button>
+        <Button variant='outline' onClick={() => toast.warning('Please review before continuing.')}>
+          <Icons.warning className='mr-2 h-4 w-4' />
+          Warning
+        </Button>
+        <Button variant='outline' onClick={() => toast.info('Here is some useful information.')}>
+          <Icons.info className='mr-2 h-4 w-4' />
+          Info
+        </Button>
+        <Button
+          variant='outline'
+          onClick={() =>
+            toast.promise(new Promise((resolve) => setTimeout(resolve, 2000)), {
+              loading: 'Loading...',
+              success: 'Data loaded!',
+              error: 'Failed to load.'
+            })
+          }
+        >
+          <Icons.spinner className='mr-2 h-4 w-4' />
+          Promise
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main Demo
 // ---------------------------------------------------------------------------
 
@@ -268,6 +319,7 @@ export default function SheetFormDemo() {
     <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
       <SheetFormSection />
       <DialogFormSection />
+      <ToastDemoSection />
     </div>
   );
 }
