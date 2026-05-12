@@ -64,7 +64,79 @@ model Project {
   ChatChannel          ChatChannel[]
   Chat                 Chat[]
 
+  /// Персональные планы % по уровням (блогеры / инфлюенсеры)
+  referralPlansEnabled            Boolean                  @default(false) @map("referral_plans_enabled")
+  defaultReferralCommissionPlanId String?                  @map("default_referral_commission_plan_id")
+  referralCommissionPlans         ReferralCommissionPlan[] @relation("ProjectCommissionPlans")
+  defaultReferralCommissionPlan   ReferralCommissionPlan?  @relation("ProjectDefaultCommissionPlan", fields: [defaultReferralCommissionPlanId], references: [id], onDelete: SetNull)
+
   @@map("projects")
+}
+
+/// План процентов реферальных выплат по уровням (снимок для атрибуции при регистрации)
+model ReferralCommissionPlan {
+  id             String   @id @default(cuid())
+  projectId      String   @map("project_id")
+  name           String
+  maxPayoutDepth Int      @default(3) @map("max_payout_depth")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  project              Project                         @relation("ProjectCommissionPlans", fields: [projectId], references: [id], onDelete: Cascade)
+  defaultForProjects   Project[]                       @relation("ProjectDefaultCommissionPlan")
+  levels               ReferralCommissionPlanLevel[]
+  outboundUsers        User[]                          @relation("UserOutboundReferralPlan")
+  referralAttributions ReferralAttribution[]
+
+  @@index([projectId])
+  @@map("referral_commission_plans")
+}
+
+model ReferralCommissionPlanLevel {
+  id        String   @id @default(cuid())
+  planId    String   @map("plan_id")
+  level     Int
+  percent   Decimal  @default(0) @db.Decimal(5, 2)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  plan ReferralCommissionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, level])
+  @@map("referral_commission_plan_levels")
+}
+
+/// Зафиксированный план выплат для приглашённого пользователя (не меняется при смене настроек реферера)
+model ReferralAttribution {
+  id               String   @id @default(cuid())
+  userId           String   @unique @map("user_id")
+  projectId        String   @map("project_id")
+  referrerId       String   @map("referrer_id")
+  commissionPlanId String   @map("commission_plan_id")
+  locked           Boolean  @default(true)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  commissionPlan ReferralCommissionPlan @relation(fields: [commissionPlanId], references: [id], onDelete: Restrict)
+
+  @@index([projectId])
+  @@index([referrerId])
+  @@map("referral_attributions")
+}
+
+/// Право смотреть реферальную статистику subjectUserId (блогер + руководитель / партнёр)
+model ReferralStatsGrant {
+  id            String   @id @default(cuid())
+  projectId     String   @map("project_id")
+  subjectUserId String   @map("subject_user_id")
+  viewerUserId  String   @map("viewer_user_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@unique([projectId, subjectUserId, viewerUserId])
+  @@index([projectId, viewerUserId])
+  @@map("referral_stats_grants")
 }
 
 model BonusLevel {
@@ -263,6 +335,10 @@ model User {
   referrer                User?              @relation("UserReferrals", fields: [referredBy], references: [id])
   referrals               User[]             @relation("UserReferrals")
   Chat                    Chat[]
+
+  outboundReferralPlanId String?                 @map("outbound_referral_plan_id")
+  outboundReferralPlan   ReferralCommissionPlan? @relation("UserOutboundReferralPlan", fields: [outboundReferralPlanId], references: [id], onDelete: SetNull)
+  referralAttribution    ReferralAttribution?
 
   @@unique([projectId, email])
   @@unique([projectId, phone])

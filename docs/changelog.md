@@ -1,5 +1,24 @@
 # Changelog
 
+## [2026-05-12] - Персональные планы реферальных комиссий (блогеры)
+
+### 🎯 Добавлено
+- Модели БД: `ReferralCommissionPlan`, `ReferralCommissionPlanLevel`, `ReferralAttribution` (снимок плана для приглашённого), `ReferralStatsGrant` (просмотр статистики subject другим пользователем проекта)
+- Поля проекта: `referralPlansEnabled`, `defaultReferralCommissionPlanId`; у пользователя: `outboundReferralPlanId`
+- Сервис `ReferralCommissionService` и интеграция в `UserService.createUser` (атрибуция при `referredBy`, если флаг включён)
+- `ReferralService.processReferralBonus` учитывает зафиксированный план и `maxPayoutDepth` плана
+- API: `/referral-commission-plans`, `/referral-commission-settings`, `POST .../seed-from-legacy`, `PATCH .../users/:id/referral-outbound-plan`, `GET .../referral-insights/:subjectUserId`, `/referral-stats-grants`
+- Вкладка **«Планы %»** на странице реферальной программы проекта
+
+### 🔄 Изменено
+- Миграция `prisma/migrations/20260512_referral_commission_plans/migration.sql` (нужно применить на окружениях)
+
+### 🐛 Исправлено
+- —
+
+### 🗑️ Удалено
+- —
+
 ## [2026-03-09] - Улучшенный UX для настройки режимов начисления бонусов
 
 ### 🎯 Добавлено

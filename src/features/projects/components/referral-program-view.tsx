@@ -42,6 +42,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { ReferralSettingsForm } from './referral-settings-form';
 import { ReferralStatsView } from './referral-stats-view';
+import { ReferralCommissionPlansPanel } from './referral-commission-plans-panel';
 import type { Project, ReferralProgram } from '@/types/bonus';
 import { getReferralLinkExample } from '@/lib/utils/referral-link';
 
@@ -233,7 +234,7 @@ export function ReferralProgramView({ projectId }: ReferralProgramViewProps) {
             onValueChange={setActiveTab}
             className='space-y-6'
           >
-            <TabsList className='grid w-full grid-cols-2'>
+            <TabsList className='grid w-full grid-cols-3'>
               <TabsTrigger value='settings' className='flex items-center'>
                 <Settings className='mr-2 h-4 w-4' />
                 Настройки
@@ -241,6 +242,10 @@ export function ReferralProgramView({ projectId }: ReferralProgramViewProps) {
               <TabsTrigger value='stats' className='flex items-center'>
                 <BarChart3 className='mr-2 h-4 w-4' />
                 Статистика
+              </TabsTrigger>
+              <TabsTrigger value='plans' className='flex items-center'>
+                <Target className='mr-2 h-4 w-4' />
+                Планы %
               </TabsTrigger>
             </TabsList>
 
@@ -255,6 +260,10 @@ export function ReferralProgramView({ projectId }: ReferralProgramViewProps) {
 
             <TabsContent value='stats' className='space-y-6'>
               <ReferralStatsView projectId={projectId} />
+            </TabsContent>
+
+            <TabsContent value='plans' className='space-y-6'>
+              <ReferralCommissionPlansPanel projectId={projectId} />
             </TabsContent>
           </Tabs>
         </div>

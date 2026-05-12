@@ -316,7 +316,18 @@ export class ReferralService {
       // Получаем пользователя и проект
       const user = await db.user.findUnique({
         where: { id: userId },
-        include: { project: true }
+        include: {
+          project: true,
+          referralAttribution: {
+            include: {
+              commissionPlan: {
+                include: {
+                  levels: { orderBy: { level: 'asc' } }
+                }
+              }
+            }
+          }
+        }
       });
 
       if (!user) {
@@ -341,18 +352,44 @@ export class ReferralService {
         return { bonusAwarded: false };
       }
 
-      const levelMap = new Map<number, number>();
-      (referralProgram.levels || [])
-        .filter(
-          (level) =>
-            level.level >= 1 &&
-            level.level <= 3 &&
-            level.isActive &&
-            Number(level.percent) > 0
-        )
-        .forEach((level) => {
-          levelMap.set(level.level, Number(level.percent));
-        });
+      let levelMap = new Map<number, number>();
+      let maxPayoutDepth = 3;
+
+      const projectRow = user.project as {
+        referralPlansEnabled?: boolean;
+      } | null;
+      const attribution = user.referralAttribution;
+      const useCommissionPlan =
+        Boolean(projectRow?.referralPlansEnabled) &&
+        Boolean(attribution?.commissionPlan?.levels?.length);
+
+      if (useCommissionPlan && attribution?.commissionPlan) {
+        const plan = attribution.commissionPlan;
+        maxPayoutDepth = Math.min(Math.max(1, plan.maxPayoutDepth), 10);
+        plan.levels
+          .filter(
+            (level) =>
+              level.level >= 1 &&
+              level.level <= maxPayoutDepth &&
+              level.isActive &&
+              Number(level.percent) > 0
+          )
+          .forEach((level) => {
+            levelMap.set(level.level, Number(level.percent));
+          });
+      } else {
+        (referralProgram.levels || [])
+          .filter(
+            (level) =>
+              level.level >= 1 &&
+              level.level <= 3 &&
+              level.isActive &&
+              Number(level.percent) > 0
+          )
+          .forEach((level) => {
+            levelMap.set(level.level, Number(level.percent));
+          });
+      }
 
       if (!levelMap.size && referralProgram.referrerBonus > 0) {
         levelMap.set(1, referralProgram.referrerBonus);
@@ -362,10 +399,15 @@ export class ReferralService {
         return { bonusAwarded: false };
       }
 
+      const chainDepth = Math.min(
+        maxPayoutDepth,
+        levelMap.size || maxPayoutDepth
+      );
+
       const chain = await this.resolveReferrerChain(
         user.referredBy,
         user.projectId,
-        Math.min(3, levelMap.size || 3)
+        chainDepth
       );
 
       if (!chain.length) {
@@ -400,7 +442,11 @@ export class ReferralService {
             source: 'referral_bonus',
             referredUserId: userId,
             referralLevel: level,
-            purchaseAmount
+            purchaseAmount,
+            ...(user.referralAttribution?.commissionPlanId && {
+              referralCommissionPlanId:
+                user.referralAttribution.commissionPlanId
+            })
           },
           referralLevel: level,
           isReferralBonus: true,

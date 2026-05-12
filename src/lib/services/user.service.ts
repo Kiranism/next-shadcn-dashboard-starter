@@ -18,6 +18,7 @@ import type {
 import { ProjectService } from './project.service';
 import { BonusLevelService } from './bonus-level.service';
 import { ReferralService } from './referral.service';
+import { ReferralCommissionService } from './referral-commission.service';
 import {
   sendBonusNotification,
   sendBonusSpentNotification
@@ -106,6 +107,26 @@ export class UserService {
         operationMode: project?.operationMode || 'WITH_BOT',
         component: 'user-service'
       });
+
+      if (referredBy) {
+        try {
+          await ReferralCommissionService.syncAttributionForInvitedUser({
+            invitedUserId: user.id,
+            projectId: data.projectId,
+            referrerId: referredBy
+          });
+        } catch (attrError) {
+          logger.error('Ошибка создания referral attribution', {
+            userId: user.id,
+            projectId: data.projectId,
+            error:
+              attrError instanceof Error
+                ? attrError.message
+                : 'Неизвестная ошибка',
+            component: 'user-service'
+          });
+        }
+      }
 
       // Начисляем приветственные бонусы если настроено
       try {

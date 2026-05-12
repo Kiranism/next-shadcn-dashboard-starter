@@ -4,6 +4,31 @@
 
 ---
 
+## 📋 Задача: Персональные планы реферальных % (блогеры / инфлюенсеры)
+- **Статус**: ✅ Завершена (MVP)
+- **Приоритет**: 🔴 Высокий
+- **Описание**: Отделить план выплат от глобальной реферальной программы: снимок плана при регистрации по ссылке, outbound-план у блогера, флаг проекта, API и вкладка в дашборде. Статистика по subject + таблица grants для иерархии «над блогером».
+- **Техническая сложность**: 4
+- **Затраченное время**: —
+- **Шаги выполнения**:
+  - [x] Prisma: `ReferralCommissionPlan`, уровни, `ReferralAttribution`, `ReferralStatsGrant`, поля `Project` / `User`
+  - [x] Миграция `20260512_referral_commission_plans`
+  - [x] `ReferralCommissionService` + вызов атрибуции из `UserService.createUser`
+  - [x] `ReferralService.processReferralBonus` — учёт атрибуции и `maxPayoutDepth`
+  - [x] API: планы, settings, seed-from-legacy, outbound-plan, insights, stats-grants
+  - [x] UI: вкладка «Планы %» на странице реферальной программы
+  - [ ] Юридическая/продуктовая валидация MLM-ограничений (вне кода)
+- **Тестирование**: Применить миграцию; включить флаг; создать план по умолчанию; назначить outbound блогеру; зарегистрировать реферала; проверить начисление и `GET referral-insights/:userId`.
+- **Зависимости**: PostgreSQL, существующая `ReferralProgram` / `ReferralLevel`
+- **Файлы**:
+  - `prisma/schema.prisma`, `prisma/migrations/20260512_referral_commission_plans/migration.sql`
+  - `src/lib/services/referral-commission.service.ts`
+  - `src/lib/services/referral.service.ts`, `src/lib/services/user.service.ts`
+  - `src/app/api/projects/[id]/referral-commission-plans/**`, `referral-commission-settings`, `referral-insights`, `referral-stats-grants`, `users/[userId]/referral-outbound-plan`
+  - `src/features/projects/components/referral-commission-plans-panel.tsx`, `referral-program-view.tsx`
+
+---
+
 ## 📋 Задача: Улучшение UX дашборда и библиотеки шаблонов
 - **Статус**: ✅ Завершена
 - **Приоритет**: 🟡 Средний
