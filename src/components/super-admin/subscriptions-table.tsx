@@ -9,8 +9,27 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
-import { ArrowUpDown, Loader2, CreditCard, Calendar, User, CheckCircle2, XCircle, Clock, MoreHorizontal, RefreshCw, Ban, History, Plus } from 'lucide-react';
+import {
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  useReactTable
+} from '@tanstack/react-table';
+import {
+  ArrowUpDown,
+  Loader2,
+  CreditCard,
+  Calendar,
+  User,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  MoreHorizontal,
+  RefreshCw,
+  Ban,
+  History,
+  Plus
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -22,7 +41,13 @@ import {
   TableRow
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import { DataTablePagination } from '@/components/ui/table/data-table-pagination';
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
 import {
@@ -86,7 +111,7 @@ const columns: ColumnDef<Subscription>[] = [
     header: 'Тариф',
     cell: ({ row }) => (
       <div className='flex items-center gap-2'>
-        <CreditCard className='h-4 w-4 text-muted-foreground' />
+        <CreditCard className='text-muted-foreground h-4 w-4' />
         <span className='font-medium'>{row.original.plan.name}</span>
         <Badge variant='outline'>{row.original.plan.slug}</Badge>
       </div>
@@ -97,7 +122,8 @@ const columns: ColumnDef<Subscription>[] = [
     header: 'Цена',
     cell: ({ row }) => (
       <div>
-        {Number(row.original.plan.price).toLocaleString('ru-RU')} {row.original.plan.currency}
+        {Number(row.original.plan.price).toLocaleString('ru-RU')}{' '}
+        {row.original.plan.currency}
       </div>
     )
   },
@@ -106,7 +132,13 @@ const columns: ColumnDef<Subscription>[] = [
     header: 'Статус',
     cell: ({ row }) => {
       const status = row.getValue('status') as string;
-      const variants: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+      const variants: Record<
+        string,
+        {
+          label: string;
+          variant: 'default' | 'secondary' | 'destructive' | 'outline';
+        }
+      > = {
         active: { label: 'Активна', variant: 'default' },
         cancelled: { label: 'Отменена', variant: 'secondary' },
         expired: { label: 'Истекла', variant: 'destructive' },
@@ -162,7 +194,8 @@ const columns: ColumnDef<Subscription>[] = [
     header: 'Окончание',
     cell: ({ row }) => {
       const date = row.getValue('endDate') as string | null;
-      if (!date) return <span className='text-muted-foreground'>Бессрочно</span>;
+      if (!date)
+        return <span className='text-muted-foreground'>Бессрочно</span>;
       return <div>{new Date(date).toLocaleDateString('ru-RU')}</div>;
     }
   },
@@ -173,15 +206,20 @@ const columns: ColumnDef<Subscription>[] = [
       const subscription = row.original;
       // Получаем функцию обновления из контекста таблицы через замыкание
       const updateFn = (table.options.meta as any)?.refreshData;
-      return <SubscriptionActions subscription={subscription} onUpdate={updateFn || (() => window.location.reload())} />;
+      return (
+        <SubscriptionActions
+          subscription={subscription}
+          onUpdate={updateFn || (() => window.location.reload())}
+        />
+      );
     }
   }
 ];
 
-function SubscriptionActions({ 
-  subscription, 
-  onUpdate 
-}: { 
+function SubscriptionActions({
+  subscription,
+  onUpdate
+}: {
   subscription: Subscription;
   onUpdate: () => void;
 }) {
@@ -294,11 +332,29 @@ export function SubscriptionsTable() {
     fetchSubscriptions();
   }, [fetchSubscriptions]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, statusFilter]);
+
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 10
+  });
+
+  useEffect(() => {
+    setPagination({
+      pageIndex: page - 1,
+      pageSize: limit
+    });
+  }, [page, limit]);
+
   const table = useReactTable({
     data: subscriptions,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    pageCount: Math.ceil(total / limit),
+    state: { pagination },
+    onPaginationChange: setPagination,
+    pageCount: Math.ceil(total / limit) || 1,
     manualPagination: true,
     meta: {
       refreshData: fetchSubscriptions
@@ -336,7 +392,7 @@ export function SubscriptionsTable() {
         </div>
       </div>
 
-      <div className='rounded-md border'>
+      <div className='overflow-x-auto rounded-md border'>
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -345,7 +401,10 @@ export function SubscriptionsTable() {
                   <TableHead key={header.id}>
                     {header.isPlaceholder
                       ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -354,7 +413,10 @@ export function SubscriptionsTable() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className='h-24 text-center'>
+                <TableCell
+                  colSpan={columns.length}
+                  className='h-24 text-center'
+                >
                   <Loader2 className='mx-auto h-6 w-6 animate-spin' />
                 </TableCell>
               </TableRow>
@@ -363,19 +425,25 @@ export function SubscriptionsTable() {
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className='h-24 text-center'>
-                  <div className='flex flex-col items-center gap-2 text-muted-foreground'>
+                <TableCell
+                  colSpan={columns.length}
+                  className='h-24 text-center'
+                >
+                  <div className='text-muted-foreground flex flex-col items-center gap-2'>
                     <CreditCard className='h-8 w-8' />
                     <div>
                       <p className='font-medium'>Подписки не найдены</p>
-                      <p className='text-sm mt-1'>
+                      <p className='mt-1 text-sm'>
                         В системе пока нет подписок.
                       </p>
                     </div>
@@ -390,8 +458,15 @@ export function SubscriptionsTable() {
       <DataTablePagination
         table={table}
         totalCount={total}
-        onPageChange={setPage}
-        onPageSizeChange={setLimit}
+        onPageChange={(newPage) => {
+          setPage(newPage);
+          setPagination({ pageIndex: newPage - 1, pageSize: limit });
+        }}
+        onPageSizeChange={(newLimit) => {
+          setLimit(newLimit);
+          setPage(1);
+          setPagination({ pageIndex: 0, pageSize: newLimit });
+        }}
       />
 
       {showCreateDialog && (

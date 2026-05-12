@@ -34,8 +34,6 @@ import {
   Settings,
   LogOut
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-
 const navItems = [
   {
     title: 'Dashboard',
@@ -125,14 +123,14 @@ export default function SuperAdminSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <Button
-              variant='ghost'
-              className='w-full justify-start'
+            <SidebarMenuButton
+              tooltip='Выйти'
+              className='w-full'
               onClick={handleLogout}
             >
               <LogOut />
               <span>Выйти</span>
-            </Button>
+            </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import type { Prisma } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
     const source = searchParams.get('source') || '';
     const projectId = searchParams.get('projectId') || '';
 
-    const where: any = {};
+    const where: Prisma.SystemLogWhereInput = {};
 
     if (level) {
       where.level = level;
@@ -72,10 +73,13 @@ export async function GET(request: NextRequest) {
         total,
         totalPages: Math.ceil(total / limit)
       },
-      stats: stats.reduce((acc, stat) => {
-        acc[stat.level] = stat._count.level;
-        return acc;
-      }, {} as Record<string, number>)
+      stats: stats.reduce(
+        (acc, stat) => {
+          acc[stat.level] = stat._count.level;
+          return acc;
+        },
+        {} as Record<string, number>
+      )
     });
   } catch (error) {
     console.error('Error fetching system logs:', error);

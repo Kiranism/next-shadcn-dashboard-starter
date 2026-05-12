@@ -27,7 +27,13 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { DataTablePagination } from '@/components/ui/table/data-table-pagination';
-import { Loader2, AlertTriangle, ChevronDown, ChevronUp, Copy } from 'lucide-react';
+import {
+  Loader2,
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  Copy
+} from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -104,37 +110,42 @@ function LogDetails({ log }: { log: ErrorLog }) {
 
   return (
     <div className='space-y-4 text-sm'>
-      <div className='flex flex-wrap gap-4 text-muted-foreground'>
+      <div className='text-muted-foreground flex flex-wrap gap-4'>
         <div>
-          <span className='font-medium text-foreground'>Проект:</span>{' '}
+          <span className='text-foreground font-medium'>Проект:</span>{' '}
           {log.project?.name || 'Система'}
         </div>
         <div>
-          <span className='font-medium text-foreground'>Источник:</span>{' '}
+          <span className='text-foreground font-medium'>Источник:</span>{' '}
           {log.source}
         </div>
         {log.userId && (
           <div>
-            <span className='font-medium text-foreground'>UserId:</span>{' '}
+            <span className='text-foreground font-medium'>UserId:</span>{' '}
             {log.userId}
           </div>
         )}
-        <Button variant='outline' size='sm' className='ml-auto' onClick={handleCopy}>
+        <Button
+          variant='outline'
+          size='sm'
+          className='ml-auto'
+          onClick={handleCopy}
+        >
           <Copy className='mr-2 h-3 w-3' />
           Скопировать JSON
         </Button>
       </div>
 
       <div className='space-y-2'>
-        <p className='text-sm font-medium text-foreground'>Stack Trace</p>
-        <pre className='max-h-72 overflow-auto rounded bg-muted p-3 text-xs leading-relaxed'>
+        <p className='text-foreground text-sm font-medium'>Stack Trace</p>
+        <pre className='bg-muted max-h-72 overflow-auto rounded p-3 text-xs leading-relaxed'>
           {log.stack || '—'}
         </pre>
       </div>
 
       <div className='space-y-2'>
-        <p className='text-sm font-medium text-foreground'>Context / Payload</p>
-        <pre className='max-h-96 overflow-auto rounded bg-muted p-3 text-xs leading-relaxed'>
+        <p className='text-foreground text-sm font-medium'>Context / Payload</p>
+        <pre className='bg-muted max-h-96 overflow-auto rounded p-3 text-xs leading-relaxed'>
           {formatJson(log.context)}
         </pre>
       </div>
@@ -160,8 +171,8 @@ export function ErrorsTable() {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
-                  ...(levelFilter && levelFilter !== 'all' && { level: levelFilter }),
-          ...(sourceFilter && sourceFilter !== 'all' && { source: sourceFilter })
+        ...(levelFilter && levelFilter !== 'all' && { level: levelFilter }),
+        ...(sourceFilter && sourceFilter !== 'all' && { source: sourceFilter })
       });
 
       const res = await fetch(`/api/super-admin/errors?${params}`);
@@ -231,9 +242,7 @@ export function ErrorsTable() {
       accessorKey: 'project.name',
       header: 'Проект',
       cell: ({ row }) => (
-        <div className='text-sm'>
-          {row.original.project?.name || 'Система'}
-        </div>
+        <div className='text-sm'>{row.original.project?.name || 'Система'}</div>
       )
     },
     {
@@ -321,11 +330,11 @@ export function ErrorsTable() {
                 <CardTitle className='text-sm font-medium'>
                   {level.toUpperCase()}
                 </CardTitle>
-                <AlertTriangle className='h-4 w-4 text-muted-foreground' />
+                <AlertTriangle className='text-muted-foreground h-4 w-4' />
               </CardHeader>
               <CardContent>
                 <div className='text-2xl font-bold'>{count}</div>
-                <p className='text-xs text-muted-foreground'>
+                <p className='text-muted-foreground text-xs'>
                   За последние 24 часа
                 </p>
               </CardContent>
@@ -369,13 +378,14 @@ export function ErrorsTable() {
             <SelectItem value='bot'>Bot</SelectItem>
             <SelectItem value='webhook'>Webhook</SelectItem>
             <SelectItem value='api'>API</SelectItem>
+            <SelectItem value='client'>Client</SelectItem>
             <SelectItem value='workflow'>Workflow</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       {/* Таблица */}
-      <div className='rounded-md border'>
+      <div className='overflow-x-auto rounded-md border'>
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -396,7 +406,10 @@ export function ErrorsTable() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className='h-24 text-center'>
+                <TableCell
+                  colSpan={columns.length}
+                  className='h-24 text-center'
+                >
                   <Loader2 className='mx-auto h-6 w-6 animate-spin' />
                 </TableCell>
               </TableRow>
