@@ -1464,6 +1464,24 @@ class BotManager {
 
     try {
       const webhookInfo = await botInstance.bot.api.getWebhookInfo();
+
+      if (
+        webhookInfo?.last_error_message ||
+        webhookInfo?.pending_update_count > 0
+      ) {
+        logger.warn(
+          'Bot health check обнаружил проблему доставки webhook',
+          {
+            projectId,
+            webhookUrl: webhookInfo?.url || null,
+            pendingUpdateCount: webhookInfo?.pending_update_count ?? 0,
+            lastErrorDate: webhookInfo?.last_error_date ?? null,
+            lastErrorMessage: webhookInfo?.last_error_message ?? null
+          },
+          'bot-manager'
+        );
+      }
+
       return {
         isRunning: true,
         webhookInfo

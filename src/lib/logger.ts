@@ -45,6 +45,25 @@ class Logger {
     return messageLevelIndex >= currentLevelIndex;
   }
 
+  private resolveComponent(
+    context?: LogContext,
+    component?: string
+  ): { component?: string; context?: LogContext } {
+    if (component) {
+      return { component, context };
+    }
+
+    if (context && typeof context.component === 'string') {
+      const { component: contextComponent, ...rest } = context;
+      return {
+        component: contextComponent,
+        context: Object.keys(rest).length > 0 ? rest : undefined
+      };
+    }
+
+    return { component, context };
+  }
+
   private formatMessage(
     level: string,
     message: string,
@@ -53,12 +72,14 @@ class Logger {
     requestId?: string,
     performance?: PerformanceMetrics
   ): LogLevel {
+    const resolved = this.resolveComponent(context, component);
+
     const logEntry: LogLevel = {
       level: level as LogLevel['level'],
       timestamp: new Date().toISOString(),
       message,
-      context,
-      component,
+      context: resolved.context,
+      component: resolved.component,
       requestId
     };
 
@@ -78,14 +99,17 @@ class Logger {
     return logEntry;
   }
 
-    private async persistLog(logEntry: LogLevel) {
+  private async persistLog(logEntry: LogLevel) {
     // Сохраняем только error и warn в SystemLog для мониторинга
     if (logEntry.level === 'error' || logEntry.level === 'warn') {
       try {
         // Определяем источник из component или context
         let source = 'api';
         if (logEntry.component) {
-          if (logEntry.component.includes('bot') || logEntry.component.includes('telegram')) {
+          if (
+            logEntry.component.includes('bot') ||
+            logEntry.component.includes('telegram')
+          ) {
             source = 'bot';
           } else if (logEntry.component.includes('webhook')) {
             source = 'webhook';
@@ -102,7 +126,7 @@ class Logger {
         const stack = logEntry.context?.stack as string | undefined;
         const error = logEntry.context?.error;
         let errorStack: string | undefined = stack;
-        
+
         // Если есть вложенный error объект, извлекаем stack
         if (error && typeof error === 'object' && 'stack' in error) {
           errorStack = error.stack as string;
