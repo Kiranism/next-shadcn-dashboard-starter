@@ -145,6 +145,18 @@ export async function POST(request: NextRequest) {
         { versionId: workflowVersion.id },
         'templates-install'
       );
+
+      // КРИТИЧНО: WorkflowRuntime ищет версии только у workflow с isActive=true.
+      // Без этого шаг hasActiveWorkflow = false, бот уходит в fallback и может не отвечать.
+      await db.workflow.update({
+        where: { id: workflow.id },
+        data: { isActive: true }
+      });
+
+      const { WorkflowRuntimeService } = await import(
+        '@/lib/services/workflow-runtime.service'
+      );
+      await WorkflowRuntimeService.invalidateCache(projectId);
     } else {
       logger.warn(
         'No entry node found in template, version not created',
