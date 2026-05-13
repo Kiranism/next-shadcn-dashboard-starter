@@ -12,6 +12,7 @@ import { createVariableManager } from './variable-manager';
 import type {
   ExecutionContext,
   TelegramContact,
+  VariableManager,
   VariableScope
 } from '@/types/workflow';
 
@@ -259,6 +260,11 @@ export class ExecutionContextManager {
 
     // Предзагружаем переменные в кэш для синхронного доступа
     await variableManager.preloadCache();
+    await this.applyWorkflowDefaultSessionVariables(
+      variableManager,
+      workflowId,
+      version
+    );
 
     // Создаем простой logger без зависимостей
     const simpleLogger = {
@@ -373,6 +379,11 @@ export class ExecutionContextManager {
 
     // Предзагружаем переменные в кэш для синхронного доступа
     await variableManager.preloadCache();
+    await this.applyWorkflowDefaultSessionVariables(
+      variableManager,
+      execution.workflowId,
+      execution.version
+    );
 
     // Создаем простой logger
     const simpleLogger = {
@@ -890,6 +901,11 @@ export class ExecutionContextManager {
 
     // Предзагружаем переменные в кэш
     await variableManager.preloadCache();
+    await this.applyWorkflowDefaultSessionVariables(
+      variableManager,
+      subWorkflowId,
+      subVersion
+    );
 
     // Создаем logger для sub-workflow
     const subLogger = {
@@ -943,6 +959,56 @@ export class ExecutionContextManager {
     );
 
     return subContext;
+  }
+
+  /**
+   * Записывает в session scope значения из WorkflowVersion.variables,
+   * если переменной ещё нет после preloadCache (шаблоны задают `value`, тип — `defaultValue`).
+   */
+  private static async applyWorkflowDefaultSessionVariables(
+    variableManager: VariableManager,
+    workflowId: string,
+    version: number
+  ): Promise<void> {
+    try {
+      const row = await db.workflowVersion.findFirst({
+        where: { workflowId, version },
+        select: { variables: true }
+      });
+      const raw = row?.variables;
+      if (!Array.isArray(raw) || raw.length === 0) {
+        return;
+      }
+
+      for (const item of raw) {
+        if (!item || typeof item !== 'object') {
+          continue;
+        }
+        const rec = item as Record<string, unknown>;
+        const name = rec.name;
+        if (typeof name !== 'string' || !name.trim()) {
+          continue;
+        }
+
+        const defaultVal =
+          rec.value !== undefined ? rec.value : rec.defaultValue;
+        if (defaultVal === undefined) {
+          continue;
+        }
+
+        const existing = variableManager.getSync(name, 'session');
+        if (existing !== undefined && existing !== null) {
+          continue;
+        }
+
+        await variableManager.set(name, defaultVal, 'session');
+      }
+    } catch (error) {
+      console.error(
+        '[ExecutionContextManager] applyWorkflowDefaultSessionVariables failed:',
+        error
+      );
+    }
   }
 
   /**
