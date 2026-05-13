@@ -277,9 +277,14 @@ export class WorkflowRuntimeService {
       });
 
       if (!activeVersion) {
-        logger.debug('No active workflow version found for project', {
-          projectId
-        });
+        logger.warn(
+          'Нет активной версии workflow для проекта (workflow.is_active + version.is_active)',
+          {
+            projectId,
+            hint: 'Установите шаблон после фикса install, либо включите workflow в конструкторе и опубликуйте версию.',
+            component: 'workflow-runtime'
+          }
+        );
         return null;
       }
 
@@ -1145,9 +1150,14 @@ export class WorkflowRuntimeService {
           console.log(
             '❌ CRITICAL: No active workflow version found - this causes "workflow not configured" error'
           );
-          logger.debug('No active workflow version found for execution', {
-            projectId
-          });
+          logger.warn(
+            'executeWorkflow: нет активной версии — прерываем (бот не ответит по сценарию)',
+            {
+              projectId,
+              trigger,
+              component: 'workflow-runtime'
+            }
+          );
           return false;
         }
 
@@ -1189,9 +1199,14 @@ export class WorkflowRuntimeService {
         console.log(
           '❌ CRITICAL: No active workflow version found - this causes "workflow not configured" error'
         );
-        logger.debug('No active workflow version found for execution', {
-          projectId
-        });
+        logger.warn(
+          'executeWorkflow (/start): нет активной версии — прерываем',
+          {
+            projectId,
+            trigger,
+            component: 'workflow-runtime'
+          }
+        );
         return false;
       }
 

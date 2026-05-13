@@ -24,6 +24,31 @@ import { logger } from '@/lib/logger';
 import type { BotSettings } from '@/types/api';
 import { setupGlobalErrorHandler } from './global-error-handler';
 
+/**
+ * Публичный URL для setWebhook и ссылок. Сначала ищем HTTPS (Telegram требует TLS),
+ * иначе первый непустой — для polling/диагностики.
+ * Порядок: WEBHOOK_BASE_URL → NEXT_PUBLIC_APP_URL → APP_URL.
+ */
+function resolvePublicBaseUrl(): { url: string; source: string } {
+  const entries: ReadonlyArray<readonly [string, string | undefined]> = [
+    ['WEBHOOK_BASE_URL', process.env.WEBHOOK_BASE_URL],
+    ['NEXT_PUBLIC_APP_URL', process.env.NEXT_PUBLIC_APP_URL],
+    ['APP_URL', process.env.APP_URL]
+  ];
+  const normalized = entries.map(
+    ([key, val]) => [key, (val ?? '').trim()] as readonly [string, string]
+  );
+  const https = normalized.find(([, v]) => v.startsWith('https://'));
+  if (https?.[1]) {
+    return { url: https[1], source: https[0] };
+  }
+  const any = normalized.find(([, v]) => v.length > 0);
+  if (any?.[1]) {
+    return { url: any[1], source: any[0] };
+  }
+  return { url: 'http://localhost:5006', source: 'default' };
+}
+
 // Типизация контекста (совпадает с bot.ts)
 interface SessionData {
   step?: string;
@@ -53,13 +78,8 @@ class BotManager {
   private readonly operationLocks: Map<string, Promise<any>> = new Map();
 
   constructor() {
-    // Берем публичный базовый URL приложения. Предпочитаем NEXT_PUBLIC_APP_URL,
-    // затем APP_URL, и только затем dev-значение. Это позволяет в продакшене
-    // работать по IP/HTTP без хаков и автоматически выбирать режим.
-    let webhookBaseUrl =
-      process.env.NEXT_PUBLIC_APP_URL ||
-      process.env.APP_URL ||
-      'http://localhost:5006';
+    const { url: webhookBaseUrl, source: webhookBaseSource } =
+      resolvePublicBaseUrl();
 
     // В продакшене 0.0.0.0 невалиден для вебхуков Telegram
     if (
@@ -67,7 +87,7 @@ class BotManager {
       webhookBaseUrl.includes('0.0.0.0')
     ) {
       logger.warn(
-        '⚠️ WEBHOOK_BASE_URL содержит 0.0.0.0 в продакшене. Это может помешать работе вебхуков Telegram.',
+        '⚠️ Публичный базовый URL содержит 0.0.0.0 в продакшене. Это может помешать работе вебхуков Telegram.',
         {
           webhookBaseUrl,
           component: 'bot-manager'
@@ -80,8 +100,20 @@ class BotManager {
     // Активируем глобальный обработчик ошибок для 409 конфликтов
     setupGlobalErrorHandler();
 
+    const apiRoot = process.env.TELEGRAM_API_ROOT?.trim();
     logger.info('BotManager инициализирован', {
       webhookBaseUrl: this.WEBHOOK_BASE_URL,
+      webhookBaseSource,
+      telegramApiRootConfigured: !!apiRoot,
+      telegramApiRootHost: apiRoot
+        ? (() => {
+            try {
+              return new URL(apiRoot).host;
+            } catch {
+              return '(invalid URL)';
+            }
+          })()
+        : null,
       isLocalDevelopment: process.env.NODE_ENV === 'development',
       component: 'bot-manager'
     });
@@ -1398,10 +1430,18 @@ class BotManager {
     }
 
     if (!botInstance.webhook) {
-      logger.error(`Webhook handler отсутствует для активного бота`, {
-        projectId,
-        component: 'bot-manager'
-      });
+      logger.error(
+        `Webhook handler отсутствует: бот в режиме polling или webhook не создан`,
+        {
+          projectId,
+          isPolling: botInstance.isPolling === true,
+          hint:
+            botInstance.isPolling === true
+              ? 'В polling Telegram не шлёт POST на /api/telegram/webhook — апдейты через getUpdates.'
+              : 'Проверьте HTTPS базовый URL и логи setWebhook при старте.',
+          component: 'bot-manager'
+        }
+      );
       return null;
     }
 

@@ -30,12 +30,45 @@ export async function POST(
     // ✅ КРИТИЧНО: Убеждаемся что боты инициализированы
     await ensureBotsInitialized();
 
-    // Получаем webhook handler для проекта (теперь асинхронно с поддержкой lazy-loading)
-    let webhookHandler = await botManager.getWebhookHandler(projectId);
+    const body = await request.text();
+
+    let updateSummary: Record<string, unknown> = { rawLength: body.length };
+    try {
+      const u = JSON.parse(body) as {
+        update_id?: number;
+        message?: {
+          text?: string;
+          contact?: unknown;
+          chat?: { id?: number };
+        };
+        callback_query?: { data?: string; id?: string };
+      };
+      updateSummary = {
+        update_id: u.update_id,
+        chatId: u.message?.chat?.id,
+        hasMessageText: !!u.message?.text,
+        messageTextPreview: u.message?.text?.slice(0, 120),
+        hasContact: !!u.message?.contact,
+        hasCallback: !!u.callback_query,
+        callbackData: u.callback_query?.data
+      };
+    } catch {
+      updateSummary.parseError = true;
+    }
+
+    const webhookHandler = await botManager.getWebhookHandler(projectId);
+
+    logger.info('telegram-webhook: update summary', {
+      projectId,
+      ...updateSummary,
+      hasWebhookHandler: !!webhookHandler,
+      component: 'telegram-webhook'
+    });
 
     if (!webhookHandler) {
       logger.error(`❌ Webhook handler не найден для проекта`, {
         projectId,
+        ...updateSummary,
         component: 'telegram-webhook'
       });
       return NextResponse.json(
@@ -43,9 +76,6 @@ export async function POST(
         { status: 404 }
       );
     }
-
-    // Получаем тело запроса
-    const body = await request.text();
 
     // Создаем объект Request для Grammy
     const gramRequest = new Request(request.url, {

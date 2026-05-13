@@ -170,10 +170,15 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
         await WorkflowRuntimeService.hasActiveWorkflow(projectId);
 
       if (!hasActiveWorkflow) {
-        logger.debug('❌ Активный workflow не найден, используем fallback', {
-          projectId,
-          trigger
-        });
+        logger.warn(
+          'Активный workflow не найден — сообщение уйдёт в fallback (часто без ответа на /start)',
+          {
+            projectId,
+            trigger,
+            hint: 'Проверьте в БД: workflows.is_active=true и активная workflow_versions для проекта; сбросьте Redis-кэш workflow.',
+            component: 'telegram-bot'
+          }
+        );
         // Только если workflow вообще не существует, идём к fallback
         await next();
         return;
