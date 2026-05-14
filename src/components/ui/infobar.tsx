@@ -110,13 +110,17 @@ function InfobarProvider({
 
   // Helper to toggle the infobar.
   const toggleInfobar = React.useCallback(() => {
-    return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open);
-  }, [isMobile, setOpen, setOpenMobile]);
+    setOpen((open) => !open);
+  }, [setOpen]);
 
-  // Close infobar when switching between mobile and desktop to prevent state desync
+  // Preserve the current infobar state when switching between mobile and desktop.
   React.useEffect(() => {
-    setOpenMobile(false);
-    _setOpen(false);
+    if (isMobile) {
+      setOpenMobile(open);
+    } else {
+      setOpen(openMobile);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only reconcile when the breakpoint changes
   }, [isMobile]);
 
   // Adds a keyboard shortcut to toggle the infobar.
@@ -275,7 +279,7 @@ function Infobar({
 
   return (
     <div
-      className='group peer text-sidebar-foreground hidden md:block'
+      className='group peer text-sidebar-foreground relative hidden md:block'
       data-state={state}
       data-collapsible={state === 'collapsed' ? collapsible : ''}
       data-variant={variant}
