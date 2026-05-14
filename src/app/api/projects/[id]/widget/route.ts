@@ -94,6 +94,7 @@ export async function GET(
         id: true,
         name: true,
         operationMode: true,
+        bonusPercentage: true,
         welcomeBonus: true,
         welcomeRewardType: true,
         firstPurchaseDiscountPercent: true,
@@ -113,22 +114,29 @@ export async function GET(
       );
     }
 
-    // КРИТИЧНО: Получаем максимальный процент из уровней бонусов
+    // Плашка на витрине: «до N бонусов» — берём максимальный % начисления из активных
+    // уровней; если уровней нет — процент из настроек проекта (простой режим).
     const bonusLevels = await db.bonusLevel.findMany({
-      where: { projectId },
+      where: { projectId, isActive: true },
       select: { bonusPercent: true },
       orderBy: { bonusPercent: 'desc' }
     });
 
+    const projectAccrualPercent = Number(project.bonusPercentage);
+    const fallbackFromProject = Number.isFinite(projectAccrualPercent)
+      ? projectAccrualPercent
+      : 10;
+
     const maxBonusPercent =
       bonusLevels.length > 0
         ? bonusLevels[0].bonusPercent
-        : Number(project.welcomeBonus) || 10;
+        : fallbackFromProject;
 
-    logger.info('Рассчитан максимальный процент из уровней', {
+    logger.info('Рассчитан процент для плашки виджета', {
       projectId,
       maxBonusPercent,
-      levelsCount: bonusLevels.length
+      levelsCount: bonusLevels.length,
+      usedProjectBonusPercentage: bonusLevels.length === 0
     });
 
     // Получаем настройки виджета
