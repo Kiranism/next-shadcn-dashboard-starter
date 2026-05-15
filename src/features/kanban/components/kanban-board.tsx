@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useRef } from 'react';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Kanban, KanbanBoard as KanbanBoardPrimitive, KanbanOverlay } from '@/components/ui/kanban';
 import { useTaskStore } from '../utils/store';
 import { TaskColumn } from './board-column';
@@ -27,14 +26,13 @@ export function KanbanBoard() {
         modifiers={[restrictToBoard]}
         autoScroll={false}
       >
-        <ScrollArea className='w-full rounded-md pb-4'>
-          <KanbanBoardPrimitive className='flex items-start'>
+        <div className='w-full overflow-x-auto rounded-md pb-4'>
+          <KanbanBoardPrimitive className='flex flex-col items-start gap-4 md:flex-row'>
             {Object.entries(columns).map(([columnValue, tasks]) => (
               <TaskColumn key={columnValue} value={columnValue} tasks={tasks} />
             ))}
           </KanbanBoardPrimitive>
-          <ScrollBar orientation='horizontal' />
-        </ScrollArea>
+        </div>
         <KanbanOverlay>
           {({ value, variant }) => {
             if (variant === 'column') {
