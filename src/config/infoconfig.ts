@@ -137,7 +137,7 @@ export const billingInfoContent: InfobarContent = {
     {
       title: 'Access Control',
       description:
-        'Plans and features are used for access control throughout the application. Server-side checks use the `has()` function to verify plan or feature access. Client-side protection uses the `<Protect>` component to conditionally render content based on subscription status.',
+        'Plans and features are used for access control throughout the application. Server-side checks use the `has()` function to verify plan or feature access. Client-side protection uses the `<Show>` component to conditionally render content based on subscription status.',
       links: []
     },
     {
