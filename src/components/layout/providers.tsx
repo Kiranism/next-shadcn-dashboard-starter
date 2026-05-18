@@ -1,7 +1,5 @@
 'use client';
 import { ClerkProvider } from '@clerk/nextjs';
-import { dark } from '@clerk/themes';
-import { useTheme } from 'next-themes';
 import React from 'react';
 import { ActiveThemeProvider } from '../themes/active-theme';
 import QueryProvider from './query-provider';
@@ -13,14 +11,11 @@ export default function Providers({
   activeThemeValue: string;
   children: React.ReactNode;
 }) {
-  const { resolvedTheme } = useTheme();
-
   return (
     <>
       <ActiveThemeProvider initialTheme={activeThemeValue}>
         <ClerkProvider
           appearance={{
-            baseTheme: resolvedTheme === 'dark' ? dark : undefined,
             variables: {
               colorPrimary: 'var(--primary)',
               colorPrimaryForeground: 'var(--primary-foreground)',

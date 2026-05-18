@@ -18,8 +18,7 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@clerk/nextjs": "^6.39.1",
-    "@clerk/themes": "^2.4.57",
+    "@clerk/nextjs": "^7.3.5",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",
@@ -67,11 +66,11 @@
     "kbar": "^0.1.0-beta.48",
     "match-sorter": "^8.2.0",
     "motion": "^11.18.2",
-    "next": "16.2.1",
+    "next": "16.2.6",
     "next-themes": "^0.4.6",
     "nextjs-toploader": "^3.9.17",
     "nuqs": "^2.8.9",
-    "postcss": "8.4.49",
+    "postcss": "8.5.14",
     "radix-ui": "^1.4.3",
     "react": "19.2.4",
     "react-day-picker": "^9.14.0",
@@ -107,7 +106,8 @@
   },
   "overrides": {
     "@types/react": "19.2.14",
-    "@types/react-dom": "19.2.3"
+    "@types/react-dom": "19.2.3",
+    "postcss": "8.5.14"
   },
   "lint-staged": {
     "!(scripts)/**/*.{js,jsx,tsx,ts,css,less,scss,sass}": [

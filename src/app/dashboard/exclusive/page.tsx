@@ -2,7 +2,7 @@
 
 import PageContainer from '@/components/layout/page-container';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useOrganization, Protect } from '@clerk/nextjs';
+import { useOrganization, Show } from '@clerk/nextjs';
 import { Icons } from '@/components/icons';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import Link from 'next/link';
@@ -12,8 +12,8 @@ export default function ExclusivePage() {
 
   return (
     <PageContainer isLoading={!isLoaded}>
-      <Protect
-        plan='pro'
+      <Show
+        when={{ plan: 'pro' }}
         fallback={
           <div className='flex h-full items-center justify-center'>
             <Alert>
@@ -58,7 +58,7 @@ export default function ExclusivePage() {
             </CardContent>
           </Card>
         </div>
-      </Protect>
+      </Show>
     </PageContainer>
   );
 }
