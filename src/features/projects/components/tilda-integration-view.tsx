@@ -251,18 +251,18 @@ export function ProjectIntegrationView({
             setWidgetSettings({
               // Текстовые настройки
               registrationTitle:
-                widgetData.registrationTitle ||
+                widgetData.registrationTitle ??
                 'Зарегистрируйся и получи {bonusAmount} бонусов!',
               registrationDescription:
-                widgetData.registrationDescription ||
+                widgetData.registrationDescription ??
                 'Зарегистрируйся в нашей бонусной программе',
               registrationButtonText:
-                widgetData.registrationButtonText ||
+                widgetData.registrationButtonText ??
                 'Для участия в акции перейдите в бота',
-              registrationButtonUrl: widgetData.registrationButtonUrl || '',
-              verificationButtonUrl: widgetData.verificationButtonUrl || '',
+              registrationButtonUrl: widgetData.registrationButtonUrl ?? '',
+              verificationButtonUrl: widgetData.verificationButtonUrl ?? '',
               registrationFallbackText:
-                widgetData.registrationFallbackText ||
+                widgetData.registrationFallbackText ??
                 'Свяжитесь с администратором для регистрации',
 
               // Настройки видимости элементов
@@ -345,9 +345,9 @@ export function ProjectIntegrationView({
               productBadgeShowOnProductPage:
                 widgetData.productBadgeShowOnProductPage !== false,
               productBadgeText:
-                widgetData.productBadgeText ||
+                widgetData.productBadgeText ??
                 'Начислим до {bonusAmount} бонусов',
-              productBadgeLinkUrl: widgetData.productBadgeLinkUrl || '',
+              productBadgeLinkUrl: widgetData.productBadgeLinkUrl ?? '',
               // Процент берётся из WidgetSettings
               productBadgeBonusPercent:
                 Number(widgetData.productBadgeBonusPercent) || 10,

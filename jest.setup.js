@@ -5,8 +5,10 @@
 
 require('@testing-library/jest-dom');
 
-process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://test:test@localhost:5432/test';
-process.env.NEXT_PUBLIC_APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+process.env.DATABASE_URL =
+  process.env.DATABASE_URL || 'postgresql://test:test@localhost:5432/test';
+process.env.NEXT_PUBLIC_APP_URL =
+  process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 process.env.NODE_ENV = 'test';
 
 jest.mock('@/lib/db', () => ({
@@ -76,7 +78,10 @@ const originalError = console.error;
 
 beforeAll(() => {
   console.error = (...args) => {
-    if (typeof args[0] === 'string' && args[0].includes('Warning: ReactDOM.render')) {
+    if (
+      typeof args[0] === 'string' &&
+      args[0].includes('Warning: ReactDOM.render')
+    ) {
       return;
     }
     originalError.call(console, ...args);
@@ -94,6 +99,27 @@ const mockCssColor = {
 };
 
 jest.mock('@asamuzakjp/css-color', () => mockCssColor, { virtual: true });
-jest.mock('@asamuzakjp/css-color/dist/cjs/index.cjs', () => mockCssColor, { virtual: true });
+jest.mock('@asamuzakjp/css-color/dist/cjs/index.cjs', () => mockCssColor, {
+  virtual: true
+});
 
+jest.mock('bullmq', () => ({
+  Queue: jest.fn().mockImplementation(() => ({
+    add: jest.fn().mockResolvedValue({}),
+    close: jest.fn().mockResolvedValue({})
+  })),
+  Worker: jest.fn().mockImplementation(() => ({
+    on: jest.fn(),
+    close: jest.fn().mockResolvedValue({})
+  }))
+}));
 
+jest.mock('ioredis', () => {
+  const Redis = jest.fn().mockImplementation(() => ({
+    on: jest.fn(),
+    quit: jest.fn().mockResolvedValue({}),
+    defineCommand: jest.fn(),
+    ping: jest.fn().mockResolvedValue('PONG')
+  }));
+  return Redis;
+});

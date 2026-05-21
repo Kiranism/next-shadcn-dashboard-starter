@@ -30,6 +30,11 @@ interface IntegrationsHubProps {
       lastWebhookAt: Date | null;
     } | null;
     tilda: { id: string } | null;
+    maxBot?: {
+      isConfigured: boolean;
+      isRunning: boolean;
+      maxBotUsername: string | null;
+    } | null;
   };
 }
 
@@ -134,9 +139,29 @@ function IntegrationCard({
 }
 
 export function IntegrationsHub({ projectId, data }: IntegrationsHubProps) {
-  const { moySklad, inSales, tilda } = data;
+  const { moySklad, inSales, tilda, maxBot } = data;
 
   const integrations: IntegrationCardProps[] = [
+    {
+      icon: '🤖',
+      name: 'MAX Bot',
+      description:
+        'Интеграция с мессенджером MAX. Запуск сценариев лояльности, регистрация пользователей и проверка баланса в экосистеме MAX.',
+      status: maxBot?.isRunning
+        ? 'connected'
+        : maxBot?.isConfigured
+          ? 'configured'
+          : 'disconnected',
+      statusLabel: maxBot?.isRunning
+        ? 'Активен'
+        : maxBot?.isConfigured
+          ? 'Настроен'
+          : 'Не настроен',
+      secondaryText: maxBot?.maxBotUsername
+        ? `Бот: @${maxBot.maxBotUsername}`
+        : undefined,
+      href: `/dashboard/projects/${projectId}/integrations/max-bot`
+    },
     {
       icon: '🎨',
       name: 'Tilda',

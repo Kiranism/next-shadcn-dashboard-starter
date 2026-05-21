@@ -22,7 +22,12 @@ async function getIntegrationStatuses(projectId: string) {
 
   const project = await db.project.findFirst({
     where: { id: projectId, ownerId: admin.sub },
-    select: { id: true, name: true }
+    select: {
+      id: true,
+      name: true,
+      maxBotToken: true,
+      maxBotUsername: true
+    }
   });
 
   if (!project) redirect('/dashboard/projects');
@@ -56,11 +61,28 @@ async function getIntegrationStatuses(projectId: string) {
     })
     .catch(() => null);
 
+  // Проверяем, запущен ли MAX бот
+  let isMaxBotRunning = false;
+  if (project?.maxBotToken) {
+    try {
+      const { maxBotManager } = await import('@/lib/max-bot/bot-manager');
+      const instance = maxBotManager.getBot(projectId);
+      isMaxBotRunning = !!instance?.isActive;
+    } catch {
+      // Игнорируем
+    }
+  }
+
   return {
     project,
     moySklad: moySkladIntegration,
     inSales: inSalesIntegration,
-    tilda: widgetSettings
+    tilda: widgetSettings,
+    maxBot: {
+      isConfigured: !!project?.maxBotToken,
+      isRunning: isMaxBotRunning,
+      maxBotUsername: project?.maxBotUsername || null
+    }
   };
 }
 

@@ -96,6 +96,8 @@ export async function getDashboardStats(): Promise<SystemStats> {
           name: true,
           createdAt: true,
           botToken: true,
+          isActive: true,
+          operationMode: true,
           botSettings: {
             select: {
               isActive: true
@@ -177,7 +179,14 @@ export async function getDashboardStats(): Promise<SystemStats> {
         id: project.id,
         name: project.name,
         userCount: project._count.users,
-        botStatus: project.botSettings?.isActive ? 'ACTIVE' : 'INACTIVE',
+        botStatus:
+          project.operationMode === 'WITHOUT_BOT'
+            ? project.isActive
+              ? 'ACTIVE'
+              : 'INACTIVE'
+            : project.botSettings?.isActive
+              ? 'ACTIVE'
+              : 'INACTIVE',
         createdAt: project.createdAt.toISOString()
       })),
       userGrowth,

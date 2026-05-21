@@ -164,22 +164,43 @@ export class ExecutionContextManager {
     const [botSettings, project] = await Promise.all([
       db.botSettings.findUnique({
         where: { projectId },
-        select: { botToken: true, botUsername: true }
+        select: {
+          botToken: true,
+          botUsername: true,
+          maxBotToken: true,
+          maxBotUsername: true
+        }
       }),
       db.project.findUnique({
         where: { id: projectId },
-        select: { workflowMaxSteps: true, workflowTimeoutMs: true }
+        select: {
+          workflowMaxSteps: true,
+          workflowTimeoutMs: true,
+          maxBotToken: true,
+          maxBotUsername: true
+        }
       })
     ]);
 
-    if (!botSettings?.botToken) {
-      console.error(
-        'Bot token not found in bot settings for project:',
-        projectId
-      );
-      throw new Error(
-        `Bot token not configured for project ${projectId}. Please set up bot token in project settings.`
-      );
+    // Валидация токена в зависимости от платформы
+    if (platform === 'telegram') {
+      if (!botSettings?.botToken) {
+        console.error(
+          'Bot token not found in bot settings for project:',
+          projectId
+        );
+        throw new Error(
+          `Bot token not configured for project ${projectId}. Please set up bot token in project settings.`
+        );
+      }
+    } else if (platform === 'max') {
+      const maxToken = botSettings?.maxBotToken || project?.maxBotToken;
+      if (!maxToken) {
+        console.error('MAX Bot token not found for project:', projectId);
+        throw new Error(
+          `MAX Bot token not configured for project ${projectId}. Please set up MAX bot token in project integrations.`
+        );
+      }
     }
 
     // ✨ НОВОЕ: Используем лимиты из настроек проекта или значения по умолчанию
@@ -295,7 +316,7 @@ export class ExecutionContextManager {
         userId: telegramUserId || '',
         username: telegramUsername,
         firstName: telegramUsername,
-        botToken: botSettings.botToken,
+        botToken: botSettings?.botToken || '',
         message: {
           text: messageText,
           callbackData
@@ -352,18 +373,38 @@ export class ExecutionContextManager {
     const [botSettings, project] = await Promise.all([
       db.botSettings.findUnique({
         where: { projectId: execution.projectId },
-        select: { botToken: true, botUsername: true }
+        select: {
+          botToken: true,
+          botUsername: true,
+          maxBotToken: true,
+          maxBotUsername: true
+        }
       }),
       db.project.findUnique({
         where: { id: execution.projectId },
-        select: { workflowMaxSteps: true, workflowTimeoutMs: true }
+        select: {
+          workflowMaxSteps: true,
+          workflowTimeoutMs: true,
+          maxBotToken: true,
+          maxBotUsername: true
+        }
       })
     ]);
 
-    if (!botSettings?.botToken) {
-      throw new Error(
-        `Bot token not configured for project ${execution.projectId}`
-      );
+    // Валидация токена в зависимости от платформы
+    if (platform === 'telegram') {
+      if (!botSettings?.botToken) {
+        throw new Error(
+          `Bot token not configured for project ${execution.projectId}`
+        );
+      }
+    } else if (platform === 'max') {
+      const maxToken = botSettings?.maxBotToken || project?.maxBotToken;
+      if (!maxToken) {
+        throw new Error(
+          `MAX Bot token not configured for project ${execution.projectId}`
+        );
+      }
     }
 
     // ✨ НОВОЕ: Используем лимиты из настроек проекта или значения по умолчанию
@@ -412,7 +453,7 @@ export class ExecutionContextManager {
         userId: telegramUserId || '',
         username: telegramUsername,
         firstName: telegramUsername,
-        botToken: botSettings.botToken,
+        botToken: botSettings?.botToken || '',
         message: {
           text: messageText,
           callbackData

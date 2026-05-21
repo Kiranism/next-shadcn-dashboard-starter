@@ -19,7 +19,8 @@ module.exports = {
     '^lru-cache/(.*)$': '<rootDir>/test/__mocks__/lru-cache.js',
     '^@asamuzakjp/css-color$': '<rootDir>/test/__mocks__/css-color.js',
     '^@asamuzakjp/css-color/(.*)$': '<rootDir>/test/__mocks__/css-color.js',
-    '^@asamuzakjp/css-color/dist/cjs/index.cjs$': '<rootDir>/test/__mocks__/css-color.js'
+    '^@asamuzakjp/css-color/dist/cjs/index.cjs$': '<rootDir>/test/__mocks__/css-color.js',
+    '^https-proxy-agent$': '<rootDir>/test/__mocks__/https-proxy-agent.js'
   }
 };
 

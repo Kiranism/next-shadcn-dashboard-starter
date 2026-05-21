@@ -75,11 +75,55 @@ export async function GET(
     }
 
     // Находим пользователя
-    const user = await UserService.findUserByContact(
+    let user = await UserService.findUserByContact(
       projectId,
       email || undefined,
       phone || undefined
     );
+
+    if (!user && project?.operationMode === 'WITHOUT_BOT') {
+      const firstName =
+        url.searchParams.get('firstName') ||
+        url.searchParams.get('name') ||
+        undefined;
+      const lastName = url.searchParams.get('lastName') || undefined;
+      const utmSource = url.searchParams.get('utm_source') || undefined;
+      const utmMedium = url.searchParams.get('utm_medium') || undefined;
+      const utmCampaign = url.searchParams.get('utm_campaign') || undefined;
+      const utmContent = url.searchParams.get('utm_content') || undefined;
+      const utmTerm = url.searchParams.get('utm_term') || undefined;
+
+      try {
+        user = await UserService.createUser({
+          projectId,
+          email: email || undefined,
+          phone: phone || undefined,
+          firstName,
+          lastName,
+          utmSource,
+          utmMedium,
+          utmCampaign,
+          utmContent,
+          utmTerm
+        });
+        logger.info('Auto-registered user in WITHOUT_BOT mode', {
+          projectId,
+          email,
+          phone,
+          userId: user.id
+        });
+      } catch (createError) {
+        logger.error('Failed to auto-register user in WITHOUT_BOT mode', {
+          projectId,
+          email,
+          phone,
+          error:
+            createError instanceof Error
+              ? createError.message
+              : String(createError)
+        });
+      }
+    }
 
     if (!user) {
       return NextResponse.json(

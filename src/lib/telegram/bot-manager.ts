@@ -1537,6 +1537,21 @@ export async function ensureBotsInitialized(): Promise<void> {
       // Даже если один бот уже создан вручную, мы должны загрузить остальные из БД
       await botManager.loadAllBots();
 
+      // Загружаем MAX ботов
+      try {
+        const { maxBotManager } = await import('@/lib/max-bot/bot-manager');
+        await maxBotManager.loadAllBots();
+        logger.info('✅ Все активные MAX боты загружены из БД', {
+          component: 'bot-manager',
+          totalInManager: maxBotManager.getStats().total
+        });
+      } catch (maxError) {
+        logger.error('❌ Ошибка автоматического запуска MAX ботов', {
+          error: maxError instanceof Error ? maxError.message : 'Unknown error',
+          component: 'bot-manager'
+        });
+      }
+
       globalForBotManager.botsInitialized = true;
       logger.info('✅ Все активные боты загружены из БД', {
         component: 'bot-manager',

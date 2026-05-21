@@ -121,6 +121,7 @@ export interface User {
   birthDate?: Date | null;
   telegramId?: bigint | null;
   telegramUsername?: string | null;
+  maxId?: bigint | null;
   isActive: boolean;
   registeredAt: Date;
   updatedAt: Date;

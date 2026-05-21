@@ -68,6 +68,7 @@ export async function GET() {
             bonusExpiryDays: true,
             // bonusBehavior: true,
             isActive: true,
+            operationMode: true,
             createdAt: true,
             updatedAt: true,
             botStatus: true,
@@ -94,8 +95,8 @@ export async function GET() {
       where: ownerFilter,
       select: { id: true }
     });
-    const ownerProjectIds = new Set(ownerProjects.map(p => p.id));
-    
+    const ownerProjectIds = new Set(ownerProjects.map((p) => p.id));
+
     for (const [projectId, botInstance] of allBots) {
       if (ownerProjectIds.has(projectId) && botInstance.isActive) {
         activeBotsFromManager++;
@@ -137,11 +138,20 @@ export async function GET() {
           createdAt: Date;
           _count: { users: number };
           botSettings: { isActive: boolean } | null;
+          operationMode: string;
+          isActive: boolean;
         }) => ({
           id: project.id,
           name: project.name,
           userCount: project._count.users,
-          botStatus: project.botSettings?.isActive ? 'ACTIVE' : 'INACTIVE',
+          botStatus:
+            project.operationMode === 'WITHOUT_BOT'
+              ? project.isActive
+                ? 'ACTIVE'
+                : 'INACTIVE'
+              : project.botSettings?.isActive
+                ? 'ACTIVE'
+                : 'INACTIVE',
           createdAt: project.createdAt.toISOString()
         })
       )

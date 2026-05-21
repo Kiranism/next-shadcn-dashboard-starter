@@ -72,12 +72,9 @@
     },
 
     hideTildaPromocodeField: function (wrapper) {
-      if (!wrapper) {
-        return;
-      }
-      wrapper.classList.add(this.PROMO_HIDDEN_CLASS);
-      wrapper.setAttribute('aria-hidden', 'true');
-      this.log('✅ Поле промокода скрыто без удаления из DOM');
+      this.log(
+        '✅ Поле промокода НЕ скрывается (режим совместной работы с промокодами)'
+      );
     },
 
     showTildaPromocodeField: function (wrapper) {
@@ -908,7 +905,8 @@
 
         // КРИТИЧНО: Очищаем старый кэш настроек для принудительной загрузки свежих данных
         try {
-          localStorage.removeItem('tilda_bonus_project_settings_cache');
+          const cacheKey = `tilda_bonus_${this.config.projectId}_settings`;
+          localStorage.removeItem(cacheKey);
           this.log('🗑️ Очищен старый кэш настроек проекта');
         } catch (e) {
           this.log('⚠️ Не удалось очистить кэш:', e);
@@ -1282,10 +1280,6 @@
       container.className = 'bonus-widget-container';
       container.innerHTML = `
         <div class="bonus-widget-title">Бонусная программа</div>
-        <div class="bonus-toggle">
-          <button id="bonus-tab" type="button" class="bonus-toggle-btn active" onclick="TildaBonusWidget.switchMode('bonus')">Списать бонусы</button>
-          <button id="promo-tab" type="button" class="bonus-toggle-btn" onclick="TildaBonusWidget.switchMode('promo')">Промокод</button>
-        </div>
         <div id="bonus-content-area">
           <div id="first-purchase-discount-section" style="display: none;">
             <div style="padding: 12px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); border-radius: 8px; margin-bottom: 12px; text-align: center;">
@@ -2559,20 +2553,38 @@
         const defaultDiscountDescription =
           'Скидка будет применена автоматически при первой покупке';
 
+        let rawTitle = widgetSettings.registrationTitle;
+        if (rawTitle === undefined || rawTitle === null) {
+          rawTitle = isDiscountMode ? defaultDiscountTitle : defaultBonusTitle;
+        } else if (rawTitle === defaultBonusTitle && isDiscountMode) {
+          rawTitle = defaultDiscountTitle;
+        }
+
+        let rawDescription = widgetSettings.registrationDescription;
+        if (rawDescription === undefined || rawDescription === null) {
+          rawDescription = isDiscountMode
+            ? defaultDiscountDescription
+            : defaultBonusDescription;
+        } else if (
+          rawDescription === defaultBonusDescription &&
+          isDiscountMode
+        ) {
+          rawDescription = defaultDiscountDescription;
+        }
+
         const templates = {
-          registrationTitle: isDiscountMode
-            ? widgetSettings.registrationDiscountTitle || defaultDiscountTitle
-            : widgetSettings.registrationTitle || defaultBonusTitle,
-          registrationDescription: isDiscountMode
-            ? widgetSettings.registrationDiscountDescription ||
-              defaultDiscountDescription
-            : widgetSettings.registrationDescription || defaultBonusDescription,
+          registrationTitle: rawTitle
+            .replace(/{bonusAmount}/g, welcomeBonusAmount)
+            .replace(/{discountPercent}/g, firstPurchaseDiscountPercent),
+          registrationDescription: rawDescription
+            .replace(/{bonusAmount}/g, welcomeBonusAmount)
+            .replace(/{discountPercent}/g, firstPurchaseDiscountPercent),
           registrationButtonText:
-            widgetSettings.registrationButtonText || 'Зарегистрироваться',
-          registrationButtonUrl: widgetSettings.registrationButtonUrl || '', // Кастомная ссылка для регистрации
-          verificationButtonUrl: widgetSettings.verificationButtonUrl || '', // Кастомная ссылка для верификации
+            widgetSettings.registrationButtonText ?? 'Зарегистрироваться',
+          registrationButtonUrl: widgetSettings.registrationButtonUrl ?? '', // Кастомная ссылка для регистрации
+          verificationButtonUrl: widgetSettings.verificationButtonUrl ?? '', // Кастомная ссылка для верификации
           registrationFallbackText:
-            widgetSettings.registrationFallbackText ||
+            widgetSettings.registrationFallbackText ??
             'Свяжитесь с администратором для регистрации'
         };
 
@@ -2695,7 +2707,7 @@
               font-weight: ${styles.titleFontWeight};
               margin-bottom: 8px;
               color: ${styles.titleColor};
-            ">${templates.registrationTitle.replace('{bonusAmount}', welcomeBonusAmount).replace('{discountPercent}', firstPurchaseDiscountPercent)}</div>`;
+            ">${templates.registrationTitle}</div>`;
         }
 
         // Описание
@@ -2847,15 +2859,29 @@
       document.addEventListener('tcart:updated', (event) => {
         self.log('🚨 КРИТИЧНО: Получено событие tcart:updated');
 
-        // НЕМЕДЛЕННО удаляем промокод если были применены бонусы
+        // Если применен сторонний промокод и у нас есть примененные бонусы, сбрасываем бонусы
         if (
           self.state.appliedBonuses > 0 &&
           window.tcart &&
-          window.tcart.promocode
+          window.tcart.promocode &&
+          window.tcart.promocode !== 'GUPIL'
+        ) {
+          self.log(
+            '🎫 Обнаружен сторонний промокод при активных бонусах, сбрасываем бонусы'
+          );
+          self.clearAllPromocodes();
+          return;
+        }
+
+        // НЕМЕДЛЕННО удаляем промокод если были применены бонусы и промокод равен GUPIL
+        if (
+          self.state.appliedBonuses > 0 &&
+          window.tcart &&
+          window.tcart.promocode === 'GUPIL'
         ) {
           delete window.tcart.promocode;
           self.log(
-            '✅ НЕМЕДЛЕННО удален window.tcart.promocode при tcart:updated'
+            '✅ НЕМЕДЛЕННО удален window.tcart.promocode GUPIL при tcart:updated'
           );
         }
 
@@ -2885,29 +2911,30 @@
           self.log('🔥 НЕМЕДЛЕННО удаляем промокод');
 
           // НЕМЕДЛЕННО удаляем промокод при первом признаке изменения
-          // Проверяем как наличие примененных бонусов в state, так и наличие промокода в tcart
+          // Проверяем как наличие примененных бонусов в state, так и наличие промокода GUPIL в tcart
           const hasAppliedBonuses = self.state.appliedBonuses > 0;
-          const hasPromocode = window.tcart && window.tcart.promocode;
+          const hasPromocode =
+            window.tcart && window.tcart.promocode === 'GUPIL';
 
           if (hasAppliedBonuses || hasPromocode) {
             console.log(
-              '🎯 TildaBonusWidget: Есть примененные бонусы или промокод, удаляем промокод',
+              '🎯 TildaBonusWidget: Есть примененные бонусы или промокод GUPIL, удаляем промокод',
               { hasAppliedBonuses, hasPromocode }
             );
             // Принудительно удаляем промокод БЕЗ задержки
-            if (window.tcart && window.tcart.promocode) {
+            if (window.tcart && window.tcart.promocode === 'GUPIL') {
               console.log(
-                '🎯 TildaBonusWidget: Найден промокод, удаляем:',
+                '🎯 TildaBonusWidget: Найден промокод GUPIL, удаляем:',
                 window.tcart.promocode
               );
               delete window.tcart.promocode;
-              self.log('✅ НЕМЕДЛЕННО удален window.tcart.promocode');
+              self.log('✅ НЕМЕДЛЕННО удален window.tcart.promocode GUPIL');
               console.log(
-                '🎯 TildaBonusWidget: Промокод удален из window.tcart'
+                '🎯 TildaBonusWidget: Промокод GUPIL удален из window.tcart'
               );
             } else {
               console.log(
-                '🎯 TildaBonusWidget: Промокод не найден в window.tcart'
+                '🎯 TildaBonusWidget: Промокод GUPIL не найден в window.tcart'
               );
             }
           } else {
@@ -3235,9 +3262,13 @@
       this.capturePromoWrapperStyles(tildaPromoWrapper);
 
       // Очищаем промокод из window.tcart при переключении
-      if (typeof window.tcart !== 'undefined' && window.tcart.promocode) {
+      if (
+        typeof window.tcart !== 'undefined' &&
+        window.tcart.promocode &&
+        window.tcart.promocode === 'GUPIL'
+      ) {
         delete window.tcart.promocode;
-        console.log('🧹 switchMode: очищен window.tcart.promocode');
+        console.log('🧹 switchMode: очищен window.tcart.promocode GUPIL');
 
         // Пересчитываем корзину
         if (typeof window.tcart__reDrawTotal === 'function') {
@@ -4363,10 +4394,14 @@
         this.log('Полностью очищаем все промокоды');
 
         // Удаляем промокод из объекта tcart (основной метод Tilda)
-        if (window.tcart && window.tcart.promocode) {
+        if (
+          window.tcart &&
+          window.tcart.promocode &&
+          window.tcart.promocode === 'GUPIL'
+        ) {
           try {
             delete window.tcart.promocode;
-            this.log('Удален промокод из window.tcart');
+            this.log('Удален промокод GUPIL из window.tcart');
           } catch (_) {}
         }
 
@@ -4448,18 +4483,21 @@
     // Принудительное удаление промокода (более агрессивный метод)
     forceDeletePromocode: function () {
       try {
-        this.log('🔥 ПРИНУДИТЕЛЬНОЕ удаление промокода - НАЧАЛО');
+        this.log('🔥 ПРИНУДИТЕЛЬНОЕ удаление промокода GUPIL - НАЧАЛО');
 
-        // 1. ОБЯЗАТЕЛЬНО удаляем из window.tcart.promocode как просил пользователь
+        // 1. ОБЯЗАТЕЛЬНО удаляем из window.tcart.promocode как просил пользователь, но только если это GUPIL
         if (window.tcart) {
           this.log('📦 window.tcart найден, проверяем промокод');
 
-          if (window.tcart.promocode) {
-            this.log('⚠️ Найден промокод:', window.tcart.promocode);
+          if (window.tcart.promocode && window.tcart.promocode === 'GUPIL') {
+            this.log(
+              '⚠️ Найден промокод GUPIL, удаляем:',
+              window.tcart.promocode
+            );
             delete window.tcart.promocode;
-            this.log('✅ УДАЛЕН window.tcart.promocode');
+            this.log('✅ УДАЛЕН window.tcart.promocode GUPIL');
           } else {
-            this.log('ℹ️ window.tcart.promocode уже отсутствует');
+            this.log('ℹ️ window.tcart.promocode GUPIL уже отсутствует');
           }
 
           // Также удаляем другие возможные поля промокода

@@ -384,7 +384,7 @@ class MaxBotManager {
 
           await this.sendMessageToUser(
             projectId,
-            user.maxId.toString(),
+            Number(user.maxId),
             message,
             options
           );
