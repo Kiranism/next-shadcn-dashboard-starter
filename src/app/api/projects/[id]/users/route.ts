@@ -405,7 +405,7 @@ async function postHandler(
         email: validated.email || null,
         phone: validated.phone || null,
         birthDate: validated.birthDate || null,
-        isActive: false
+        isActive: project?.operationMode === 'WITHOUT_BOT'
       }
     });
     logger.info('Пользователь создан в БД', {

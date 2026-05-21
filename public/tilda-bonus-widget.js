@@ -72,9 +72,10 @@
     },
 
     hideTildaPromocodeField: function (wrapper) {
-      this.log(
-        '✅ Поле промокода НЕ скрывается (режим совместной работы с промокодами)'
-      );
+      if (!wrapper) return;
+      wrapper.classList.add(this.PROMO_HIDDEN_CLASS);
+      wrapper.setAttribute('aria-hidden', 'true');
+      this.log('✅ Поле промокода Tilda скрыто');
     },
 
     showTildaPromocodeField: function (wrapper) {
@@ -923,6 +924,8 @@
             // Сохраняем настройки в state
             this.state.widgetSettings = settings.widgetSettings || {};
             this.state.operationMode = settings.operationMode || 'WITH_BOT';
+            this.state.welcomeRewardType =
+              settings.welcomeRewardType || 'BONUS';
 
             // Сохраняем botUsername для использования в уведомлении о верификации
             if (settings.botUsername) {
@@ -956,6 +959,8 @@
               this.state.widgetSettings = cachedSettings.widgetSettings || {};
               this.state.operationMode =
                 cachedSettings.operationMode || 'WITH_BOT';
+              this.state.welcomeRewardType =
+                cachedSettings.welcomeRewardType || 'BONUS';
               if (cachedSettings.botUsername) {
                 const cleanBotUsername = String(cachedSettings.botUsername)
                   .replace(/[<>'"&]/g, '')
@@ -1276,10 +1281,19 @@
         return;
       }
 
+      // Определяем текст кнопки бонусов/скидок на основе welcomeRewardType
+      const welcomeRewardType = this.state.welcomeRewardType || 'BONUS';
+      const bonusTabText =
+        welcomeRewardType === 'DISCOUNT' ? 'Скидка' : 'Бонусы';
+
       const container = document.createElement('div');
       container.className = 'bonus-widget-container';
       container.innerHTML = `
         <div class="bonus-widget-title">Бонусная программа</div>
+        <div class="bonus-toggle">
+          <button type="button" id="bonus-tab" class="bonus-toggle-btn active" onclick="TildaBonusWidget.switchMode('bonus')">${bonusTabText}</button>
+          <button type="button" id="promo-tab" class="bonus-toggle-btn" onclick="TildaBonusWidget.switchMode('promo')">Промокод</button>
+        </div>
         <div id="bonus-content-area">
           <div id="first-purchase-discount-section" style="display: none;">
             <div style="padding: 12px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); border-radius: 8px; margin-bottom: 12px; text-align: center;">
@@ -1340,6 +1354,29 @@
     showWidgetControls: function () {
       const userState = this.getUserState();
       console.log('📊 showWidgetControls: userState =', userState);
+
+      // Обновляем текст вкладки бонусов на основе welcomeRewardType
+      const bonusTab = document.getElementById('bonus-tab');
+      if (bonusTab) {
+        const welcomeRewardType = this.state.welcomeRewardType || 'BONUS';
+        bonusTab.textContent =
+          welcomeRewardType === 'DISCOUNT' ? 'Скидка' : 'Бонусы';
+      }
+
+      // Определение режима промокода на основе текущего состояния tcart
+      if (
+        typeof window !== 'undefined' &&
+        window.tcart &&
+        window.tcart.promocode &&
+        window.tcart.promocode !== 'GUPIL' &&
+        this.state.mode !== 'promo'
+      ) {
+        this.log(
+          '🎫 Обнаружен сторонний промокод при показе управления, переключаем на промокод'
+        );
+        this.switchMode('promo');
+        return;
+      }
 
       const bonusSection = document.getElementById('bonus-section');
       const balanceEl = document.querySelector('.bonus-balance');
@@ -3261,23 +3298,6 @@
       // Сохраняем оригинальные стили поля промокода при первом обращении
       this.capturePromoWrapperStyles(tildaPromoWrapper);
 
-      // Очищаем промокод из window.tcart при переключении
-      if (
-        typeof window.tcart !== 'undefined' &&
-        window.tcart.promocode &&
-        window.tcart.promocode === 'GUPIL'
-      ) {
-        delete window.tcart.promocode;
-        console.log('🧹 switchMode: очищен window.tcart.promocode GUPIL');
-
-        // Пересчитываем корзину
-        if (typeof window.tcart__reDrawTotal === 'function') {
-          try {
-            window.tcart__reDrawTotal();
-          } catch (e) {}
-        }
-      }
-
       if (this.state.mode === 'promo') {
         // Переключаемся на режим промокода Tilda
         console.log('🎫 switchMode: режим промокода');
@@ -3297,6 +3317,9 @@
             '⚠️ switchMode: поле промокода Tilda не найдено (.t-inputpromocode__wrapper)'
           );
         }
+
+        // Сбрасываем применённые бонусы
+        this.resetAppliedBonuses();
       } else {
         // Переключаемся на режим бонусов
         console.log('💰 switchMode: режим бонусов');
@@ -3312,10 +3335,10 @@
         if (tildaPromoWrapper) {
           this.hideTildaPromocodeField(tildaPromoWrapper);
         }
-      }
 
-      // Сбрасываем применённые бонусы
-      this.resetAppliedBonuses();
+        // В режиме бонусов очищаем все промокоды (включая сторонние)
+        this.clearAllPromocodes();
+      }
     },
 
     // Отслеживание авторизации Tilda
@@ -4397,12 +4420,34 @@
         if (
           window.tcart &&
           window.tcart.promocode &&
-          window.tcart.promocode === 'GUPIL'
+          (window.tcart.promocode === 'GUPIL' || this.state.mode === 'bonus')
         ) {
           try {
             delete window.tcart.promocode;
-            this.log('Удален промокод GUPIL из window.tcart');
+            this.log(
+              'Удален промокод из window.tcart (GUPIL или в режиме бонусов)'
+            );
           } catch (_) {}
+        }
+
+        // В режиме бонусов очищаем все промокоды и инпуты в DOM
+        if (this.state.mode === 'bonus') {
+          try {
+            const promoInputs = document.querySelectorAll(
+              '.t-inputpromocode, input[name="promocode"], .t-promocode__input'
+            );
+            promoInputs.forEach((input) => {
+              if (input) {
+                input.value = '';
+                try {
+                  input.dispatchEvent(new Event('input', { bubbles: true }));
+                  input.dispatchEvent(new Event('change', { bubbles: true }));
+                } catch (_) {}
+              }
+            });
+          } catch (e) {
+            this.log('Ошибка очистки инпутов промокодов:', e);
+          }
         }
 
         // Сбрасываем состояние виджета
