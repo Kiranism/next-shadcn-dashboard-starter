@@ -697,15 +697,15 @@ export function ProjectSettingsView({ projectId }: ProjectSettingsViewProps) {
           />
           {formData.operationMode === 'WITHOUT_BOT' ? (
             <div className='rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200'>
-              Telegram-настройки скрыты, активные боты будут остановлены, новые
-              пользователи активируются автоматически и могут тратить бонусы без
-              привязки к боту.
+              Настройки мессенджеров скрыты, активные боты будут остановлены,
+              новые пользователи активируются автоматически и могут тратить
+              бонусы без привязки к боту.
             </div>
           ) : (
             <div className='rounded-md border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-100'>
               Пользователи создаются неактивными и должны активировать профиль
-              через Telegram бота; без корректной настройки бота списания
-              бонусов будут отклоняться.
+              через бота; без корректной настройки бота списания бонусов будут
+              отклоняться. Подключите бота в разделе "Интеграции".
             </div>
           )}
 
@@ -744,15 +744,7 @@ export function ProjectSettingsView({ projectId }: ProjectSettingsViewProps) {
               <CardTitle className='text-lg'>Быстрые действия</CardTitle>
             </CardHeader>
             <CardContent className='flex flex-col gap-3'>
-              {/* Показываем настройку Telegram бота только в режиме WITH_BOT */}
-              {formData.operationMode === 'WITH_BOT' && (
-                <Link href={`/dashboard/projects/${projectId}/bot`}>
-                  <Button variant='outline' className='w-full justify-start'>
-                    <Bot className='mr-2 h-4 w-4' />
-                    Настройка Telegram бота
-                  </Button>
-                </Link>
-              )}
+              {/* Убрана настройка Telegram бота из Quick Actions (перенесена в Интеграции) */}
               <Link href={`/dashboard/projects/${projectId}/users`}>
                 <Button variant='outline' className='w-full justify-start'>
                   <Users className='mr-2 h-4 w-4' />

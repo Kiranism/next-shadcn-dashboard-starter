@@ -1291,8 +1291,8 @@
       container.innerHTML = `
         <div class="bonus-widget-title">Бонусная программа</div>
         <div class="bonus-toggle">
-          <button type="button" id="bonus-tab" class="bonus-toggle-btn active" onclick="TildaBonusWidget.switchMode('bonus')">${bonusTabText}</button>
-          <button type="button" id="promo-tab" class="bonus-toggle-btn" onclick="TildaBonusWidget.switchMode('promo')">Промокод</button>
+          <button type="button" id="bonus-tab" class="bonus-toggle-btn active" onclick="TildaBonusWidget.switchMode('bonus', true)">${bonusTabText}</button>
+          <button type="button" id="promo-tab" class="bonus-toggle-btn" onclick="TildaBonusWidget.switchMode('promo', true)">Промокод</button>
         </div>
         <div id="bonus-content-area">
           <div id="first-purchase-discount-section" style="display: none;">
@@ -3279,8 +3279,13 @@
     },
 
     // Переключение режима: бонусы | промокод
-    switchMode: function (mode) {
-      console.log('🔄 switchMode: переключение на режим', mode);
+    switchMode: function (mode, isUserAction) {
+      console.log(
+        '🔄 switchMode: переключение на режим',
+        mode,
+        'isUserAction =',
+        isUserAction
+      );
       this.state.mode = mode === 'promo' ? 'promo' : 'bonus';
 
       const bonusTab = document.getElementById('bonus-tab');
@@ -3318,6 +3323,11 @@
           );
         }
 
+        // При переключении на промокод пользователем, сбрасываем все промокоды принудительно
+        if (isUserAction) {
+          this.clearAllPromocodes(true);
+        }
+
         // Сбрасываем применённые бонусы
         this.resetAppliedBonuses();
       } else {
@@ -3337,7 +3347,8 @@
         }
 
         // В режиме бонусов очищаем все промокоды (включая сторонние)
-        this.clearAllPromocodes();
+        // Если это действие пользователя, делаем force-очистку
+        this.clearAllPromocodes(isUserAction);
       }
     },
 
@@ -4412,26 +4423,28 @@
     },
 
     // Полная очистка всех промокодов
-    clearAllPromocodes: function () {
+    clearAllPromocodes: function (force) {
       try {
-        this.log('Полностью очищаем все промокоды');
+        this.log('Полностью очищаем все промокоды. Force =', !!force);
 
         // Удаляем промокод из объекта tcart (основной метод Tilda)
         if (
           window.tcart &&
           window.tcart.promocode &&
-          (window.tcart.promocode === 'GUPIL' || this.state.mode === 'bonus')
+          (force ||
+            window.tcart.promocode === 'GUPIL' ||
+            this.state.mode === 'bonus')
         ) {
           try {
             delete window.tcart.promocode;
             this.log(
-              'Удален промокод из window.tcart (GUPIL или в режиме бонусов)'
+              'Удален промокод из window.tcart (GUPIL, режим бонусов или принудительно)'
             );
           } catch (_) {}
         }
 
-        // В режиме бонусов очищаем все промокоды и инпуты в DOM
-        if (this.state.mode === 'bonus') {
+        // Очищаем все промокоды и инпуты в DOM при force или в режиме бонусов
+        if (force || this.state.mode === 'bonus') {
           try {
             const promoInputs = document.querySelectorAll(
               '.t-inputpromocode, input[name="promocode"], .t-promocode__input'

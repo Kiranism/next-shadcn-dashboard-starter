@@ -35,6 +35,12 @@ interface IntegrationsHubProps {
       isRunning: boolean;
       maxBotUsername: string | null;
     } | null;
+    telegramBot?: {
+      isConfigured: boolean;
+      isRunning: boolean;
+      botUsername: string | null;
+      isActive: boolean;
+    } | null;
   };
 }
 
@@ -139,9 +145,29 @@ function IntegrationCard({
 }
 
 export function IntegrationsHub({ projectId, data }: IntegrationsHubProps) {
-  const { moySklad, inSales, tilda, maxBot } = data;
+  const { moySklad, inSales, tilda, maxBot, telegramBot } = data;
 
   const integrations: IntegrationCardProps[] = [
+    {
+      icon: '✈️',
+      name: 'Telegram Bot',
+      description:
+        'Интеграция с Telegram. Регистрация пользователей, выпуск электронных карт, начисление и списание бонусов через бота.',
+      status: telegramBot?.isRunning
+        ? 'connected'
+        : telegramBot?.isConfigured
+          ? 'configured'
+          : 'disconnected',
+      statusLabel: telegramBot?.isRunning
+        ? 'Активен'
+        : telegramBot?.isConfigured
+          ? 'Настроен'
+          : 'Не настроен',
+      secondaryText: telegramBot?.botUsername
+        ? `Бот: @${telegramBot.botUsername}`
+        : undefined,
+      href: `/dashboard/projects/${projectId}/bot`
+    },
     {
       icon: '🤖',
       name: 'MAX Bot',

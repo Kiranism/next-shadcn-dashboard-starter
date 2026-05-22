@@ -61,6 +61,26 @@ async function getIntegrationStatuses(projectId: string) {
     })
     .catch(() => null);
 
+  // Проверяем настройки Telegram бота
+  const telegramSettings = await db.botSettings
+    .findUnique({
+      where: { projectId },
+      select: { botToken: true, botUsername: true, isActive: true }
+    })
+    .catch(() => null);
+
+  // Проверяем, запущен ли Telegram бот
+  let isTelegramBotRunning = false;
+  if (telegramSettings?.botToken && telegramSettings.isActive) {
+    try {
+      const { botManager } = await import('@/lib/telegram/bot-manager');
+      const instance = botManager.getBot(projectId);
+      isTelegramBotRunning = !!instance?.isActive;
+    } catch {
+      // Игнорируем
+    }
+  }
+
   // Проверяем, запущен ли MAX бот
   let isMaxBotRunning = false;
   if (project?.maxBotToken) {
@@ -78,6 +98,12 @@ async function getIntegrationStatuses(projectId: string) {
     moySklad: moySkladIntegration,
     inSales: inSalesIntegration,
     tilda: widgetSettings,
+    telegramBot: {
+      isConfigured: !!telegramSettings?.botToken,
+      isRunning: isTelegramBotRunning,
+      botUsername: telegramSettings?.botUsername || null,
+      isActive: telegramSettings?.isActive ?? false
+    },
     maxBot: {
       isConfigured: !!project?.maxBotToken,
       isRunning: isMaxBotRunning,

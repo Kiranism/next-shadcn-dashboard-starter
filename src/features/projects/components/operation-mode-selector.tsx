@@ -66,15 +66,16 @@ export function OperationModeSelector({
                 htmlFor='with-bot'
                 className='flex cursor-pointer items-center text-base font-medium'
               >
-                <Bot className='mr-2 h-4 w-4 text-blue-500' />С Telegram ботом
+                <Bot className='mr-2 h-4 w-4 text-blue-500' />С активацией через
+                бота
               </Label>
               <p className='text-muted-foreground text-sm'>
-                Пользователи должны активировать профиль через Telegram бота для
-                траты бонусов. Подходит для проектов с активным использованием
-                Telegram.
+                Пользователи должны активировать профиль через бота (Telegram
+                или MAX) для траты бонусов. Подходит для проектов с активным
+                использованием мессенджеров.
               </p>
               <ul className='text-muted-foreground mt-2 list-inside list-disc text-xs'>
-                <li>Требуется настройка Telegram бота</li>
+                <li>Требуется настройка бота в разделе "Интеграции"</li>
                 <li>Пользователи активируются через бота</li>
                 <li>Неактивные пользователи не могут тратить бонусы</li>
               </ul>
@@ -100,15 +101,15 @@ export function OperationModeSelector({
                 htmlFor='without-bot'
                 className='flex cursor-pointer items-center text-base font-medium'
               >
-                Без Telegram бота
+                Без активации через бота
               </Label>
               <p className='text-muted-foreground text-sm'>
                 Пользователи автоматически активируются при регистрации и могут
-                сразу тратить бонусы. Подходит для проектов без Telegram
-                интеграции.
+                сразу тратить бонусы. Подходит для проектов без интеграции с
+                мессенджерами.
               </p>
               <ul className='text-muted-foreground mt-2 list-inside list-disc text-xs'>
-                <li>Telegram бот не требуется</li>
+                <li>Подключение бота не требуется</li>
                 <li>Автоматическая активация при регистрации</li>
                 <li>Все пользователи могут тратить бонусы сразу</li>
               </ul>
