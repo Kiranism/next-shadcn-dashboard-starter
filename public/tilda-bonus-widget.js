@@ -1031,7 +1031,59 @@
           --bonus-widget-button-padding: 10px 20px;
           --bonus-widget-box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-        
+
+        /* Плашка приветственной скидки */
+        .first-discount-card {
+          padding: 12px;
+          background: var(--bonus-widget-button-bg);
+          border-radius: var(--bonus-widget-input-border-radius);
+          margin-bottom: 12px;
+          text-align: center;
+        }
+        .first-discount-title {
+          margin: 0 0 8px 0;
+          color: var(--bonus-widget-button-text);
+          font-weight: 600;
+          font-size: var(--bonus-widget-font-size);
+        }
+        .first-discount-subtitle {
+          margin: 0 0 12px 0;
+          color: var(--bonus-widget-button-text);
+          opacity: 0.9;
+          font-size: var(--bonus-widget-label-font-size);
+        }
+        .first-discount-apply-btn {
+          background: var(--bonus-widget-bg);
+          color: var(--bonus-widget-button-bg);
+          border: none;
+          padding: var(--bonus-widget-button-padding);
+          border-radius: var(--bonus-widget-button-border-radius);
+          font-weight: 600;
+          cursor: pointer;
+          font-size: var(--bonus-widget-button-font-size);
+          font-family: var(--bonus-widget-font-family);
+          transition: all 0.2s;
+        }
+        .first-discount-apply-btn:hover {
+          opacity: 0.9;
+          transform: scale(1.02);
+        }
+        /* Плашка "скидка применена" */
+        .first-discount-applied {
+          padding: 12px;
+          background: var(--bonus-widget-input-bg);
+          border: 1px solid var(--bonus-widget-success);
+          border-radius: var(--bonus-widget-input-border-radius);
+          margin-bottom: 12px;
+          text-align: center;
+        }
+        .first-discount-applied-text {
+          margin: 0;
+          color: var(--bonus-widget-success);
+          font-weight: 600;
+          font-size: var(--bonus-widget-font-size);
+        }
+
         .bonus-widget-container {
           background: var(--bonus-widget-bg);
           border: 1px solid var(--bonus-widget-border);
@@ -1296,13 +1348,10 @@
         </div>
         <div id="bonus-content-area">
           <div id="first-purchase-discount-section" style="display: none;">
-            <div style="padding: 12px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); border-radius: 8px; margin-bottom: 12px; text-align: center;">
-              <p style="margin: 0 0 8px 0; color: white; font-weight: 600; font-size: 14px;">🎉 Скидка на первый заказ!</p>
-              <p style="margin: 0 0 12px 0; color: rgba(255,255,255,0.9); font-size: 13px;">Вам доступна скидка <span id="first-discount-percent">0</span>% на первую покупку</p>
-              <button type="button" id="apply-first-discount-btn" 
-                      style="background: white; color: #059669; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; transition: all 0.2s;"
-                      onmouseover="this.style.background='#f0fdf4'; this.style.transform='scale(1.02)'"
-                      onmouseout="this.style.background='white'; this.style.transform='scale(1)'"
+            <div class="first-discount-card">
+              <p class="first-discount-title">🎉 Скидка на первый заказ!</p>
+              <p class="first-discount-subtitle">Вам доступна скидка <span id="first-discount-percent">0</span>% на первую покупку</p>
+              <button type="button" id="apply-first-discount-btn" class="first-discount-apply-btn"
                       onclick="TildaBonusWidget.applyFirstPurchaseDiscount()">
                 Применить скидку
               </button>
@@ -4710,8 +4759,8 @@
           );
           if (firstDiscountSection) {
             firstDiscountSection.innerHTML = `
-              <div style="padding: 12px; background: #D1FAE5; border: 1px solid #10B981; border-radius: 8px; margin-bottom: 12px; text-align: center;">
-                <p style="margin: 0; color: #065F46; font-weight: 600; font-size: 14px;">✅ Скидка ${discountPercent}% применена!</p>
+              <div class="first-discount-applied">
+                <p class="first-discount-applied-text">✅ Скидка ${discountPercent}% применена!</p>
               </div>
             `;
           }
@@ -5789,13 +5838,10 @@
 
       // Восстанавливаем оригинальный HTML с кнопкой "Применить скидку"
       firstDiscountSection.innerHTML = `
-        <div style="padding: 12px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); border-radius: 8px; margin-bottom: 12px; text-align: center;">
-          <p style="margin: 0 0 8px 0; color: white; font-weight: 600; font-size: 14px;">🎉 Скидка на первый заказ!</p>
-          <p style="margin: 0 0 12px 0; color: rgba(255,255,255,0.9); font-size: 13px;">Вам доступна скидка <span id="first-discount-percent">${discountPercent}</span>% на первую покупку</p>
-          <button type="button" id="apply-first-discount-btn" 
-                  style="background: white; color: #059669; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; transition: all 0.2s;"
-                  onmouseover="this.style.background='#f0fdf4'; this.style.transform='scale(1.02)'"
-                  onmouseout="this.style.background='white'; this.style.transform='scale(1)'"
+        <div class="first-discount-card">
+          <p class="first-discount-title">🎉 Скидка на первый заказ!</p>
+          <p class="first-discount-subtitle">Вам доступна скидка <span id="first-discount-percent">${discountPercent}</span>% на первую покупку</p>
+          <button type="button" id="apply-first-discount-btn" class="first-discount-apply-btn"
                   onclick="TildaBonusWidget.applyFirstPurchaseDiscount()">
             Применить скидку
           </button>
