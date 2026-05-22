@@ -46,71 +46,111 @@
     },
 
     capturePromoWrapperStyles: function (wrapper) {
-      if (!wrapper || this.state.originalPromoStyles) {
+      if (!wrapper) {
         return;
       }
+      if (wrapper._originalStyle !== undefined) {
+        return; // Уже сохранено
+      }
       try {
-        const inlineStyle = wrapper.getAttribute('style') || '';
-        const computedStyle = window.getComputedStyle(wrapper);
-        this.state.originalPromoStyles = {
-          inline: inlineStyle,
-          display: computedStyle.display,
-          width: computedStyle.width,
-          position: computedStyle.position,
-          margin: computedStyle.margin,
-          padding: computedStyle.padding,
-          border: computedStyle.border,
-          borderRadius: computedStyle.borderRadius,
-          backgroundColor: computedStyle.backgroundColor,
-          color: computedStyle.color,
-          boxSizing: computedStyle.boxSizing
-        };
-        this.log('✅ Сохранены оригинальные стили поля промокода Tilda');
+        wrapper._originalStyle = wrapper.getAttribute('style') || '';
+        this.log('✅ Сохранены оригинальные inline стили поля промокода Tilda');
       } catch (error) {
         this.log('⚠️ Ошибка сохранения стилей поля промокода:', error);
       }
     },
 
+    syncPromocodeFieldVisibility: function () {
+      if (this.state.isDestroyed) return;
+      const mode = this.state.mode;
+
+      // Находим все возможные обертки/контейнеры промокода
+      const wrappers = document.querySelectorAll(
+        '.t-inputpromocode__wrapper, .t-promocode__wrapper, .t-inputpromocode__container, .t-promocode__container, .t706__cartwin-promocode, .t706__promocode'
+      );
+
+      // Находим все сообщения об успешном применении/ошибках
+      const messages = document.querySelectorAll(
+        '.t-inputpromocode__message, .t-inputpromocode__applied-text, .t-promocode__message, .t-promocode__applied-text'
+      );
+
+      if (mode === 'bonus') {
+        // Режим БОНУСОВ/СКИДОК - скрываем все элементы промокода
+        wrappers.forEach((wrapper) => {
+          if (wrapper) {
+            this.capturePromoWrapperStyles(wrapper);
+            if (!wrapper.classList.contains(this.PROMO_HIDDEN_CLASS)) {
+              wrapper.classList.add(this.PROMO_HIDDEN_CLASS);
+              wrapper.setAttribute('aria-hidden', 'true');
+            }
+            wrapper.style.setProperty('display', 'none', 'important');
+            wrapper.style.setProperty('visibility', 'hidden', 'important');
+          }
+        });
+        messages.forEach((msg) => {
+          if (msg) {
+            this.capturePromoWrapperStyles(msg);
+            if (!msg.classList.contains(this.PROMO_HIDDEN_CLASS)) {
+              msg.classList.add(this.PROMO_HIDDEN_CLASS);
+              msg.setAttribute('aria-hidden', 'true');
+            }
+            msg.style.setProperty('display', 'none', 'important');
+            msg.style.setProperty('visibility', 'hidden', 'important');
+          }
+        });
+      } else {
+        // Режим ПРОМОКОДА - показываем все элементы промокода
+        wrappers.forEach((wrapper) => {
+          if (wrapper) {
+            if (wrapper.classList.contains(this.PROMO_HIDDEN_CLASS)) {
+              wrapper.classList.remove(this.PROMO_HIDDEN_CLASS);
+              wrapper.removeAttribute('aria-hidden');
+            }
+
+            // Восстанавливаем оригинальные inline стили
+            if (wrapper._originalStyle !== undefined) {
+              if (wrapper._originalStyle) {
+                wrapper.setAttribute('style', wrapper._originalStyle);
+              } else {
+                wrapper.removeAttribute('style');
+              }
+            } else {
+              wrapper.style.removeProperty('display');
+              wrapper.style.removeProperty('visibility');
+            }
+          }
+        });
+        messages.forEach((msg) => {
+          if (msg) {
+            if (msg.classList.contains(this.PROMO_HIDDEN_CLASS)) {
+              msg.classList.remove(this.PROMO_HIDDEN_CLASS);
+              msg.removeAttribute('aria-hidden');
+            }
+
+            // Восстанавливаем оригинальные inline стили
+            if (msg._originalStyle !== undefined) {
+              if (msg._originalStyle) {
+                msg.setAttribute('style', msg._originalStyle);
+              } else {
+                msg.removeAttribute('style');
+              }
+            } else {
+              msg.style.removeProperty('display');
+              msg.style.removeProperty('visibility');
+            }
+          }
+        });
+      }
+    },
+
     hideTildaPromocodeField: function (wrapper) {
-      if (!wrapper) return;
-      wrapper.classList.add(this.PROMO_HIDDEN_CLASS);
-      wrapper.setAttribute('aria-hidden', 'true');
-      this.log('✅ Поле промокода Tilda скрыто');
+      this.syncPromocodeFieldVisibility();
+      this.log('✅ Поле промокода Tilda скрыто (через sync)');
     },
 
     showTildaPromocodeField: function (wrapper) {
-      if (!wrapper) {
-        return;
-      }
-      wrapper.classList.remove(this.PROMO_HIDDEN_CLASS);
-      wrapper.removeAttribute('aria-hidden');
-
-      // Если ранее в стиле был display:none, удаляем его
-      const inlineStyle = wrapper.getAttribute('style');
-      if (inlineStyle && /display\s*:\s*none/gi.test(inlineStyle)) {
-        const sanitized = inlineStyle
-          .replace(/display\s*:\s*none\s*!?[^;]*;?/gi, '')
-          .trim();
-        if (sanitized) {
-          wrapper.setAttribute('style', sanitized);
-        } else {
-          wrapper.removeAttribute('style');
-        }
-      } else if (wrapper.style.display === 'none') {
-        wrapper.style.removeProperty('display');
-      }
-
-      // На всякий случай убеждаемся, что элемент действительно видим
-      try {
-        const computedDisplay = window.getComputedStyle(wrapper).display;
-        if (computedDisplay === 'none') {
-          wrapper.style.setProperty('display', 'block', 'important');
-        }
-      } catch (error) {
-        this.log('⚠️ Не удалось вычислить стиль поля промокода:', error);
-      }
-
-      this.log('✅ Поле промокода показано с сохранением обработчиков');
+      this.syncPromocodeFieldVisibility();
+      this.log('✅ Поле промокода Tilda показано (через sync)');
     },
 
     // Состояние
@@ -1299,7 +1339,7 @@
         }
         
         /* Дополнительный класс: скрываем поле промокода без display:none */
-        .t-inputpromocode__wrapper.bonus-promocode-hidden {
+        .bonus-promocode-hidden {
           visibility: hidden !important;
           opacity: 0 !important;
           height: 0 !important;
@@ -2961,6 +3001,7 @@
       // Слушаем события обновления корзины Tilda
       document.addEventListener('tcart:updated', (event) => {
         self.log('🚨 КРИТИЧНО: Получено событие tcart:updated');
+        self.syncPromocodeFieldVisibility();
 
         // Если применен сторонний промокод и у нас есть примененные бонусы, сбрасываем бонусы
         if (
@@ -2992,6 +3033,7 @@
         setTimeout(() => {
           self.adjustBonusesForCartChange();
           self.updateBalanceDisplay();
+          self.syncPromocodeFieldVisibility();
         }, 100);
       });
 
@@ -3049,6 +3091,7 @@
           setTimeout(() => {
             self.adjustBonusesForCartChange();
             self.updateCartTotalAndMaxBonuses();
+            self.syncPromocodeFieldVisibility();
             self.log('✅ Обновляем виджет после изменения количества товаров');
           }, 200);
         }
@@ -3057,19 +3100,23 @@
       // Слушаем события изменения количества через API Tilda
       document.addEventListener('tcart:quantity:changed', (event) => {
         self.log('🚨 Получено событие tcart:quantity:changed');
+        self.syncPromocodeFieldVisibility();
         setTimeout(() => {
           self.adjustBonusesForCartChange();
           self.updateCartTotalAndMaxBonuses();
           self.forceUpdateCartDisplay();
+          self.syncPromocodeFieldVisibility();
         }, 150);
       });
 
       // Слушаем события пересчета корзины
       document.addEventListener('tcart:recalculated', (event) => {
         self.log('🚨 Получено событие tcart:recalculated');
+        self.syncPromocodeFieldVisibility();
         setTimeout(() => {
           self.adjustBonusesForCartChange();
           self.updateCartTotalAndMaxBonuses();
+          self.syncPromocodeFieldVisibility();
         }, 100);
       });
 
@@ -3079,6 +3126,10 @@
         if (cartWindow) {
           // Наблюдаем за изменениями в корзине
           const cartObserver = new MutationObserver((mutations) => {
+            // Всегда синхронизируем видимость промокода при любых изменениях в DOM корзины,
+            // чтобы предотвратить появление скрытых элементов после отрисовок Tilda
+            self.syncPromocodeFieldVisibility();
+
             let shouldCheckBonuses = false;
 
             mutations.forEach((mutation) => {
@@ -3119,6 +3170,7 @@
               setTimeout(() => {
                 self.adjustBonusesForCartChange();
                 self.updateCartTotalAndMaxBonuses();
+                self.syncPromocodeFieldVisibility();
               }, 200);
             }
           });
@@ -3420,6 +3472,9 @@
         // (она могла быть заменена на "Скидка применена!" после applyFirstPurchaseDiscount)
         this.restoreFirstPurchaseDiscountSection();
       }
+
+      // Всегда синхронизируем отображение полей промокода в конце смены режима
+      this.syncPromocodeFieldVisibility();
     },
 
     // Отслеживание авторизации Tilda
@@ -4218,6 +4273,9 @@
         amountInput.style.display = 'none';
         applyButton.style.display = 'none';
       }
+
+      // Синхронизируем видимость промокода
+      this.syncPromocodeFieldVisibility();
     },
 
     // Получение текущей суммы корзины
@@ -4557,6 +4615,9 @@
           }
         });
 
+        // Синхронизируем видимость промокода в зависимости от режима
+        this.syncPromocodeFieldVisibility();
+
         this.log('✅ DOM элементов нативного промокода успешно сброшен');
       } catch (error) {
         this.log('⚠️ Ошибка при сбросе DOM элементов промокода:', error);
@@ -4573,7 +4634,22 @@
           (window.tcart.promocode === 'GUPIL' ||
             window.tcart.promo === 'GUPIL');
 
-        // Удаляем промокоды и все атрибуты скидок из объекта tcart
+        // Находим и кликаем нативные кнопки очистки Tilda
+        const cleanButtons = document.querySelectorAll(
+          '.t-inputpromocode__button-clean, .t-promocode__button-clean, .t-promocode__btn-clean, [class*="button-clean"], [class*="btn-clean"]'
+        );
+        cleanButtons.forEach((btn) => {
+          if (btn && typeof btn.click === 'function') {
+            try {
+              btn.click();
+              this.log('Нажата нативная кнопка очистки промокода Tilda');
+            } catch (e) {
+              this.log('Ошибка при нажатии кнопки очистки промокода:', e);
+            }
+          }
+        });
+
+        // Удаляем промокоды и все атрибуты скидок из объекта tcart и его вложенных объектов
         if (window.tcart && (force || isGupil || this.state.mode === 'bonus')) {
           const promoToClear = [
             'promocode',
@@ -4584,14 +4660,26 @@
             'discountpercent',
             'discountsum'
           ];
-          promoToClear.forEach((prop) => {
-            if (prop in window.tcart) {
-              try {
-                delete window.tcart[prop];
-                this.log(`Удален ${prop} из window.tcart`);
-              } catch (_) {}
-            }
-          });
+
+          const clearObjectProps = (obj) => {
+            if (!obj || typeof obj !== 'object') return;
+            promoToClear.forEach((prop) => {
+              if (prop in obj) {
+                try {
+                  delete obj[prop];
+                  this.log(`Удален ${prop} из объекта корзины`);
+                } catch (_) {}
+              }
+            });
+            const subKeys = ['data', 'formData', 'order', 'orderData'];
+            subKeys.forEach((key) => {
+              if (obj[key] && typeof obj[key] === 'object') {
+                clearObjectProps(obj[key]);
+              }
+            });
+          };
+
+          clearObjectProps(window.tcart);
         }
 
         // Очищаем все промокоды и инпуты в DOM при force, в режиме бонусов или если применен GUPIL
@@ -4661,6 +4749,18 @@
             this.log('Выполнен дополнительный пересчет промокода');
           } catch (e) {
             this.log('Ошибка при дополнительном пересчете промокода:', e);
+          }
+        }
+
+        // Сохраняем корзину в localStorage для синхронизации
+        if (typeof window.tcart__saveLocalObj === 'function') {
+          try {
+            window.tcart__saveLocalObj();
+            this.log(
+              '✅ Сохранена корзина в localStorage после очистки промокодов'
+            );
+          } catch (e) {
+            this.log('Ошибка при сохранении корзины в localStorage:', e);
           }
         }
 
@@ -4766,6 +4866,16 @@
 
         // 7. Принудительно обновляем отображение
         this.updateBalanceDisplay();
+
+        // Сохраняем корзину в localStorage для синхронизации
+        if (typeof window.tcart__saveLocalObj === 'function') {
+          try {
+            window.tcart__saveLocalObj();
+            this.log('✅ Сохранена корзина в localStorage после force-очистки');
+          } catch (e) {
+            this.log('Ошибка при сохранении корзины в localStorage:', e);
+          }
+        }
 
         this.log('🔥 ПРИНУДИТЕЛЬНОЕ удаление промокода ЗАВЕРШЕНО');
       } catch (error) {
