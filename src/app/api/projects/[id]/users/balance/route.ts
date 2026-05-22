@@ -67,11 +67,44 @@ export async function GET(
     const email = url.searchParams.get('email');
     const phone = url.searchParams.get('phone');
 
+    const logToDatabase = async (
+      status: number,
+      success: boolean,
+      responseBody: any
+    ) => {
+      try {
+        const { db } = await import('@/lib/db');
+        const headersObj: Record<string, string> = {};
+        request.headers.forEach((value, key) => {
+          headersObj[key] = value;
+        });
+
+        const params: Record<string, string> = {};
+        url.searchParams.forEach((value, key) => {
+          params[key] = value;
+        });
+
+        await db.webhookLog.create({
+          data: {
+            projectId,
+            endpoint: `/api/projects/${projectId}/users/balance`,
+            method: 'GET',
+            headers: headersObj,
+            body: params,
+            response: responseBody,
+            status,
+            success
+          }
+        });
+      } catch (err) {
+        logger.error('Failed to write widget log to WebhookLog', err);
+      }
+    };
+
     if (!email && !phone) {
-      return NextResponse.json(
-        { error: 'Требуется email или phone параметр' },
-        { status: 400, headers: corsHeaders }
-      );
+      const respBody = { error: 'Требуется email или phone параметр' };
+      await logToDatabase(400, false, respBody);
+      return NextResponse.json(respBody, { status: 400, headers: corsHeaders });
     }
 
     // Находим пользователя
@@ -126,19 +159,18 @@ export async function GET(
     }
 
     if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Пользователь с ${email ? `email ${email}` : phone ? `телефоном ${phone}` : 'указанными данными'} не найден в системе бонусов`,
-          balance: 0,
-          user: null,
-          details: {
-            searchedBy: email ? 'email' : phone ? 'phone' : 'unknown',
-            searchValue: email || phone || null
-          }
-        },
-        { status: 404, headers: corsHeaders }
-      );
+      const respBody = {
+        success: false,
+        error: `Пользователь с ${email ? `email ${email}` : phone ? `телефоном ${phone}` : 'указанными данными'} не найден в системе бонусов`,
+        balance: 0,
+        user: null,
+        details: {
+          searchedBy: email ? 'email' : phone ? 'phone' : 'unknown',
+          searchValue: email || phone || null
+        }
+      };
+      await logToDatabase(404, false, respBody);
+      return NextResponse.json(respBody, { status: 404, headers: corsHeaders });
     }
 
     // Получаем баланс пользователя
@@ -193,47 +225,65 @@ export async function GET(
         : 'none'
     });
 
-    return NextResponse.json(
-      {
-        success: true,
-        balance: Number(userBalance.currentBalance),
-        user: {
-          id: user.id,
-          email: user.email,
-          phone: user.phone,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          currentLevel: user.currentLevel,
-          telegramLinked: Boolean(user.telegramId)
-        },
-        balanceDetails: {
-          currentBalance: Number(userBalance.currentBalance),
-          totalEarned: Number(userBalance.totalEarned),
-          totalSpent: Number(userBalance.totalSpent),
-          expiringSoon: Number(userBalance.expiringSoon)
-        },
-        levelInfo: currentLevel
-          ? {
-              name: currentLevel.name,
-              bonusPercent: currentLevel.bonusPercent,
-              paymentPercent: currentLevel.paymentPercent,
-              minAmount: Number(currentLevel.minAmount),
-              maxAmount: currentLevel.maxAmount
-                ? Number(currentLevel.maxAmount)
-                : null
-            }
-          : null,
-        firstPurchaseDiscount
+    const respBody = {
+      success: true,
+      balance: Number(userBalance.currentBalance),
+      user: {
+        id: user.id,
+        email: user.email,
+        phone: user.phone,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        currentLevel: user.currentLevel,
+        telegramLinked: Boolean(user.telegramId)
       },
-      { headers: corsHeaders }
-    );
+      balanceDetails: {
+        currentBalance: Number(userBalance.currentBalance),
+        totalEarned: Number(userBalance.totalEarned),
+        totalSpent: Number(userBalance.totalSpent),
+        expiringSoon: Number(userBalance.expiringSoon)
+      },
+      levelInfo: currentLevel
+        ? {
+            name: currentLevel.name,
+            bonusPercent: currentLevel.bonusPercent,
+            paymentPercent: currentLevel.paymentPercent,
+            minAmount: Number(currentLevel.minAmount),
+            maxAmount: currentLevel.maxAmount
+              ? Number(currentLevel.maxAmount)
+              : null
+          }
+        : null,
+      firstPurchaseDiscount
+    };
+    await logToDatabase(200, true, respBody);
+    return NextResponse.json(respBody, { headers: corsHeaders });
   } catch (error) {
+    let projectId = 'unknown';
     try {
-      const { id: projectId } = await context.params;
+      const paramsObj = await context.params;
+      projectId = paramsObj.id;
       logger.error('Error retrieving user balance', {
         projectId,
         error: error instanceof Error ? error.message : 'Неизвестная ошибка',
         stack: error instanceof Error ? error.stack : undefined
+      });
+
+      const { db } = await import('@/lib/db');
+      await db.webhookLog.create({
+        data: {
+          projectId,
+          endpoint: `/api/projects/${projectId}/users/balance`,
+          method: 'GET',
+          headers: {},
+          body: {},
+          response: {
+            error: 'Internal Server Error',
+            details: error instanceof Error ? error.message : 'Unknown'
+          },
+          status: 500,
+          success: false
+        }
       });
     } catch (paramsError) {
       logger.error('Error retrieving user balance (failed to get projectId)', {

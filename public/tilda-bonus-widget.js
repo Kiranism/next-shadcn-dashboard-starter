@@ -1440,14 +1440,31 @@
         this.state.firstPurchaseDiscount.available &&
         this.state.firstPurchaseDiscount.discountPercent > 0;
 
-      // Обновляем процент скидки в плашке
+      // Обновляем плашку скидки
       if (hasFirstPurchaseDiscount && firstDiscountSection) {
-        const discountPercentEl = document.getElementById(
-          'first-discount-percent'
-        );
-        if (discountPercentEl) {
-          discountPercentEl.textContent =
-            this.state.firstPurchaseDiscount.discountPercent;
+        const isGupilApplied =
+          window.tcart &&
+          window.tcart.promocode === 'GUPIL' &&
+          (!this.state.appliedBonuses || this.state.appliedBonuses <= 0);
+        const discountPercent =
+          this.state.firstPurchaseDiscount.discountPercent;
+        if (isGupilApplied) {
+          firstDiscountSection.innerHTML = `
+            <div class="first-discount-applied">
+              <p class="first-discount-applied-text">✅ Скидка ${discountPercent}% применена!</p>
+            </div>
+          `;
+        } else {
+          firstDiscountSection.innerHTML = `
+            <div class="first-discount-card">
+              <p class="first-discount-title">🎉 Скидка на первый заказ!</p>
+              <p class="first-discount-subtitle">Вам доступна скидка <span id="first-discount-percent">${discountPercent}</span>% на первую покупку</p>
+              <button type="button" id="apply-first-discount-btn" class="first-discount-apply-btn"
+                      onclick="TildaBonusWidget.applyFirstPurchaseDiscount()">
+                Применить скидку
+              </button>
+            </div>
+          `;
         }
       }
 
@@ -4475,45 +4492,111 @@
       }
     },
 
+    // Сброс DOM элементов нативного промокода Tilda до исходного состояния
+    resetTildaPromocodeDOM: function () {
+      try {
+        this.log('🔄 Сброс DOM элементов нативного промокода Tilda');
+
+        // 1. Очищаем, разблокируем и показываем все поля ввода промокода
+        const promoInputs = document.querySelectorAll(
+          '.t-inputpromocode, input[name="promocode"], input[name="promo"], .t-promocode__input, #promocode, #promo'
+        );
+        promoInputs.forEach((input) => {
+          if (input) {
+            input.value = '';
+            input.disabled = false;
+            input.removeAttribute('disabled');
+
+            // Восстанавливаем оригинальные стили, если они были скрыты
+            input.style.display = '';
+            input.style.visibility = '';
+
+            try {
+              input.dispatchEvent(new Event('input', { bubbles: true }));
+              input.dispatchEvent(new Event('change', { bubbles: true }));
+            } catch (_) {}
+          }
+        });
+
+        // 2. Убираем CSS-классы применения с оберток и контейнеров
+        const wrappers = document.querySelectorAll(
+          '.t-inputpromocode__wrapper, .t-promocode__wrapper, .t-inputpromocode__container, .t-promocode__container'
+        );
+        wrappers.forEach((wrapper) => {
+          if (wrapper) {
+            wrapper.classList.remove('t-inputpromocode_applied');
+            wrapper.classList.remove('t-promocode_applied');
+            wrapper.style.display = '';
+            wrapper.style.visibility = '';
+          }
+        });
+
+        // 3. Восстанавливаем кнопки применения промокода
+        const applyButtons = document.querySelectorAll(
+          '.t-inputpromocode__button-apply, .t-promocode__button-apply, .t-promocode__btn-apply'
+        );
+        applyButtons.forEach((btn) => {
+          if (btn) {
+            btn.disabled = false;
+            btn.removeAttribute('disabled');
+            btn.style.display = '';
+            btn.style.visibility = '';
+          }
+        });
+
+        // 4. Очищаем и скрываем сообщения об успешном применении / скидке
+        const msgElements = document.querySelectorAll(
+          '.t-inputpromocode__message, .t-inputpromocode__applied-text, .t-promocode__message, .t-promocode__applied-text'
+        );
+        msgElements.forEach((msg) => {
+          if (msg) {
+            msg.innerHTML = '';
+            msg.textContent = '';
+            msg.style.display = 'none';
+            msg.style.visibility = 'hidden';
+          }
+        });
+
+        this.log('✅ DOM элементов нативного промокода успешно сброшен');
+      } catch (error) {
+        this.log('⚠️ Ошибка при сбросе DOM элементов промокода:', error);
+      }
+    },
+
     // Полная очистка всех промокодов
     clearAllPromocodes: function (force) {
       try {
         this.log('Полностью очищаем все промокоды. Force =', !!force);
 
-        // Удаляем промокод из объекта tcart (основной метод Tilda)
-        if (
+        const isGupil =
           window.tcart &&
-          window.tcart.promocode &&
-          (force ||
-            window.tcart.promocode === 'GUPIL' ||
-            this.state.mode === 'bonus')
-        ) {
-          try {
-            delete window.tcart.promocode;
-            this.log(
-              'Удален промокод из window.tcart (GUPIL, режим бонусов или принудительно)'
-            );
-          } catch (_) {}
+          (window.tcart.promocode === 'GUPIL' ||
+            window.tcart.promo === 'GUPIL');
+
+        // Удаляем промокоды и все атрибуты скидок из объекта tcart
+        if (window.tcart && (force || isGupil || this.state.mode === 'bonus')) {
+          const promoToClear = [
+            'promocode',
+            'promo',
+            'discount',
+            'discountvalue',
+            'procdiscount',
+            'discountpercent',
+            'discountsum'
+          ];
+          promoToClear.forEach((prop) => {
+            if (prop in window.tcart) {
+              try {
+                delete window.tcart[prop];
+                this.log(`Удален ${prop} из window.tcart`);
+              } catch (_) {}
+            }
+          });
         }
 
-        // Очищаем все промокоды и инпуты в DOM при force или в режиме бонусов
-        if (force || this.state.mode === 'bonus') {
-          try {
-            const promoInputs = document.querySelectorAll(
-              '.t-inputpromocode, input[name="promocode"], .t-promocode__input'
-            );
-            promoInputs.forEach((input) => {
-              if (input) {
-                input.value = '';
-                try {
-                  input.dispatchEvent(new Event('input', { bubbles: true }));
-                  input.dispatchEvent(new Event('change', { bubbles: true }));
-                } catch (_) {}
-              }
-            });
-          } catch (e) {
-            this.log('Ошибка очистки инпутов промокодов:', e);
-          }
+        // Очищаем все промокоды и инпуты в DOM при force, в режиме бонусов или если применен GUPIL
+        if (force || this.state.mode === 'bonus' || isGupil) {
+          this.resetTildaPromocodeDOM();
         }
 
         // Сбрасываем состояние виджета
@@ -4596,54 +4679,32 @@
       try {
         this.log('🔥 ПРИНУДИТЕЛЬНОЕ удаление промокода GUPIL - НАЧАЛО');
 
-        // 1. ОБЯЗАТЕЛЬНО удаляем из window.tcart.promocode как просил пользователь, но только если это GUPIL
+        // 1. ОБЯЗАТЕЛЬНО удаляем из window.tcart все поля промокода
         if (window.tcart) {
-          this.log('📦 window.tcart найден, проверяем промокод');
-
-          if (window.tcart.promocode && window.tcart.promocode === 'GUPIL') {
-            this.log(
-              '⚠️ Найден промокод GUPIL, удаляем:',
-              window.tcart.promocode
-            );
-            delete window.tcart.promocode;
-            this.log('✅ УДАЛЕН window.tcart.promocode GUPIL');
-          } else {
-            this.log('ℹ️ window.tcart.promocode GUPIL уже отсутствует');
-          }
-
-          // Также удаляем другие возможные поля промокода
-          if (window.tcart.promo) {
-            delete window.tcart.promo;
-            this.log('✅ УДАЛЕН window.tcart.promo');
-          }
-          if (window.tcart.discount) {
-            delete window.tcart.discount;
-            this.log('✅ УДАЛЕН window.tcart.discount');
-          }
-          if (window.tcart.discountvalue) {
-            delete window.tcart.discountvalue;
-            this.log('✅ УДАЛЕН window.tcart.discountvalue');
-          }
+          this.log('📦 window.tcart найден, удаляем все промокод-поля');
+          const promoToClear = [
+            'promocode',
+            'promo',
+            'discount',
+            'discountvalue',
+            'procdiscount',
+            'discountpercent',
+            'discountsum'
+          ];
+          promoToClear.forEach((prop) => {
+            if (prop in window.tcart) {
+              try {
+                delete window.tcart[prop];
+                this.log(`✅ УДАЛЕН window.tcart.${prop}`);
+              } catch (_) {}
+            }
+          });
         } else {
           this.log('❌ window.tcart не найден!');
         }
 
-        // 2. Очищаем ВСЕ поля ввода промокода
-        const promocodeSelectors = [
-          '.t-inputpromocode',
-          'input[name="promocode"]',
-          'input[name="promo"]',
-          '#promocode',
-          '#promo'
-        ];
-
-        promocodeSelectors.forEach((selector) => {
-          const input = document.querySelector(selector);
-          if (input) {
-            input.value = '';
-            this.log(`✅ Очищено поле ${selector}`);
-          }
-        });
+        // 2. Очищаем и восстанавливаем DOM элементы промокода
+        this.resetTildaPromocodeDOM();
 
         // 3. Принудительно вызываем ВСЕ функции пересчета Tilda
         const tildaFunctions = [
@@ -5907,7 +5968,7 @@
 
       // 5. Удаляем промокод GUPIL
       try {
-        this.clearAllPromocodes();
+        this.clearAllPromocodes(true);
         this.log('✅ Промокод GUPIL удален');
       } catch (error) {
         this.log('⚠️ Ошибка удаления промокода:', error);
