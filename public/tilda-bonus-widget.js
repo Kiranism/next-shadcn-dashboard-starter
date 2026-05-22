@@ -3349,6 +3349,10 @@
         // В режиме бонусов очищаем все промокоды (включая сторонние)
         // Если это действие пользователя, делаем force-очистку
         this.clearAllPromocodes(isUserAction);
+
+        // Восстанавливаем плашку приветственной скидки с кнопкой "Применить"
+        // (она могла быть заменена на "Скидка применена!" после applyFirstPurchaseDiscount)
+        this.restoreFirstPurchaseDiscountSection();
       }
     },
 
@@ -5769,6 +5773,40 @@
     },
 
     // Сброс примененных бонусов
+    // Восстанавливает HTML плашки приветственной скидки с кнопкой "Применить"
+    restoreFirstPurchaseDiscountSection: function () {
+      const discount = this.state.firstPurchaseDiscount;
+      if (!discount || !discount.available || !discount.discountPercent) {
+        return; // Нет приветственной скидки — нечего восстанавливать
+      }
+
+      const firstDiscountSection = document.getElementById(
+        'first-purchase-discount-section'
+      );
+      if (!firstDiscountSection) return;
+
+      const discountPercent = discount.discountPercent;
+
+      // Восстанавливаем оригинальный HTML с кнопкой "Применить скидку"
+      firstDiscountSection.innerHTML = `
+        <div style="padding: 12px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); border-radius: 8px; margin-bottom: 12px; text-align: center;">
+          <p style="margin: 0 0 8px 0; color: white; font-weight: 600; font-size: 14px;">🎉 Скидка на первый заказ!</p>
+          <p style="margin: 0 0 12px 0; color: rgba(255,255,255,0.9); font-size: 13px;">Вам доступна скидка <span id="first-discount-percent">${discountPercent}</span>% на первую покупку</p>
+          <button type="button" id="apply-first-discount-btn" 
+                  style="background: white; color: #059669; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; transition: all 0.2s;"
+                  onmouseover="this.style.background='#f0fdf4'; this.style.transform='scale(1.02)'"
+                  onmouseout="this.style.background='white'; this.style.transform='scale(1)'"
+                  onclick="TildaBonusWidget.applyFirstPurchaseDiscount()">
+            Применить скидку
+          </button>
+        </div>
+      `;
+      firstDiscountSection.style.display = 'block';
+      this.log(
+        '✅ Плашка приветственной скидки восстановлена с кнопкой «Применить»'
+      );
+    },
+
     resetAppliedBonuses: function () {
       this.log('🔄 Полный сброс appliedBonuses');
 
