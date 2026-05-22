@@ -399,10 +399,27 @@
         '.t-inputpromocode__button-clean, .t-promocode__button-clean, .t-promocode__btn-clean, [class*="button-clean"], [class*="btn-clean"]'
       );
       cleanButtons.forEach((btn) => {
-        if (btn && typeof btn.click === 'function') {
+        if (btn) {
           try {
-            btn.click();
-            this.log('Нажата нативная кнопка очистки промокода Tilda');
+            // 1. Пробуем кликнуть через jQuery
+            if (window.jQuery) {
+              window.jQuery(btn).trigger('click');
+              this.log(
+                'Нажата нативная кнопка очистки промокода Tilda через jQuery'
+              );
+            } else {
+              btn.click();
+              this.log(
+                'Нажата нативная кнопка очистки промокода Tilda через HTML click()'
+              );
+            }
+            // 2. Дополнительно генерируем стандартный MouseEvent click для надежности
+            const clickEvent = new MouseEvent('click', {
+              bubbles: true,
+              cancelable: true,
+              view: window
+            });
+            btn.dispatchEvent(clickEvent);
           } catch (e) {
             this.log('Ошибка при нажатии кнопки очистки промокода:', e);
           }
@@ -455,22 +472,148 @@
         clearObjectProps(window.tcart);
       }
 
+      // Очищаем промокод в localStorage напрямую
+      try {
+        const localCartStr = localStorage.getItem('tcart');
+        if (localCartStr) {
+          const localCart = JSON.parse(localCartStr);
+          if (localCart) {
+            const promoToClear = [
+              'promocode',
+              'promo',
+              'discount',
+              'discountvalue',
+              'procdiscount',
+              'discountpercent',
+              'discountsum'
+            ];
+
+            const clearObjectPropsObj = (obj) => {
+              if (!obj || typeof obj !== 'object') return;
+              promoToClear.forEach((prop) => {
+                if (prop in obj) {
+                  delete obj[prop];
+                }
+              });
+              const subKeys = ['data', 'formData', 'order', 'orderData'];
+              subKeys.forEach((key) => {
+                if (obj[key] && typeof obj[key] === 'object') {
+                  clearObjectPropsObj(obj[key]);
+                }
+              });
+            };
+
+            clearObjectPropsObj(localCart);
+            localStorage.setItem('tcart', JSON.stringify(localCart));
+            this.log('✅ Очищен промокод в localStorage tcart');
+          }
+        }
+      } catch (e) {
+        this.log('Ошибка при очистке localStorage tcart:', e);
+      }
+
       // Пересчитываем скидки и обновляем
-      if (typeof window.tcart__calcAmountWithDiscounts === 'function') {
-        try {
-          window.tcart__calcAmountWithDiscounts();
-        } catch (_) {}
-      }
-      if (typeof window.tcart__reDrawTotal === 'function') {
-        try {
-          window.tcart__reDrawTotal();
-        } catch (_) {}
-      }
-      if (typeof window.tcart__updateTotalProductsinCartObj === 'function') {
-        try {
-          window.tcart__updateTotalProductsinCartObj();
-        } catch (_) {}
-      }
+      const tildaFunctions = [
+        'tcart__calcAmountWithDiscounts',
+        'tcart__reDrawTotal',
+        'tcart__updateTotalProductsinCartObj',
+        'tcart__calcPromocode',
+        'tcart__saveLocalObj'
+      ];
+      tildaFunctions.forEach((funcName) => {
+        if (typeof window[funcName] === 'function') {
+          try {
+            window[funcName]();
+          } catch (_) {}
+        }
+      });
+
+      // Отложенная серия очисток для асинхронной Tilda
+      const scheduleDeferredClearing = (delay) => {
+        setTimeout(() => {
+          let changed = false;
+
+          if (window.tcart) {
+            const promoToClear = [
+              'promocode',
+              'promo',
+              'discount',
+              'discountvalue',
+              'procdiscount',
+              'discountpercent',
+              'discountsum'
+            ];
+            const clearObj = (obj) => {
+              if (!obj || typeof obj !== 'object') return;
+              promoToClear.forEach((prop) => {
+                if (prop in obj) {
+                  delete obj[prop];
+                  changed = true;
+                }
+              });
+              ['data', 'formData', 'order', 'orderData'].forEach((key) => {
+                if (obj[key] && typeof obj[key] === 'object') {
+                  clearObj(obj[key]);
+                }
+              });
+            };
+            clearObj(window.tcart);
+          }
+
+          try {
+            const localCartStr = localStorage.getItem('tcart');
+            if (localCartStr) {
+              const localCart = JSON.parse(localCartStr);
+              if (localCart) {
+                let localChanged = false;
+                const promoToClear = [
+                  'promocode',
+                  'promo',
+                  'discount',
+                  'discountvalue',
+                  'procdiscount',
+                  'discountpercent',
+                  'discountsum'
+                ];
+                const clearObj = (obj) => {
+                  if (!obj || typeof obj !== 'object') return;
+                  promoToClear.forEach((prop) => {
+                    if (prop in obj) {
+                      delete obj[prop];
+                      localChanged = true;
+                    }
+                  });
+                  ['data', 'formData', 'order', 'orderData'].forEach((key) => {
+                    if (obj[key] && typeof obj[key] === 'object') {
+                      clearObj(obj[key]);
+                    }
+                  });
+                };
+                clearObj(localCart);
+                if (localChanged) {
+                  localStorage.setItem('tcart', JSON.stringify(localCart));
+                  changed = true;
+                }
+              }
+            }
+          } catch (_) {}
+
+          if (changed) {
+            this.log(`⏳ Адаптер: отложенная очистка (${delay}ms)`);
+            tildaFunctions.forEach((funcName) => {
+              if (typeof window[funcName] === 'function') {
+                try {
+                  window[funcName]();
+                } catch (_) {}
+              }
+            });
+          }
+        }, delay);
+      };
+
+      scheduleDeferredClearing(50);
+      scheduleDeferredClearing(150);
+      scheduleDeferredClearing(300);
     }
 
     /**

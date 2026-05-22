@@ -3460,13 +3460,13 @@
           console.log('✅ switchMode: показан bonus-content-area');
         }
 
+        // В режиме бонусов очищаем все промокоды (включая сторонние) ПЕРЕД скрытием поля,
+        // чтобы нативные кнопки очистки Tilda оставались видимыми и кликабельными для jQuery/браузера.
+        this.clearAllPromocodes(isUserAction);
+
         if (tildaPromoWrapper) {
           this.hideTildaPromocodeField(tildaPromoWrapper);
         }
-
-        // В режиме бонусов очищаем все промокоды (включая сторонние)
-        // Если это действие пользователя, делаем force-очистку
-        this.clearAllPromocodes(isUserAction);
 
         // Восстанавливаем плашку приветственной скидки с кнопкой "Применить"
         // (она могла быть заменена на "Скидка применена!" после applyFirstPurchaseDiscount)
@@ -4639,10 +4639,27 @@
           '.t-inputpromocode__button-clean, .t-promocode__button-clean, .t-promocode__btn-clean, [class*="button-clean"], [class*="btn-clean"]'
         );
         cleanButtons.forEach((btn) => {
-          if (btn && typeof btn.click === 'function') {
+          if (btn) {
             try {
-              btn.click();
-              this.log('Нажата нативная кнопка очистки промокода Tilda');
+              // 1. Пробуем кликнуть через jQuery для корректного срабатывания обработчиков событий Tilda
+              if (window.jQuery) {
+                window.jQuery(btn).trigger('click');
+                this.log(
+                  'Нажата нативная кнопка очистки промокода Tilda через jQuery'
+                );
+              } else {
+                btn.click();
+                this.log(
+                  'Нажата нативная кнопка очистки промокода Tilda через HTML click()'
+                );
+              }
+              // 2. Дополнительно генерируем стандартный MouseEvent click для надежности
+              const clickEvent = new MouseEvent('click', {
+                bubbles: true,
+                cancelable: true,
+                view: window
+              });
+              btn.dispatchEvent(clickEvent);
             } catch (e) {
               this.log('Ошибка при нажатии кнопки очистки промокода:', e);
             }
@@ -4680,6 +4697,46 @@
           };
 
           clearObjectProps(window.tcart);
+        }
+
+        // Очищаем промокод в localStorage напрямую, так как Tilda может восстановить его оттуда при пересчете
+        try {
+          const localCartStr = localStorage.getItem('tcart');
+          if (localCartStr) {
+            const localCart = JSON.parse(localCartStr);
+            if (localCart) {
+              const promoToClear = [
+                'promocode',
+                'promo',
+                'discount',
+                'discountvalue',
+                'procdiscount',
+                'discountpercent',
+                'discountsum'
+              ];
+
+              const clearObjectPropsObj = (obj) => {
+                if (!obj || typeof obj !== 'object') return;
+                promoToClear.forEach((prop) => {
+                  if (prop in obj) {
+                    delete obj[prop];
+                  }
+                });
+                const subKeys = ['data', 'formData', 'order', 'orderData'];
+                subKeys.forEach((key) => {
+                  if (obj[key] && typeof obj[key] === 'object') {
+                    clearObjectPropsObj(obj[key]);
+                  }
+                });
+              };
+
+              clearObjectPropsObj(localCart);
+              localStorage.setItem('tcart', JSON.stringify(localCart));
+              this.log('✅ Очищен промокод в localStorage tcart');
+            }
+          }
+        } catch (e) {
+          this.log('Ошибка при очистке localStorage tcart:', e);
         }
 
         // Очищаем все промокоды и инпуты в DOM при force, в режиме бонусов или если применен GUPIL
@@ -4763,6 +4820,116 @@
             this.log('Ошибка при сохранении корзины в localStorage:', e);
           }
         }
+
+        // Планируем серию отложенных очисток для предотвращения асинхронного восстановления Tilda
+        const scheduleDeferredClearing = (delay) => {
+          setTimeout(() => {
+            if (this.state.isDestroyed) return;
+
+            let changed = false;
+
+            // 1. Очищаем window.tcart
+            if (
+              window.tcart &&
+              (force || isGupil || this.state.mode === 'bonus')
+            ) {
+              const promoToClear = [
+                'promocode',
+                'promo',
+                'discount',
+                'discountvalue',
+                'procdiscount',
+                'discountpercent',
+                'discountsum'
+              ];
+              const clearObj = (obj) => {
+                if (!obj || typeof obj !== 'object') return;
+                promoToClear.forEach((prop) => {
+                  if (prop in obj) {
+                    delete obj[prop];
+                    changed = true;
+                  }
+                });
+                ['data', 'formData', 'order', 'orderData'].forEach((key) => {
+                  if (obj[key] && typeof obj[key] === 'object') {
+                    clearObj(obj[key]);
+                  }
+                });
+              };
+              clearObj(window.tcart);
+            }
+
+            // 2. Очищаем localStorage.tcart
+            try {
+              const localCartStr = localStorage.getItem('tcart');
+              if (localCartStr) {
+                const localCart = JSON.parse(localCartStr);
+                if (localCart) {
+                  let localChanged = false;
+                  const promoToClear = [
+                    'promocode',
+                    'promo',
+                    'discount',
+                    'discountvalue',
+                    'procdiscount',
+                    'discountpercent',
+                    'discountsum'
+                  ];
+                  const clearObj = (obj) => {
+                    if (!obj || typeof obj !== 'object') return;
+                    promoToClear.forEach((prop) => {
+                      if (prop in obj) {
+                        delete obj[prop];
+                        localChanged = true;
+                      }
+                    });
+                    ['data', 'formData', 'order', 'orderData'].forEach(
+                      (key) => {
+                        if (obj[key] && typeof obj[key] === 'object') {
+                          clearObj(obj[key]);
+                        }
+                      }
+                    );
+                  };
+                  clearObj(localCart);
+                  if (localChanged) {
+                    localStorage.setItem('tcart', JSON.stringify(localCart));
+                    changed = true;
+                  }
+                }
+              }
+            } catch (_) {}
+
+            if (changed) {
+              this.log(
+                `⏳ Отложенная очистка (${delay}ms): повторно удален промокод`
+              );
+
+              if (force || this.state.mode === 'bonus' || isGupil) {
+                this.resetTildaPromocodeDOM();
+              }
+
+              const tildaFunctions = [
+                'tcart__calcAmountWithDiscounts',
+                'tcart__reDrawTotal',
+                'tcart__updateTotalProductsinCartObj',
+                'tcart__calcPromocode',
+                'tcart__saveLocalObj'
+              ];
+              tildaFunctions.forEach((funcName) => {
+                if (typeof window[funcName] === 'function') {
+                  try {
+                    window[funcName]();
+                  } catch (_) {}
+                }
+              });
+            }
+          }, delay);
+        };
+
+        scheduleDeferredClearing(50);
+        scheduleDeferredClearing(150);
+        scheduleDeferredClearing(300);
 
         // Обновляем отображение баланса и доступных бонусов
         this.updateBalanceDisplay();
