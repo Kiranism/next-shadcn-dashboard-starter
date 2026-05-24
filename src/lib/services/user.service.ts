@@ -19,6 +19,7 @@ import { ProjectService } from './project.service';
 import { BonusLevelService } from './bonus-level.service';
 import { ReferralService } from './referral.service';
 import { ReferralCommissionService } from './referral-commission.service';
+import { PartnerNotificationService } from './partner-notification.service';
 import {
   sendBonusNotification,
   sendBonusSpentNotification
@@ -126,6 +127,15 @@ export class UserService {
             component: 'user-service'
           });
         }
+
+        // Phase 5.4: уведомить дерево предков о новом подопечном.
+        // Неблокирующее: ошибки внутри сервиса логируются, регистрация
+        // продолжается. Сам сервис уважает `enablePartnerRoles` (5.5)
+        // и opt-out пользователей.
+        void PartnerNotificationService.notifyAncestorsAboutNewMember(
+          user.id,
+          data.projectId
+        );
       }
 
       // Начисляем приветственные бонусы если настроено

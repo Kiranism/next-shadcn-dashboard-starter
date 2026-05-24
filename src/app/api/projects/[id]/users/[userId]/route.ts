@@ -9,9 +9,22 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { normalizePhone, isValidNormalizedPhone } from '@/lib/phone';
+
+/**
+ * Zod-схема для PATCH-полей пользователя.
+ * Только phone/email/birthDate имеют отдельную пред-обработку выше по коду
+ * (нормализация, проверки уникальности), поэтому здесь даём только enum-роль —
+ * остальные поля обрабатываются как раньше.
+ */
+const PatchUserSchema = z
+  .object({
+    partnerRole: z.enum(['CLIENT', 'TRAINER', 'MANAGER', 'DIRECTOR']).optional()
+  })
+  .passthrough();
 
 /**
  * GET - Получить данные пользователя
@@ -70,6 +83,8 @@ export async function GET(
       telegramUsername: user.telegramUsername,
       isActive: user.isActive,
       referralCode: user.referralCode,
+      partnerRole: user.partnerRole,
+      outboundReferralPlanId: (user as any).outboundReferralPlanId ?? null,
       currentLevel: user.currentLevel || null,
       bonusBalance,
       totalEarned,
@@ -113,6 +128,16 @@ export async function PATCH(
     }
 
     const body = await request.json();
+
+    // Zod-валидация partnerRole (остальные поля обрабатываются императивно ниже).
+    const parsed = PatchUserSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+
     const updateData: any = {};
 
     // Обновляем только переданные поля
@@ -186,6 +211,9 @@ export async function PATCH(
     if (body.isActive !== undefined) {
       updateData.isActive = Boolean(body.isActive);
     }
+    if (parsed.data.partnerRole !== undefined) {
+      updateData.partnerRole = parsed.data.partnerRole;
+    }
 
     // Обновляем пользователя
     const updatedUser = await db.user.update({
@@ -215,6 +243,7 @@ export async function PATCH(
           : null,
         telegramUsername: updatedUser.telegramUsername,
         isActive: updatedUser.isActive,
+        partnerRole: updatedUser.partnerRole,
         currentLevel: updatedUser.currentLevel || null,
         updatedAt: updatedUser.updatedAt.toISOString()
       }

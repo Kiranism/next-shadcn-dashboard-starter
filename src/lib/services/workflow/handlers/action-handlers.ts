@@ -1809,3 +1809,814 @@ ${userVariables['user.referralLink']}
     };
   }
 }
+
+// ──────────────────────────────────────────────────────────────────────────────
+// ✨ Phase 4: Bot Partner Cabinet — пять action-handlers для b2b-иерархии.
+//
+// Все хендлеры:
+//   • используют только `cachedGetDescendantTree` / `cachedCanViewSubject` из
+//     `referral-commission.service` (а не CTE напрямую);
+//   • применяют рантайм-проверки `enablePartnerRoles` и `partnerRole` —
+//     workflow-template обязан до них прогонять switch по `user.partnerRole`,
+//     но хендлеры остаются безопасными даже если их вызвать напрямую;
+//   • отправляют ответ через платформо-агностичный `sendPlatformMessage`
+//     (Telegram + MAX);
+//   • не бросают исключений в типичных ситуациях — используют дружелюбные
+//     русскоязычные сообщения с пагинацией callback'ами.
+// ──────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Резолвит userId из контекста: сначала пытается `context.userId`, далее
+ * пытается найти юзера по `telegramId`/`maxId` через `check_user_by_platform`.
+ * Возвращает строку с userId или `null` (с отправкой сообщения об ошибке —
+ * в этом случае hander должен вернуть `null`, не бросая исключение).
+ */
+async function resolvePartnerUserId(
+  context: ExecutionContext
+): Promise<string | null> {
+  if (context.userId) return context.userId;
+
+  if (context.telegram?.userId) {
+    try {
+      const found = await QueryExecutor.execute(
+        context.services.db,
+        'check_user_by_platform',
+        {
+          telegramId:
+            context.platform === 'telegram'
+              ? context.telegram.userId
+              : undefined,
+          maxId:
+            context.platform === 'max' ? context.telegram.userId : undefined,
+          projectId: context.projectId
+        }
+      );
+      if (found?.id) return found.id as string;
+    } catch (err) {
+      logger.warn('partner action — failed to resolve userId', { err });
+    }
+  }
+  return null;
+}
+
+/** Format ₽ суммы с разделителем тысяч. */
+function formatRub(amount: number | string | null | undefined): string {
+  const n = Number(amount ?? 0);
+  try {
+    return new Intl.NumberFormat('ru-RU', {
+      style: 'currency',
+      currency: 'RUB',
+      maximumFractionDigits: 0
+    }).format(Number.isFinite(n) ? n : 0);
+  } catch {
+    return `${Math.round(Number.isFinite(n) ? n : 0)} ₽`;
+  }
+}
+
+/** Формат «Имя Фамилия» с fallback на телефон / id. */
+function formatName(u: {
+  firstName?: string | null;
+  lastName?: string | null;
+  phone?: string | null;
+  id?: string;
+}): string {
+  const fn = (u.firstName ?? '').trim();
+  const ln = (u.lastName ?? '').trim();
+  const full = `${fn} ${ln}`.trim();
+  if (full) return full;
+  if (u.phone) return u.phone;
+  return u.id ? `id:${u.id.slice(0, 8)}` : 'Без имени';
+}
+
+/** Лейбл партнёрской роли по-русски. */
+function partnerRoleLabel(role: string | null | undefined): string {
+  switch (role) {
+    case 'DIRECTOR':
+      return 'Директор';
+    case 'MANAGER':
+      return 'Менеджер';
+    case 'TRAINER':
+      return 'Тренер';
+    case 'CLIENT':
+    default:
+      return 'Клиент';
+  }
+}
+
+/**
+ * action.partner_team — список direct referrals с агрегатами и пагинацией.
+ *
+ * @see Requirement 6.4
+ */
+export class PartnerTeamHandler extends BaseNodeHandler {
+  canHandle(nodeType: WorkflowNodeType): boolean {
+    return nodeType === 'action.partner_team';
+  }
+
+  async execute(
+    node: WorkflowNode,
+    context: ExecutionContext
+  ): Promise<string | null> {
+    try {
+      const config = node.data.config?.['action.partner_team'] || {};
+      const pageSize = Math.max(1, Math.min(20, Number(config.pageSize ?? 5)));
+
+      // Текущая страница: либо из конфига (после resolveTemplate), либо 0
+      let page = 0;
+      const rawPage =
+        config.page !== undefined
+          ? await resolveTemplateString(String(config.page), context)
+          : '0';
+      const parsedPage = Number.parseInt(String(rawPage).trim(), 10);
+      if (Number.isFinite(parsedPage) && parsedPage >= 0) {
+        page = parsedPage;
+      }
+
+      const userId = await resolvePartnerUserId(context);
+      if (!userId) {
+        await sendPlatformMessage(
+          context,
+          '❌ Не удалось определить ваш аккаунт. Введите /start для повторной авторизации.'
+        );
+        return null;
+      }
+
+      const db: PrismaClient = context.services.db as PrismaClient;
+      const where = { projectId: context.projectId, referredBy: userId };
+      const [total, directs] = await Promise.all([
+        db.user.count({ where }),
+        db.user.findMany({
+          where,
+          orderBy: [{ registeredAt: 'desc' }],
+          skip: page * pageSize,
+          take: pageSize,
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            partnerRole: true,
+            totalPurchases: true,
+            registeredAt: true
+          }
+        })
+      ]);
+
+      if (total === 0) {
+        await sendPlatformMessage(
+          context,
+          '👥 <b>Моя команда</b>\n\nУ вас пока нет подопечных. Поделитесь реферальной ссылкой — и команда начнёт расти.',
+          {
+            replyMarkup: {
+              inline_keyboard: [
+                [{ text: '⬅️ Назад в меню', callback_data: 'back_to_menu' }]
+              ]
+            }
+          }
+        );
+        return null;
+      }
+
+      // Агрегат комиссии viewer'а с каждого подопечного — group by referralUserId
+      const directIds = directs.map((d) => d.id);
+      const commissionAgg =
+        directIds.length > 0
+          ? await db.transaction.groupBy({
+              by: ['referralUserId'],
+              where: {
+                userId,
+                type: 'EARN',
+                isReferralBonus: true,
+                referralUserId: { in: directIds }
+              },
+              _sum: { amount: true }
+            })
+          : [];
+      const commissionByUser = new Map<string, number>();
+      for (const row of commissionAgg) {
+        if (row.referralUserId) {
+          commissionByUser.set(
+            row.referralUserId,
+            Number(row._sum.amount ?? 0)
+          );
+        }
+      }
+
+      const totalPages = Math.ceil(total / pageSize);
+      const lines: string[] = [
+        `<b>👥 Моя команда</b> (${total})`,
+        `Страница ${page + 1} из ${totalPages}`,
+        ''
+      ];
+
+      directs.forEach((u, idx) => {
+        const commission = commissionByUser.get(u.id) ?? 0;
+        const roleLabel = partnerRoleLabel(u.partnerRole);
+        const purchases = formatRub(Number(u.totalPurchases));
+        const earned = formatRub(commission);
+        lines.push(
+          `${idx + 1 + page * pageSize}. <b>${formatName(u)}</b> · ${roleLabel}\n   💼 Оборот: ${purchases} · 💰 Комиссия: ${earned}`
+        );
+      });
+
+      // Inline-клавиатура: кнопки «стата» по каждому + пагинация
+      const detailButtons = directs.map((u) => [
+        {
+          text: `📊 ${formatName(u).slice(0, 24)}`,
+          callback_data: `partner_subject:${u.id}`
+        }
+      ]);
+      const pagerRow: any[] = [];
+      if (page > 0) {
+        pagerRow.push({
+          text: '⬅️ Назад',
+          callback_data: `partner_team_page:${page - 1}`
+        });
+      }
+      if (page + 1 < totalPages) {
+        pagerRow.push({
+          text: 'Вперёд ➡️',
+          callback_data: `partner_team_page:${page + 1}`
+        });
+      }
+      const keyboard = {
+        replyMarkup: {
+          inline_keyboard: [
+            ...detailButtons,
+            ...(pagerRow.length > 0 ? [pagerRow] : []),
+            [{ text: '⬅️ В меню', callback_data: 'back_to_menu' }]
+          ]
+        }
+      };
+
+      await sendPlatformMessage(context, lines.join('\n'), keyboard);
+
+      this.logStep(context, node, 'partner_team rendered', 'info', {
+        userId,
+        page,
+        pageSize,
+        total
+      });
+      return null;
+    } catch (error) {
+      this.logStep(context, node, 'partner_team failed', 'error', { error });
+      throw error;
+    }
+  }
+
+  async validate(_config: any): Promise<ValidationResult> {
+    return { isValid: true, errors: [] };
+  }
+}
+
+/**
+ * action.partner_subject_stats — детали статистики подопечного с проверкой
+ * `cachedCanViewSubject`.
+ *
+ * @see Requirement 6.5
+ */
+export class PartnerSubjectStatsHandler extends BaseNodeHandler {
+  canHandle(nodeType: WorkflowNodeType): boolean {
+    return nodeType === 'action.partner_subject_stats';
+  }
+
+  async execute(
+    node: WorkflowNode,
+    context: ExecutionContext
+  ): Promise<string | null> {
+    try {
+      const config = node.data.config?.['action.partner_subject_stats'];
+      if (!config?.subjectUserId) {
+        throw new Error('partner_subject_stats: subjectUserId is required');
+      }
+
+      const subjectUserId = (
+        await resolveTemplateString(config.subjectUserId, context)
+      ).trim();
+
+      const viewerUserId = await resolvePartnerUserId(context);
+      if (!viewerUserId) {
+        await sendPlatformMessage(
+          context,
+          '❌ Не удалось определить ваш аккаунт. Введите /start.'
+        );
+        return null;
+      }
+      if (!subjectUserId) {
+        await sendPlatformMessage(context, '❌ Не указан подопечный.');
+        return null;
+      }
+
+      const { cachedCanViewSubject } = await import(
+        '@/lib/services/referral-commission.service'
+      );
+      const allowed = await cachedCanViewSubject(
+        context.projectId,
+        viewerUserId,
+        subjectUserId
+      );
+
+      if (!allowed) {
+        await sendPlatformMessage(
+          context,
+          '🔒 Нет доступа к статистике этого пользователя.',
+          {
+            replyMarkup: {
+              inline_keyboard: [
+                [{ text: '⬅️ В меню', callback_data: 'back_to_menu' }]
+              ]
+            }
+          }
+        );
+        this.logStep(
+          context,
+          node,
+          'partner_subject_stats access denied',
+          'warn',
+          { viewerUserId, subjectUserId }
+        );
+        return null;
+      }
+
+      const db: PrismaClient = context.services.db as PrismaClient;
+      const [subject, directCount, commissionAgg] = await Promise.all([
+        db.user.findUnique({
+          where: { id: subjectUserId },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            email: true,
+            partnerRole: true,
+            registeredAt: true,
+            totalPurchases: true,
+            currentLevel: true
+          }
+        }),
+        db.user.count({
+          where: { projectId: context.projectId, referredBy: subjectUserId }
+        }),
+        db.transaction.aggregate({
+          where: {
+            userId: viewerUserId,
+            type: 'EARN',
+            isReferralBonus: true,
+            referralUserId: subjectUserId
+          },
+          _sum: { amount: true },
+          _count: { _all: true }
+        })
+      ]);
+
+      if (!subject) {
+        await sendPlatformMessage(context, '❌ Подопечный не найден.');
+        return null;
+      }
+
+      const commissionEarned = Number(commissionAgg._sum.amount ?? 0);
+      const commissionTxCount = commissionAgg._count._all ?? 0;
+      const registered = new Intl.DateTimeFormat('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      }).format(new Date(subject.registeredAt));
+
+      const lines = [
+        `<b>📊 ${formatName(subject)}</b>`,
+        `Роль: <b>${partnerRoleLabel(subject.partnerRole)}</b>`,
+        subject.phone ? `Телефон: ${subject.phone}` : '',
+        subject.email ? `Email: ${subject.email}` : '',
+        `Регистрация: ${registered}`,
+        `Уровень: ${subject.currentLevel || 'Базовый'}`,
+        '',
+        `💼 Оборот: <b>${formatRub(Number(subject.totalPurchases))}</b>`,
+        `👥 Прямых рефералов: <b>${directCount}</b>`,
+        `💰 Ваша комиссия с этого подопечного: <b>${formatRub(commissionEarned)}</b> (${commissionTxCount} начислений)`
+      ].filter(Boolean);
+
+      await sendPlatformMessage(context, lines.join('\n'), {
+        replyMarkup: {
+          inline_keyboard: [
+            [{ text: '⬅️ К команде', callback_data: 'partner_team_page:0' }],
+            [{ text: '⬅️ В меню', callback_data: 'back_to_menu' }]
+          ]
+        }
+      });
+
+      this.logStep(context, node, 'partner_subject_stats rendered', 'info', {
+        viewerUserId,
+        subjectUserId
+      });
+      return null;
+    } catch (error) {
+      this.logStep(context, node, 'partner_subject_stats failed', 'error', {
+        error
+      });
+      throw error;
+    }
+  }
+
+  async validate(config: any): Promise<ValidationResult> {
+    const errors: string[] = [];
+    if (!config?.subjectUserId || typeof config.subjectUserId !== 'string') {
+      errors.push('subjectUserId is required');
+    }
+    return { isValid: errors.length === 0, errors };
+  }
+}
+
+/**
+ * action.partner_payouts — последние REFERRAL EARN транзакции (по умолчанию 20).
+ *
+ * @see Requirement 6.6
+ */
+export class PartnerPayoutsHandler extends BaseNodeHandler {
+  canHandle(nodeType: WorkflowNodeType): boolean {
+    return nodeType === 'action.partner_payouts';
+  }
+
+  async execute(
+    node: WorkflowNode,
+    context: ExecutionContext
+  ): Promise<string | null> {
+    try {
+      const config = node.data.config?.['action.partner_payouts'] || {};
+      const limit = Math.max(1, Math.min(50, Number(config.limit ?? 20)));
+
+      const userId = await resolvePartnerUserId(context);
+      if (!userId) {
+        await sendPlatformMessage(
+          context,
+          '❌ Не удалось определить ваш аккаунт. Введите /start.'
+        );
+        return null;
+      }
+
+      const db: PrismaClient = context.services.db as PrismaClient;
+      const txs = await db.transaction.findMany({
+        where: { userId, type: 'EARN', isReferralBonus: true },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        select: {
+          id: true,
+          amount: true,
+          createdAt: true,
+          referralUserId: true,
+          referralLevel: true,
+          description: true
+        }
+      });
+
+      if (txs.length === 0) {
+        await sendPlatformMessage(
+          context,
+          '💵 <b>Мои выплаты</b>\n\nПока пусто. Комиссии появятся, когда подопечные начнут делать покупки.',
+          {
+            replyMarkup: {
+              inline_keyboard: [
+                [{ text: '⬅️ В меню', callback_data: 'back_to_menu' }]
+              ]
+            }
+          }
+        );
+        return null;
+      }
+
+      // Доп. имена клиентов-источников
+      const referralUserIds = Array.from(
+        new Set(
+          txs.map((t) => t.referralUserId).filter((v): v is string => !!v)
+        )
+      );
+      const sourceUsers =
+        referralUserIds.length > 0
+          ? await db.user.findMany({
+              where: { id: { in: referralUserIds } },
+              select: { id: true, firstName: true, lastName: true, phone: true }
+            })
+          : [];
+      const sourceById = new Map(sourceUsers.map((u) => [u.id, u]));
+
+      const lines = ['<b>💵 Мои выплаты</b>', ''];
+      let total = 0;
+      for (const tx of txs) {
+        total += Number(tx.amount);
+        const date = new Intl.DateTimeFormat('ru-RU', {
+          day: '2-digit',
+          month: '2-digit'
+        }).format(new Date(tx.createdAt));
+        const source = tx.referralUserId
+          ? sourceById.get(tx.referralUserId)
+          : null;
+        const sourceLabel = source
+          ? `клиент ${formatName(source)}`
+          : 'комиссия';
+        const levelLabel = tx.referralLevel
+          ? ` (уровень ${tx.referralLevel})`
+          : '';
+        lines.push(
+          `📅 ${date} · <b>${formatRub(Number(tx.amount))}</b> · ${sourceLabel}${levelLabel}`
+        );
+      }
+      lines.push('');
+      lines.push(`Итого по этим ${txs.length}: <b>${formatRub(total)}</b>`);
+
+      await sendPlatformMessage(context, lines.join('\n'), {
+        replyMarkup: {
+          inline_keyboard: [
+            [{ text: '⬅️ В меню', callback_data: 'back_to_menu' }]
+          ]
+        }
+      });
+
+      this.logStep(context, node, 'partner_payouts rendered', 'info', {
+        userId,
+        count: txs.length
+      });
+      return null;
+    } catch (error) {
+      this.logStep(context, node, 'partner_payouts failed', 'error', { error });
+      throw error;
+    }
+  }
+
+  async validate(_config: any): Promise<ValidationResult> {
+    return { isValid: true, errors: [] };
+  }
+}
+
+/**
+ * action.partner_link — реферальная ссылка партнёра (только если canRefer).
+ *
+ * @see Requirement 6.2 (TRAINER+ button «🔗 Моя ссылка»)
+ */
+export class PartnerLinkHandler extends BaseNodeHandler {
+  canHandle(nodeType: WorkflowNodeType): boolean {
+    return nodeType === 'action.partner_link';
+  }
+
+  async execute(
+    node: WorkflowNode,
+    context: ExecutionContext
+  ): Promise<string | null> {
+    try {
+      const config = node.data.config?.['action.partner_link'] || {};
+      const additionalParams = (config.additionalParams || {}) as Record<
+        string,
+        string
+      >;
+
+      const userId = await resolvePartnerUserId(context);
+      if (!userId) {
+        await sendPlatformMessage(
+          context,
+          '❌ Не удалось определить ваш аккаунт. Введите /start.'
+        );
+        return null;
+      }
+
+      const db: PrismaClient = context.services.db as PrismaClient;
+      const user = await db.user.findUnique({
+        where: { id: userId },
+        select: {
+          partnerRole: true,
+          project: {
+            select: { enablePartnerRoles: true, domain: true, name: true }
+          }
+        }
+      });
+
+      if (!user) {
+        await sendPlatformMessage(context, '❌ Аккаунт не найден.');
+        return null;
+      }
+
+      const enablePartnerRoles = !!user.project?.enablePartnerRoles;
+      const role = user.partnerRole || 'CLIENT';
+      // canRefer: если b2b включён — только не-CLIENT, иначе разрешено всем (legacy).
+      const canRefer = enablePartnerRoles ? role !== 'CLIENT' : true;
+
+      if (!canRefer) {
+        await sendPlatformMessage(
+          context,
+          '🔒 Реферальная ссылка доступна только партнёрам (тренерам / менеджерам / директорам). Если вы партнёр — обратитесь к администратору, чтобы он назначил вам роль.',
+          {
+            replyMarkup: {
+              inline_keyboard: [
+                [{ text: '⬅️ В меню', callback_data: 'back_to_menu' }]
+              ]
+            }
+          }
+        );
+        return null;
+      }
+
+      const baseUrl = user.project?.domain || 'https://example.com';
+      const { ReferralService } = await import(
+        '@/lib/services/referral.service'
+      );
+      const link = await ReferralService.generateReferralLink(
+        userId,
+        baseUrl,
+        additionalParams
+      );
+
+      await sendPlatformMessage(
+        context,
+        [
+          '<b>🔗 Ваша реферальная ссылка</b>',
+          '',
+          `<code>${link}</code>`,
+          '',
+          'Поделитесь ссылкой — и за каждую покупку приведённого клиента получайте комиссию.'
+        ].join('\n'),
+        {
+          replyMarkup: {
+            inline_keyboard: [
+              [{ text: '⬅️ В меню', callback_data: 'back_to_menu' }]
+            ]
+          }
+        }
+      );
+
+      this.logStep(context, node, 'partner_link rendered', 'info', {
+        userId,
+        role
+      });
+      return null;
+    } catch (error) {
+      this.logStep(context, node, 'partner_link failed', 'error', { error });
+      throw error;
+    }
+  }
+
+  async validate(_config: any): Promise<ValidationResult> {
+    return { isValid: true, errors: [] };
+  }
+}
+
+/**
+ * action.partner_org_summary — сводка по всему `Partner_Tree` для DIRECTOR.
+ *
+ * Показывает: общий оборот команды, число тренеров и менеджеров,
+ * топ-5 партнёров по обороту.
+ *
+ * @see Requirement 6.2 (DIRECTOR button «📊 Сводка по организации»)
+ */
+export class PartnerOrgSummaryHandler extends BaseNodeHandler {
+  canHandle(nodeType: WorkflowNodeType): boolean {
+    return nodeType === 'action.partner_org_summary';
+  }
+
+  async execute(
+    node: WorkflowNode,
+    context: ExecutionContext
+  ): Promise<string | null> {
+    try {
+      const config = node.data.config?.['action.partner_org_summary'] || {};
+      const topLimit = Math.max(1, Math.min(20, Number(config.topLimit ?? 5)));
+
+      const userId = await resolvePartnerUserId(context);
+      if (!userId) {
+        await sendPlatformMessage(
+          context,
+          '❌ Не удалось определить ваш аккаунт. Введите /start.'
+        );
+        return null;
+      }
+
+      const db: PrismaClient = context.services.db as PrismaClient;
+      const me = await db.user.findUnique({
+        where: { id: userId },
+        select: {
+          partnerRole: true,
+          project: { select: { enablePartnerRoles: true } }
+        }
+      });
+
+      if (!me) {
+        await sendPlatformMessage(context, '❌ Аккаунт не найден.');
+        return null;
+      }
+
+      const enablePartnerRoles = !!me.project?.enablePartnerRoles;
+      if (!enablePartnerRoles) {
+        await sendPlatformMessage(
+          context,
+          'ℹ️ В этом проекте партнёрская иерархия не включена.'
+        );
+        return null;
+      }
+
+      // Только DIRECTOR (или явный grant — но MVP ограничивается ролью).
+      if (me.partnerRole !== 'DIRECTOR') {
+        await sendPlatformMessage(
+          context,
+          '🔒 Сводка по организации доступна только директору.',
+          {
+            replyMarkup: {
+              inline_keyboard: [
+                [{ text: '⬅️ В меню', callback_data: 'back_to_menu' }]
+              ]
+            }
+          }
+        );
+        return null;
+      }
+
+      const { cachedGetDescendantTree } = await import(
+        '@/lib/services/referral-commission.service'
+      );
+      const descendants = await cachedGetDescendantTree(
+        userId,
+        context.projectId
+      );
+
+      if (descendants.length === 0) {
+        await sendPlatformMessage(
+          context,
+          '📊 <b>Сводка по организации</b>\n\nПока никто не приглашён в команду.'
+        );
+        return null;
+      }
+
+      // Группа: разбиение по ролям + общий оборот команды
+      const [byRole, totalAgg, topTrainers] = await Promise.all([
+        db.user.groupBy({
+          by: ['partnerRole'],
+          where: { projectId: context.projectId, id: { in: descendants } },
+          _count: { _all: true }
+        }),
+        db.user.aggregate({
+          where: { projectId: context.projectId, id: { in: descendants } },
+          _sum: { totalPurchases: true }
+        }),
+        db.user.findMany({
+          where: {
+            projectId: context.projectId,
+            id: { in: descendants },
+            partnerRole: 'TRAINER'
+          },
+          orderBy: { totalPurchases: 'desc' },
+          take: topLimit,
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            totalPurchases: true
+          }
+        })
+      ]);
+
+      const roleCounts = new Map<string, number>();
+      for (const r of byRole) {
+        roleCounts.set(r.partnerRole, r._count._all);
+      }
+
+      const lines = [
+        '<b>📊 Сводка по организации</b>',
+        '',
+        `👥 Всего в команде: <b>${descendants.length}</b>`,
+        `🏢 Менеджеров: <b>${roleCounts.get('MANAGER') ?? 0}</b>`,
+        `🏃 Тренеров: <b>${roleCounts.get('TRAINER') ?? 0}</b>`,
+        `🛒 Клиентов: <b>${roleCounts.get('CLIENT') ?? 0}</b>`,
+        `💼 Общий оборот: <b>${formatRub(Number(totalAgg._sum.totalPurchases ?? 0))}</b>`,
+        ''
+      ];
+
+      if (topTrainers.length > 0) {
+        lines.push(`<b>🏆 Топ-${topTrainers.length} тренеров по обороту</b>`);
+        topTrainers.forEach((u, i) => {
+          lines.push(
+            `${i + 1}. ${formatName(u)} — ${formatRub(Number(u.totalPurchases))}`
+          );
+        });
+      }
+
+      await sendPlatformMessage(context, lines.join('\n'), {
+        replyMarkup: {
+          inline_keyboard: [
+            [{ text: '⬅️ В меню', callback_data: 'back_to_menu' }]
+          ]
+        }
+      });
+
+      this.logStep(context, node, 'partner_org_summary rendered', 'info', {
+        userId,
+        teamSize: descendants.length
+      });
+      return null;
+    } catch (error) {
+      this.logStep(context, node, 'partner_org_summary failed', 'error', {
+        error
+      });
+      throw error;
+    }
+  }
+
+  async validate(_config: any): Promise<ValidationResult> {
+    return { isValid: true, errors: [] };
+  }
+}

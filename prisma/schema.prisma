@@ -70,6 +70,11 @@ model Project {
   referralCommissionPlans         ReferralCommissionPlan[] @relation("ProjectCommissionPlans")
   defaultReferralCommissionPlan   ReferralCommissionPlan?  @relation("ProjectDefaultCommissionPlan", fields: [defaultReferralCommissionPlanId], references: [id], onDelete: SetNull)
 
+  /// Feature flag для включения b2b-иерархии партнёров: роли CLIENT/TRAINER/MANAGER/DIRECTOR,
+  /// фильтр в `findReferrer` (только партнёры могут быть реферерами), hierarchy UI и т.д.
+  /// Когда `false`, поведение полностью совпадает с прежней c2c-логикой (опт-ин per project).
+  enablePartnerRoles              Boolean                  @default(false) @map("enable_partner_roles")
+
   @@map("projects")
 }
 
@@ -340,9 +345,14 @@ model User {
   outboundReferralPlan   ReferralCommissionPlan? @relation("UserOutboundReferralPlan", fields: [outboundReferralPlanId], references: [id], onDelete: SetNull)
   referralAttribution    ReferralAttribution?
 
+  /// Роль пользователя в b2b-иерархии партнёров (CLIENT / TRAINER / MANAGER / DIRECTOR).
+  /// По умолчанию CLIENT. Применяется только когда у проекта включён `enablePartnerRoles`.
+  partnerRole            PartnerRole             @default(CLIENT) @map("partner_role")
+
   @@unique([projectId, email])
   @@unique([projectId, phone])
   @@unique([projectId, telegramId])
+  @@index([projectId, partnerRole])
   @@map("users")
 }
 
@@ -658,6 +668,15 @@ enum AdminRole {
   SUPERADMIN
   ADMIN
   MANAGER
+}
+
+/// Роль партнёра в b2b-иерархии (производитель → сеть партнёров).
+/// Используется только когда у проекта включён `enablePartnerRoles`.
+enum PartnerRole {
+  CLIENT   @map("client")
+  TRAINER  @map("trainer")
+  MANAGER  @map("manager")
+  DIRECTOR @map("director")
 }
 
 enum AlphaTesterStatus {

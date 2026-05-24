@@ -49,7 +49,8 @@
     "validate-migration": "tsx scripts/validate-migration.ts",
     "rollback-migration": "tsx scripts/rollback-migration.ts",
     "fix-bonus-behavior": "tsx scripts/fix-bonus-behavior-direct.ts",
-    "import-users": "tsx scripts/import-users-from-csv.ts"
+    "import-users": "tsx scripts/import-users-from-csv.ts",
+    "migrate-partner-roles": "tsx scripts/migrate-partner-roles.ts"
   },
   "lint-staged": {
     "**/*.{js,jsx,tsx,ts,css,less,scss,sass}": [

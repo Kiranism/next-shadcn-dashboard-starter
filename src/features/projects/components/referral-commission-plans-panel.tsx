@@ -1,17 +1,39 @@
 /**
  * @file: src/features/projects/components/referral-commission-plans-panel.tsx
- * @description: Панель планов реферальных % и назначения блогерам (MVP)
+ * @description: Панель планов реферальных % и назначения пользователям-партнёрам.
+ *               (b2b-referral-hierarchy Phase 6.1–6.6)
+ *                 6.1 — поиск пользователя через `Command`-комбобокс вместо input userId
+ *                 6.2 — debounced поиск через
+ *                       /api/projects/{id}/users?search=&role=TRAINER,MANAGER,DIRECTOR
+ *                 6.3 — роль badge + текущий outbound-план в результатах
+ *                 6.4 — кнопка «Назначить всем тренерам» с диалогом подтверждения
+ *                 6.5 — слайдер `maxPayoutDepth` 1..3 с подсказкой
+ *                 6.6 — баннер «Используются персональные планы» когда
+ *                       `referralPlansEnabled = true` (legacy ReferralLevel
+ *                       editor спрятан в этом случае на уровне родителя)
  * @project: SaaS Bonus System
- * @dependencies: React, shadcn/ui
+ * @dependencies: shadcn/ui (Command, Popover, Slider, Alert, Switch),
+ *                composite ConfirmDialog
  * @created: 2026-05-12
+ * @updated: 2026-05-24
  * @author: AI Assistant + User
  */
 
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { Loader2, Plus, Trash2 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  AlertCircle,
+  Info,
+  Loader2,
+  Plus,
+  Trash2,
+  UserPlus,
+  Users
+} from 'lucide-react';
 
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -20,6 +42,7 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card';
+import { ConfirmDialog } from '@/components/composite/confirm-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -29,8 +52,17 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import { PartnerUserCombobox, type PartnerUser } from './partner-user-combobox';
+
+type PlanLevel = {
+  id?: string;
+  level: number;
+  percent: number;
+  isActive?: boolean;
+};
 
 type Plan = {
   id: string;
@@ -39,11 +71,26 @@ type Plan = {
   levels: PlanLevel[];
 };
 
-export function ReferralCommissionPlansPanel({
-  projectId
-}: {
+interface Props {
   projectId: string;
-}) {
+  /**
+   * Включена ли b2b-иерархия. Когда true — фильтр в комбобоксе по партнёрской
+   * роли + кнопка bulk-assign видна. По умолчанию `false` — поведение прежнее.
+   */
+  enablePartnerRoles?: boolean;
+}
+
+// Слайдер 1..3 — рекомендованная глубина для b2b (Phase 6.5).
+// Большие значения (до 10) убраны из UI как малополезные. Старые планы с
+// depth > 3 продолжат корректно работать на бэкенде, но при редактировании
+// будут отображаться с предупреждением и предложением понизить.
+const SLIDER_MIN = 1;
+const SLIDER_MAX = 3;
+
+export function ReferralCommissionPlansPanel({
+  projectId,
+  enablePartnerRoles = false
+}: Props) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -57,8 +104,29 @@ export function ReferralCommissionPlansPanel({
   const [l3, setL3] = useState(1);
   const [maxDepth, setMaxDepth] = useState(3);
 
-  const [assignUserId, setAssignUserId] = useState('');
+  // Назначение outbound-плана конкретному пользователю
+  const [assignUser, setAssignUser] = useState<PartnerUser | null>(null);
   const [assignPlanId, setAssignPlanId] = useState<string>('');
+
+  // Bulk-assign (Phase 6.4)
+  const [bulkPlanId, setBulkPlanId] = useState<string>('');
+  const [bulkRole, setBulkRole] = useState<'TRAINER' | 'MANAGER' | 'DIRECTOR'>(
+    'TRAINER'
+  );
+  const [bulkOnlyEmpty, setBulkOnlyEmpty] = useState(false);
+  const [bulkPreview, setBulkPreview] = useState<{
+    total: number;
+    empty: number;
+    role: string;
+  } | null>(null);
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+  const [bulkLoadingPreview, setBulkLoadingPreview] = useState(false);
+
+  const planNameById = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const p of plans) map[p.id] = p.name;
+    return map;
+  }, [plans]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -210,9 +278,9 @@ export function ReferralCommissionPlansPanel({
   };
 
   const assignOutbound = async () => {
-    if (!assignUserId.trim()) {
+    if (!assignUser) {
       toast({
-        title: 'Укажите userId',
+        title: 'Выберите партнёра',
         variant: 'destructive'
       });
       return;
@@ -220,7 +288,7 @@ export function ReferralCommissionPlansPanel({
     setSaving(true);
     try {
       const res = await fetch(
-        `/api/projects/${projectId}/users/${assignUserId.trim()}/referral-outbound-plan`,
+        `/api/projects/${projectId}/users/${assignUser.id}/referral-outbound-plan`,
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -233,7 +301,17 @@ export function ReferralCommissionPlansPanel({
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || 'assign failed');
       }
-      toast({ title: 'Назначено' });
+      toast({
+        title: 'Назначено',
+        description: assignPlanId
+          ? `План «${planNameById[assignPlanId] ?? assignPlanId}» применён`
+          : 'Outbound-план сброшен'
+      });
+      // Обновим состояние выбранного пользователя
+      setAssignUser({
+        ...assignUser,
+        outboundReferralPlanId: assignPlanId || null
+      });
     } catch (e) {
       toast({
         title: 'Ошибка',
@@ -245,6 +323,65 @@ export function ReferralCommissionPlansPanel({
     }
   };
 
+  // ──────────────────────────────────────────────────────────────────
+  // Phase 6.4 — Bulk assign
+  // ──────────────────────────────────────────────────────────────────
+
+  const openBulkConfirm = async (planId: string) => {
+    if (!planId) return;
+    setBulkPlanId(planId);
+    setBulkLoadingPreview(true);
+    try {
+      const res = await fetch(
+        `/api/projects/${projectId}/referral-commission-plans/${planId}/bulk-assign?role=${bulkRole}`
+      );
+      if (!res.ok) throw new Error('preview failed');
+      const data = await res.json();
+      setBulkPreview({
+        total: Number(data.total ?? 0),
+        empty: Number(data.empty ?? 0),
+        role: String(data.role ?? bulkRole)
+      });
+      setBulkConfirmOpen(true);
+    } catch {
+      toast({
+        title: 'Не удалось получить превью',
+        description: 'Проверьте подключение и попробуйте снова',
+        variant: 'destructive'
+      });
+    } finally {
+      setBulkLoadingPreview(false);
+    }
+  };
+
+  const performBulkAssign = async () => {
+    const res = await fetch(
+      `/api/projects/${projectId}/referral-commission-plans/${bulkPlanId}/bulk-assign`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: bulkRole, onlyEmpty: bulkOnlyEmpty })
+      }
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Не удалось назначить план');
+    }
+    const data = await res.json();
+    toast({
+      title: 'Готово',
+      description: `Обновлено пользователей: ${data.updated}`
+    });
+    await load();
+  };
+
+  const roleLabel = (r: 'TRAINER' | 'MANAGER' | 'DIRECTOR') =>
+    r === 'TRAINER'
+      ? 'тренерам'
+      : r === 'MANAGER'
+        ? 'менеджерам'
+        : 'руководителям';
+
   if (loading) {
     return (
       <div className='flex justify-center py-12'>
@@ -253,8 +390,23 @@ export function ReferralCommissionPlansPanel({
     );
   }
 
+  const showBanner = referralPlansEnabled;
+
   return (
     <div className='space-y-6'>
+      {/* Phase 6.6 — баннер при включённых персональных планах */}
+      {showBanner && (
+        <Alert className='border-emerald-200 bg-emerald-50/60 dark:border-emerald-900/40 dark:bg-emerald-950/40'>
+          <Info className='h-4 w-4 text-emerald-600' />
+          <AlertTitle>Используются персональные планы комиссий</AlertTitle>
+          <AlertDescription>
+            Старые уровни реферальной программы (вкладка «Настройки» → «Уровни»)
+            больше не применяются для новых атрибуций. Существующие начисления
+            остаются неизменными — атрибуция зафиксирована.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Персональные планы комиссий</CardTitle>
@@ -340,19 +492,29 @@ export function ReferralCommissionPlansPanel({
                 maxLength={120}
               />
             </div>
+            {/* Phase 6.5 — Slider 1..3 с подсказкой */}
             <div className='space-y-2'>
-              <Label>Глубина выплат</Label>
-              <Input
-                type='number'
-                min={1}
-                max={10}
-                value={maxDepth}
-                onChange={(e) =>
-                  setMaxDepth(
-                    Math.min(10, Math.max(1, Number(e.target.value) || 1))
-                  )
-                }
+              <div className='flex items-center justify-between'>
+                <Label>
+                  Глубина выплат:{' '}
+                  <Badge variant='secondary' className='font-mono'>
+                    {maxDepth}
+                  </Badge>
+                </Label>
+              </div>
+              <Slider
+                min={SLIDER_MIN}
+                max={SLIDER_MAX}
+                step={1}
+                value={[maxDepth]}
+                onValueChange={(v) => setMaxDepth(v[0] ?? 3)}
+                className='py-2'
               />
+              <p className='text-muted-foreground text-xs'>
+                Сколько уровней вверх по дереву получают комиссию. Рекомендуется
+                3 для b2b (тренер → менеджер → руководитель). Большая глубина
+                почти не используется и ухудшает аналитику.
+              </p>
             </div>
           </div>
           <div className='grid grid-cols-3 gap-3'>
@@ -395,6 +557,10 @@ export function ReferralCommissionPlansPanel({
       <Card>
         <CardHeader>
           <CardTitle>Планы</CardTitle>
+          <CardDescription>
+            Выберите план и при необходимости назначьте его всем партнёрам одной
+            роли разом.
+          </CardDescription>
         </CardHeader>
         <CardContent className='space-y-3'>
           {plans.length === 0 ? (
@@ -416,7 +582,20 @@ export function ReferralCommissionPlansPanel({
                     · глубина {p.maxPayoutDepth}
                   </div>
                 </div>
-                <div className='flex gap-2'>
+                <div className='flex flex-wrap items-center gap-2'>
+                  {/* Phase 6.4 — Bulk assign по роли */}
+                  {enablePartnerRoles && (
+                    <Button
+                      type='button'
+                      size='sm'
+                      variant='secondary'
+                      onClick={() => void openBulkConfirm(p.id)}
+                      disabled={saving || bulkLoadingPreview}
+                    >
+                      <Users className='mr-2 h-4 w-4' />
+                      Назначить {roleLabel(bulkRole)}
+                    </Button>
+                  )}
                   <Button
                     type='button'
                     size='sm'
@@ -431,27 +610,69 @@ export function ReferralCommissionPlansPanel({
               </div>
             ))
           )}
+
+          {enablePartnerRoles && plans.length > 0 && (
+            <div className='flex flex-wrap items-end gap-3 rounded-md border border-dashed p-3'>
+              <div className='space-y-1'>
+                <Label className='text-xs'>Роль для bulk-назначения</Label>
+                <Select
+                  value={bulkRole}
+                  onValueChange={(v) =>
+                    setBulkRole(v as 'TRAINER' | 'MANAGER' | 'DIRECTOR')
+                  }
+                  disabled={saving}
+                >
+                  <SelectTrigger className='w-[180px]'>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='TRAINER'>Тренеры</SelectItem>
+                    <SelectItem value='MANAGER'>Менеджеры</SelectItem>
+                    <SelectItem value='DIRECTOR'>Руководители</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <label className='text-muted-foreground flex cursor-pointer items-center gap-2 text-xs'>
+                <input
+                  type='checkbox'
+                  checked={bulkOnlyEmpty}
+                  onChange={(e) => setBulkOnlyEmpty(e.target.checked)}
+                />
+                Только тем, у кого нет плана
+              </label>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Назначить план блогеру</CardTitle>
+          <CardTitle>Назначить план партнёру</CardTitle>
           <CardDescription>
-            User ID из списка пользователей; при регистрации по его ссылке
-            применится этот план (если включены персональные планы и выбран
-            дефолт при отсутствии outbound).
+            Найдите пользователя по имени, email или телефону. Фильтр по роли
+            применяется автоматически когда включена b2b-иерархия.
           </CardDescription>
         </CardHeader>
         <CardContent className='flex flex-wrap items-end gap-3'>
           <div className='space-y-2'>
-            <Label>User ID</Label>
-            <Input
-              placeholder='cuid пользователя'
-              value={assignUserId}
-              onChange={(e) => setAssignUserId(e.target.value)}
-              className='w-[280px]'
+            <Label>Партнёр</Label>
+            <PartnerUserCombobox
+              projectId={projectId}
+              value={assignUser?.id ?? ''}
+              onChange={(u) => setAssignUser(u)}
+              partnerRolesOnly={enablePartnerRoles}
+              planNameById={planNameById}
+              disabled={saving}
             />
+            {assignUser?.outboundReferralPlanId && (
+              <p className='text-muted-foreground text-xs'>
+                Текущий план:{' '}
+                <span className='font-medium'>
+                  {planNameById[assignUser.outboundReferralPlanId] ??
+                    assignUser.outboundReferralPlanId}
+                </span>
+              </p>
+            )}
           </div>
           <div className='space-y-2'>
             <Label>План</Label>
@@ -475,8 +696,9 @@ export function ReferralCommissionPlansPanel({
           <Button
             type='button'
             onClick={() => void assignOutbound()}
-            disabled={saving}
+            disabled={saving || !assignUser}
           >
+            <UserPlus className='mr-2 h-4 w-4' />
             Сохранить
           </Button>
         </CardContent>
@@ -484,7 +706,7 @@ export function ReferralCommissionPlansPanel({
 
       <Card>
         <CardHeader>
-          <CardTitle>Статистика блогера (API)</CardTitle>
+          <CardTitle>Статистика партнёра (API)</CardTitle>
           <CardDescription>
             GET{' '}
             <code className='bg-muted rounded px-1 text-xs'>
@@ -500,6 +722,36 @@ export function ReferralCommissionPlansPanel({
           </CardDescription>
         </CardHeader>
       </Card>
+
+      {/* Phase 6.4 — Confirm dialog для bulk-assign */}
+      <ConfirmDialog
+        open={bulkConfirmOpen}
+        onOpenChange={setBulkConfirmOpen}
+        title={`Назначить план «${
+          bulkPlanId ? (planNameById[bulkPlanId] ?? bulkPlanId) : ''
+        }»`}
+        description={
+          bulkPreview ? (
+            <span>
+              План будет применён{' '}
+              <strong>
+                {bulkOnlyEmpty
+                  ? `${bulkPreview.empty} пользователям без плана`
+                  : `всем ${bulkPreview.total} пользователям`}
+              </strong>{' '}
+              с ролью <strong>{roleLabel(bulkRole)}</strong>. Существующие
+              атрибуции (рефералы, у которых уже зафиксирован план) останутся
+              без изменений.
+            </span>
+          ) : (
+            'Загрузка превью…'
+          )
+        }
+        confirmLabel='Назначить'
+        cancelLabel='Отмена'
+        successMessage='План назначен'
+        onConfirm={performBulkAssign}
+      />
     </div>
   );
 }

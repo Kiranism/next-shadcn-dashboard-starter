@@ -20,6 +20,10 @@ export interface DisplayUser {
   projectId?: string;
   birthDate?: Date | null;
   registeredAt?: Date;
+  /** Партнёрская роль (b2b-referral-hierarchy). По умолчанию `CLIENT`. */
+  partnerRole?: 'CLIENT' | 'TRAINER' | 'MANAGER' | 'DIRECTOR';
+  /** Outbound-план комиссий, который применяется к приглашённым этим партнёром. */
+  outboundReferralPlanId?: string | null;
 }
 
 export interface BonusTransaction {

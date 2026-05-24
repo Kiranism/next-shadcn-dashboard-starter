@@ -4,6 +4,7 @@
  * @project: SaaS Bonus System
  * @dependencies: Prisma, QueryExecutor
  * @created: 2025-10-15
+ * @updated: 2026-05-24 — Phase 4: Bot Partner Cabinet (партнёрские переменные)
  * @author: AI Assistant + User
  */
 
@@ -12,6 +13,7 @@ import { QueryExecutor } from './query-executor';
 import { logger } from '@/lib/logger';
 import { ReferralService } from '../referral.service';
 import { BonusLevelService } from '../bonus-level.service';
+import { cachedGetDescendantTree } from '../referral-commission.service';
 
 export interface UserProfileData {
   // Основная информация
@@ -253,6 +255,19 @@ export class UserVariablesService {
         // игнорируем, не критично для сообщений
       }
 
+      // ✨ Phase 4: Партнёрские переменные (b2b-иерархия)
+      // Считаем только если у проекта включён `enablePartnerRoles`.
+      const partnerStartTime = Date.now();
+      const partnerVariables = await this.computePartnerVariables(
+        db,
+        userId,
+        projectId
+      );
+      logger.info(
+        `🚀 [PERF] computePartnerVariables took ${Date.now() - partnerStartTime}ms`,
+        { userId, projectId }
+      );
+
       const result = {
         // Основная информация
         'user.id': profile.userId,
@@ -350,6 +365,9 @@ export class UserVariablesService {
         'user.referralBonusTotal': referralBonusTotal,
         'user.referralBonusTotalFormatted': `${referralBonusTotal} бонусов`,
 
+        // ✨ Phase 4: Партнёрские переменные (b2b-иерархия)
+        ...partnerVariables,
+
         // Дополнительные переменные для удобства
         'user.hasReferralCode': profile.referralCode ? 'Да' : 'Нет',
         'user.hasTransactions': profile.transactionCount > 0 ? 'Да' : 'Нет',
@@ -444,8 +462,135 @@ export class UserVariablesService {
         'user.levelPaymentPercent': 0,
         'user.nextLevelName': 'Максимальный уровень достигнут',
         'user.nextLevelAmountFormatted': '0 руб.',
-        'transactions.formatted': '📭 История операций пуста'
+        'transactions.formatted': '📭 История операций пуста',
+        // ✨ Phase 4: Партнёрские переменные (fallback)
+        'user.partnerRole': '',
+        'user.canRefer': false,
+        'user.directReferralsCount': 0,
+        'user.indirectReferralsCount': 0,
+        'user.teamSize': 0,
+        'user.totalCommissionEarned': 0,
+        'user.totalCommissionEarnedFormatted': '0 ₽',
+        'user.commissionThisMonth': 0,
+        'user.commissionThisMonthFormatted': '0 ₽'
       };
+    }
+  }
+
+  /**
+   * ✨ Phase 4: Считает партнёрские переменные для b2b-иерархии.
+   *
+   * Возвращает набор `user.partnerRole`, `user.canRefer`,
+   * `user.directReferralsCount`, `user.indirectReferralsCount`, `user.teamSize`,
+   * `user.totalCommissionEarned(+Formatted)`, `user.commissionThisMonth(+Formatted)`.
+   *
+   * Если у проекта `enablePartnerRoles = false` — возвращает дефолты без обращения
+   * к тяжёлым запросам (CTE и aggregate). Не бросает исключения.
+   *
+   * @see Requirement 6.3
+   */
+  private static async computePartnerVariables(
+    db: PrismaClient,
+    userId: string,
+    projectId: string
+  ): Promise<Record<string, any>> {
+    const defaults = {
+      'user.partnerRole': '',
+      'user.canRefer': false,
+      'user.directReferralsCount': 0,
+      'user.indirectReferralsCount': 0,
+      'user.teamSize': 0,
+      'user.totalCommissionEarned': 0,
+      'user.totalCommissionEarnedFormatted': '0 ₽',
+      'user.commissionThisMonth': 0,
+      'user.commissionThisMonthFormatted': '0 ₽'
+    };
+
+    try {
+      const user = await db.user.findUnique({
+        where: { id: userId },
+        select: {
+          partnerRole: true,
+          project: { select: { enablePartnerRoles: true } }
+        }
+      });
+
+      if (!user) return defaults;
+
+      const partnerRole = user.partnerRole || 'CLIENT';
+      const enabled = !!user.project?.enablePartnerRoles;
+
+      // Когда фича выключена — возвращаем минимальный набор без тяжёлых запросов.
+      if (!enabled) {
+        return {
+          ...defaults,
+          'user.partnerRole': '' // без режима ролей семантика «не партнёр»
+        };
+      }
+
+      const canRefer = partnerRole !== 'CLIENT';
+
+      // Считаем direct + descendants и комиссии параллельно.
+      const [directCount, descendants, totalAgg, monthAgg] = await Promise.all([
+        db.user.count({ where: { projectId, referredBy: userId } }),
+        cachedGetDescendantTree(userId, projectId),
+        db.transaction.aggregate({
+          where: { userId, type: 'EARN', isReferralBonus: true },
+          _sum: { amount: true }
+        }),
+        db.transaction.aggregate({
+          where: {
+            userId,
+            type: 'EARN',
+            isReferralBonus: true,
+            createdAt: { gte: this.startOfCurrentMonth() }
+          },
+          _sum: { amount: true }
+        })
+      ]);
+
+      const teamSize = descendants.length;
+      const indirectCount = Math.max(0, teamSize - directCount);
+      const totalCommission = Number(totalAgg._sum.amount ?? 0);
+      const monthCommission = Number(monthAgg._sum.amount ?? 0);
+
+      return {
+        'user.partnerRole': partnerRole,
+        'user.canRefer': canRefer,
+        'user.directReferralsCount': directCount,
+        'user.indirectReferralsCount': indirectCount,
+        'user.teamSize': teamSize,
+        'user.totalCommissionEarned': totalCommission,
+        'user.totalCommissionEarnedFormatted': this.formatRub(totalCommission),
+        'user.commissionThisMonth': monthCommission,
+        'user.commissionThisMonthFormatted': this.formatRub(monthCommission)
+      };
+    } catch (error) {
+      logger.warn('computePartnerVariables failed, returning defaults', {
+        userId,
+        projectId,
+        error: error instanceof Error ? error.message : String(error)
+      });
+      return defaults;
+    }
+  }
+
+  /** Начало текущего месяца (UTC) — для агрегата `commissionThisMonth`. */
+  private static startOfCurrentMonth(): Date {
+    const now = new Date();
+    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  }
+
+  /** Форматирование суммы в рублях для бот-уведомлений. */
+  private static formatRub(amount: number): string {
+    try {
+      return new Intl.NumberFormat('ru-RU', {
+        style: 'currency',
+        currency: 'RUB',
+        maximumFractionDigits: 0
+      }).format(amount);
+    } catch {
+      return `${Math.round(amount)} ₽`;
     }
   }
 

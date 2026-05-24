@@ -9,6 +9,8 @@ export interface Project {
   bonusMode?: 'SIMPLE' | 'LEVELS'; // ✨ НОВОЕ: Режим начисления бонусов
   // bonusBehavior: 'SPEND_AND_EARN' | 'SPEND_ONLY' | 'EARN_ONLY';
   operationMode?: 'WITH_BOT' | 'WITHOUT_BOT';
+  /** B2B иерархия партнёров (b2b-referral-hierarchy Phase 1). Опт-ин per project. */
+  enablePartnerRoles?: boolean;
   welcomeBonus: number;
   welcomeRewardType: WelcomeRewardType;
   firstPurchaseDiscountPercent: number;
@@ -134,6 +136,10 @@ export interface User {
   referredBy?: string | null; // ID пользователя-рефера
   referralCode?: string | null; // Уникальный реферальный код
 
+  // Партнёрская иерархия (b2b-referral-hierarchy Phase 1)
+  partnerRole?: PartnerRole;
+  outboundReferralPlanId?: string | null;
+
   // UTM метки при регистрации
   utmSource?: string | null;
   utmMedium?: string | null;
@@ -214,6 +220,7 @@ export type BonusType =
   | 'WELCOME'; // ✨ НОВОЕ: Приветственные бонусы
 export type TransactionType = 'EARN' | 'SPEND' | 'EXPIRE' | 'REFUND';
 export type BonusMode = 'SIMPLE' | 'LEVELS'; // ✨ НОВОЕ: Режим начисления бонусов
+export type PartnerRole = 'CLIENT' | 'TRAINER' | 'MANAGER' | 'DIRECTOR';
 
 // Типы для API
 export interface CreateProjectInput {

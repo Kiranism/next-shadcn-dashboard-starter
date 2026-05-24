@@ -425,6 +425,84 @@ export async function PUT(
   }
 }
 
+/**
+ * PATCH /api/projects/[id] — частичное обновление полей проекта.
+ *
+ * (b2b-referral-hierarchy Phase 6.15) — позволяет переключать
+ * `enablePartnerRoles` со страницы настроек одной мутацией, без
+ * дополнительных эндпоинтов и без отправки всей формы.
+ *
+ * Поддерживаемые поля (перечисляются явно — никакого `passthrough`):
+ *  - `enablePartnerRoles: boolean`
+ *
+ * Расширять список можно по мере появления небольших точечных тогглов.
+ * Для общих изменений (имя, домен, тариф и т.д.) использовать PUT выше.
+ */
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  let id = '';
+  try {
+    const admin = await getCurrentAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const params = await context.params;
+    id = params.id;
+
+    await ProjectService.verifyProjectAccess(id, admin.sub);
+
+    let body: Record<string, unknown> = {};
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    }
+
+    const updateData: Record<string, unknown> = {};
+
+    if (typeof body.enablePartnerRoles === 'boolean') {
+      updateData.enablePartnerRoles = body.enablePartnerRoles;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json(
+        { error: 'Нет поддерживаемых полей для обновления' },
+        { status: 400 }
+      );
+    }
+
+    const updated = await db.project.update({
+      where: { id },
+      data: updateData as Parameters<typeof db.project.update>[0]['data']
+    });
+
+    logger.info('PATCH /api/projects/[id]: фрагмент обновлён', {
+      projectId: id,
+      adminId: admin.sub,
+      fields: Object.keys(updateData),
+      component: 'projects-api'
+    });
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    if (error instanceof Error && error.message === 'FORBIDDEN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    logger.error('PATCH /api/projects/[id]: ошибка', {
+      projectId: id,
+      error: error instanceof Error ? error.message : String(error),
+      component: 'projects-api'
+    });
+    return NextResponse.json(
+      { error: 'Внутренняя ошибка сервера' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }

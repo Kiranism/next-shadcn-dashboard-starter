@@ -25,6 +25,7 @@ graph TB
 - [📊 Database Schema](./database-schema.md) - схема базы данных
 - [🔗 API Reference](./api.md) - документация API endpoints
 - [📞 Webhook Integration](./webhook-integration.md) - гайд по интеграции
+- [🏢 B2B Реферальная иерархия](./b2b-referral-hierarchy-guide.md) - партнёрские роли, уведомления, hierarchy page (опт-ин per project)
 - [🔧 Tilda Webhook Setup](./tilda-webhook-setup.md) - настройка webhook в Tilda (решение "Invalid JSON")
 - [🔧 Troubleshooting](./TROUBLESHOOTING.md) - решение частых проблем
 - [🤖 Telegram Bots](./telegram-bots.md) - настройка и работа с ботами

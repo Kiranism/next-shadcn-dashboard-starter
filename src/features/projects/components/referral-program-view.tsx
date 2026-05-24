@@ -263,7 +263,10 @@ export function ReferralProgramView({ projectId }: ReferralProgramViewProps) {
             </TabsContent>
 
             <TabsContent value='plans' className='space-y-6'>
-              <ReferralCommissionPlansPanel projectId={projectId} />
+              <ReferralCommissionPlansPanel
+                projectId={projectId}
+                enablePartnerRoles={Boolean(project?.enablePartnerRoles)}
+              />
             </TabsContent>
           </Tabs>
         </div>

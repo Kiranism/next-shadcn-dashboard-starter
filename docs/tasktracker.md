@@ -29,6 +29,40 @@
 
 ---
 
+## 📋 Задача: B2B Реферальная иерархия (партнёрские роли + Telegram-кабинет)
+- **Статус**: ✅ Завершена
+- **Приоритет**: 🔴 Высокий
+- **Описание**: Полнофункциональная b2b-надстройка над реферальной системой — производитель → менеджеры → тренеры → клиенты с автоматическим начислением комиссии по цепочке вверх (тренер 7% + менеджер 2% + директор 1% = 10% от каждой покупки клиента). Опт-ин per project через `Project.enablePartnerRoles` — обратная совместимость со всеми существующими c2c-проектами.
+- **Техническая сложность**: 5
+- **Затраченное время**: 6.5–7.5 рабочих дней (7 фаз)
+- **Прогресс**: 7/7 фаз (100%)
+- **Шаги выполнения**:
+  - [x] Phase 1: Schema & Filtering — `enum PartnerRole`, `User.partnerRole`, `Project.enablePartnerRoles`, фильтр в `findReferrer`, валидация `setUserOutboundPlan`/`generateReferralLink`. 5 unit-тестов.
+  - [x] Phase 2: User Management UI — колонка роли с цветным badge, мульти-фильтр, селекторы роли + outbound-плана в диалоге профиля, расширенный PATCH `/api/projects/[id]/users/[userId]`, фильтр `?role=` в GET users.
+  - [x] Phase 3: Effective Grants — `canViewSubject`, `getViewableSubjects`, `getAncestorChain`, `getDescendantTree` через рекурсивные CTE с fallback. Memoization через React `cache`. Property-based тест с fast-check.
+  - [x] Phase 4: Bot Partner Cabinet — 7 партнёрских системных переменных, 5 action-handlers (`partner_team`, `partner_subject_stats`, `partner_payouts`, `partner_link`, `partner_org_summary`), JSON workflow «🏢 B2B Кабинет партнёра» с adaptive menu по роли.
+  - [x] Phase 5: Notifications — `PartnerNotificationService.notifyAncestorsAboutNewMember` (рассылка по дереву предков с opt-out), обогащённый текст для `BonusType.REFERRAL`. 5 unit-тестов.
+  - [x] Phase 6: Admin UI — searchable user-combobox + debounced search, bulk-assign «Назначить всем тренерам», slider `maxPayoutDepth 1..3`, страница `/referral/hierarchy` с deep-tree, search, period selector, CSV-экспорт, switch + кнопка импорта workflow в settings.
+  - [x] Phase 7: Migration & Documentation — скрипт `scripts/migrate-partner-roles.ts` (идемпотентный), полный гайд `docs/b2b-referral-hierarchy-guide.md`, обновление steering, production checklist, инструкция по активации пилота.
+- **Тестирование**:
+  - Phase 1–5: 50+ автоматических тестов (unit + property-based), все зелёные.
+  - Phase 6–7: ручной QA по чек-листу из гайда (E2E: создать проект → включить флаг → построить дерево директор-менеджер-тренер-клиент → симулировать покупку 5000₽ → проверить начисления 7%/2%/1% и видимость в боте каждого уровня).
+- **Зависимости**: PostgreSQL (рекурсивные CTE), существующие `ReferralCommissionPlan` / `ReferralAttribution` / `ReferralStatsGrant`, Telegram Grammy framework, workflow runtime.
+- **Файлы**:
+  - Schema: `prisma/schema.prisma`, `prisma/migrations/20260524_add_partner_role/migration.sql`
+  - Services: `src/lib/services/referral.service.ts`, `referral-commission.service.ts`, `partner-notification.service.ts` (новый), `user.service.ts`, `workflow/user-variables.service.ts`, `workflow/handlers/action-handlers.ts`, `workflow/node-handlers-registry.ts`, `bot-templates.service.ts`, `telegram/notifications.ts`
+  - Workflow: `src/lib/workflow-templates/b2b-partner-cabinet.json` (новый)
+  - API: `src/app/api/projects/[id]/users/[userId]/team/**`, `payouts`, `referral-outbound-plan`, `hierarchy`, `hierarchy/export`, `referral-insights/[subjectUserId]`
+  - UI: `src/app/dashboard/projects/[id]/users/...`, `referral/hierarchy/page.tsx` (новый), `settings/...`, `src/features/projects/components/referral-commission-plans-panel.tsx`
+  - Scripts: `scripts/migrate-partner-roles.ts` (новый)
+  - Tests: `__tests__/services/referral.service.test.ts`, `referral-commission.service.test.ts`, `partner-notification.service.test.ts`, `workflow/partner-actions.test.ts`
+  - Docs: `docs/b2b-referral-hierarchy-guide.md` (новый), `changelog.md`, `tasktracker.md`, `README.md`
+  - Steering: `.kiro/steering/quick-reference.md`, `bonus-logic.md`
+- **Спецификация**: `.kiro/specs/b2b-referral-hierarchy/` (requirements.md, design.md, tasks.md)
+- **Документация**: `docs/b2b-referral-hierarchy-guide.md` — полный гайд (15 разделов, 9 FAQ, архитектура для разработчиков)
+
+---
+
 ## 📋 Задача: Улучшение UX дашборда и библиотеки шаблонов
 - **Статус**: ✅ Завершена
 - **Приоритет**: 🟡 Средний

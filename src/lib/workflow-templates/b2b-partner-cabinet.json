@@ -1,0 +1,476 @@
+{
+  "name": "B2B Партнёр",
+  "description": "Личный кабинет партнёра (тренер / менеджер / директор) в b2b-иерархии. Меню адаптируется под роль: CLIENT видит базовое меню (баланс / история / реферальная программа); TRAINER+ получает доступ к ссылке, команде и выплатам; MANAGER — к команде; DIRECTOR — к сводке по организации. Требует `enablePartnerRoles = true` у проекта и заполненные `partnerRole` у пользователей.",
+  "nodes": [
+    {
+      "id": "start-trigger",
+      "type": "trigger.command",
+      "position": { "x": 0, "y": 320 },
+      "data": {
+        "label": "Команда /start",
+        "config": {
+          "trigger.command": {
+            "command": "/start"
+          }
+        }
+      }
+    },
+    {
+      "id": "cond-is-director",
+      "type": "condition",
+      "position": { "x": 380, "y": 80 },
+      "data": {
+        "label": "Роль = DIRECTOR?",
+        "config": {
+          "condition": {
+            "operator": "equals",
+            "variable": "user.partnerRole",
+            "value": "DIRECTOR"
+          }
+        }
+      }
+    },
+    {
+      "id": "cond-is-manager",
+      "type": "condition",
+      "position": { "x": 760, "y": 240 },
+      "data": {
+        "label": "Роль = MANAGER?",
+        "config": {
+          "condition": {
+            "operator": "equals",
+            "variable": "user.partnerRole",
+            "value": "MANAGER"
+          }
+        }
+      }
+    },
+    {
+      "id": "cond-is-trainer",
+      "type": "condition",
+      "position": { "x": 1140, "y": 400 },
+      "data": {
+        "label": "Роль = TRAINER?",
+        "config": {
+          "condition": {
+            "operator": "equals",
+            "variable": "user.partnerRole",
+            "value": "TRAINER"
+          }
+        }
+      }
+    },
+    {
+      "id": "menu-director",
+      "type": "message",
+      "position": { "x": 760, "y": 80 },
+      "data": {
+        "label": "Меню директора",
+        "config": {
+          "message": {
+            "text": "🏆 <b>Кабинет директора</b>\n\nПривет, {user.firstName}!\n\n👥 В команде: <b>{user.teamSize}</b>\n💼 Комиссия в этом месяце: <b>{user.commissionThisMonthFormatted}</b>\n💰 Всего заработано: <b>{user.totalCommissionEarnedFormatted}</b>\n\nВыберите действие:",
+            "parseMode": "HTML",
+            "keyboard": {
+              "type": "inline",
+              "buttons": [
+                [
+                  { "text": "📊 Сводка по организации", "callback_data": "partner_org_summary" },
+                  { "text": "👥 Моя команда", "callback_data": "partner_team_page:0" }
+                ],
+                [
+                  { "text": "🔗 Моя ссылка", "callback_data": "partner_link" },
+                  { "text": "💵 Мои выплаты", "callback_data": "partner_payouts" }
+                ],
+                [
+                  { "text": "💰 Баланс", "callback_data": "menu_balance" },
+                  { "text": "📜 История", "callback_data": "menu_history" }
+                ]
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "menu-manager",
+      "type": "message",
+      "position": { "x": 1140, "y": 240 },
+      "data": {
+        "label": "Меню менеджера",
+        "config": {
+          "message": {
+            "text": "👥 <b>Кабинет менеджера</b>\n\nПривет, {user.firstName}!\n\n👤 Под вами: <b>{user.directReferralsCount}</b> прямых · <b>{user.indirectReferralsCount}</b> косвенных\n💼 Комиссия в этом месяце: <b>{user.commissionThisMonthFormatted}</b>\n💰 Всего заработано: <b>{user.totalCommissionEarnedFormatted}</b>\n\nВыберите действие:",
+            "parseMode": "HTML",
+            "keyboard": {
+              "type": "inline",
+              "buttons": [
+                [
+                  { "text": "👥 Моя команда", "callback_data": "partner_team_page:0" }
+                ],
+                [
+                  { "text": "🔗 Моя ссылка", "callback_data": "partner_link" },
+                  { "text": "💵 Мои выплаты", "callback_data": "partner_payouts" }
+                ],
+                [
+                  { "text": "💰 Баланс", "callback_data": "menu_balance" },
+                  { "text": "📜 История", "callback_data": "menu_history" }
+                ]
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "menu-trainer",
+      "type": "message",
+      "position": { "x": 1520, "y": 400 },
+      "data": {
+        "label": "Меню тренера",
+        "config": {
+          "message": {
+            "text": "🏃 <b>Кабинет тренера</b>\n\nПривет, {user.firstName}!\n\n👤 Клиентов: <b>{user.directReferralsCount}</b>\n💼 Комиссия в этом месяце: <b>{user.commissionThisMonthFormatted}</b>\n💰 Всего заработано: <b>{user.totalCommissionEarnedFormatted}</b>\n\nВыберите действие:",
+            "parseMode": "HTML",
+            "keyboard": {
+              "type": "inline",
+              "buttons": [
+                [
+                  { "text": "🔗 Моя ссылка", "callback_data": "partner_link" }
+                ],
+                [
+                  { "text": "👤 Мои клиенты", "callback_data": "partner_team_page:0" },
+                  { "text": "💵 Мои выплаты", "callback_data": "partner_payouts" }
+                ],
+                [
+                  { "text": "💰 Баланс", "callback_data": "menu_balance" },
+                  { "text": "📜 История", "callback_data": "menu_history" }
+                ]
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "menu-client",
+      "type": "message",
+      "position": { "x": 1520, "y": 560 },
+      "data": {
+        "label": "Меню клиента",
+        "config": {
+          "message": {
+            "text": "👋 <b>Здравствуйте, {user.firstName}!</b>\n\n💵 Баланс: <b>{user.balanceFormatted}</b>\n🏆 Уровень: <b>{user.currentLevel}</b>\n📈 Заработано бонусов: <b>{user.totalEarnedFormatted}</b>\n\nВыберите действие:",
+            "parseMode": "HTML",
+            "keyboard": {
+              "type": "inline",
+              "buttons": [
+                [
+                  { "text": "💰 Баланс", "callback_data": "menu_balance" },
+                  { "text": "📜 История", "callback_data": "menu_history" }
+                ],
+                [
+                  { "text": "🏆 Уровень", "callback_data": "menu_level" },
+                  { "text": "👥 Реферальная программа", "callback_data": "menu_referrals" }
+                ],
+                [
+                  { "text": "❓ Помощь", "callback_data": "menu_help" }
+                ]
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "trigger-cb-org-summary",
+      "type": "trigger.callback",
+      "position": { "x": 0, "y": 800 },
+      "data": {
+        "label": "Сводка организации (callback)",
+        "config": {
+          "trigger.callback": {
+            "data": "partner_org_summary"
+          }
+        }
+      }
+    },
+    {
+      "id": "action-org-summary",
+      "type": "action.partner_org_summary",
+      "position": { "x": 380, "y": 800 },
+      "data": {
+        "label": "Показать сводку",
+        "config": {
+          "action.partner_org_summary": {
+            "topLimit": 5
+          }
+        }
+      }
+    },
+    {
+      "id": "trigger-cb-team",
+      "type": "trigger.callback",
+      "position": { "x": 0, "y": 920 },
+      "data": {
+        "label": "Команда (callback)",
+        "config": {
+          "trigger.callback": {
+            "data": "partner_team_page"
+          }
+        }
+      }
+    },
+    {
+      "id": "action-team",
+      "type": "action.partner_team",
+      "position": { "x": 380, "y": 920 },
+      "data": {
+        "label": "Показать команду",
+        "config": {
+          "action.partner_team": {
+            "pageSize": 5,
+            "page": "{{telegram.callback.params[0]}}"
+          }
+        }
+      }
+    },
+    {
+      "id": "trigger-cb-link",
+      "type": "trigger.callback",
+      "position": { "x": 0, "y": 1040 },
+      "data": {
+        "label": "Реф. ссылка (callback)",
+        "config": {
+          "trigger.callback": {
+            "data": "partner_link"
+          }
+        }
+      }
+    },
+    {
+      "id": "action-link",
+      "type": "action.partner_link",
+      "position": { "x": 380, "y": 1040 },
+      "data": {
+        "label": "Показать реф. ссылку",
+        "config": {
+          "action.partner_link": {
+            "additionalParams": {
+              "utm_source": "partner-bot"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "trigger-cb-payouts",
+      "type": "trigger.callback",
+      "position": { "x": 0, "y": 1160 },
+      "data": {
+        "label": "Выплаты (callback)",
+        "config": {
+          "trigger.callback": {
+            "data": "partner_payouts"
+          }
+        }
+      }
+    },
+    {
+      "id": "action-payouts",
+      "type": "action.partner_payouts",
+      "position": { "x": 380, "y": 1160 },
+      "data": {
+        "label": "История выплат",
+        "config": {
+          "action.partner_payouts": {
+            "limit": 20
+          }
+        }
+      }
+    },
+    {
+      "id": "trigger-cb-subject",
+      "type": "trigger.callback",
+      "position": { "x": 0, "y": 1280 },
+      "data": {
+        "label": "Стата подопечного (callback)",
+        "config": {
+          "trigger.callback": {
+            "data": "partner_subject"
+          }
+        }
+      }
+    },
+    {
+      "id": "action-subject-stats",
+      "type": "action.partner_subject_stats",
+      "position": { "x": 380, "y": 1280 },
+      "data": {
+        "label": "Стата подопечного",
+        "config": {
+          "action.partner_subject_stats": {
+            "subjectUserId": "{{telegram.callback.params[0]}}"
+          }
+        }
+      }
+    },
+    {
+      "id": "flow-end",
+      "type": "flow.end",
+      "position": { "x": 1900, "y": 480 },
+      "data": {
+        "label": "Завершение",
+        "config": {
+          "flow.end": {
+            "success": true
+          }
+        }
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "e-start-cond-director",
+      "type": "default",
+      "source": "start-trigger",
+      "target": "cond-is-director"
+    },
+    {
+      "id": "e-director-yes",
+      "type": "default",
+      "source": "cond-is-director",
+      "target": "menu-director",
+      "sourceHandle": "true"
+    },
+    {
+      "id": "e-director-no",
+      "type": "default",
+      "source": "cond-is-director",
+      "target": "cond-is-manager",
+      "sourceHandle": "false"
+    },
+    {
+      "id": "e-manager-yes",
+      "type": "default",
+      "source": "cond-is-manager",
+      "target": "menu-manager",
+      "sourceHandle": "true"
+    },
+    {
+      "id": "e-manager-no",
+      "type": "default",
+      "source": "cond-is-manager",
+      "target": "cond-is-trainer",
+      "sourceHandle": "false"
+    },
+    {
+      "id": "e-trainer-yes",
+      "type": "default",
+      "source": "cond-is-trainer",
+      "target": "menu-trainer",
+      "sourceHandle": "true"
+    },
+    {
+      "id": "e-trainer-no",
+      "type": "default",
+      "source": "cond-is-trainer",
+      "target": "menu-client",
+      "sourceHandle": "false"
+    },
+    {
+      "id": "e-menu-director-end",
+      "type": "default",
+      "source": "menu-director",
+      "target": "flow-end"
+    },
+    {
+      "id": "e-menu-manager-end",
+      "type": "default",
+      "source": "menu-manager",
+      "target": "flow-end"
+    },
+    {
+      "id": "e-menu-trainer-end",
+      "type": "default",
+      "source": "menu-trainer",
+      "target": "flow-end"
+    },
+    {
+      "id": "e-menu-client-end",
+      "type": "default",
+      "source": "menu-client",
+      "target": "flow-end"
+    },
+    {
+      "id": "e-cb-org-summary",
+      "type": "default",
+      "source": "trigger-cb-org-summary",
+      "target": "action-org-summary"
+    },
+    {
+      "id": "e-org-summary-end",
+      "type": "default",
+      "source": "action-org-summary",
+      "target": "flow-end"
+    },
+    {
+      "id": "e-cb-team",
+      "type": "default",
+      "source": "trigger-cb-team",
+      "target": "action-team"
+    },
+    {
+      "id": "e-team-end",
+      "type": "default",
+      "source": "action-team",
+      "target": "flow-end"
+    },
+    {
+      "id": "e-cb-link",
+      "type": "default",
+      "source": "trigger-cb-link",
+      "target": "action-link"
+    },
+    {
+      "id": "e-link-end",
+      "type": "default",
+      "source": "action-link",
+      "target": "flow-end"
+    },
+    {
+      "id": "e-cb-payouts",
+      "type": "default",
+      "source": "trigger-cb-payouts",
+      "target": "action-payouts"
+    },
+    {
+      "id": "e-payouts-end",
+      "type": "default",
+      "source": "action-payouts",
+      "target": "flow-end"
+    },
+    {
+      "id": "e-cb-subject",
+      "type": "default",
+      "source": "trigger-cb-subject",
+      "target": "action-subject-stats"
+    },
+    {
+      "id": "e-subject-end",
+      "type": "default",
+      "source": "action-subject-stats",
+      "target": "flow-end"
+    }
+  ],
+  "variables": [
+    {
+      "name": "partner_subject_id",
+      "type": "string",
+      "description": "ID подопечного для action.partner_subject_stats (заполняется при клике на кнопку из partner_team)"
+    }
+  ],
+  "settings": {
+    "maxExecutionTime": 60000,
+    "retryAttempts": 3
+  }
+}

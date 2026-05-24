@@ -1,16 +1,26 @@
 /**
  * @file: src/lib/services/referral-commission.service.ts
- * @description: Планы реферальных процентов по уровням, атрибуция при регистрации, гранты на просмотр статистики
+ * @description: Планы реферальных процентов по уровням, атрибуция при регистрации, гранты на просмотр статистики, эффективные права доступа в b2b-иерархии
  * @project: SaaS Bonus System
- * @dependencies: Prisma, db
+ * @dependencies: Prisma, db, react (cache)
  * @created: 2026-05-12
  * @author: AI Assistant + User
  */
 
+import { cache } from 'react';
 import { Prisma } from '@prisma/client';
 
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
+
+/** Безопасная глубина обхода реферальных цепочек (защита от циклов / runaway-запросов). */
+const MAX_TREE_DEPTH = 10;
+const DEFAULT_TREE_DEPTH = 3;
+
+function clampDepth(depth: number): number {
+  if (!Number.isFinite(depth)) return DEFAULT_TREE_DEPTH;
+  return Math.min(Math.max(Math.trunc(depth), 1), MAX_TREE_DEPTH);
+}
 
 export type PlanLevelInput = {
   level: number;
@@ -308,6 +318,18 @@ export class ReferralCommissionService {
     return plan;
   }
 
+  /**
+   * Назначить пользователю исходящий (outbound) план комиссий.
+   *
+   * Когда у проекта включён `enablePartnerRoles`, назначить outbound-план
+   * можно только партнёру (`TRAINER` / `MANAGER` / `DIRECTOR`). Попытка назначить
+   * план пользователю с ролью `CLIENT` приводит к ошибке.
+   *
+   * Если `enablePartnerRoles = false` (по умолчанию), поведение прежнее —
+   * проверка роли пропускается.
+   *
+   * @see Requirements 2.3 — "Outbound план можно назначить только партнёру"
+   */
   static async setUserOutboundPlan(
     projectId: string,
     userId: string,
@@ -321,9 +343,20 @@ export class ReferralCommissionService {
     }
 
     const user = await db.user.findFirst({
-      where: { id: userId, projectId }
+      where: { id: userId, projectId },
+      select: {
+        id: true,
+        partnerRole: true,
+        project: {
+          select: { enablePartnerRoles: true }
+        }
+      }
     });
     if (!user) throw new Error('Пользователь не найден');
+
+    if (user.project.enablePartnerRoles && user.partnerRole === 'CLIENT') {
+      throw new Error('Outbound план можно назначить только партнёру');
+    }
 
     return db.user.update({
       where: { id: userId },
@@ -380,6 +413,276 @@ export class ReferralCommissionService {
     });
   }
 
+  // ────────────────────────────────────────────────────────────────────────────
+  // Effective Grants (Phase 3) — рекурсивные обходы по `referredBy`
+  // ────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Получить цепочку предков пользователя по полю `referred_by` (вверх).
+   * Использует рекурсивный CTE для одного запроса; при ошибке падает на
+   * итеративный обход через Prisma и логирует предупреждение.
+   *
+   * Возвращает идентификаторы предков, упорядоченные по возрастанию глубины
+   * (ближайший предок первый). Сам пользователь не включается.
+   *
+   * @see Requirement 5.1 — `canViewSubject` / `Referral_Chain`
+   */
+  static async getAncestorChain(
+    userId: string,
+    projectId: string,
+    depth: number = DEFAULT_TREE_DEPTH
+  ): Promise<string[]> {
+    const safeDepth = clampDepth(depth);
+    try {
+      const result = await db.$queryRaw<Array<{ id: string; depth: number }>>(
+        Prisma.sql`
+          WITH RECURSIVE ancestors AS (
+            SELECT
+              id,
+              referred_by,
+              1 AS depth
+            FROM users
+            WHERE id = ${userId} AND project_id = ${projectId}
+
+            UNION ALL
+
+            SELECT
+              u.id,
+              u.referred_by,
+              a.depth + 1 AS depth
+            FROM users u
+            INNER JOIN ancestors a ON u.id = a.referred_by
+            WHERE a.depth < ${safeDepth} AND u.project_id = ${projectId}
+          )
+          SELECT id, depth FROM ancestors WHERE id <> ${userId} ORDER BY depth ASC;
+        `
+      );
+      return result.map((r) => r.id);
+    } catch (err) {
+      logger.warn('CTE ancestor chain failed, falling back to iterative walk', {
+        err: err instanceof Error ? err.message : String(err),
+        userId,
+        projectId,
+        component: 'referral-commission-service'
+      });
+      return this.iterativeAncestorChain(userId, projectId, safeDepth);
+    }
+  }
+
+  /**
+   * Получить дерево потомков пользователя по полю `referred_by` (вниз).
+   * Использует рекурсивный CTE; на ошибку — итеративный fallback через
+   * Prisma findMany.
+   *
+   * Возвращает идентификаторы потомков (без самого пользователя),
+   * упорядоченные по возрастанию глубины.
+   *
+   * @see Requirement 5.2 — `getViewableSubjects`
+   */
+  static async getDescendantTree(
+    userId: string,
+    projectId: string,
+    depth: number = DEFAULT_TREE_DEPTH
+  ): Promise<string[]> {
+    const safeDepth = clampDepth(depth);
+    try {
+      const result = await db.$queryRaw<Array<{ id: string; depth: number }>>(
+        Prisma.sql`
+          WITH RECURSIVE descendants AS (
+            SELECT
+              id,
+              referred_by,
+              0 AS depth
+            FROM users
+            WHERE id = ${userId} AND project_id = ${projectId}
+
+            UNION ALL
+
+            SELECT
+              u.id,
+              u.referred_by,
+              d.depth + 1 AS depth
+            FROM users u
+            INNER JOIN descendants d ON u.referred_by = d.id
+            WHERE d.depth < ${safeDepth} AND u.project_id = ${projectId}
+          )
+          SELECT id, depth FROM descendants WHERE id <> ${userId} ORDER BY depth ASC;
+        `
+      );
+      return result.map((r) => r.id);
+    } catch (err) {
+      logger.warn(
+        'CTE descendant tree failed, falling back to iterative walk',
+        {
+          err: err instanceof Error ? err.message : String(err),
+          userId,
+          projectId,
+          component: 'referral-commission-service'
+        }
+      );
+      return this.iterativeDescendantTree(userId, projectId, safeDepth);
+    }
+  }
+
+  /**
+   * Может ли `viewerUserId` смотреть статистику `subjectUserId`.
+   *
+   * Доступ разрешён, если выполняется хотя бы одно условие:
+   *  1. Это тот же самый пользователь (просмотр своей статистики);
+   *  2. Существует ручной грант `ReferralStatsGrant`;
+   *  3. Viewer находится в цепочке предков subject'а до `maxPayoutDepth`.
+   *
+   * @see Requirement 5.1
+   */
+  static async canViewSubject(
+    projectId: string,
+    viewerUserId: string,
+    subjectUserId: string
+  ): Promise<boolean> {
+    if (!projectId || !viewerUserId || !subjectUserId) return false;
+    if (viewerUserId === subjectUserId) return true;
+
+    const grant = await db.referralStatsGrant.findUnique({
+      where: {
+        projectId_subjectUserId_viewerUserId: {
+          projectId,
+          subjectUserId,
+          viewerUserId
+        }
+      }
+    });
+    if (grant) return true;
+
+    const maxDepth = await this.resolveMaxPayoutDepth(projectId);
+    const ancestors = await this.getAncestorChain(
+      subjectUserId,
+      projectId,
+      maxDepth
+    );
+    return ancestors.includes(viewerUserId);
+  }
+
+  /**
+   * Идентификаторы пользователей, чью статистику может смотреть `viewerUserId`:
+   * сам viewer + все его потомки (до `maxPayoutDepth`) + явные ручные гранты.
+   *
+   * @see Requirement 5.2
+   */
+  static async getViewableSubjects(
+    projectId: string,
+    viewerUserId: string
+  ): Promise<string[]> {
+    if (!projectId || !viewerUserId) return [];
+
+    const maxDepth = await this.resolveMaxPayoutDepth(projectId);
+
+    const [descendants, grants] = await Promise.all([
+      this.getDescendantTree(viewerUserId, projectId, maxDepth),
+      db.referralStatsGrant.findMany({
+        where: { projectId, viewerUserId },
+        select: { subjectUserId: true }
+      })
+    ]);
+
+    const set = new Set<string>([viewerUserId]);
+    for (const id of descendants) set.add(id);
+    for (const g of grants) set.add(g.subjectUserId);
+
+    return Array.from(set);
+  }
+
+  /**
+   * Резолвит максимальную глубину выплат для проекта; берёт
+   * `defaultReferralCommissionPlan.maxPayoutDepth`, если назначен,
+   * иначе fallback на 3.
+   */
+  private static async resolveMaxPayoutDepth(
+    projectId: string
+  ): Promise<number> {
+    const project = await db.project.findUnique({
+      where: { id: projectId },
+      select: {
+        defaultReferralCommissionPlan: { select: { maxPayoutDepth: true } }
+      }
+    });
+    const raw =
+      project?.defaultReferralCommissionPlan?.maxPayoutDepth ??
+      DEFAULT_TREE_DEPTH;
+    return clampDepth(raw);
+  }
+
+  /**
+   * Итеративный fallback: обход вверх по `referredBy` через Prisma findFirst.
+   * Защищён от циклов через множество посещённых id и ограничение глубины.
+   */
+  private static async iterativeAncestorChain(
+    userId: string,
+    projectId: string,
+    depth: number
+  ): Promise<string[]> {
+    const safeDepth = clampDepth(depth);
+    const visited = new Set<string>([userId]);
+    const ancestors: string[] = [];
+
+    let cursor: string | null = userId;
+    for (let i = 0; i < safeDepth; i += 1) {
+      const node: { referredBy: string | null } | null =
+        await db.user.findFirst({
+          where: { id: cursor as string, projectId },
+          select: { referredBy: true }
+        });
+      const next = node?.referredBy ?? null;
+      if (!next) break;
+      if (visited.has(next)) {
+        logger.warn('Detected cycle while walking ancestor chain', {
+          userId,
+          projectId,
+          cycleAt: next,
+          component: 'referral-commission-service'
+        });
+        break;
+      }
+      visited.add(next);
+      ancestors.push(next);
+      cursor = next;
+    }
+    return ancestors;
+  }
+
+  /**
+   * Итеративный fallback: BFS вниз по `referredBy` через Prisma findMany.
+   * Защищён от циклов через множество посещённых id.
+   */
+  private static async iterativeDescendantTree(
+    userId: string,
+    projectId: string,
+    depth: number
+  ): Promise<string[]> {
+    const safeDepth = clampDepth(depth);
+    const visited = new Set<string>([userId]);
+    const result: string[] = [];
+
+    let frontier: string[] = [userId];
+    for (let level = 0; level < safeDepth && frontier.length > 0; level += 1) {
+      const children: Array<{ id: string }> = await db.user.findMany({
+        where: {
+          projectId,
+          referredBy: { in: frontier }
+        },
+        select: { id: true }
+      });
+      const nextFrontier: string[] = [];
+      for (const c of children) {
+        if (visited.has(c.id)) continue;
+        visited.add(c.id);
+        result.push(c.id);
+        nextFrontier.push(c.id);
+      }
+      frontier = nextFrontier;
+    }
+    return result;
+  }
+
   private static normalizeLevels(levels: PlanLevelInput[]): PlanLevelInput[] {
     const by = new Map<number, PlanLevelInput>();
     for (const l of levels) {
@@ -393,3 +696,34 @@ export class ReferralCommissionService {
     return Array.from(by.values()).sort((a, b) => a.level - b.level);
   }
 }
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Per-request memoization (Phase 3.6) — React `cache` оборачивает дорогие
+// проверки доступа в рамках одного серверного запроса. Несколько вызовов
+// внутри одного запроса (например, /team + /payouts отдают один и тот же
+// результат) не повторяют CTE.
+// ──────────────────────────────────────────────────────────────────────────────
+
+export const cachedCanViewSubject = cache(
+  (projectId: string, viewerUserId: string, subjectUserId: string) =>
+    ReferralCommissionService.canViewSubject(
+      projectId,
+      viewerUserId,
+      subjectUserId
+    )
+);
+
+export const cachedGetViewableSubjects = cache(
+  (projectId: string, viewerUserId: string) =>
+    ReferralCommissionService.getViewableSubjects(projectId, viewerUserId)
+);
+
+export const cachedGetAncestorChain = cache(
+  (userId: string, projectId: string, depth?: number) =>
+    ReferralCommissionService.getAncestorChain(userId, projectId, depth)
+);
+
+export const cachedGetDescendantTree = cache(
+  (userId: string, projectId: string, depth?: number) =>
+    ReferralCommissionService.getDescendantTree(userId, projectId, depth)
+);
