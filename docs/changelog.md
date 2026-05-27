@@ -1,5 +1,36 @@
 # Changelog
 
+## [2026-05-27] - 🐛 Исправлен лимит проектов при множественных активных подписках
+
+### 🐛 Исправлено
+
+- **Project limit reached** даже на Enterprise/Pro — `BillingService.getActiveSubscription` использовал `findFirst` без сортировки. Когда у админа в БД оказывалось две одновременно активных подписки (старая Free + новая платная после апгрейда / триала), Postgres возвращал случайный результат, часто — Free с `maxProjects=1`. Из-за этого UI Settings показывал «Enterprise: 1/10», а POST `/api/projects` ругался «лимит исчерпан 1/1».
+- Теперь `getActiveSubscription` сортирует по `plan.maxProjects DESC, startDate DESC` — самая щедрая активная подписка побеждает.
+
+### 🎯 Добавлено
+
+- **`scripts/fix-duplicate-subscriptions.ts`** — одноразовый идемпотентный скрипт для очистки дублей. Проходит по всем админам, оставляет наиболее щедрую активную подписку, остальные переводит в `status='cancelled'` с `endDate = NOW()`.
+- npm-команда `yarn fix-duplicate-subscriptions` (поддерживает `--dry-run` и `--adminId=<id>`).
+
+### 🚀 Деплой на прод
+
+```bash
+git pull
+yarn install
+yarn build
+pm2 restart bonus-app
+
+# Проверка дубликатов (без записи)
+npx tsx scripts/fix-duplicate-subscriptions.ts --dry-run
+
+# Реальное исправление
+npx tsx scripts/fix-duplicate-subscriptions.ts
+```
+
+После этого создание проектов на платных планах должно сразу заработать без перезапуска.
+
+---
+
 ## [2026-05-27] - Шаблон workflow «🎂 Бонусы ко дню рождения»
 
 ### 🎯 Добавлено

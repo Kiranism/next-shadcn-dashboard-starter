@@ -36,7 +36,13 @@ export interface UsageStats {
 
 export class BillingService {
   /**
-   * Получить активную подписку админа
+   * Получить активную подписку админа.
+   *
+   * Если у админа несколько активных подписок одновременно (например, старая
+   * Free + новая Pro/Enterprise после апгрейда), выбираем ту, которая даёт
+   * больше всего возможностей: сортируем по `plan.maxProjects` DESC,
+   * затем по `startDate` DESC. Это защищает от ситуации когда Free,
+   * созданная при регистрации, перекрывает свежую платную trial-подписку.
    */
   static async getActiveSubscription(adminId: string) {
     return db.subscription.findFirst({
@@ -48,7 +54,8 @@ export class BillingService {
       include: {
         plan: true,
         promoCode: true
-      }
+      },
+      orderBy: [{ plan: { maxProjects: 'desc' } }, { startDate: 'desc' }]
     });
   }
 
@@ -485,12 +492,12 @@ export class BillingService {
 
     const [projectsCount, usersCount, botsCount, notificationsCount] =
       await Promise.all([
-      db.project.count({ where: { ownerId: adminId } }),
-      db.user.count({
-        where: { projectId: { in: projects.map((p) => p.id) } }
-      }),
-      db.botSettings.count({
-        where: { projectId: { in: projects.map((p) => p.id) } }
+        db.project.count({ where: { ownerId: adminId } }),
+        db.user.count({
+          where: { projectId: { in: projects.map((p) => p.id) } }
+        }),
+        db.botSettings.count({
+          where: { projectId: { in: projects.map((p) => p.id) } }
         }),
         db.notification.count({
           where: { projectId: { in: projects.map((p) => p.id) } }
