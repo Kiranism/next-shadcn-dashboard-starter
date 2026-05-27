@@ -22,6 +22,7 @@ import { KeyboardEditor } from '@/components/ui/keyboard-editor';
 import { DatabaseQueryEditor } from '@/features/bot-constructor/components/editors/database-query-editor';
 import { MessageNodeEditor } from './message-node-editor';
 import { SubWorkflowConfig } from './node-config-panels/sub-workflow-config';
+import { ScheduleTriggerConfigPanel } from './node-config-panels/schedule-trigger-config';
 import type {
   WorkflowNode,
   WorkflowNodeData,
@@ -137,6 +138,14 @@ export function WorkflowProperties({
               placeholder='btn_click'
             />
           </div>
+        );
+      case 'trigger.schedule':
+        return (
+          <ScheduleTriggerConfigPanel
+            nodeConfig={nodeConfig}
+            setNodeConfig={setNodeConfig}
+            projectId={projectId}
+          />
         );
       case 'message':
         return (

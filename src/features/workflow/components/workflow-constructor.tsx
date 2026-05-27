@@ -292,6 +292,8 @@ export function WorkflowConstructor({ projectId }: WorkflowConstructorProps) {
         return 'Callback';
       case 'trigger.webhook':
         return 'Webhook';
+      case 'trigger.schedule':
+        return 'Расписание';
 
       // Сообщения
       case 'message':
@@ -361,6 +363,15 @@ export function WorkflowConstructor({ projectId }: WorkflowConstructorProps) {
           'trigger.webhook': {
             webhookUrl: 'https://example.com/webhook',
             method: 'POST'
+          }
+        };
+      case 'trigger.schedule':
+        return {
+          'trigger.schedule': {
+            cron: '0 9 * * *',
+            timezone: 'Europe/Moscow',
+            audience: { type: 'birthday_today' },
+            dedupeWindow: 'year'
           }
         };
 
@@ -780,6 +791,7 @@ export function WorkflowConstructor({ projectId }: WorkflowConstructorProps) {
                     case 'trigger.message':
                     case 'trigger.callback':
                     case 'trigger.webhook':
+                    case 'trigger.schedule':
                       return '#22c55e';
                     case 'message':
                       return '#3b82f6';
@@ -801,6 +813,8 @@ export function WorkflowConstructor({ projectId }: WorkflowConstructorProps) {
                   onNodeUpdate={onNodeUpdate}
                   onClose={() => setSelectedNode(null)}
                   allNodes={nodes}
+                  projectId={projectId}
+                  workflowId={currentWorkflow?.id}
                 />
               )}
             </ReactFlow>

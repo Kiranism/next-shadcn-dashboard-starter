@@ -21,6 +21,7 @@ export const TriggerNode = memo(({ data }: NodeProps) => {
     config['trigger.command']?.command ||
     config['trigger.message']?.pattern ||
     config['trigger.callback']?.callbackData ||
+    config['trigger.schedule']?.cron ||
     'Нажмите для редактирования';
 
   const getTriggerDisplayText = () => {
@@ -33,6 +34,22 @@ export const TriggerNode = memo(({ data }: NodeProps) => {
         return `Callback: ${triggerValue}`;
       case 'trigger.webhook':
         return `Webhook: ${triggerValue}`;
+      case 'trigger.schedule': {
+        const audienceType = config['trigger.schedule']?.audience?.type;
+        const audienceLabel = (() => {
+          switch (audienceType) {
+            case 'birthday_today':
+              return 'день рождения';
+            case 'birthday_in_days':
+              return `за ${config['trigger.schedule']?.audience?.params?.daysBefore ?? '?'} дн. до ДР`;
+            case 'all_active_users':
+              return 'все активные';
+            default:
+              return audienceType ?? 'аудитория не выбрана';
+          }
+        })();
+        return `${triggerValue} · ${audienceLabel}`;
+      }
       default:
         // Если тип не определен, пробуем взять его из конфига или ставим заглушку
         const typeLabel = triggerType

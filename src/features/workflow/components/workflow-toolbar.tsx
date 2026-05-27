@@ -50,7 +50,8 @@ import {
   BarChart3,
   User,
   Users,
-  Mail
+  Mail,
+  CalendarClock
 } from 'lucide-react';
 import type { WorkflowNodeType, Position } from '@/types/workflow';
 
@@ -104,6 +105,14 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     color: '#f97316',
     category: 'triggers',
     description: 'Входящий запрос из внешней системы'
+  },
+  {
+    type: 'trigger.schedule',
+    label: 'Расписание',
+    icon: CalendarClock,
+    color: '#0ea5e9',
+    category: 'triggers',
+    description: 'Запуск по cron + фильтру (день рождения, рассылки)'
   },
 
   // Messages

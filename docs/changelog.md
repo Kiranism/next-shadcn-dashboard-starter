@@ -1,5 +1,123 @@
 # Changelog
 
+## [2026-05-27] - Шаблон workflow «🎂 Бонусы ко дню рождения»
+
+### 🎯 Добавлено
+
+- **Новый шаблон** `birthday-loyalty` в библиотеке шаблонов (категория «Программы лояльности», icon 🎂):
+  - Scheduled workflow на основе `trigger.schedule` с cron `0 9 * * *` и аудиторией `birthday_today`
+  - Дедупликация на год — каждый клиент получит подарок ровно один раз в году
+  - Автоматическое начисление подарочных бонусов через `add_bonus` (тип `BIRTHDAY`)
+  - Условная отправка поздравления в Telegram (только если у клиента привязан Telegram)
+  - Переменная `birthday_bonus_amount` (по умолчанию 500) — настраивается в свойствах workflow
+  - Совместим с основным шаблоном «Система лояльности»: можно установить оба, они работают параллельно (разные типы триггеров)
+
+### 📁 Файлы
+
+- Новые:
+  - `src/lib/workflow-templates/birthday-loyalty.json` — JSON-описание workflow
+- Изменённые:
+  - `src/lib/services/bot-templates/bot-templates.service.ts` — регистрация `birthdayLoyaltyTemplate` в библиотеке
+
+### 📦 Использование
+
+1. Открыть библиотеку шаблонов в проекте
+2. Установить шаблон «🎂 Бонусы ко дню рождения»
+3. (Опционально) изменить размер подарка через `birthday_bonus_amount` в настройках workflow
+4. Активировать workflow + опубликовать версию
+5. Готово — каждое утро в 9:00 МСК cron `/api/cron/scheduled-triggers` найдёт именинников и автоматически выполнит сценарий
+
+---
+
+## [2026-05-27] - Scheduled Triggers — день рождения и периодические сценарии 🎂
+
+### 🎯 Добавлено
+
+- **`trigger.schedule`** — новый тип триггера workflow для запуска по расписанию + фильтру аудитории. Альтернатива событийным триггерам (`trigger.command`, `trigger.message`) — выбирается как точка входа в workflow.
+  - Конфиг: `cron` (стандартный 5-полевой формат), `timezone` (IANA), `audience`, `dedupeWindow`
+  - Аудитории MVP: `birthday_today`, `birthday_in_days` (с `params.daysBefore`), `all_active_users`
+  - Дефолтное окно дедупликации зависит от аудитории: `year` для ДР, `day` для остальных
+- **Cron-эндпоинт** `/api/cron/scheduled-triggers` — запускается каждую минуту (Vercel Cron в `vercel.json`):
+  - Авторизация через `Authorization: Bearer ${CRON_SECRET}`
+  - Сканирует все активные WorkflowVersion с trigger.schedule в entry-ноде
+  - Для совпавших по cron — резолвит аудиторию и запускает workflow для каждого юзера независимо
+  - Дедупликация через Redis: ключ `scheduled:{workflowId}:v{n}:{userId}:{bucket}` с TTL по `dedupeWindow`
+  - Возвращает статистику: `workflowsScanned`, `workflowsMatched`, `executionsStarted`, `dedupeSkipped`, `executionsFailed`
+- **Preview API** `POST /api/projects/:id/workflows/audience-preview` — для редактора workflow:
+  - Принимает `AudienceConfig`, возвращает `total` + первые 10 `userIds`
+  - Защита: только админ проекта (`getCurrentAdmin` + `verifyProjectAccess`)
+- **UI редактора workflow** (Schedule Trigger Config Panel):
+  - Inline-редактор cron + preset-кнопки (`0 9 * * *`, `0 12 * * *`, `*/30 * * * *` и т.д.)
+  - Селектор IANA timezone (`Europe/Moscow` по умолчанию)
+  - Селектор аудитории + динамический ввод `daysBefore` для `birthday_in_days`
+  - Селектор окна дедупликации
+  - Кнопка «Посчитать аудиторию» — показывает количество пользователей под условие
+- **Тип ноды** `trigger.schedule` в `WorkflowNodeType`, конфиги `ScheduleTriggerConfig` + `AudienceConfig` в `src/types/workflow.ts`
+- **Ноду в toolbar** редактора workflow («Расписание», иконка `CalendarClock`)
+
+### 🔄 Изменено
+
+- `ExecutionContextManager` теперь имеет метод `createScheduledContext` — создаёт workflow-контекст без входящего grammy `Context` (для cron-запусков). Не требует bot token, заполняет telegram-поля из привязанного `User.telegramId`, если есть.
+- `SimpleWorkflowProcessor.findTriggerByType` пропускает `trigger.schedule` при поиске entry-ноды для входящих сообщений — scheduled-триггеры активируются только из cron-runner.
+- `vercel.json` создан с расписаниями всех cron-эндпоинтов (scheduled-triggers, bonus-expiration, cleanup-executions, subscription-expiration).
+
+### 🏗️ Архитектура
+
+- Собственный cron-matcher без внешних зависимостей (`src/lib/services/workflow/scheduled/cron-matcher.ts`):
+  - Поддержка `*`, чисел, списков `1,2,3`, диапазонов `1-5`, шагов `*/15`
+  - Алиасы для месяцев (JAN..DEC) и дней недели (MON..SUN)
+  - Стандартная семантика дня: если оба `dayOfMonth` и `dayOfWeek` указаны — match по любому из них
+  - Время в IANA-зоне через `Intl.DateTimeFormat` (нативно в Node.js, без extra-зависимостей)
+- `AudienceResolver` — изолирован по `projectId`, лимит 5000 юзеров на запуск (логируется при достижении), запросы `birthday_*` через raw SQL по `EXTRACT(MONTH/DAY FROM birth_date)` для PostgreSQL.
+- `ScheduledTriggerRunner` — единая точка запуска всех scheduled workflows. Изолирует ошибки одного запуска от других. Использует существующий `SimpleWorkflowProcessor.resumeWorkflow` для прогона начиная с триггер-ноды.
+
+### 📁 Файлы
+
+- Новые:
+  - `src/lib/services/workflow/scheduled/cron-matcher.ts`
+  - `src/lib/services/workflow/scheduled/audience-resolver.ts`
+  - `src/lib/services/workflow/scheduled/scheduled-trigger-runner.ts`
+  - `src/app/api/cron/scheduled-triggers/route.ts`
+  - `src/app/api/projects/[id]/workflows/audience-preview/route.ts`
+  - `src/features/workflow/components/node-config-panels/schedule-trigger-config.tsx`
+  - `vercel.json`
+- Изменённые:
+  - `src/types/workflow.ts` — `WorkflowNodeType += 'trigger.schedule'`, конфиги
+  - `src/lib/services/workflow/handlers/trigger-handlers.ts` — `ScheduleTriggerHandler`
+  - `src/lib/services/workflow/handlers/index.ts` — регистрация
+  - `src/lib/services/workflow/node-handlers-registry.ts` — добавлен в список типов
+  - `src/lib/services/workflow/execution-context-manager.ts` — `createScheduledContext`
+  - `src/lib/services/simple-workflow-processor.ts` — фильтрация trigger.schedule в findTriggerByType
+  - `src/features/workflow/components/workflow-toolbar.tsx` — нода в палитре
+  - `src/features/workflow/components/workflow-constructor.tsx` — default-config + label + minimap color
+  - `src/features/workflow/components/workflow-properties.tsx` — рендер ScheduleTriggerConfigPanel
+  - `src/features/workflow/components/nodes/trigger-node.tsx` — display value для schedule
+  - `src/features/workflow/components/nodes/workflow-node-types.tsx` — mapping типа на TriggerNode
+
+### 📦 Использование
+
+Базовый сценарий «бонус в день рождения»:
+
+1. В редакторе workflow перетащить ноду «Расписание»
+2. В свойствах указать: cron `0 9 * * *`, timezone `Europe/Moscow`, аудитория `birthday_today`, дедуп `year`
+3. Соединить с нодой `action.database_query` (вызов `awardBirthdayBonus`) или `message` (Telegram-поздравление)
+4. Сохранить и активировать workflow + версию
+5. Готово — каждый день в 9:00 МСК cron найдёт юзеров с днём рождения и запустит workflow
+
+### ⚙️ Деплой
+
+- Установить `CRON_SECRET` в env (Vercel автоматически передаёт его в `Authorization` для своих cron'ов)
+- `vercel.json` уже содержит расписание `* * * * *` для `/api/cron/scheduled-triggers`
+- Можно ручной триггер: `curl -X POST https://app.example.com/api/cron/scheduled-triggers -H "Authorization: Bearer $CRON_SECRET"`
+
+### 🔒 Безопасность
+
+- Все API endpoints требуют `getCurrentAdmin` + `verifyProjectAccess` (multitenancy)
+- Cron-эндпоинт защищён `Bearer ${CRON_SECRET}`
+- Аудитория ограничена 5000 пользователями за запуск (защита от случайного запуска на 100k юзеров)
+
+---
+
 ## [2026-05-24] - B2B иерархия партнёров — RELEASE 🎉 (Phase 7: Migration & Documentation)
 
 ### 🎯 Релиз

@@ -15,7 +15,8 @@ import {
   MessageTriggerHandler,
   CallbackTriggerHandler,
   WebhookTriggerHandler,
-  ContactTriggerHandler
+  ContactTriggerHandler,
+  ScheduleTriggerHandler
 } from './trigger-handlers';
 
 import { MessageHandler } from './message-handler';
@@ -79,6 +80,7 @@ export function initializeNodeHandlers(): void {
   nodeHandlersRegistry.register(new CallbackTriggerHandler());
   nodeHandlersRegistry.register(new WebhookTriggerHandler());
   nodeHandlersRegistry.register(new ContactTriggerHandler());
+  nodeHandlersRegistry.register(new ScheduleTriggerHandler());
 
   // Message handlers
   nodeHandlersRegistry.register(new MessageHandler());
@@ -138,6 +140,7 @@ export {
   CallbackTriggerHandler,
   WebhookTriggerHandler,
   ContactTriggerHandler,
+  ScheduleTriggerHandler,
   MessageHandler,
   ApiRequestHandler,
   DatabaseQueryHandler,
