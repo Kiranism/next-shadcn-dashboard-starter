@@ -78,7 +78,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'trigger.command',
     label: 'Команда',
     icon: Play,
-    color: '#15803d',
+    color: '#22c55e',
     category: 'triggers',
     description: 'Запуск по команде, например /start'
   },
@@ -86,7 +86,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'trigger.message',
     label: 'Сообщение',
     icon: MessageSquare,
-    color: '#2563eb',
+    color: '#22c55e',
     category: 'triggers',
     description: 'Автозапуск по тексту пользователя'
   },
@@ -94,7 +94,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'trigger.callback',
     label: 'Callback',
     icon: GitBranchPlus,
-    color: '#a855f7',
+    color: '#22c55e',
     category: 'triggers',
     description: 'Обработка нажатий на inline-кнопки'
   },
@@ -102,7 +102,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'trigger.webhook',
     label: 'Webhook',
     icon: Webhook,
-    color: '#f97316',
+    color: '#22c55e',
     category: 'triggers',
     description: 'Входящий запрос из внешней системы'
   },
@@ -110,7 +110,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'trigger.schedule',
     label: 'Расписание',
     icon: CalendarClock,
-    color: '#0ea5e9',
+    color: '#22c55e',
     category: 'triggers',
     description: 'Запуск по cron + фильтру (день рождения, рассылки)'
   },
@@ -120,7 +120,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'message',
     label: 'Текстовое сообщение',
     icon: MessageSquare,
-    color: '#2563eb',
+    color: '#3b82f6',
     category: 'messages',
     description: 'Отправка обычного сообщения'
   },
@@ -128,7 +128,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'message.keyboard.inline',
     label: 'Inline клавиатура',
     icon: Keyboard,
-    color: '#7c3aed',
+    color: '#3b82f6',
     category: 'messages',
     description: 'Inline-кнопки под сообщением'
   },
@@ -136,7 +136,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'message.keyboard.reply',
     label: 'Reply клавиатура',
     icon: Keyboard,
-    color: '#9333ea',
+    color: '#3b82f6',
     category: 'messages',
     description: 'Меню с reply-кнопками'
   },
@@ -144,7 +144,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'message.photo',
     label: 'Фото',
     icon: Image,
-    color: '#f59e0b',
+    color: '#3b82f6',
     category: 'messages',
     description: 'Сообщение с изображением'
   },
@@ -152,7 +152,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'message.video',
     label: 'Видео',
     icon: Video,
-    color: '#db2777',
+    color: '#3b82f6',
     category: 'messages',
     description: 'Сообщение с видеороликом'
   },
@@ -160,7 +160,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'message.document',
     label: 'Документ',
     icon: FileText,
-    color: '#0284c7',
+    color: '#3b82f6',
     category: 'messages',
     description: 'Отправка файла или документа'
   },
@@ -168,7 +168,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'message.edit',
     label: 'Редактировать',
     icon: Edit3,
-    color: '#6b7280',
+    color: '#3b82f6',
     category: 'messages',
     description: 'Редактирование отправленного сообщения'
   },
@@ -176,17 +176,17 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'message.delete',
     label: 'Удалить',
     icon: Trash2,
-    color: '#dc2626',
+    color: '#3b82f6',
     category: 'messages',
     description: 'Удаление сообщения в чате'
   },
 
-  // Actions
+  // Actions — все рендерятся как ActionNode (#a855f7)
   {
     type: 'action.api_request',
     label: 'API запрос',
     icon: Globe,
-    color: '#2563eb',
+    color: '#a855f7',
     category: 'actions',
     description: 'HTTP запрос к внешнему сервису'
   },
@@ -194,7 +194,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'action.database_query',
     label: 'База данных',
     icon: Database,
-    color: '#7c3aed',
+    color: '#a855f7',
     category: 'actions',
     description: 'Выполнение безопасного запроса к БД'
   },
@@ -202,7 +202,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'action.set_variable',
     label: 'Установить переменную',
     icon: Variable,
-    color: '#db2777',
+    color: '#a855f7',
     category: 'actions',
     description: 'Сохранение значения в переменную'
   },
@@ -210,7 +210,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'action.get_variable',
     label: 'Получить переменную',
     icon: Variable,
-    color: '#22c55e',
+    color: '#a855f7',
     category: 'actions',
     description: 'Чтение значения переменной'
   },
@@ -218,7 +218,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'action.request_contact',
     label: 'Запрос контакта',
     icon: Phone,
-    color: '#f97316',
+    color: '#10b981',
     category: 'actions',
     description: 'Ожидание номера телефона пользователя'
   },
@@ -226,7 +226,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'action.send_notification',
     label: 'Уведомление',
     icon: Mail,
-    color: '#facc15',
+    color: '#a855f7',
     category: 'actions',
     description: 'Отправка email/telegram/webhook уведомлений'
   },
@@ -234,7 +234,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'action.check_user_linked',
     label: 'Проверка связи',
     icon: User,
-    color: '#14b8a6',
+    color: '#a855f7',
     category: 'actions',
     description: 'Проверка привязки Telegram аккаунта'
   },
@@ -242,7 +242,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'action.find_user_by_contact',
     label: 'Поиск по контакту',
     icon: PhoneForwarded,
-    color: '#0891b2',
+    color: '#a855f7',
     category: 'actions',
     description: 'Поиск пользователя по телефону или email'
   },
@@ -250,7 +250,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'action.link_telegram_account',
     label: 'Привязать Telegram',
     icon: Link2,
-    color: '#6366f1',
+    color: '#a855f7',
     category: 'actions',
     description: 'Связка пользователя с Telegram аккаунтом'
   },
@@ -258,7 +258,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'action.get_user_balance',
     label: 'Баланс пользователя',
     icon: Coins,
-    color: '#f59e0b',
+    color: '#a855f7',
     category: 'actions',
     description: 'Получение текущего баланса бонусов'
   },
@@ -266,7 +266,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'action.check_channel_subscription',
     label: 'Проверка подписки',
     icon: Users,
-    color: '#8b5cf6',
+    color: '#a855f7',
     category: 'actions',
     description: 'Проверка подписки пользователя на Telegram канал'
   },
@@ -284,7 +284,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'flow.switch',
     label: 'Switch',
     icon: GitBranchPlus,
-    color: '#f97316',
+    color: '#a855f7',
     category: 'logic',
     description: 'Множественный выбор ветки'
   },
@@ -292,7 +292,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'flow.delay',
     label: 'Задержка',
     icon: Clock,
-    color: '#facc15',
+    color: '#eab308',
     category: 'flow',
     description: 'Пауза перед продолжением выполнения'
   },
@@ -300,7 +300,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'flow.loop',
     label: 'Цикл',
     icon: Repeat,
-    color: '#60a5fa',
+    color: '#a855f7',
     category: 'flow',
     description: 'Повторить действия несколько раз'
   },
@@ -308,7 +308,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'flow.sub_workflow',
     label: 'Подпроцесс',
     icon: GitMerge,
-    color: '#8b5cf6',
+    color: '#a855f7',
     category: 'flow',
     description: 'Запуск вложенного workflow'
   },
@@ -316,7 +316,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'flow.jump',
     label: 'Переход',
     icon: GitBranchPlus,
-    color: '#6366f1',
+    color: '#a855f7',
     category: 'flow',
     description: 'Переход на другую ноду'
   },
@@ -334,7 +334,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'integration.webhook',
     label: 'Интеграция (Webhook)',
     icon: Webhook,
-    color: '#f97316',
+    color: '#a855f7',
     category: 'integrations',
     description: 'Вызов стороннего Webhook'
   },
@@ -342,7 +342,7 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     type: 'integration.analytics',
     label: 'Интеграция (Аналитика)',
     icon: BarChart3,
-    color: '#1d4ed8',
+    color: '#a855f7',
     category: 'integrations',
     description: 'Отправка событий в аналитику'
   }

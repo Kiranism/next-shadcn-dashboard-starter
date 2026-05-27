@@ -34,6 +34,8 @@ export const TriggerNode = memo(({ data }: NodeProps) => {
         return `Callback: ${triggerValue}`;
       case 'trigger.webhook':
         return `Webhook: ${triggerValue}`;
+      case 'trigger.contact':
+        return 'Получен контакт';
       case 'trigger.schedule': {
         const audienceType = config['trigger.schedule']?.audience?.type;
         const audienceLabel = (() => {
@@ -50,12 +52,12 @@ export const TriggerNode = memo(({ data }: NodeProps) => {
         })();
         return `${triggerValue} · ${audienceLabel}`;
       }
-      default:
-        // Если тип не определен, пробуем взять его из конфига или ставим заглушку
+      default: {
         const typeLabel = triggerType
           ? String(triggerType).replace('trigger.', '')
           : 'Старт';
         return `${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)}: ${triggerValue}`;
+      }
     }
   };
 

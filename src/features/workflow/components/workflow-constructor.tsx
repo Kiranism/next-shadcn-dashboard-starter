@@ -792,6 +792,7 @@ export function WorkflowConstructor({ projectId }: WorkflowConstructorProps) {
                     case 'trigger.callback':
                     case 'trigger.webhook':
                     case 'trigger.schedule':
+                    case 'trigger.contact':
                       return '#22c55e';
                     case 'message':
                       return '#3b82f6';
