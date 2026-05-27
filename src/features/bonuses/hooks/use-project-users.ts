@@ -17,6 +17,12 @@ interface UseProjectUsersOptions {
   initialUsers?: User[];
   pageSize?: number;
   searchTerm?: string;
+  /**
+   * Фильтр по партнёрской роли (b2b-referral-hierarchy). Массив ролей
+   * передаётся в API как `?role=TRAINER,MANAGER`. Когда пуст или не задан,
+   * фильтр не применяется (возвращаются все роли, включая CLIENT).
+   */
+  roles?: Array<'CLIENT' | 'TRAINER' | 'MANAGER' | 'DIRECTOR'>;
 }
 
 interface UseProjectUsersReturn {
@@ -45,7 +51,8 @@ export function useProjectUsers({
   projectId,
   initialUsers = [],
   pageSize = 50,
-  searchTerm = ''
+  searchTerm = '',
+  roles
 }: UseProjectUsersOptions = {}): UseProjectUsersReturn {
   // Защита от ошибок инициализации - проверяем базовые типы
   if (typeof pageSize !== 'number' || pageSize <= 0) {
@@ -123,6 +130,10 @@ export function useProjectUsers({
           params.set('search', currentSearchTerm.trim());
         }
 
+        if (roles && roles.length > 0) {
+          params.set('role', roles.join(','));
+        }
+
         const response = await fetch(
           `/api/projects/${projectId}/users?${params}`,
           {
@@ -180,7 +191,9 @@ export function useProjectUsers({
             isActive:
               user.isActive !== undefined ? Boolean(user.isActive) : false,
             referralCode: user.referralCode,
-            totalPurchases: user.totalPurchases
+            totalPurchases: user.totalPurchases,
+            partnerRole: user.partnerRole || 'CLIENT',
+            outboundReferralPlanId: user.outboundReferralPlanId ?? null
           })
         );
 
@@ -237,7 +250,7 @@ export function useProjectUsers({
         setIsLoading(false);
       }
     },
-    [projectId, pageSize, currentSearchTerm]
+    [projectId, pageSize, currentSearchTerm, roles?.join(',') ?? '']
   );
 
   /**

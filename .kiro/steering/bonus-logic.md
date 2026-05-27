@@ -154,3 +154,60 @@ expiresAt = new Date(Date.now() + bonusExpiryDays * 24 * 60 * 60 * 1000)
 - `GET /api/projects` - список проектов
 - `POST /api/projects` - создание проекта
 - `GET /api/projects/[id]/stats` - статистика проекта
+
+## Партнёрская иерархия (b2b)
+
+### Опт-ин per project
+- **`Project.enablePartnerRoles`** — флаг b2b-режима (default `false`)
+- Когда `false` — система ведёт себя как раньше (c2c). Все проверки ролей выключены.
+- Когда `true` — включается фильтрация рефереров по роли + уведомления + партнёрский кабинет в боте.
+- Опт-ин для отдельного проекта через UI `/dashboard/projects/[id]/settings` или скрипт `scripts/migrate-partner-roles.ts`.
+
+### Роли пользователей
+- **`User.partnerRole`** — enum `PartnerRole`:
+  - `CLIENT` (default) — обычный клиент, не может приглашать
+  - `TRAINER` — тренер, выдаёт реф-ссылку, получает комиссию L1
+  - `MANAGER` — менеджер, получает комиссию L2 от своих тренеров
+  - `DIRECTOR` — руководитель, получает комиссию L3 от всей команды
+
+### Логика реф-цепочки
+
+Когда `enablePartnerRoles = true`:
+- `ReferralService.findReferrer` пропускает CLIENT'ов — даже если CLIENT передан в `utm_ref`, реферер не привязывается, в логах warning.
+- `ReferralService.generateReferralLink` бросает ошибку для CLIENT — реф-ссылку могут получить только партнёры.
+- Комиссия начисляется по `outboundReferralPlanId` партнёра-приглашающего, если он назначен; иначе — по `defaultReferralCommissionPlan` проекта.
+- `maxPayoutDepth` (default `3`) ограничивает глубину выплат — через сколько уровней вверх по `referredBy` идёт комиссия.
+
+### Эффективные права доступа
+
+`ReferralCommissionService.canViewSubject(viewer, subject)` возвращает `true`, если:
+- `viewer === subject` (свою стату всегда можно)
+- `viewer` — предок `subject` в `referredBy`-цепочке (до `maxPayoutDepth`)
+- Существует ручной `ReferralStatsGrant` (subject, viewer)
+
+`getViewableSubjects(viewer)` возвращает `[viewer, ...descendants, ...manualGrants]` — используется в боте для меню «Моя команда».
+
+### Уведомления
+
+`PartnerNotificationService.notifyAncestorsAboutNewMember` рассылает уведомления **всему дереву предков** при новой регистрации (вызывается неблокирующе из `UserService.createUser` после `syncAttributionForInvitedUser`). Шаблоны зависят от уровня:
+- L1: «🎉 Новый клиент в вашей команде: {имя}»
+- L2: «📈 У вашего тренера новый клиент: {имя}»
+- L3+: «📊 В вашей организации новая регистрация: {имя}»
+
+Opt-out: `user.metadata.notifications.referralEvents = false`.
+
+`sendBonusNotification` для `BonusType.REFERRAL` обогащает текст именем клиента-источника и уровнем: «💰 Вам начислено {amount} ₽ за покупку клиента {clientName} (уровень {level})».
+
+### Активация и rollback
+
+```powershell
+# Активация для проекта
+npx tsx scripts/migrate-partner-roles.ts --projectId=<id> --auto-trainers
+
+# Rollback (поведение возвращается к c2c, роли в БД сохраняются)
+# Через UI: settings → Switch B2B → off
+# Или PATCH /api/projects/<id> { enablePartnerRoles: false }
+```
+
+### Полный гайд
+См. [docs/b2b-referral-hierarchy-guide.md](../../docs/b2b-referral-hierarchy-guide.md) — пошаговая инструкция, FAQ, архитектура.

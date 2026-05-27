@@ -57,6 +57,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { PartnerRoleBadge } from './partner-role-badge';
 import { DataTablePagination } from '@/components/ui/table/data-table-pagination';
 import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
 import {
@@ -75,6 +76,12 @@ import type { DisplayUser as User } from '../types';
 interface UsersTableProps {
   data: User[];
   projectId?: string;
+  /**
+   * Когда `true`, показывается колонка «Роль» с цветным badge
+   * (b2b-referral-hierarchy Phase 2). По умолчанию `false`,
+   * колонка скрыта — поведение совпадает с легаси.
+   */
+  enablePartnerRoles?: boolean;
   onExport?: () => void;
   onExportCSV?: () => void;
   onExportExcel?: () => void;
@@ -96,6 +103,7 @@ interface UsersTableProps {
 export function UsersTable({
   data,
   projectId,
+  enablePartnerRoles = false,
   onExport,
   onExportCSV,
   onExportExcel,
@@ -118,7 +126,13 @@ export function UsersTable({
     { id: 'createdAt', desc: true }
   ]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
+    () => ({
+      // По умолчанию колонка «Роль» скрыта; раскроется через эффект ниже,
+      // если у проекта включён b2b-флаг.
+      partnerRole: false
+    })
+  );
   const [rowSelection, setRowSelection] = useState({});
   const [pagination, setPagination] = useState({
     pageIndex: 0,
@@ -285,6 +299,26 @@ export function UsersTable({
           </Badge>
         );
       }
+    },
+    {
+      accessorKey: 'partnerRole',
+      header: ({ column }) => {
+        return (
+          <Button
+            variant='ghost'
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Роль
+            <ArrowUpDown className='ml-2 h-4 w-4' />
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        const role = row.getValue('partnerRole') as string | undefined;
+        return <PartnerRoleBadge role={role} />;
+      },
+      // Колонка скрывается через columnVisibility, когда фича отключена
+      enableHiding: true
     },
     {
       accessorKey: 'email',
@@ -482,6 +516,14 @@ export function UsersTable({
       return prev;
     });
   }, [currentPage, pageSize]);
+
+  // Видимость колонки «Роль» зависит от `enablePartnerRoles` (b2b-фича-флаг проекта).
+  useEffect(() => {
+    setColumnVisibility((prev) => ({
+      ...prev,
+      partnerRole: Boolean(enablePartnerRoles)
+    }));
+  }, [enablePartnerRoles]);
 
   // Обработчик изменений выбора
   useEffect(() => {

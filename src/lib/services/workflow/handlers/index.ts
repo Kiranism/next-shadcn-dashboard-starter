@@ -15,7 +15,8 @@ import {
   MessageTriggerHandler,
   CallbackTriggerHandler,
   WebhookTriggerHandler,
-  ContactTriggerHandler
+  ContactTriggerHandler,
+  ScheduleTriggerHandler
 } from './trigger-handlers';
 
 import { MessageHandler } from './message-handler';
@@ -32,7 +33,12 @@ import {
   LinkTelegramAccountHandler,
   GetUserBalanceHandler,
   MenuCommandHandler,
-  CheckChannelSubscriptionHandler
+  CheckChannelSubscriptionHandler,
+  PartnerTeamHandler,
+  PartnerSubjectStatsHandler,
+  PartnerPayoutsHandler,
+  PartnerLinkHandler,
+  PartnerOrgSummaryHandler
 } from './action-handlers';
 
 import { ConditionHandler } from './condition-handler';
@@ -74,6 +80,7 @@ export function initializeNodeHandlers(): void {
   nodeHandlersRegistry.register(new CallbackTriggerHandler());
   nodeHandlersRegistry.register(new WebhookTriggerHandler());
   nodeHandlersRegistry.register(new ContactTriggerHandler());
+  nodeHandlersRegistry.register(new ScheduleTriggerHandler());
 
   // Message handlers
   nodeHandlersRegistry.register(new MessageHandler());
@@ -97,6 +104,13 @@ export function initializeNodeHandlers(): void {
   nodeHandlersRegistry.register(new LinkTelegramAccountHandler());
   nodeHandlersRegistry.register(new GetUserBalanceHandler());
   nodeHandlersRegistry.register(new CheckChannelSubscriptionHandler());
+  // ✨ Phase 4: Partner Cabinet handlers (b2b-иерархия)
+  nodeHandlersRegistry.register(new PartnerTeamHandler());
+  nodeHandlersRegistry.register(new PartnerSubjectStatsHandler());
+  nodeHandlersRegistry.register(new PartnerPayoutsHandler());
+  nodeHandlersRegistry.register(new PartnerLinkHandler());
+  nodeHandlersRegistry.register(new PartnerOrgSummaryHandler());
+
   const menuHandler = new MenuCommandHandler();
   nodeHandlersRegistry.register(menuHandler);
   console.log(
@@ -126,6 +140,7 @@ export {
   CallbackTriggerHandler,
   WebhookTriggerHandler,
   ContactTriggerHandler,
+  ScheduleTriggerHandler,
   MessageHandler,
   ApiRequestHandler,
   DatabaseQueryHandler,
@@ -139,6 +154,11 @@ export {
   GetUserBalanceHandler,
   MenuCommandHandler,
   CheckChannelSubscriptionHandler,
+  PartnerTeamHandler,
+  PartnerSubjectStatsHandler,
+  PartnerPayoutsHandler,
+  PartnerLinkHandler,
+  PartnerOrgSummaryHandler,
   ConditionHandler,
   DelayFlowHandler,
   EndFlowHandler,

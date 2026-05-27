@@ -1450,14 +1450,14 @@ export class WorkflowRuntimeService {
         cachedAt: new Date().toISOString()
       };
 
-      await CacheService.set(cacheKey, cacheData, 2 * 60); // 2 минуты
+      await CacheService.set(cacheKey, cacheData, 30); // 30 секунд (Phase 4 — партнёрские переменные требуют свежести)
 
       logger.debug('✅ Cached user variables', {
         userId,
         projectId,
         cacheKey,
         variablesCount: Object.keys(variables).length,
-        ttl: 2 * 60
+        ttl: 30
       });
     } catch (error) {
       logger.error('❌ Failed to cache user variables', {

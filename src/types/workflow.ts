@@ -20,6 +20,7 @@ export type WorkflowNodeType =
   | 'trigger.callback'
   | 'trigger.webhook'
   | 'trigger.contact'
+  | 'trigger.schedule'
   // Сообщения
   | 'message'
   | 'message.keyboard.inline'
@@ -42,6 +43,12 @@ export type WorkflowNodeType =
   | 'action.get_user_balance'
   | 'action.menu_command'
   | 'action.check_channel_subscription'
+  // Партнёрские action-handlers (b2b-иерархия, Phase 4)
+  | 'action.partner_team'
+  | 'action.partner_subject_stats'
+  | 'action.partner_payouts'
+  | 'action.partner_link'
+  | 'action.partner_org_summary'
   // Условия
   | 'condition'
   // Поток управления
@@ -92,6 +99,7 @@ export interface WorkflowNodeConfig {
   'trigger.message'?: MessageTriggerConfig;
   'trigger.callback'?: CallbackTriggerConfig;
   'trigger.webhook'?: WebhookTriggerConfig;
+  'trigger.schedule'?: ScheduleTriggerConfig;
 
   // Сообщения
   message?: MessageConfig;
@@ -115,6 +123,13 @@ export interface WorkflowNodeConfig {
   'action.link_telegram_account'?: LinkTelegramAccountActionConfig;
   'action.get_user_balance'?: GetUserBalanceActionConfig;
   'action.check_channel_subscription'?: CheckChannelSubscriptionActionConfig;
+
+  // Партнёрские action-handlers (b2b-иерархия, Phase 4)
+  'action.partner_team'?: PartnerTeamActionConfig;
+  'action.partner_subject_stats'?: PartnerSubjectStatsActionConfig;
+  'action.partner_payouts'?: PartnerPayoutsActionConfig;
+  'action.partner_link'?: PartnerLinkActionConfig;
+  'action.partner_org_summary'?: PartnerOrgSummaryActionConfig;
 
   // Условия
   condition?: ConditionConfig;
@@ -152,6 +167,51 @@ export interface WebhookTriggerConfig {
   webhookUrl: string;
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   headers?: Record<string, string>;
+}
+
+/**
+ * Конфиг триггера по расписанию.
+ * Запускается cron-эндпоинтом `/api/cron/scheduled-triggers` для каждого
+ * пользователя из `audience` независимо.
+ */
+export interface ScheduleTriggerConfig {
+  /**
+   * Cron-выражение в стандартном формате `мин час день_месяца месяц день_недели`.
+   * Поддерживается: `*`, числа, списки `1,2,3`, диапазоны `1-5`, шаги `*\/15`.
+   * Примеры: `0 9 * * *` (каждый день в 9:00), `0 9 * * MON` (каждый понедельник).
+   */
+  cron: string;
+  /**
+   * IANA timezone (например `Europe/Moscow`). Если не задано — UTC.
+   * Cron-матчер сравнивает выражение с текущим временем в этом часовом поясе.
+   */
+  timezone?: string;
+  /**
+   * Декларативный фильтр аудитории — кто получит запуск workflow.
+   */
+  audience: AudienceConfig;
+  /**
+   * Защита от повторного запуска для одного пользователя в окне:
+   * - `day` — раз в сутки (по умолчанию для большинства аудиторий)
+   * - `week` — раз в неделю
+   * - `month` — раз в месяц
+   * - `year` — раз в год (для `birthday_today`)
+   * - `none` — без дедупликации (только если уверены)
+   */
+  dedupeWindow?: 'day' | 'week' | 'month' | 'year' | 'none';
+}
+
+/**
+ * Декларативное описание аудитории для scheduled-триггера.
+ * Резолвится `AudienceResolver` в список `userId` непосредственно перед запуском.
+ */
+export interface AudienceConfig {
+  type: 'birthday_today' | 'birthday_in_days' | 'all_active_users';
+  /** Параметры для конкретного типа (например `daysBefore` для `birthday_in_days`). */
+  params?: {
+    daysBefore?: number;
+    [key: string]: unknown;
+  };
 }
 
 export interface MessageConfig {
@@ -386,6 +446,39 @@ export interface CheckChannelSubscriptionActionConfig {
   userId?: string; // ID пользователя Telegram (если не указан, берется из контекста)
   assignTo?: string; // Имя переменной для результата (true/false)
   requiredStatus?: ('member' | 'administrator' | 'creator')[]; // Требуемые статусы
+}
+
+// Партнёрские action-handlers (b2b-иерархия, Phase 4)
+/** Конфиг для action.partner_team — список direct referrals с пагинацией. */
+export interface PartnerTeamActionConfig {
+  /** Размер страницы, по умолчанию 5. */
+  pageSize?: number;
+  /** Номер страницы для callback-навигации. */
+  page?: number | string;
+}
+
+/** Конфиг для action.partner_subject_stats — детальная статистика подопечного. */
+export interface PartnerSubjectStatsActionConfig {
+  /** ID подопечного (поддерживает шаблоны вида `{{partner_subject_id}}`). */
+  subjectUserId: string;
+}
+
+/** Конфиг для action.partner_payouts — последние реферальные начисления. */
+export interface PartnerPayoutsActionConfig {
+  /** Кол-во последних транзакций, по умолчанию 20. */
+  limit?: number;
+}
+
+/** Конфиг для action.partner_link — реферальная ссылка партнёра. */
+export interface PartnerLinkActionConfig {
+  /** UTM-параметры, прикрепляемые к ссылке. */
+  additionalParams?: Record<string, string>;
+}
+
+/** Конфиг для action.partner_org_summary — сводка по всему дереву (DIRECTOR). */
+export interface PartnerOrgSummaryActionConfig {
+  /** Кол-во топ-партнёров для рейтинга, по умолчанию 5. */
+  topLimit?: number;
 }
 
 // Поток управления

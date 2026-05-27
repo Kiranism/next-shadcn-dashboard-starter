@@ -70,6 +70,21 @@ import {
 } from '@/components/ui/pagination';
 import { Heading } from '@/components/ui/heading';
 import { Separator } from '@/components/ui/separator';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
 import { Loader2 } from 'lucide-react';
@@ -81,6 +96,11 @@ import { UserImportDialog } from './user-import-dialog';
 import { UsersTable } from '../../bonuses/components/users-table';
 import { UserMetadataSection } from '../../bonuses/components/user-metadata-section';
 import { UserReferralsSection } from '../../bonuses/components/user-referrals-section';
+import {
+  PARTNER_ROLE_OPTIONS,
+  PartnerRoleBadge,
+  getPartnerRoleLabel
+} from '../../bonuses/components/partner-role-badge';
 import { BonusAwardDialog } from './bonus-award-dialog';
 import { EnhancedBulkActionsToolbar } from '@/features/bonuses/components/enhanced-bulk-actions-toolbar';
 import { RichNotificationDialog } from '@/features/bonuses/components/rich-notification-dialog';
@@ -132,6 +152,25 @@ export function ProjectUsersView({ projectId }: ProjectUsersViewProps) {
   const [groupName, setGroupName] = useState('');
   const [isSelectAllMode, setIsSelectAllMode] = useState(false);
 
+  // Phase 2 b2b-referral-hierarchy: фильтр по партнёрской роли (мульти-выбор).
+  // Когда у проекта `enablePartnerRoles = false`, фильтр скрывается и не применяется.
+  const [roleFilter, setRoleFilter] = useState<
+    Array<'CLIENT' | 'TRAINER' | 'MANAGER' | 'DIRECTOR'>
+  >([]);
+
+  // Phase 2: локальные значения селекторов в диалоге профиля
+  // (роль и outbound-план) и состояние сохранения.
+  const [profileRole, setProfileRole] = useState<
+    'CLIENT' | 'TRAINER' | 'MANAGER' | 'DIRECTOR'
+  >('CLIENT');
+  const [profileOutboundPlanId, setProfileOutboundPlanId] = useState<
+    string | null
+  >(null);
+  const [isSavingPartner, setIsSavingPartner] = useState(false);
+  const [referralPlans, setReferralPlans] = useState<
+    Array<{ id: string; name: string }>
+  >([]);
+
   // Users management hook
   const {
     users,
@@ -147,7 +186,8 @@ export function ProjectUsersView({ projectId }: ProjectUsersViewProps) {
   } = useProjectUsers({
     projectId,
     pageSize,
-    searchTerm: debouncedSearchTerm
+    searchTerm: debouncedSearchTerm,
+    roles: roleFilter
   });
 
   // Debounced обработчик поиска (согласно документации Next.js)
@@ -181,6 +221,21 @@ export function ProjectUsersView({ projectId }: ProjectUsersViewProps) {
       // Устанавливаем базовые данные пользователя
       setProfileUser(user as unknown as UserWithBonuses);
 
+      // Phase 2: подтянем актуальные роль и outbound-план из единого GET
+      // /api/projects/[id]/users/[userId] — список может быть кэширован.
+      const initialRole =
+        ((user as any).partnerRole as
+          | 'CLIENT'
+          | 'TRAINER'
+          | 'MANAGER'
+          | 'DIRECTOR'
+          | undefined) || 'CLIENT';
+      setProfileRole(initialRole);
+      setProfileOutboundPlanId(
+        ((user as any).outboundReferralPlanId as string | null | undefined) ??
+          null
+      );
+
       // Загружаем свежий баланс из транзакций для унификации с ботом
       try {
         const response = await fetch(
@@ -206,8 +261,43 @@ export function ProjectUsersView({ projectId }: ProjectUsersViewProps) {
         console.error('Ошибка загрузки баланса пользователя:', error);
         // В случае ошибки оставляем данные из списка пользователей
       }
+
+      // Phase 2: если включён b2b-флаг, дозагружаем актуальные partnerRole
+      // и outboundReferralPlanId из API одиночного юзера (на случай, если
+      // в списке они устарели).
+      if ((project as any)?.enablePartnerRoles) {
+        try {
+          const detailRes = await fetch(
+            `/api/projects/${projectId}/users/${user.id}`,
+            { cache: 'no-store' }
+          );
+          if (detailRes.ok) {
+            const data = await detailRes.json();
+            const fresh = data?.user;
+            if (fresh) {
+              if (fresh.partnerRole) {
+                setProfileRole(
+                  fresh.partnerRole as
+                    | 'CLIENT'
+                    | 'TRAINER'
+                    | 'MANAGER'
+                    | 'DIRECTOR'
+                );
+              }
+              if ('outboundReferralPlanId' in fresh) {
+                setProfileOutboundPlanId(fresh.outboundReferralPlanId ?? null);
+              }
+            }
+          }
+        } catch (error) {
+          console.error(
+            'Не удалось загрузить актуальные данные пользователя:',
+            error
+          );
+        }
+      }
     },
-    [projectId]
+    [projectId, project]
   );
 
   // Stats data
@@ -427,6 +517,43 @@ export function ProjectUsersView({ projectId }: ProjectUsersViewProps) {
     }
   }, [projectId]);
 
+  // Phase 2 b2b-referral-hierarchy (task 2.7): подгружаем список планов
+  // комиссий проекта, когда у проекта включена партнёрская иерархия.
+  // Используем существующий GET /api/projects/[id]/referral-commission-plans.
+  const partnerRolesEnabled = Boolean((project as any)?.enablePartnerRoles);
+  useEffect(() => {
+    if (!projectId) return;
+    if (!partnerRolesEnabled) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/projects/${projectId}/referral-commission-plans`,
+          { cache: 'no-store' }
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        const list: Array<{ id: string; name: string }> = Array.isArray(
+          data?.plans
+        )
+          ? data.plans.map((p: any) => ({
+              id: String(p.id),
+              name: String(p.name)
+            }))
+          : [];
+        setReferralPlans(list);
+      } catch (error) {
+        console.error('Не удалось загрузить планы реферальных %', error);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, partnerRolesEnabled]);
+
   const handleExportCSV = useCallback(async () => {
     try {
       // Получаем все данные без пагинации
@@ -589,6 +716,89 @@ export function ProjectUsersView({ projectId }: ProjectUsersViewProps) {
     loadUsers(currentPage); // Перезагружаем данные для обновления балансов
     setSelectedUser(null);
   };
+
+  /**
+   * Phase 2 b2b-referral-hierarchy (tasks 2.5, 2.8): сохранить партнёрскую
+   * роль и outbound-план реферальных %.
+   *
+   * Сохранение последовательное: сначала роль (PATCH /users/[userId]),
+   * затем план (PATCH /users/[userId]/referral-outbound-plan). Если новая
+   * роль — CLIENT, outbound-план принудительно сбрасывается, потому что
+   * `setUserOutboundPlan` отказывает CLIENT'у при включённом флаге.
+   */
+  const handleSavePartnerSettings = useCallback(async () => {
+    if (!profileUser || !projectId) return;
+    setIsSavingPartner(true);
+    try {
+      // 1) Сохранение partnerRole
+      const roleRes = await fetch(
+        `/api/projects/${projectId}/users/${profileUser.id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ partnerRole: profileRole })
+        }
+      );
+      if (!roleRes.ok) {
+        const errorData = await roleRes.json().catch(() => ({}));
+        throw new Error(errorData?.error || 'Не удалось сохранить роль');
+      }
+
+      // 2) Сохранение outbound-плана (только если роль не CLIENT)
+      const targetPlanId =
+        profileRole === 'CLIENT' ? null : profileOutboundPlanId;
+
+      const planRes = await fetch(
+        `/api/projects/${projectId}/users/${profileUser.id}/referral-outbound-plan`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ outboundReferralPlanId: targetPlanId })
+        }
+      );
+      if (!planRes.ok) {
+        const errorData = await planRes.json().catch(() => ({}));
+        throw new Error(
+          errorData?.error || 'Не удалось сохранить outbound-план'
+        );
+      }
+
+      // Обновляем локальное состояние карточки и список таблицы
+      setProfileUser((prev) =>
+        prev
+          ? ({
+              ...prev,
+              partnerRole: profileRole,
+              outboundReferralPlanId: targetPlanId
+            } as UserWithBonuses)
+          : prev
+      );
+      setProfileOutboundPlanId(targetPlanId);
+      loadUsers(currentPage);
+
+      toast({
+        title: 'Сохранено',
+        description: `Роль: ${getPartnerRoleLabel(profileRole)}`
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description:
+          error instanceof Error ? error.message : 'Не удалось сохранить',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSavingPartner(false);
+    }
+  }, [
+    profileUser,
+    projectId,
+    profileRole,
+    profileOutboundPlanId,
+    loadUsers,
+    currentPage,
+    toast
+  ]);
 
   const handleOpenBonusDialog = (user: DisplayUser) => {
     // Находим полного пользователя по ID для получения всех необходимых данных
@@ -889,6 +1099,65 @@ export function ProjectUsersView({ projectId }: ProjectUsersViewProps) {
               >
                 Выбрать все
               </Button>
+              {/* Phase 2 b2b-referral-hierarchy (task 2.3): мульти-фильтр
+                  по партнёрской роли. Показываем только если у проекта
+                  включён `enablePartnerRoles`. */}
+              {(project as any)?.enablePartnerRoles && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant='outline' size='sm'>
+                      <BadgeIcon className='mr-2 h-4 w-4' />
+                      Роль
+                      {roleFilter.length > 0 && (
+                        <Badge
+                          variant='secondary'
+                          className='ml-2 px-1.5 text-xs'
+                        >
+                          {roleFilter.length}
+                        </Badge>
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align='end' className='w-44'>
+                    <DropdownMenuLabel>Фильтр по роли</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {PARTNER_ROLE_OPTIONS.map((opt) => (
+                      <DropdownMenuCheckboxItem
+                        key={opt.value}
+                        checked={roleFilter.includes(opt.value)}
+                        onCheckedChange={(checked) => {
+                          setRoleFilter((prev) => {
+                            const next = checked
+                              ? Array.from(new Set([...prev, opt.value]))
+                              : prev.filter((r) => r !== opt.value);
+                            return next;
+                          });
+                          // Сброс на первую страницу при смене фильтра
+                          loadUsers(1);
+                        }}
+                        onSelect={(e) => e.preventDefault()}
+                      >
+                        {opt.label}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                    {roleFilter.length > 0 && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuCheckboxItem
+                          checked={false}
+                          onCheckedChange={() => {
+                            setRoleFilter([]);
+                            loadUsers(1);
+                          }}
+                          onSelect={(e) => e.preventDefault()}
+                        >
+                          Сбросить
+                        </DropdownMenuCheckboxItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
               <Button
                 variant='default'
                 size='sm'
@@ -937,6 +1206,7 @@ export function ProjectUsersView({ projectId }: ProjectUsersViewProps) {
                 isActive: user.isActive !== undefined ? user.isActive : false
               }))}
               projectId={projectId}
+              enablePartnerRoles={Boolean((project as any)?.enablePartnerRoles)}
               onSelectionChange={setSelectedUsers}
               onBonusAwardClick={(user: any) => handleOpenBonusDialog(user)}
               onBonusDeductClick={(user: any) =>
@@ -1164,6 +1434,114 @@ export function ProjectUsersView({ projectId }: ProjectUsersViewProps) {
                   </>
                 )}
               </div>
+
+              {/* Phase 2 b2b-referral-hierarchy (tasks 2.4, 2.6, 2.7, 2.8):
+                  селекторы партнёрской роли и outbound-плана. Показываются
+                  только когда у проекта включён `enablePartnerRoles`. */}
+              {(project as any)?.enablePartnerRoles && (
+                <div className='bg-muted/30 space-y-4 rounded-md border p-4'>
+                  <div className='flex items-center justify-between'>
+                    <div>
+                      <Label className='text-sm font-medium'>
+                        Партнёрская иерархия
+                      </Label>
+                      <p className='text-muted-foreground text-xs'>
+                        Текущая роль: <PartnerRoleBadge role={profileRole} />
+                      </p>
+                    </div>
+                    <Button
+                      size='sm'
+                      onClick={handleSavePartnerSettings}
+                      disabled={isSavingPartner}
+                    >
+                      {isSavingPartner && (
+                        <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                      )}
+                      Сохранить
+                    </Button>
+                  </div>
+                  <div className='grid grid-cols-1 gap-3 md:grid-cols-2'>
+                    <div className='space-y-1.5'>
+                      <Label
+                        htmlFor='partner-role-select'
+                        className='text-xs font-medium'
+                      >
+                        Роль
+                      </Label>
+                      <Select
+                        value={profileRole}
+                        onValueChange={(value) => {
+                          const next = value as
+                            | 'CLIENT'
+                            | 'TRAINER'
+                            | 'MANAGER'
+                            | 'DIRECTOR';
+                          setProfileRole(next);
+                          // Если переключаемся на CLIENT — сбрасываем outbound-план,
+                          // т.к. он будет очищен при сохранении.
+                          if (next === 'CLIENT') {
+                            setProfileOutboundPlanId(null);
+                          }
+                        }}
+                      >
+                        <SelectTrigger id='partner-role-select'>
+                          <SelectValue placeholder='Выберите роль' />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PARTNER_ROLE_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {/* Outbound-план виден только для партнёров */}
+                    {profileRole !== 'CLIENT' && (
+                      <div className='space-y-1.5'>
+                        <Label
+                          htmlFor='outbound-plan-select'
+                          className='text-xs font-medium'
+                        >
+                          Outbound-план комиссий
+                        </Label>
+                        <Select
+                          value={profileOutboundPlanId ?? '__none__'}
+                          onValueChange={(value) =>
+                            setProfileOutboundPlanId(
+                              value === '__none__' ? null : value
+                            )
+                          }
+                          disabled={referralPlans.length === 0}
+                        >
+                          <SelectTrigger id='outbound-plan-select'>
+                            <SelectValue
+                              placeholder={
+                                referralPlans.length === 0
+                                  ? 'Нет планов в проекте'
+                                  : 'Не назначен'
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value='__none__'>
+                              — не назначен —
+                            </SelectItem>
+                            {referralPlans.map((plan) => (
+                              <SelectItem key={plan.id} value={plan.id}>
+                                {plan.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className='text-muted-foreground text-xs'>
+                          План применяется к тем, кого пригласит этот партнёр.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Metadata Section */}
               <UserMetadataSection

@@ -20,6 +20,15 @@ created: 2026-01-21
 - **Client Components:** 5 из 19 (78% оптимизация)
 - **Паттерн:** Server Components First + Side Effects Isolation
 
+### B2B Реферальная иерархия
+- ✅ **Релиз 2026-05-24** (7 фаз, ~94 задачи)
+- **Опт-ин per project:** через `Project.enablePartnerRoles` (default `false`)
+- **Роли:** `CLIENT / TRAINER / MANAGER / DIRECTOR` (`User.partnerRole`)
+- **Логика:** `findReferrer` пропускает CLIENT, комиссия идёт по цепочке вверх до `maxPayoutDepth` (default 3)
+- **Совместимость:** обратная — c2c-проекты работают без изменений
+- **Гайд:** [docs/b2b-referral-hierarchy-guide.md](../../docs/b2b-referral-hierarchy-guide.md)
+- **Активация:** `npx tsx scripts/migrate-partner-roles.ts --projectId=<id> --auto-trainers`
+
 ### Архитектура
 - **Framework:** Next.js 15 + React 19 + TypeScript
 - **Database:** PostgreSQL + Prisma ORM

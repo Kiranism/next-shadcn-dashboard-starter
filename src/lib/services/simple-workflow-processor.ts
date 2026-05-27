@@ -816,6 +816,8 @@ export class SimpleWorkflowProcessor {
    */
   private findTriggerByType(type: string): WorkflowNode | undefined {
     for (const node of Array.from(this.nodesMap.values())) {
+      // Scheduled-триггеры не активируются по входящим событиям (только из cron-runner)
+      if (node.type === 'trigger.schedule') continue;
       if (node.type === type) {
         return node;
       }

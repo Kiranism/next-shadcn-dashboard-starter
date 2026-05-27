@@ -1,5 +1,562 @@
 # Changelog
 
+## [2026-05-27] - Шаблон workflow «🎂 Бонусы ко дню рождения»
+
+### 🎯 Добавлено
+
+- **Новый шаблон** `birthday-loyalty` в библиотеке шаблонов (категория «Программы лояльности», icon 🎂):
+  - Scheduled workflow на основе `trigger.schedule` с cron `0 9 * * *` и аудиторией `birthday_today`
+  - Дедупликация на год — каждый клиент получит подарок ровно один раз в году
+  - Автоматическое начисление подарочных бонусов через `add_bonus` (тип `BIRTHDAY`)
+  - Условная отправка поздравления в Telegram (только если у клиента привязан Telegram)
+  - Переменная `birthday_bonus_amount` (по умолчанию 500) — настраивается в свойствах workflow
+  - Совместим с основным шаблоном «Система лояльности»: можно установить оба, они работают параллельно (разные типы триггеров)
+
+### 📁 Файлы
+
+- Новые:
+  - `src/lib/workflow-templates/birthday-loyalty.json` — JSON-описание workflow
+- Изменённые:
+  - `src/lib/services/bot-templates/bot-templates.service.ts` — регистрация `birthdayLoyaltyTemplate` в библиотеке
+
+### 📦 Использование
+
+1. Открыть библиотеку шаблонов в проекте
+2. Установить шаблон «🎂 Бонусы ко дню рождения»
+3. (Опционально) изменить размер подарка через `birthday_bonus_amount` в настройках workflow
+4. Активировать workflow + опубликовать версию
+5. Готово — каждое утро в 9:00 МСК cron `/api/cron/scheduled-triggers` найдёт именинников и автоматически выполнит сценарий
+
+---
+
+## [2026-05-27] - Scheduled Triggers — день рождения и периодические сценарии 🎂
+
+### 🎯 Добавлено
+
+- **`trigger.schedule`** — новый тип триггера workflow для запуска по расписанию + фильтру аудитории. Альтернатива событийным триггерам (`trigger.command`, `trigger.message`) — выбирается как точка входа в workflow.
+  - Конфиг: `cron` (стандартный 5-полевой формат), `timezone` (IANA), `audience`, `dedupeWindow`
+  - Аудитории MVP: `birthday_today`, `birthday_in_days` (с `params.daysBefore`), `all_active_users`
+  - Дефолтное окно дедупликации зависит от аудитории: `year` для ДР, `day` для остальных
+- **Cron-эндпоинт** `/api/cron/scheduled-triggers` — запускается каждую минуту (Vercel Cron в `vercel.json`):
+  - Авторизация через `Authorization: Bearer ${CRON_SECRET}`
+  - Сканирует все активные WorkflowVersion с trigger.schedule в entry-ноде
+  - Для совпавших по cron — резолвит аудиторию и запускает workflow для каждого юзера независимо
+  - Дедупликация через Redis: ключ `scheduled:{workflowId}:v{n}:{userId}:{bucket}` с TTL по `dedupeWindow`
+  - Возвращает статистику: `workflowsScanned`, `workflowsMatched`, `executionsStarted`, `dedupeSkipped`, `executionsFailed`
+- **Preview API** `POST /api/projects/:id/workflows/audience-preview` — для редактора workflow:
+  - Принимает `AudienceConfig`, возвращает `total` + первые 10 `userIds`
+  - Защита: только админ проекта (`getCurrentAdmin` + `verifyProjectAccess`)
+- **UI редактора workflow** (Schedule Trigger Config Panel):
+  - Inline-редактор cron + preset-кнопки (`0 9 * * *`, `0 12 * * *`, `*/30 * * * *` и т.д.)
+  - Селектор IANA timezone (`Europe/Moscow` по умолчанию)
+  - Селектор аудитории + динамический ввод `daysBefore` для `birthday_in_days`
+  - Селектор окна дедупликации
+  - Кнопка «Посчитать аудиторию» — показывает количество пользователей под условие
+- **Тип ноды** `trigger.schedule` в `WorkflowNodeType`, конфиги `ScheduleTriggerConfig` + `AudienceConfig` в `src/types/workflow.ts`
+- **Ноду в toolbar** редактора workflow («Расписание», иконка `CalendarClock`)
+
+### 🔄 Изменено
+
+- `ExecutionContextManager` теперь имеет метод `createScheduledContext` — создаёт workflow-контекст без входящего grammy `Context` (для cron-запусков). Не требует bot token, заполняет telegram-поля из привязанного `User.telegramId`, если есть.
+- `SimpleWorkflowProcessor.findTriggerByType` пропускает `trigger.schedule` при поиске entry-ноды для входящих сообщений — scheduled-триггеры активируются только из cron-runner.
+- `vercel.json` создан с расписаниями всех cron-эндпоинтов (scheduled-triggers, bonus-expiration, cleanup-executions, subscription-expiration).
+
+### 🏗️ Архитектура
+
+- Собственный cron-matcher без внешних зависимостей (`src/lib/services/workflow/scheduled/cron-matcher.ts`):
+  - Поддержка `*`, чисел, списков `1,2,3`, диапазонов `1-5`, шагов `*/15`
+  - Алиасы для месяцев (JAN..DEC) и дней недели (MON..SUN)
+  - Стандартная семантика дня: если оба `dayOfMonth` и `dayOfWeek` указаны — match по любому из них
+  - Время в IANA-зоне через `Intl.DateTimeFormat` (нативно в Node.js, без extra-зависимостей)
+- `AudienceResolver` — изолирован по `projectId`, лимит 5000 юзеров на запуск (логируется при достижении), запросы `birthday_*` через raw SQL по `EXTRACT(MONTH/DAY FROM birth_date)` для PostgreSQL.
+- `ScheduledTriggerRunner` — единая точка запуска всех scheduled workflows. Изолирует ошибки одного запуска от других. Использует существующий `SimpleWorkflowProcessor.resumeWorkflow` для прогона начиная с триггер-ноды.
+
+### 📁 Файлы
+
+- Новые:
+  - `src/lib/services/workflow/scheduled/cron-matcher.ts`
+  - `src/lib/services/workflow/scheduled/audience-resolver.ts`
+  - `src/lib/services/workflow/scheduled/scheduled-trigger-runner.ts`
+  - `src/app/api/cron/scheduled-triggers/route.ts`
+  - `src/app/api/projects/[id]/workflows/audience-preview/route.ts`
+  - `src/features/workflow/components/node-config-panels/schedule-trigger-config.tsx`
+  - `vercel.json`
+- Изменённые:
+  - `src/types/workflow.ts` — `WorkflowNodeType += 'trigger.schedule'`, конфиги
+  - `src/lib/services/workflow/handlers/trigger-handlers.ts` — `ScheduleTriggerHandler`
+  - `src/lib/services/workflow/handlers/index.ts` — регистрация
+  - `src/lib/services/workflow/node-handlers-registry.ts` — добавлен в список типов
+  - `src/lib/services/workflow/execution-context-manager.ts` — `createScheduledContext`
+  - `src/lib/services/simple-workflow-processor.ts` — фильтрация trigger.schedule в findTriggerByType
+  - `src/features/workflow/components/workflow-toolbar.tsx` — нода в палитре
+  - `src/features/workflow/components/workflow-constructor.tsx` — default-config + label + minimap color
+  - `src/features/workflow/components/workflow-properties.tsx` — рендер ScheduleTriggerConfigPanel
+  - `src/features/workflow/components/nodes/trigger-node.tsx` — display value для schedule
+  - `src/features/workflow/components/nodes/workflow-node-types.tsx` — mapping типа на TriggerNode
+
+### 📦 Использование
+
+Базовый сценарий «бонус в день рождения»:
+
+1. В редакторе workflow перетащить ноду «Расписание»
+2. В свойствах указать: cron `0 9 * * *`, timezone `Europe/Moscow`, аудитория `birthday_today`, дедуп `year`
+3. Соединить с нодой `action.database_query` (вызов `awardBirthdayBonus`) или `message` (Telegram-поздравление)
+4. Сохранить и активировать workflow + версию
+5. Готово — каждый день в 9:00 МСК cron найдёт юзеров с днём рождения и запустит workflow
+
+### ⚙️ Деплой
+
+- Установить `CRON_SECRET` в env (Vercel автоматически передаёт его в `Authorization` для своих cron'ов)
+- `vercel.json` уже содержит расписание `* * * * *` для `/api/cron/scheduled-triggers`
+- Можно ручной триггер: `curl -X POST https://app.example.com/api/cron/scheduled-triggers -H "Authorization: Bearer $CRON_SECRET"`
+
+### 🔒 Безопасность
+
+- Все API endpoints требуют `getCurrentAdmin` + `verifyProjectAccess` (multitenancy)
+- Cron-эндпоинт защищён `Bearer ${CRON_SECRET}`
+- Аудитория ограничена 5000 пользователями за запуск (защита от случайного запуска на 100k юзеров)
+
+---
+
+## [2026-05-24] - B2B иерархия партнёров — RELEASE 🎉 (Phase 7: Migration & Documentation)
+
+### 🎯 Релиз
+
+Завершена 7-фазовая разработка b2b-надстройки над реферальной системой. Полностью готово к ручному QA на staging и постепенному production rollout. Опт-ин per project через `Project.enablePartnerRoles` — обратная совместимость со всеми существующими c2c-проектами.
+
+### 📊 Итоги по фазам
+
+- **Phase 1: Schema & Filtering** — `enum PartnerRole`, `User.partnerRole`, `Project.enablePartnerRoles`, фильтр в `findReferrer`, валидация `setUserOutboundPlan`/`generateReferralLink`. 5 unit-тестов.
+- **Phase 2: User Management UI** — колонка роли с цветным badge, мульти-фильтр, селекторы роли + outbound-плана в диалоге профиля, расширенный PATCH `/api/projects/[id]/users/[userId]`, фильтр `?role=` в GET users.
+- **Phase 3: Effective Grants** — `ReferralCommissionService.canViewSubject`, `getViewableSubjects`, `getAncestorChain`, `getDescendantTree` через рекурсивные CTE с fallback на итеративный обход. Memoization через React `cache`. Property-based тест с fast-check на random-trees.
+- **Phase 4: Bot Partner Cabinet** — 7 партнёрских системных переменных (`user.partnerRole`, `user.canRefer`, `user.directReferralsCount`, `user.indirectReferralsCount`, `user.teamSize`, `user.totalCommissionEarned[Formatted]`, `user.commissionThisMonth[Formatted]`); 5 action-handlers (`partner_team`, `partner_subject_stats`, `partner_payouts`, `partner_link`, `partner_org_summary`); JSON workflow-шаблон «🏢 B2B Кабинет партнёра» с adaptive menu по роли.
+- **Phase 5: Notifications** — `PartnerNotificationService.notifyAncestorsAboutNewMember` (рассылка по дереву предков с opt-out через `metadata.notifications.referralEvents`), обогащённый текст для `BonusType.REFERRAL` в `sendBonusNotification`. 5 unit-тестов.
+- **Phase 6: Admin UI** — searchable user-combobox через `Command` + debounced search (300ms), bulk-assign «Назначить всем тренерам», slider `maxPayoutDepth 1..3` со tooltip, banner «Используются персональные планы», страница `/referral/hierarchy` с deep-tree, search, period selector, CSV-экспорт, switch `enablePartnerRoles` в settings + кнопка импорта workflow.
+- **Phase 7: Migration & Documentation** — скрипт `scripts/migrate-partner-roles.ts` (`--projectId` + `--auto-trainers` + `--dry-run`, идемпотентный), полный гайд `docs/b2b-referral-hierarchy-guide.md`, обновление steering-файлов, production checklist, инструкция по активации пилота.
+
+### 🎯 Добавлено (Phase 7)
+
+- **Скрипт миграции** `scripts/migrate-partner-roles.ts` (Phase 7.1–7.3):
+  - Аргументы: `--projectId=<id>` (опциональный), `--auto-trainers` (опциональный), `--dry-run` (для безопасной проверки), `--help`
+  - Логика:
+    - При `--projectId` устанавливает `enablePartnerRoles = true` для проекта (no-op если уже true)
+    - При `--auto-trainers` промоутит CLIENT с `outboundReferralPlanId != null` → TRAINER (только в проектах с включённым b2b)
+  - **Идемпотентность**: повторный запуск ничего не дублирует и не ломает. Уже назначенные TRAINER/MANAGER/DIRECTOR не трогаются. Безопасно запускать многократно.
+  - Без `--projectId` команда `--auto-trainers` обходит все проекты с `enablePartnerRoles = true`.
+  - Все операции защищены валидацией: проект существует, корректные аргументы. При ошибке — `process.exitCode = 1`, `db.$disconnect()` всегда вызывается.
+  - Output: понятный человеку лог с эмодзи-статусами (✓ no-op, ✅ применено, ⏭ пропущено, ❌ ошибка).
+- **package.json script** `migrate-partner-roles` (Phase 7.4): `"tsx scripts/migrate-partner-roles.ts"`. Запуск: `yarn migrate-partner-roles --projectId=<id> --auto-trainers`.
+- **Гайд** `docs/b2b-referral-hierarchy-guide.md` (Phase 7.5):
+  - 15 разделов: что такое, когда использовать, как включить, как назначить роли, как создать план, как назначить план, как работает бот, hierarchy page, уведомления, opt-out, end-to-end ручной тест, production rollout, активация пилота, FAQ, архитектура.
+  - 9 вопросов в FAQ (rollback, выключение флага, валидация плана для CLIENT, locked attribution, несколько планов, глубина MLM, добавление тренера, opt-out, multi-organization).
+  - Архитектурный раздел со ссылками на все ключевые файлы (services, workflow, API, UI, scripts, тесты).
+- **Ссылка из `docs/README.md`** на новый гайд (Phase 7.6).
+- **Обновление steering-файлов** (Phase 7.9, 7.10):
+  - `.kiro/steering/quick-reference.md` — добавлен раздел «🏢 B2B Реферальная иерархия» с описанием опт-ин фичи.
+  - `.kiro/steering/bonus-logic.md` — добавлен раздел «Партнёрская иерархия (b2b)» с описанием логики `findReferrer`, `outboundReferralPlanId`, `maxPayoutDepth`, иерархии ролей.
+
+### 🔄 Изменено
+
+- `package.json` — добавлен скрипт `migrate-partner-roles`.
+- `docs/README.md` — добавлена ссылка на гайд b2b-иерархии.
+- `docs/tasktracker.md` — задача «B2B Реферальная иерархия» отмечена ✅ Завершена.
+
+### 📁 Затронутые файлы Phase 7
+
+- `scripts/migrate-partner-roles.ts` — **новый** (Phase 7.1–7.3).
+- `package.json` — добавлен npm-script `migrate-partner-roles` (Phase 7.4).
+- `docs/b2b-referral-hierarchy-guide.md` — **новый**, ~430 строк (Phase 7.5).
+- `docs/README.md` — ссылка на гайд (Phase 7.6).
+- `docs/changelog.md` — этот entry (Phase 7.7).
+- `docs/tasktracker.md` — отметка о завершении (Phase 7.8).
+- `.kiro/steering/quick-reference.md` — секция b2b (Phase 7.9).
+- `.kiro/steering/bonus-logic.md` — раздел партнёрская иерархия (Phase 7.10).
+- `.kiro/specs/b2b-referral-hierarchy/tasks.md` — отметка задач 7.1–7.13 + parent 7 как `[x]`.
+
+### 📝 Production checklist (Phase 7.12)
+
+```powershell
+# 1. Pre-deploy validation
+yarn production:check          # lint + tests + build + tsc
+
+# 2. Deploy migrations
+npx prisma migrate deploy
+npx prisma generate
+
+# 3. Smoke-test на c2c-проекте без enablePartnerRoles:
+#    - колонка «Роль» в users скрыта
+#    - settings без ошибок
+#    - webhook /api/webhook/[secret] принимает регистрации с utm_ref как раньше
+#    - существующие реф-цепочки работают идентично
+```
+
+### 🚀 Активация пилотного клиента (Phase 7.13)
+
+```powershell
+# Staging — dry-run
+npx tsx scripts/migrate-partner-roles.ts --projectId=<id> --auto-trainers --dry-run
+
+# Применить
+npx tsx scripts/migrate-partner-roles.ts --projectId=<id> --auto-trainers
+```
+
+После скрипта:
+1. Проставить роли MANAGER / DIRECTOR вручную через UI (`/users` → профиль → роль)
+2. Импортировать workflow «B2B Партнёр» через settings → активировать в `/workflow`
+3. Передать клиенту инструкцию: `docs/b2b-referral-hierarchy-guide.md`
+
+### 📦 Полный список файлов всей фичи (Phases 1–7)
+
+**Schema & Migrations:**
+- `prisma/schema.prisma` (Phase 1)
+- `prisma/migrations/20260524_add_partner_role/migration.sql` (Phase 1)
+
+**Services:**
+- `src/lib/services/referral.service.ts` (Phase 1)
+- `src/lib/services/referral-commission.service.ts` (Phase 1, 3)
+- `src/lib/services/user.service.ts` (Phase 5 trigger)
+- `src/lib/services/partner-notification.service.ts` (Phase 5 — новый)
+- `src/lib/services/workflow/user-variables.service.ts` (Phase 4)
+- `src/lib/services/workflow/handlers/action-handlers.ts` (Phase 4)
+- `src/lib/services/workflow/node-handlers-registry.ts` (Phase 4)
+- `src/lib/services/bot-templates.service.ts` (Phase 4)
+- `src/lib/telegram/notifications.ts` (Phase 5)
+
+**Workflow Templates:**
+- `src/lib/workflow-templates/b2b-partner-cabinet.json` (Phase 4 — новый)
+
+**API:**
+- `src/app/api/projects/[id]/users/route.ts` (Phase 2 — фильтр по роли)
+- `src/app/api/projects/[id]/users/[userId]/route.ts` (Phase 2 — PATCH partnerRole)
+- `src/app/api/projects/[id]/users/[userId]/referral-outbound-plan/route.ts` (Phase 2)
+- `src/app/api/projects/[id]/users/[userId]/team/route.ts` (Phase 3)
+- `src/app/api/projects/[id]/users/[userId]/team/[subjectUserId]/route.ts` (Phase 3)
+- `src/app/api/projects/[id]/users/[userId]/payouts/route.ts` (Phase 3)
+- `src/app/api/projects/[id]/referral-insights/[subjectUserId]/route.ts` (Phase 3)
+- `src/app/api/projects/[id]/hierarchy/route.ts` (Phase 6)
+- `src/app/api/projects/[id]/hierarchy/export/route.ts` (Phase 6)
+
+**UI:**
+- `src/app/dashboard/projects/[id]/users/...` (Phase 2 — колонка, фильтр, диалог)
+- `src/app/dashboard/projects/[id]/referral/hierarchy/page.tsx` (Phase 6 — новый)
+- `src/app/dashboard/projects/[id]/settings/...` (Phase 6 — switch + импорт workflow)
+- `src/features/projects/components/referral-commission-plans-panel.tsx` (Phase 6)
+
+**Scripts:**
+- `scripts/migrate-partner-roles.ts` (Phase 7 — новый)
+
+**Tests:**
+- `__tests__/services/referral.service.test.ts` (Phase 1)
+- `__tests__/services/referral-commission.service.test.ts` (Phase 3 + property-based)
+- `__tests__/services/partner-notification.service.test.ts` (Phase 5)
+- `__tests__/services/workflow/partner-actions.test.ts` (Phase 4)
+
+**Docs:**
+- `docs/b2b-referral-hierarchy-guide.md` (Phase 7 — новый)
+- `docs/changelog.md` (этот entry + Phase 1–6 entries выше)
+- `docs/tasktracker.md` (отметка о завершении)
+- `docs/README.md` (ссылка на гайд)
+
+**Steering:**
+- `.kiro/steering/quick-reference.md` (Phase 7)
+- `.kiro/steering/bonus-logic.md` (Phase 7)
+
+### ✅ Верификация
+
+- TypeScript: `npx tsc --noEmit` — без новых ошибок (только новый скрипт `scripts/migrate-partner-roles.ts`).
+- Тесты Phase 1–5: 50+ тестов, все зелёные.
+- Phase 6–7: ручной QA по чек-листу из гайда.
+
+### 🎯 Бизнес-итоги
+
+Полнофункциональная b2b-надстройка позволяет:
+- **Производителю**: продавать через сеть партнёров с автоматическим начислением комиссии по цепочке (тренер 7% + менеджер 2% + директор 1% = 10% от стоимости каждой покупки клиента)
+- **Менеджеру**: видеть в Telegram свою команду тренеров и сводную статистику без доступа к админке
+- **Директору**: получать сводку по всей организации (топ-5 тренеров, разбивка по ролям, общий оборот)
+- **Тренеру**: получать партнёрскую реф-ссылку, видеть своих клиентов и историю выплат прямо в боте
+- **Админу проекта**: визуализировать иерархию деревом, экспортировать в CSV, искать по партнёрам
+
+---
+
+## [2026-05-24] - B2B иерархия партнёров — Phase 5: Notifications
+
+### 🎯 Добавлено
+- Новый сервис `src/lib/services/partner-notification.service.ts` (Phase 5.1):
+  - `PartnerNotificationService.notifyAncestorsAboutNewMember(newUserId, projectId)` — рассылает уведомления всему дереву предков нового пользователя в b2b-иерархии (Phase 5.2 / Requirement 7.2).
+  - Цепочка предков получается через `cachedGetAncestorChain` из Phase 3 (по `referredBy`-цепочке через рекурсивный CTE с fallback на итеративный обход).
+  - Текст сообщения зависит от уровня (Requirement 7.2):
+    - L1 (прямой рекрутер) — «🎉 Новый клиент в вашей команде: {имя}»
+    - L2 — «📈 У вашего тренера новый клиент: {имя}»
+    - L3+ — «📊 В вашей организации новая регистрация: {имя}»
+  - Имя клиента собирается из `firstName + lastName` или `phone`, fallback — «новый партнёр».
+  - Отправка дублируется в Telegram + MAX (тот же паттерн, что в `sendBonusNotification`): через `botManager.getBot(projectId).bot.api.sendMessage` и `maxBotManager.sendMessageToUser` соответственно. Все попытки логируются (Phase 5.3).
+  - Phase 5.5 — early return когда `Project.enablePartnerRoles = false`. В этом случае не запрашиваем ни цепочку предков, ни их профили.
+  - Phase 5.4 — opt-out через `user.metadata.notifications.referralEvents = false` (Requirement 7.4): такой предок пропускается с info-логом, остальные получают.
+  - Requirement 7.3 — предок без `telegramId` И без `maxId` пропускается тихо (без ошибок, без вызова бота).
+  - Все ошибки внутри сервиса проглатываются и логируются — регистрация пользователя никогда не падает из-за уведомления.
+- В `UserService.createUser` (`src/lib/services/user.service.ts`, Phase 5.4) после `syncAttributionForInvitedUser` добавлен неблокирующий вызов `void PartnerNotificationService.notifyAncestorsAboutNewMember(user.id, data.projectId)` внутри блока `if (referredBy)`. `void` гарантирует, что промис не ждётся в основной цепочке.
+- В `sendBonusNotification` (`src/lib/telegram/notifications.ts`, Phase 5.6 / Requirement 7.1) добавлена отдельная ветка для `bonus.type === 'REFERRAL'`:
+  - Из `bonus.metadata` извлекаются `referredUserId` (или `sourceUserId` / `bonus.referralUserId` как fallback) и `level` (или `bonus.referralLevel`).
+  - Подгружается имя клиента-источника одним запросом (`db.user.findUnique`); если не нашли — fallback «клиента».
+  - Текст: «💰 *Вам начислено {amount} ₽ за покупку клиента {clientName} (уровень {level})*».
+  - Для всех остальных типов бонусов (`PURCHASE`, `WELCOME`, `BIRTHDAY`, `MANUAL`, `PROMO`) — **поведение не изменилось** (тот же шаблон с эмодзи + типом + описанием + сроком).
+- Тесты `__tests__/services/partner-notification.service.test.ts` (5 тестов, все зелёные):
+  - **5.7** — три уведомления по числу предков (тренер → менеджер → директор) при `enablePartnerRoles = true`. Проверяет имя клиента в каждом сообщении и шаблоны для каждого уровня.
+  - **5.8** — opt-out у одного из предков (`metadata.notifications.referralEvents = false`): вызов `sendMessage` происходит ровно дважды, шаблон уровня 2 не отправляется, уровни 1 и 3 — отправляются.
+  - **5.9** — `enablePartnerRoles = false`: `sendMessage` ни разу не вызывается, `maxBotManager.sendMessageToUser` ни разу не вызывается, `db.$queryRaw` (цепочка предков) ни разу не вызывается, `db.user.findMany` (профили) ни разу не вызывается. Подтверждает early return.
+  - **Requirement 7.3** — предки без `telegramId`/`maxId` тихо пропускаются.
+  - Smoke — не падает если `botManager.getBot()` вернул `undefined` (бот не запущен или не существует).
+
+### 🔄 Изменено
+- `src/lib/services/user.service.ts` — импортирован `PartnerNotificationService`, добавлен неблокирующий вызов в `createUser` (Phase 5.4).
+- `src/lib/telegram/notifications.ts` — `sendBonusNotification` обогащён условной веткой для `BonusType.REFERRAL` (Phase 5.6). Поведение для всех остальных типов осталось прежним. Динамический `import('@/lib/db')` использован чтобы не создавать циклическую зависимость с сервисами.
+
+### 📁 Затронутые файлы
+- `src/lib/services/partner-notification.service.ts` — **новый** (Phase 5.1–5.3, 5.5).
+- `src/lib/services/user.service.ts` — добавлен импорт `PartnerNotificationService` и неблокирующий вызов после `syncAttributionForInvitedUser` (Phase 5.4).
+- `src/lib/telegram/notifications.ts` — REFERRAL-ветка в `sendBonusNotification` (Phase 5.6).
+- `__tests__/services/partner-notification.service.test.ts` — **новый** (Phase 5.7–5.9).
+
+### ✅ Верификация
+- `npx jest __tests__/services/partner-notification.service.test.ts` — **5/5** passed.
+- `npx tsc --noEmit` — **257 строк**, идентично `baseline-tsc.log`. Ни одной новой TS-ошибки в Phase 5 файлах.
+- `getDiagnostics` всех изменённых файлов — clean.
+- Phase 1–4 регрессии: ни один существующий тестовый файл не модифицирован, контракты `cachedGetAncestorChain` / `botManager.getBot` / `maxBotManager.sendMessageToUser` не изменялись.
+
+### 📝 План ручного теста (5.10)
+После деплоя на staging пройти чек-лист:
+1. На тестовом проекте включить `enablePartnerRoles = true` через PATCH `/api/projects/[id]`.
+2. Назначить роли: 1 DIRECTOR, 1 MANAGER (приглашён директором), 1 TRAINER (приглашён менеджером). Каждому партнёру — выданы валидные `telegramId` через `/start` бота.
+3. Привязать к боту проекта workflow «B2B Партнёр» (Phase 4) — нужен только для проверки, что меню отображается; на уведомления это не влияет.
+4. Сгенерировать партнёрскую реф-ссылку у тренера через бот → перейти по ней в новом окне → пройти регистрацию через webhook (Tilda / встроенная форма).
+5. Дождаться, пока `UserService.createUser` обработает регистрацию (≤2с после webhook).
+6. Проверить три уведомления:
+   - тренер получает «🎉 Новый клиент в вашей команде: {имя}»
+   - менеджер получает «📈 У вашего тренера новый клиент: {имя}»
+   - директор получает «📊 В вашей организации новая регистрация: {имя}»
+7. Симулировать opt-out менеджера: через Prisma Studio проставить `metadata = { "notifications": { "referralEvents": false } }`. Повторить шаг 4 с другим утверждением — менеджер уведомление не должен получить, тренер и директор — должны.
+8. Симулировать новую покупку клиента → проверить что тренер (получатель REFERRAL bonus) получает обогащённое сообщение «💰 Вам начислено N ₽ за покупку клиента {имя} (уровень 1)». Менеджер с уровнем 2 — «уровень 2», директор — «уровень 3».
+9. Снять флаг `enablePartnerRoles = false` через PATCH → повторить регистрацию → ни одного уведомления о новом члене команды (legacy c2c-режим). Уведомления о начислении REFERRAL-бонуса при этом сохраняют формат (старая логика для не-`REFERRAL` бонусов остаётся).
+10. Проверить `botSettings.isActive = false` (бот выключен): уведомления не должны падать с ошибкой, а должны логироваться `partner-notification telegram bot inactive`.
+11. Проверить пользователя без `telegramId` и без `maxId`: уведомление пропускается тихо без вызова `sendMessage` (Requirement 7.3).
+
+### 📝 Заметки по реализации
+- Сервис намеренно сделан как `static` класс (а не функция) — облегчает мокирование в тестах (`PartnerNotificationService.dispatchPartnerNotification` помечен `static` для возможности `jest.spyOn` без необходимости instance-управления).
+- Цепочка предков получается через `cachedGetAncestorChain` из Phase 3, что даёт автоматический per-request memoization (если уведомления когда-нибудь будут вызваны вместе с другими операциями, использующими ту же цепочку — ровно один CTE-запрос).
+- Профили предков загружаются **одним** `db.user.findMany({ where: { id: { in: ancestors } } })` — N+1 не возникает даже на дереве глубины 3.
+- `maxDepth` берётся из `defaultReferralCommissionPlan.maxPayoutDepth` (тот же источник, что и для `processReferralBonus` / `getViewableSubjects` в Phase 3) — таким образом дерево уведомлений всегда совпадает с деревом выплат комиссии (Property 3 в design.md).
+- Динамический `import('@/lib/db')` в `sendBonusNotification` сохранён для согласованности с другими случаями в этом же файле (`broadcast`, `expiry`) и чтобы не было риска циклической зависимости — `notifications.ts` импортируется из `bonus.service.ts` и `user.service.ts` напрямую.
+- Не используем существующий `Notification` Prisma-таблицу для b2b-уведомлений — реализованный сейчас флоу полностью основан на live-канале (Telegram + MAX). Если в будущем понадобится in-app feed, можно будет расширить сервис записью в `Notification`.
+
+---
+
+## [2026-05-24] - B2B иерархия партнёров — Phase 4: Bot Partner Cabinet
+
+### 🎯 Добавлено
+- В `UserVariablesService.getUserVariables()` добавлены партнёрские переменные (Phase 4 / Requirement 6.3):
+  - `user.partnerRole` (string), `user.canRefer` (boolean)
+  - `user.directReferralsCount`, `user.indirectReferralsCount`, `user.teamSize` (numbers)
+  - `user.totalCommissionEarned` + `user.totalCommissionEarnedFormatted` (число + строка ₽)
+  - `user.commissionThisMonth` + `user.commissionThisMonthFormatted`
+  - Считаются параллельно через `Promise.all` (`db.user.count`, `cachedGetDescendantTree`, два `db.transaction.aggregate`). Когда у проекта `enablePartnerRoles = false` — пропускаем все запросы и возвращаем дефолты (0 / `''` / `false`). Все операции защищены try/catch с фолбэком на дефолты.
+  - Форматирование `Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB' })`.
+- Пять новых action-handlers в `src/lib/services/workflow/handlers/action-handlers.ts` (Requirement 6.4–6.7):
+  - `PartnerTeamHandler` (`action.partner_team`) — список direct referrals с пагинацией (5 на страницу) + агрегаты (totalPurchases подопечного и комиссия viewer'а с него через `transaction.groupBy`). Inline-кнопки `partner_subject:<id>` для перехода к деталям + пагинация `partner_team_page:<n>`.
+  - `PartnerSubjectStatsHandler` (`action.partner_subject_stats`) — детальная стата подопечного (имя, телефон, email, регистрация, уровень, оборот, прямые рефералы, накопленная комиссия viewer'а с него и кол-во начислений) с проверкой через `cachedCanViewSubject`. При отказе — «🔒 Нет доступа».
+  - `PartnerPayoutsHandler` (`action.partner_payouts`) — последние 20 (по умолчанию) `EARN`-транзакций с `isReferralBonus = true`, обогащённые именем клиента-источника. Формат `📅 14.05 · 250 ₽ · клиент Иван (уровень 1)`.
+  - `PartnerLinkHandler` (`action.partner_link`) — реферальная ссылка через `ReferralService.generateReferralLink` с `additionalParams` (UTM). Если viewer — CLIENT при включённом b2b → дружелюбное «🔒 Реферальная ссылка доступна только партнёрам».
+  - `PartnerOrgSummaryHandler` (`action.partner_org_summary`) — DIRECTOR-only сводка: всего в команде, разбивка по ролям (через `groupBy partnerRole`), общий оборот (`user.aggregate _sum.totalPurchases`), топ-5 тренеров (orderBy `totalPurchases desc`).
+  - Все хендлеры — Russian-only тексты, формат HTML, inline-навигация «⬅️ В меню».
+- Зарегистрированы новые типы нод (`action.partner_team`, `action.partner_subject_stats`, `action.partner_payouts`, `action.partner_link`, `action.partner_org_summary`) в `WorkflowNodeType`, конфиги в `WorkflowNodeConfig` (`PartnerTeamActionConfig` и т.д.), allowlist в `node-handlers-registry.ts`, регистрация в `initializeNodeHandlers()`.
+- JSON-шаблон `src/lib/workflow-templates/b2b-partner-cabinet.json`:
+  - 18 нод: trigger.command `/start` → цепочка `condition` (DIRECTOR? → MANAGER? → TRAINER?) → 4 разных меню (по роли) → flow.end.
+  - Отдельные `trigger.callback` для всех партнёрских кнопок (`partner_org_summary`, `partner_team_page`, `partner_link`, `partner_payouts`, `partner_subject`).
+  - Меню адаптируется под роль (Requirement 6.2): CLIENT — баланс/история/реф.программа/уровень/помощь; TRAINER — + ссылка/мои клиенты/мои выплаты; MANAGER — + моя команда; DIRECTOR — + сводка по организации.
+- Шаблон зарегистрирован в `bot-templates.service.ts` под id `b2b-partner-cabinet`, иконкой 🏢 и категорией `loyalty`. Появляется на `/dashboard/templates` рядом с «Системой лояльности».
+- Integration test `__tests__/services/workflow/partner-actions.test.ts` (10 тестов, все зелёные):
+  - 4.12 — построение тестового дерева 1 директор → 2 менеджера → 5 тренеров на каждого → 20 клиентов на каждого тренера (всего **213 узлов**). Проверка размеров и связей.
+  - 4.13 — менеджер видит ровно 5 своих тренеров (`getDescendantTree(manager-1, depth=1)` = 5 ID), не видит тренеров другого менеджера; `getViewableSubjects` содержит self + всех потомков и не содержит чужих.
+  - 4.14 — кросс-проверка прав: тренер не может смотреть менеджера, директора, или тренера-«брата» (cousin); тренер видит только своих 20 клиентов и себя; контр-проверка: менеджер → тренер вниз = разрешено.
+
+### 🔄 Изменено
+- `WorkflowRuntimeService.cacheUserVariables` — TTL изменён с 120s (2 минуты) на **30s** для свежести партнёрских агрегатов. Соответствует Phase 4 / Requirement 6.3 (поведение указано в спеке).
+- `src/types/workflow.ts` — расширен `WorkflowNodeType` и `WorkflowNodeConfig` для пяти новых партнёрских action'ов; добавлены интерфейсы конфигов `PartnerTeamActionConfig`, `PartnerSubjectStatsActionConfig`, `PartnerPayoutsActionConfig`, `PartnerLinkActionConfig`, `PartnerOrgSummaryActionConfig`.
+
+### 📁 Затронутые файлы
+- `src/lib/services/workflow/user-variables.service.ts` — partnerVariables + helper `computePartnerVariables`, `startOfCurrentMonth`, `formatRub`. Импорт `cachedGetDescendantTree` из `referral-commission.service`.
+- `src/lib/services/workflow-runtime.service.ts` — TTL для `cacheUserVariables` снижен до 30s.
+- `src/lib/services/workflow/handlers/action-handlers.ts` — 5 новых классов хендлеров + helpers `resolvePartnerUserId`, `formatRub`, `formatName`, `partnerRoleLabel` (всего ~700 строк).
+- `src/lib/services/workflow/handlers/index.ts` — импорт и регистрация пяти новых хендлеров в `initializeNodeHandlers`.
+- `src/lib/services/workflow/node-handlers-registry.ts` — пять новых action-типов в allowlist.
+- `src/types/workflow.ts` — расширен `WorkflowNodeType`, `WorkflowNodeConfig` и пять новых интерфейсов конфигов.
+- `src/lib/workflow-templates/b2b-partner-cabinet.json` — новый JSON-шаблон.
+- `src/lib/services/bot-templates/bot-templates.service.ts` — регистрация `b2bPartnerCabinetTemplate`.
+- `__tests__/services/workflow/partner-actions.test.ts` — новый.
+
+### ✅ Верификация
+- `npx jest __tests__/services/workflow/partner-actions.test.ts` — **10/10** passed (включая 4.12–4.14).
+- `npx jest __tests__/services/referral-commission.service.grants.test.ts` — **12/12** passed (Phase 3 не сломан).
+- `npx tsc --noEmit` — **257 строк ошибок, идентично baseline-tsc.log**; ни одной новой TS-ошибки в Phase 4 файлах.
+- `getDiagnostics` всех изменённых файлов — clean.
+
+### 📝 План ручного теста (4.15)
+Поскольку Phase 4 — user-facing layer бота, после деплоя на staging следует пройти чек-лист:
+1. На тестовом проекте включить `enablePartnerRoles = true` через PATCH `/api/projects/[id]`.
+2. Через Prisma Studio назначить роли: 1 DIRECTOR, 2 MANAGER, 4 TRAINER. Каждому TRAINER — outbound-план через UI Phase 2.
+3. Создать пары пользователей через `/start` бота с разными `utm_ref`.
+4. На `/dashboard/templates` импортировать шаблон «B2B Партнёр» в проект → активировать workflow.
+5. Открыть бот от имени тренера — проверить меню (4 кнопки: ссылка / мои клиенты / выплаты / баланс).
+6. Кликнуть «👤 Мои клиенты» → должны появиться рефералы тренера с агрегатами и кнопками «📊 имя».
+7. Открыть бот от имени менеджера — должна появиться дополнительная кнопка «👥 Моя команда»; кликнуть → должны быть только его 5 тренеров.
+8. Открыть бот от имени директора — должны быть все кнопки + «📊 Сводка по организации» с разбивкой по ролям и топ-5.
+9. Из меню тренера попытаться через debug-callback `partner_subject:<menager-id>` — бот должен ответить «🔒 Нет доступа» (Requirement 5.1).
+10. Создать новую покупку клиента → проверить что начисление REFERRAL появилось в «💵 Мои выплаты» тренера.
+11. Снять флаг `enablePartnerRoles = false` → меню тренера должно отдавать только базовые пункты, ссылка должна работать как раньше (legacy c2c-режим).
+
+### 📝 Заметки по реализации
+- Тестировать классы хендлеров напрямую сложно: у них рантайм-зависимости (`sendPlatformMessage`, http-клиент, Telegram-токен, polling). Поэтому интеграционный тест проверяет **service-layer (Phase 3)**, на который опираются все хендлеры (`cachedGetDescendantTree`, `cachedCanViewSubject`, `getViewableSubjects`). Бот рендерит то, что вернёт сервис — и эти инварианты покрыты тестом + вынесены в чек-лист 4.15 для ручного QA.
+- В `PartnerSubjectStatsHandler` намеренно НЕ показываем сумму комиссии всему дереву — только комиссию **самого viewer'а** с этого подопечного (через `where.referralUserId = subjectId AND userId = viewerId`). Это закрывает риск утечки чужих заработков.
+- `formatName` имеет fallback на телефон → `id:` (первые 8 символов), чтобы не падать при пустых именах.
+- В `partner_team` пагинации callback prefix `partner_team_page:N` — workflow-template ловит на любой prefix (`data: 'partner_team_page'`), action использует `{{telegram.callback.params[0]}}` для получения номера страницы; индекс параметра требует наличия в шаблоне colon-разделителя.
+- В шаблоне используется цепочка `condition` нод (а не `flow.switch`) для маршрутизации по `user.partnerRole` — `simple-workflow-processor.ts` корректно роутит condition по `sourceHandle: 'true'/'false'`, тогда как для `flow.switch` спец-роутинг на `case_N` ещё не реализован в процессоре.
+
+---
+
+## [2026-05-24] - B2B иерархия партнёров — Phase 3: Effective Grants
+
+### 🎯 Добавлено
+- В `ReferralCommissionService` пять новых методов для b2b-иерархии:
+  - `getAncestorChain(userId, projectId, depth?)` — цепочка предков по `referredBy` через рекурсивный CTE (`WITH RECURSIVE ancestors`). Глубина клампится `MAX_TREE_DEPTH = 10`, по умолчанию 3.
+  - `getDescendantTree(userId, projectId, depth?)` — дерево потомков через рекурсивный CTE (`WITH RECURSIVE descendants`).
+  - `canViewSubject(projectId, viewerUserId, subjectUserId)` — комбинированная проверка self / manual `ReferralStatsGrant` / ancestor через `getAncestorChain` с `maxPayoutDepth` из дефолтного плана проекта (fallback 3).
+  - `getViewableSubjects(projectId, viewerUserId)` — set из self + потомков + явных грантов.
+  - `resolveMaxPayoutDepth(projectId)` (private) — резолвер глубины из дефолтного плана проекта.
+- Защита от циклов: оба CTE-метода используют только параметризованный `Prisma.sql` (без интерполяции), при ошибке падают на итеративный fallback (`iterativeAncestorChain` / `iterativeDescendantTree`) через `db.user.findFirst`/`findMany` с set-ом посещённых id и `logger.warn`.
+- Per-request memoization через `react.cache`: экспорты `cachedCanViewSubject`, `cachedGetViewableSubjects`, `cachedGetAncestorChain`, `cachedGetDescendantTree`. Используются всеми Phase 3 API-роутами, чтобы внутри одного серверного запроса не повторять CTE.
+- Новые API endpoints (auth: `getCurrentAdmin` + `ProjectService.verifyProjectAccess`):
+  - GET `/api/projects/[id]/users/[userId]/team` — direct + indirect рефералы пользователя с агрегатами `totalPurchases` и `commissionEarned` через `groupBy` по `transaction.referralUserId`. Параметры `?type=direct|indirect|all` и `?page&pageSize`. Возвращает `items`, `total`, `totals: { direct, indirect, all }`.
+  - GET `/api/projects/[id]/users/[userId]/team/[subjectUserId]` — детальная статистика подопечного. Доступ через `cachedCanViewSubject`. Возвращает профиль (firstName/lastName/phone/email/role/registeredAt/totalPurchases/currentLevel) и агрегаты (`directReferralsCount`, `commissionEarnedFromSubject`, `commissionTransactionsCount`).
+  - GET `/api/projects/[id]/users/[userId]/payouts` — последние реферальные `EARN`-транзакции пользователя с пагинацией. Каждая запись обогащена именем клиента-источника (через `Transaction.referralUserId` → `User.firstName/lastName/phone`). Возвращает `items`, `total`, `totalAmount`.
+- Тестовый файл `__tests__/services/referral-commission.service.grants.test.ts` (12 тестов, все зелёные):
+  - 3.11 Property-style: пять детерминированных деревьев (seeds 1–5, depth=3, branching ≤4) через инлайн mulberry32-PRNG. Проверяет инвариант «`getViewableSubjects(viewer).length - 1 === descendant_count`» (Validates: Requirement 5.2). + edge case «пользователь без потомков → только self».
+  - 3.12 Асимметрия `canViewSubject` viewer→subject: цепочка director→manager→trainer→client; `director→trainer = true`, `trainer→director = false`, `manager→client = true`, `client→manager = false`. Self-ссылка `u→u = true`. Несвязанные пользователи — false в обоих направлениях (Validates: Requirement 5.1).
+  - 3.13 Manual grant: `findUnique` возвращает `ReferralStatsGrant` для пары `viewer→unrelated-subject` → `canViewSubject = true` и `unrelated-subject` появляется в `getViewableSubjects(viewer)`. Обратное направление не работает.
+  - Sanity: симуляция CTE-ошибки → `getDescendantTree` корректно падает на iterative-fallback через `db.user.findMany`.
+
+### 🔄 Изменено
+- GET `/api/projects/[id]/referral-insights/[subjectUserId]` теперь принимает опциональный `?viewerUserId=...` (или header `x-viewer-user-id`). Если передан — вызывает `cachedCanViewSubject(projectId, viewerUserId, subjectUserId)`; при `false` отдаёт `403 { error: 'Нет доступа' }`. Без параметра поведение прежнее (admin-only). Добавлен общий try/catch с `logger.error` и единым `500 { error: 'Internal Server Error' }`.
+- `ReferralCommissionService` — добавлены константы `MAX_TREE_DEPTH = 10`, `DEFAULT_TREE_DEPTH = 3` и helper `clampDepth` для всех новых обходов.
+
+### 📁 Затронутые файлы
+- `src/lib/services/referral-commission.service.ts` — методы 3.1–3.5 + cache-обёртки 3.6.
+- `src/app/api/projects/[id]/referral-insights/[subjectUserId]/route.ts` — поддержка viewerUserId.
+- `src/app/api/projects/[id]/users/[userId]/team/route.ts` — новый.
+- `src/app/api/projects/[id]/users/[userId]/team/[subjectUserId]/route.ts` — новый.
+- `src/app/api/projects/[id]/users/[userId]/payouts/route.ts` — новый.
+- `__tests__/services/referral-commission.service.grants.test.ts` — новый.
+
+### ✅ Верификация
+- `npx jest __tests__/services/referral-commission.service.grants.test.ts` — 12/12 passed (включая 5 property-tree тестов).
+- `npx tsc --noEmit` — 257 строк ошибок, идентично baseline-tsc.log; ни одной новой ошибки в Phase 3 файлах.
+- Существующий тест `referral-commission.service.partner-role.test.ts` (Phase 1) остаётся зелёным.
+
+### 📝 Заметки по реализации
+- Пакет `fast-check` отсутствует в `package.json`. Property-тест (3.11) реализован с детерминированным seed-PRNG (mulberry32) — это даёт воспроизводимость и не требует новой зависимости. Если впоследствии добавим `fast-check`, тесты можно перевести на `fc.property` без изменения проверяемых инвариантов.
+- React `cache` мемоизирует только в рамках одного серверного рендера/запроса — это ровно то, что нужно для b2b-доступов (между запросами кэш сбрасывается, инвалидация не нужна).
+
+---
+
+## [2026-05-24] - B2B иерархия партнёров — Phase 2: User Management UI
+
+### 🎯 Добавлено
+- Колонка «Роль» в таблице пользователей `/dashboard/projects/[id]/users` с цветным badge через новый `PartnerRoleBadge`: `CLIENT` (серый), `TRAINER` (синий), `MANAGER` (фиолетовый), `DIRECTOR` (золотой). Колонка управляется `columnVisibility` и автоматически скрывается, когда у проекта `enablePartnerRoles = false`.
+- Мульти-фильтр по партнёрской роли над таблицей (DropdownMenu с чекбоксами). Передаёт значения как `?role=TRAINER,MANAGER` в GET `/api/projects/[id]/users`. Фильтр виден только при `enablePartnerRoles = true`.
+- Селекторы партнёрской роли и outbound-плана в диалоге профиля пользователя:
+  - `Select` с четырьмя ролями (CLIENT/TRAINER/MANAGER/DIRECTOR).
+  - `Select` outbound-плана появляется только при `partnerRole !== CLIENT`. Загружает планы через GET `/api/projects/[id]/referral-commission-plans`. При смене роли на CLIENT план принудительно сбрасывается.
+- Новый компонент `src/features/bonuses/components/partner-role-badge.tsx` с экспортом `PARTNER_ROLE_OPTIONS` и `getPartnerRoleLabel` для переиспользования в других вкладках.
+- Поддержка `roles` в хуке `useProjectUsers` — массив фильтра по ролям передаётся в API.
+
+### 🔄 Изменено
+- PATCH `/api/projects/[id]/users/[userId]` — Zod-схема `PatchUserSchema` принимает опциональный `partnerRole: enum('CLIENT'|'TRAINER'|'MANAGER'|'DIRECTOR')`. Сохраняется через `db.user.update`. GET и ответ PATCH теперь возвращают `partnerRole` и `outboundReferralPlanId`.
+- GET `/api/projects/[id]/users` — парсит `?role=...` (запятая-разделённый список), валидирует значения через `Set<PartnerRole>`, добавляет `where.partnerRole = { in: roles }`. Невалидные значения молча отбрасываются. Каждый пользователь в ответе теперь содержит `partnerRole` и `outboundReferralPlanId`.
+- `UsersTable` принимает проп `enablePartnerRoles` и через `useEffect` управляет видимостью колонки `partnerRole`.
+- `ProjectUsersView` загружает план комиссий проекта при включённом флаге, подтягивает свежие `partnerRole` / `outboundReferralPlanId` из GET `/users/[userId]` при открытии профиля, сохраняет изменения двумя последовательными PATCH-запросами (`/users/[userId]` для роли, `/users/[userId]/referral-outbound-plan` для плана).
+- `src/types/bonus.ts` — добавлен тип `PartnerRole`, поля `Project.enablePartnerRoles`, `User.partnerRole`, `User.outboundReferralPlanId`.
+- `src/features/bonuses/types/index.ts` — `DisplayUser` расширен `partnerRole` и `outboundReferralPlanId`.
+
+### 🐛 Исправлено
+- _нет_
+
+### 🗑️ Удалено
+- _нет_
+
+### 📝 Затронутые файлы
+- `src/app/api/projects/[id]/users/[userId]/route.ts` — Zod-схема + поддержка `partnerRole` в PATCH/GET
+- `src/app/api/projects/[id]/users/route.ts` — фильтр `?role=...`, экспорт `partnerRole`/`outboundReferralPlanId`
+- `src/features/bonuses/components/users-table.tsx` — колонка «Роль», `enablePartnerRoles` prop, columnVisibility
+- `src/features/bonuses/components/partner-role-badge.tsx` — новый компонент, цветовые маппинги, `PARTNER_ROLE_OPTIONS`
+- `src/features/projects/components/project-users-view.tsx` — фильтр по роли, селекторы в диалоге, загрузка планов, `handleSavePartnerSettings`
+- `src/features/bonuses/hooks/use-project-users.ts` — поддержка `roles` в опциях, маппинг `partnerRole`/`outboundReferralPlanId`
+- `src/features/bonuses/types/index.ts` — расширение `DisplayUser`
+- `src/types/bonus.ts` — тип `PartnerRole`, поля `enablePartnerRoles`, `partnerRole`, `outboundReferralPlanId`
+
+### ✅ Верификация
+- `npx tsc --noEmit` — 91 ошибка, идентично baseline (`baseline-tsc.log`); ни одной новой ошибки в изменённых файлах. Diagnostics всех 8 файлов чистые.
+- `npx eslint <changed files>` — 0 errors, 51 warnings (все pre-existing: `no-console`, `no-unused-vars`).
+- Phase 1 тесты (`__tests__/services/referral.service.test.ts` + `referral-commission.service.partner-role.test.ts`) — 14 passed, 1 fail. Единственный fail — pre-existing `getReferralStats.levelBreakdown` baseline (зафиксирован в Phase 1 changelog), не связан с Phase 2.
+
+### 🧪 Ручной тест в dashboard
+1. Открыть `/dashboard/projects/<id>/users` — колонка «Роль» **скрыта**, фильтр «Роль» **не виден** (флаг по умолчанию выключен).
+2. Через `prisma studio` или PATCH `/api/projects/<id>` выставить `enablePartnerRoles = true`. Перезагрузить страницу.
+3. Колонка «Роль» появляется, фильтр «Роль» появляется в правой панели над таблицей.
+4. Кликнуть «Просмотреть профиль» у любого пользователя — в диалоге появляется секция «Партнёрская иерархия» с двумя селектами.
+5. Выбрать роль `TRAINER`, выбрать любой outbound-план из dropdown'а, нажать «Сохранить». Toast «Сохранено». Перезагрузить страницу — роль и план сохраняются.
+6. Сменить роль на `CLIENT`, нажать «Сохранить». План автоматически сбрасывается (validation в `setUserOutboundPlan` запрещает план у CLIENT при включённом флаге).
+7. Открыть фильтр «Роль», выбрать `TRAINER` — таблица отфильтрована, в URL запроса появляется `?role=TRAINER`.
+8. Снять флаг `enablePartnerRoles = false` через API — колонка и фильтр снова скрываются.
+
+### 🚀 Деплой
+- Изменения только UI/API (валидация и фильтрация). Миграции БД не требуются (схема покрыта Phase 1).
+- Проекты с `enablePartnerRoles = false` (default) ведут себя как раньше: ни новых полей в ответах, ни новых элементов UI.
+
+## [2026-05-24] - B2B иерархия партнёров — Phase 1: схема и фильтры
+
+### 🎯 Добавлено
+- Enum `PartnerRole` (`CLIENT` / `TRAINER` / `MANAGER` / `DIRECTOR`) и поле `User.partnerRole` (default `CLIENT`, map `partner_role`) с индексом `@@index([projectId, partnerRole])`.
+- Project-level feature flag `Project.enablePartnerRoles` (default `false`, map `enable_partner_roles`) — opt-in для b2b-проектов.
+- Идемпотентная миграция `prisma/migrations/20260524_add_partner_role/migration.sql` (`CREATE TYPE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`).
+- Новый файл тестов `__tests__/services/referral-commission.service.partner-role.test.ts` (3 теста для `setUserOutboundPlan`).
+- 11 новых тестов в `__tests__/services/referral.service.test.ts` для `findReferrer` и `generateReferralLink` с включённым/выключенным флагом и всеми ролями.
+
+### 🔄 Изменено
+- `ReferralService.findReferrer()` теперь учитывает `Project.enablePartnerRoles`: если флаг включён и реферер имеет `partnerRole = CLIENT`, метод возвращает `null` и пишет `logger.warn('Referrer not found or has CLIENT role', ...)` с `referrerId`/`utmRef` для аудита.
+- `ReferralService.generateReferralLink()` бросает ошибку «Реферальная ссылка доступна только партнёрам (TRAINER/MANAGER/DIRECTOR)», если `enablePartnerRoles = true` и пользователь — CLIENT. При выключенном флаге поведение не меняется (legacy c2c).
+- `ReferralCommissionService.setUserOutboundPlan()` валидирует роль перед записью: при `enablePartnerRoles = true` и `partnerRole = CLIENT` бросает ошибку «Outbound-план можно назначить только партнёрам (TRAINER/MANAGER/DIRECTOR)»; legacy-кейс (флаг выключен) сохранён.
+
+### 🐛 Исправлено
+- _нет_
+
+### 🗑️ Удалено
+- _нет_
+
+### 📝 Затронутые файлы
+- `prisma/schema.prisma` — enum `PartnerRole`, поля `User.partnerRole`, `Project.enablePartnerRoles`, индекс
+- `prisma/migrations/20260524_add_partner_role/migration.sql` — идемпотентная DDL-миграция
+- `src/lib/services/referral.service.ts` — фильтр по роли в `findReferrer`, проверка в `generateReferralLink`, warn-лог
+- `src/lib/services/referral-commission.service.ts` — валидация роли в `setUserOutboundPlan`
+- `__tests__/services/referral.service.test.ts` — +11 кейсов `findReferrer` и `generateReferralLink`
+- `__tests__/services/referral-commission.service.partner-role.test.ts` — 3 кейса `setUserOutboundPlan`
+
+### 🚀 Деплой
+- `npx prisma migrate deploy` нужно запустить отдельно при наличии доступа к dev/prod-БД — миграция идемпотентна, повторный запуск безопасен.
+- Поведение проектов с `enablePartnerRoles = false` (default) не меняется: c2c-логика рефералов остаётся такой же, как раньше.
+
+### ✅ Верификация
+- `yarn test` (фокусированный прогон новых файлов) — 14/14 новых Phase 1 тестов зелёные.
+- Полный `yarn test` — 118 passed / 18 failed; все 18 фейлов — pre-existing baseline (widget-integration jsdom env, `getReferralStats.levelBreakdown`, user.service / BonusService legacy моки), не относятся к Phase 1.
+- `yarn lint` — 0 errors, 1151 warnings (все warnings — pre-existing). Новых ошибок и предупреждений Phase 1 не вносит.
+
 ## [2026-05-12] - Персональные планы реферальных комиссий (блогеры)
 
 ### 🎯 Добавлено

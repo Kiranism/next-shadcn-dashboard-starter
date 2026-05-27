@@ -267,7 +267,17 @@ export class ReferralService {
   }
 
   /**
-   * Найти рефера ТОЛЬКО по utm_ref (ID пользователя)
+   * Найти рефера ТОЛЬКО по utm_ref (ID пользователя).
+   *
+   * Когда у проекта включён `enablePartnerRoles`, реферером может быть
+   * только пользователь с `partnerRole IN (TRAINER, MANAGER, DIRECTOR)`.
+   * При `enablePartnerRoles = false` поведение совпадает с прежней c2c-логикой.
+   *
+   * Если в b2b-режиме как `utm_ref` приходит существующий CLIENT — пишем
+   * `logger.warn`, чтобы администратор проекта мог увидеть такие попытки
+   * (например, клиент случайно скопировал собственную UTM-метку).
+   *
+   * @see B2B Referral Hierarchy → Requirements 2.1, 2.2
    */
   static async findReferrer(
     projectId: string,
@@ -276,6 +286,14 @@ export class ReferralService {
     try {
       if (!utmRef) return null;
 
+      // Читаем флаг проекта, чтобы решить, нужно ли применять role-фильтр
+      const project = await db.project.findUnique({
+        where: { id: projectId },
+        select: { enablePartnerRoles: true }
+      });
+
+      // Один запрос без role-фильтра — нужно отличить «CLIENT отсёкся» от
+      // «такого пользователя нет» для корректного предупреждения в логе.
       const user = await db.user.findFirst({
         where: {
           projectId,
@@ -284,7 +302,21 @@ export class ReferralService {
         }
       });
 
-      if (!user) return null;
+      if (!user) {
+        // Пользователь не существует / неактивен — без warning, обычный кейс.
+        return null;
+      }
+
+      // В b2b-режиме CLIENT не может выступать реферером.
+      if (project?.enablePartnerRoles && user.partnerRole === 'CLIENT') {
+        logger.warn('Referrer not found or has CLIENT role', {
+          projectId,
+          utmRef,
+          reason: 'client_role_excluded',
+          component: 'referral-service'
+        });
+        return null;
+      }
 
       return {
         ...user,
@@ -731,7 +763,14 @@ export class ReferralService {
   }
 
   /**
-   * Генерировать реферальную ссылку для пользователя
+   * Генерировать реферальную ссылку для пользователя.
+   *
+   * Когда у проекта включён `enablePartnerRoles`, ссылка доступна только
+   * партнёрам (`partnerRole IN (TRAINER, MANAGER, DIRECTOR)`). Для CLIENT
+   * метод бросает ошибку. При `enablePartnerRoles = false` поведение
+   * совпадает с прежней c2c-логикой.
+   *
+   * @see B2B Referral Hierarchy → Requirement 2.4
    */
   static async generateReferralLink(
     userId: string,
@@ -739,6 +778,19 @@ export class ReferralService {
     additionalParams?: Record<string, string>
   ): Promise<string> {
     try {
+      // Проверяем роль пользователя в рамках b2b-режима
+      const user = await db.user.findUnique({
+        where: { id: userId },
+        select: {
+          partnerRole: true,
+          project: { select: { enablePartnerRoles: true } }
+        }
+      });
+
+      if (user?.project?.enablePartnerRoles && user.partnerRole === 'CLIENT') {
+        throw new Error('Реферальная ссылка доступна только партнёрам');
+      }
+
       let base = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
       // Добавляем протокол если его нет
       if (!base.startsWith('http://') && !base.startsWith('https://')) {

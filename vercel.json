@@ -1,0 +1,20 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/scheduled-triggers",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/bonus-expiration",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-executions",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/subscription-expiration",
+      "schedule": "0 9 * * *"
+    }
+  ]
+}

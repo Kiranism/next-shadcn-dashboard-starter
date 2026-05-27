@@ -48,12 +48,52 @@ export async function sendBonusNotification(
     const emoji = getBonusEmoji(bonus.type);
     const typeText = getBonusTypeText(bonus.type);
 
-    const message =
-      `${emoji} *Новые бонусы начислены!*\n\n` +
-      `💰 Сумма: *+${bonus.amount} бонусов*\n` +
-      `📝 Тип: ${typeText}\n` +
-      `📄 Описание: ${bonus.description || 'Без описания'}\n\n` +
-      `⏰ Срок действия: ${bonus.expiresAt ? bonus.expiresAt.toLocaleDateString('ru-RU') : 'Бессрочно'}`;
+    // Phase 5.6: для реферальной комиссии обогащаем текст именем клиента
+    // и уровнем (если они есть в bonus.metadata / на самом бонусе).
+    let message: string;
+    if (bonus.type === 'REFERRAL') {
+      const meta =
+        ((bonus as any).metadata as Record<string, any> | null) || {};
+      const referredUserId: string | undefined =
+        meta.referredUserId ||
+        meta.sourceUserId ||
+        (bonus as any).referralUserId ||
+        undefined;
+      const level: number | undefined =
+        meta.level ?? (bonus as any).referralLevel ?? undefined;
+
+      let clientName = 'клиента';
+      if (referredUserId) {
+        try {
+          const { db } = await import('@/lib/db');
+          const ref = await db.user.findUnique({
+            where: { id: referredUserId },
+            select: { firstName: true, lastName: true, phone: true }
+          });
+          if (ref) {
+            const fn = (ref.firstName ?? '').trim();
+            const ln = (ref.lastName ?? '').trim();
+            const full = `${fn} ${ln}`.trim();
+            clientName = full || ref.phone || clientName;
+          }
+        } catch (err) {
+          // Не падаем — оставляем дефолт «клиента».
+          logger.warn('Не удалось загрузить имя клиента-источника', {
+            referredUserId,
+            err: err instanceof Error ? err.message : String(err)
+          });
+        }
+      }
+      const levelStr = level ? ` (уровень ${level})` : '';
+      message = `💰 *Вам начислено ${bonus.amount} ₽ за покупку клиента ${clientName}${levelStr}*`;
+    } else {
+      message =
+        `${emoji} *Новые бонусы начислены!*\n\n` +
+        `💰 Сумма: *+${bonus.amount} бонусов*\n` +
+        `📝 Тип: ${typeText}\n` +
+        `📄 Описание: ${bonus.description || 'Без описания'}\n\n` +
+        `⏰ Срок действия: ${bonus.expiresAt ? bonus.expiresAt.toLocaleDateString('ru-RU') : 'Бессрочно'}`;
+    }
 
     // Отправляем в Telegram если есть ID
     if (user.telegramId && botInstance && botInstance.isActive) {

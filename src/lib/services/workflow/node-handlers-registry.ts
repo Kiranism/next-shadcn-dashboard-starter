@@ -37,6 +37,7 @@ export class NodeHandlersRegistry {
       'trigger.callback',
       'trigger.webhook',
       'trigger.contact',
+      'trigger.schedule',
       // Сообщения
       'message',
       'message.keyboard.inline',
@@ -59,6 +60,12 @@ export class NodeHandlersRegistry {
       'action.get_user_balance',
       'action.menu_command',
       'action.check_channel_subscription',
+      // Партнёрские action-handlers (b2b-иерархия, Phase 4)
+      'action.partner_team',
+      'action.partner_subject_stats',
+      'action.partner_payouts',
+      'action.partner_link',
+      'action.partner_org_summary',
       // Условия
       'condition',
       // Поток управления

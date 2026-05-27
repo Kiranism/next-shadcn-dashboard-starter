@@ -48,6 +48,22 @@ async function getHandler(
     );
     const search = url.searchParams.get('search') || undefined;
 
+    // Парсим фильтр по партнёрской роли: ?role=TRAINER,MANAGER
+    // Только валидные значения PartnerRole принимаем; неизвестные игнорируем.
+    const VALID_PARTNER_ROLES = new Set([
+      'CLIENT',
+      'TRAINER',
+      'MANAGER',
+      'DIRECTOR'
+    ]);
+    const roleParam = url.searchParams.get('role');
+    const roles = roleParam
+      ? roleParam
+          .split(',')
+          .map((r) => r.trim().toUpperCase())
+          .filter((r) => VALID_PARTNER_ROLES.has(r))
+      : [];
+
     // Базовый фильтр с поиском
     const where: any = { projectId: id };
     if (search && search.trim().length > 0) {
@@ -58,6 +74,9 @@ async function getHandler(
         { phone: { contains: search, mode: 'insensitive' } },
         { telegramUsername: { contains: search, mode: 'insensitive' } }
       ];
+    }
+    if (roles.length > 0) {
+      where.partnerRole = { in: roles };
     }
 
     const { users: enrichedUsers, total } = await UserService.getProjectUsers(
@@ -116,7 +135,10 @@ async function getHandler(
         currentLevel: user.currentLevel || user.level?.name || undefined,
         // Telegram данные
         telegramId: user.telegramId ? user.telegramId.toString() : null,
-        telegramUsername: user.telegramUsername || null
+        telegramUsername: user.telegramUsername || null,
+        // Партнёрская иерархия (Phase 2 b2b-referral-hierarchy)
+        partnerRole: (user as any).partnerRole || 'CLIENT',
+        outboundReferralPlanId: (user as any).outboundReferralPlanId ?? null
       };
     });
 

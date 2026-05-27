@@ -1,0 +1,162 @@
+{
+  "name": "🎂 Бонусы ко дню рождения",
+  "description": "Scheduled-сценарий для программы лояльности: каждое утро в 9:00 находит именинников и автоматически начисляет им подарочные бонусы + отправляет поздравление в Telegram. Дополняет основной workflow «Система лояльности» — установите оба для полноценной программы лояльности.",
+  "nodes": [
+    {
+      "id": "schedule-trigger",
+      "type": "trigger.schedule",
+      "position": { "x": 0, "y": 300 },
+      "data": {
+        "label": "🎂 День рождения сегодня",
+        "config": {
+          "trigger.schedule": {
+            "cron": "0 9 * * *",
+            "timezone": "Europe/Moscow",
+            "audience": { "type": "birthday_today" },
+            "dedupeWindow": "year"
+          }
+        }
+      }
+    },
+    {
+      "id": "load-user-profile",
+      "type": "action.database_query",
+      "position": { "x": 380, "y": 300 },
+      "data": {
+        "label": "Загрузить профиль",
+        "config": {
+          "action.database_query": {
+            "query": "get_user_profile",
+            "assignTo": "birthdayUser",
+            "parameters": {
+              "userId": "{{userId}}"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "award-birthday-bonus",
+      "type": "action.database_query",
+      "position": { "x": 760, "y": 300 },
+      "data": {
+        "label": "Начислить подарочный бонус",
+        "config": {
+          "action.database_query": {
+            "query": "add_bonus",
+            "assignTo": "birthdayBonusResult",
+            "parameters": {
+              "userId": "{{userId}}",
+              "amount": "{{birthday_bonus_amount}}",
+              "type": "BIRTHDAY",
+              "description": "🎂 Подарок ко дню рождения"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "cond-has-telegram",
+      "type": "condition",
+      "position": { "x": 1140, "y": 300 },
+      "data": {
+        "label": "Telegram привязан?",
+        "config": {
+          "condition": {
+            "operator": "is_not_empty",
+            "variable": "birthdayUser.telegramId"
+          }
+        }
+      }
+    },
+    {
+      "id": "msg-birthday-greeting",
+      "type": "message",
+      "position": { "x": 1520, "y": 200 },
+      "data": {
+        "label": "Поздравление в Telegram",
+        "config": {
+          "message": {
+            "text": "🎂 С Днём Рождения, <b>{{user.firstName}}</b>! 🎉\n\n✨ От всей команды дарим вам <b>{{birthday_bonus_amount}} бонусов</b> в подарок!\n\n💵 Ваш текущий баланс: <b>{{user.balanceFormatted}}</b>\n\nИспользуйте их при следующей покупке. Желаем счастья и отличного дня! 🥳",
+            "parseMode": "HTML"
+          }
+        }
+      }
+    },
+    {
+      "id": "flow-end",
+      "type": "flow.end",
+      "position": { "x": 1900, "y": 300 },
+      "data": {
+        "label": "Завершение",
+        "config": {
+          "flow.end": {
+            "success": true
+          }
+        }
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "e-trigger-load",
+      "type": "default",
+      "source": "schedule-trigger",
+      "target": "load-user-profile"
+    },
+    {
+      "id": "e-load-award",
+      "type": "default",
+      "source": "load-user-profile",
+      "target": "award-birthday-bonus"
+    },
+    {
+      "id": "e-award-cond",
+      "type": "default",
+      "source": "award-birthday-bonus",
+      "target": "cond-has-telegram"
+    },
+    {
+      "id": "e-cond-msg",
+      "type": "default",
+      "source": "cond-has-telegram",
+      "target": "msg-birthday-greeting",
+      "sourceHandle": "true"
+    },
+    {
+      "id": "e-cond-end",
+      "type": "default",
+      "source": "cond-has-telegram",
+      "target": "flow-end",
+      "sourceHandle": "false"
+    },
+    {
+      "id": "e-msg-end",
+      "type": "default",
+      "source": "msg-birthday-greeting",
+      "target": "flow-end"
+    }
+  ],
+  "variables": [
+    {
+      "name": "birthday_bonus_amount",
+      "type": "number",
+      "value": 500,
+      "description": "Размер подарочного бонуса ко дню рождения (можно изменить в настройках workflow)"
+    },
+    {
+      "name": "birthdayUser",
+      "type": "object",
+      "description": "Профиль пользователя-именинника (результат get_user_profile)"
+    },
+    {
+      "name": "birthdayBonusResult",
+      "type": "object",
+      "description": "Результат начисления бонуса (id транзакции, новый баланс)"
+    }
+  ],
+  "settings": {
+    "maxExecutionTime": 30000,
+    "retryAttempts": 2
+  }
+}

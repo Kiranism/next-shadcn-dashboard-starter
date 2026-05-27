@@ -205,3 +205,79 @@ export class ContactTriggerHandler extends BaseNodeHandler {
     };
   }
 }
+
+/**
+ * Обработчик для trigger.schedule
+ * Активируется cron-эндпоинтом `/api/cron/scheduled-triggers`.
+ * При выполнении просто пропускает управление дальше — контекст уже подготовлен
+ * `ScheduledTriggerRunner` (содержит userId, projectId и пустой Telegram-контекст).
+ */
+export class ScheduleTriggerHandler extends BaseNodeHandler {
+  canHandle(nodeType: WorkflowNodeType): boolean {
+    return nodeType === 'trigger.schedule';
+  }
+
+  async execute(
+    node: WorkflowNode,
+    context: ExecutionContext
+  ): Promise<string | null> {
+    this.logStep(context, node, 'Schedule trigger executed', 'debug', {
+      cron: node.data.config?.['trigger.schedule']?.cron,
+      audienceType: node.data.config?.['trigger.schedule']?.audience?.type
+    });
+    return null;
+  }
+
+  async validate(config: any): Promise<ValidationResult> {
+    const errors: string[] = [];
+
+    if (!config?.cron || typeof config.cron !== 'string') {
+      errors.push('Cron expression is required and must be a string');
+    } else {
+      // Базовая структурная валидация: 5 полей через пробел
+      const parts = config.cron.trim().split(/\s+/);
+      if (parts.length !== 5) {
+        errors.push(
+          `Cron expression must have 5 fields (min hour day month weekday), got ${parts.length}`
+        );
+      }
+    }
+
+    if (!config?.audience || typeof config.audience !== 'object') {
+      errors.push('Audience configuration is required');
+    } else {
+      const validTypes = [
+        'birthday_today',
+        'birthday_in_days',
+        'all_active_users'
+      ];
+      if (!validTypes.includes(config.audience.type)) {
+        errors.push(
+          `Audience type must be one of: ${validTypes.join(', ')}, got "${config.audience.type}"`
+        );
+      }
+      if (
+        config.audience.type === 'birthday_in_days' &&
+        (typeof config.audience.params?.daysBefore !== 'number' ||
+          config.audience.params.daysBefore < 1 ||
+          config.audience.params.daysBefore > 365)
+      ) {
+        errors.push(
+          'Audience "birthday_in_days" requires params.daysBefore (1-365)'
+        );
+      }
+    }
+
+    if (
+      config?.dedupeWindow &&
+      !['day', 'week', 'month', 'year', 'none'].includes(config.dedupeWindow)
+    ) {
+      errors.push('Dedupe window must be one of: day, week, month, year, none');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  }
+}

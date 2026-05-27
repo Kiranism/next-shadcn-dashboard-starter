@@ -484,6 +484,129 @@ export class ExecutionContextManager {
   }
 
   /**
+   * Создаёт контекст для scheduled workflow.
+   * Не требует Telegram bot token — workflow запускается из cron-эндпоинта,
+   * без входящего апдейта от платформы. Telegram-поля заполняются опционально:
+   * если у пользователя есть привязанный telegramId и для проекта настроен бот,
+   * можно отправлять сообщения; иначе message-ноды просто залогируют warn.
+   */
+  static async createScheduledContext(params: {
+    projectId: string;
+    workflowId: string;
+    version: number;
+    userId: string;
+    triggerNodeId: string;
+  }): Promise<ExecutionContext> {
+    const { projectId, workflowId, version, userId, triggerNodeId } = params;
+
+    const [botSettings, project, user] = await Promise.all([
+      db.botSettings.findUnique({
+        where: { projectId },
+        select: {
+          botToken: true,
+          botUsername: true,
+          maxBotToken: true,
+          maxBotUsername: true
+        }
+      }),
+      db.project.findUnique({
+        where: { id: projectId },
+        select: {
+          workflowMaxSteps: true,
+          workflowTimeoutMs: true
+        }
+      }),
+      db.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          telegramId: true,
+          telegramUsername: true,
+          firstName: true
+        }
+      })
+    ]);
+
+    if (!user) {
+      throw new Error(
+        `Cannot create scheduled context: user ${userId} not found in project ${projectId}`
+      );
+    }
+
+    const maxSteps = project?.workflowMaxSteps ?? 200;
+
+    const sessionId = `scheduled_${triggerNodeId}_${userId}_${Date.now()}`;
+
+    const execution = await db.workflowExecution.create({
+      data: {
+        projectId,
+        workflowId,
+        version,
+        sessionId,
+        userId,
+        telegramChatId: user.telegramId ? user.telegramId.toString() : null,
+        status: 'running'
+      }
+    });
+
+    const variableManager = createVariableManager(
+      projectId,
+      workflowId,
+      userId,
+      sessionId
+    );
+    await variableManager.preloadCache();
+    await this.applyWorkflowDefaultSessionVariables(
+      variableManager,
+      workflowId,
+      version
+    );
+
+    const simpleLogger = {
+      info: (message: string, data?: any) =>
+        console.log(`[INFO] ${execution.id}: ${message}`, data),
+      error: (message: string, data?: any) =>
+        console.error(`[ERROR] ${execution.id}: ${message}`, data),
+      warn: (message: string, data?: any) =>
+        console.warn(`[WARN] ${execution.id}: ${message}`, data),
+      debug: (message: string, data?: any) =>
+        console.debug(`[DEBUG] ${execution.id}: ${message}`, data)
+    };
+
+    const context: ExecutionContext = {
+      executionId: execution.id,
+      projectId,
+      workflowId,
+      version,
+      sessionId,
+      userId,
+      platform: 'telegram',
+      telegram: {
+        chatId: user.telegramId ? user.telegramId.toString() : sessionId,
+        userId: user.telegramId ? user.telegramId.toString() : '',
+        username: user.telegramUsername ?? undefined,
+        firstName: user.firstName ?? undefined,
+        botToken: botSettings?.botToken || '',
+        message: {}
+      },
+      variables: variableManager,
+      logger: simpleLogger,
+      services: {
+        db,
+        http: this.createHttpClient()
+      },
+      now: () => new Date(),
+      step: 0,
+      maxSteps
+    };
+
+    // Помечаем что это scheduled-запуск — handler-ы могут ветвиться
+    (context as any)._scheduled = true;
+
+    return context;
+  }
+
+  /**
    * Обновляет контекст для следующего шага
    */
   static updateContextForStep(

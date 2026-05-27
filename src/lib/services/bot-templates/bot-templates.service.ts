@@ -14,6 +14,8 @@ import { supportTemplate } from './templates/support.template';
 import { gamificationTemplate } from './templates/gamification.template';
 import { loyaltyWithSubscriptionTemplate } from './templates/loyalty-with-subscription.template';
 import loyaltySystemWorkflow from '@/lib/workflow-templates/loyalty-system.json';
+import b2bPartnerCabinetWorkflow from '@/lib/workflow-templates/b2b-partner-cabinet.json';
+import birthdayLoyaltyWorkflow from '@/lib/workflow-templates/birthday-loyalty.json';
 
 // Временный импорт для обратной совместимости, в идеале его тоже нужно вынести
 const loyaltySystemTemplate: BotTemplate = {
@@ -52,6 +54,118 @@ const loyaltySystemTemplate: BotTemplate = {
   reviews: 42,
   author: 'Gupil Team',
   version: '1.2.0',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  isPublic: true
+};
+
+// ✨ Phase 4: Шаблон «B2B Партнёр» — личный кабинет тренера / менеджера / директора
+// в b2b-иерархии. Меню адаптируется под `user.partnerRole`.
+const b2bPartnerCabinetTemplate: BotTemplate = {
+  id: 'b2b-partner-cabinet',
+  name: 'B2B Партнёр',
+  description:
+    'Кабинет партнёра в b2b-иерархии: меню адаптируется под роль (тренер / менеджер / директор), показывает команду, выплаты, реферальную ссылку и сводку. Требует включённого `enablePartnerRoles` у проекта.',
+  category: 'loyalty',
+  difficulty: 'advanced',
+  tags: [
+    'b2b',
+    'partners',
+    'hierarchy',
+    'referral',
+    'commission',
+    'team',
+    'director',
+    'manager',
+    'trainer'
+  ],
+  estimatedTime: 25,
+  icon: '🏢',
+  color: '#6366f1',
+
+  workflowConfig: {
+    name: b2bPartnerCabinetWorkflow.name,
+    description: b2bPartnerCabinetWorkflow.description,
+    nodes: b2bPartnerCabinetWorkflow.nodes,
+    connections: b2bPartnerCabinetWorkflow.connections,
+    variables: b2bPartnerCabinetWorkflow.variables,
+    settings: b2bPartnerCabinetWorkflow.settings
+  },
+
+  features: [
+    'Меню по роли (CLIENT / TRAINER / MANAGER / DIRECTOR)',
+    'Реферальная ссылка только для партнёров',
+    'Просмотр команды и истории выплат',
+    'Сводка по организации для директоров'
+  ],
+  integrations: [],
+  useCases: [
+    'Производитель → сеть тренеров → клиенты',
+    'Многоуровневая партнёрская программа'
+  ],
+  installs: 0,
+  rating: 0,
+  reviews: 0,
+  author: 'Gupil Team',
+  version: '1.0.0',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  isPublic: true
+};
+
+// 🎂 Шаблон «Бонусы ко дню рождения» — scheduled workflow с trigger.schedule.
+// Дополняет loyaltySystemTemplate: каждое утро в 9:00 находит именинников
+// и автоматически начисляет им подарочные бонусы + поздравление в Telegram.
+// Один проект может одновременно иметь несколько активных workflow,
+// если каждый стартует с разного типа триггера (command vs schedule).
+const birthdayLoyaltyTemplate: BotTemplate = {
+  id: 'birthday-loyalty',
+  name: '🎂 Бонусы ко дню рождения',
+  description:
+    'Scheduled-сценарий: каждое утро в 9:00 находит пользователей-именинников и начисляет им подарочные бонусы + поздравительное сообщение в Telegram. Дополняет «Систему лояльности».',
+  category: 'loyalty',
+  difficulty: 'beginner',
+  tags: [
+    'birthday',
+    'loyalty',
+    'bonuses',
+    'scheduled',
+    'cron',
+    'automation',
+    'telegram',
+    'greeting'
+  ],
+  estimatedTime: 10,
+  icon: '🎂',
+  color: '#f43f5e',
+
+  workflowConfig: {
+    name: birthdayLoyaltyWorkflow.name,
+    description: birthdayLoyaltyWorkflow.description,
+    nodes: birthdayLoyaltyWorkflow.nodes,
+    connections: birthdayLoyaltyWorkflow.connections,
+    variables: birthdayLoyaltyWorkflow.variables,
+    settings: birthdayLoyaltyWorkflow.settings
+  },
+
+  features: [
+    'Автоматический запуск раз в сутки в 9:00 (МСК)',
+    'Подарочные бонусы клиентам в день рождения',
+    'Дедупликация на год — каждый клиент получит подарок один раз',
+    'Поздравление в Telegram (если бот привязан)',
+    'Не запустит сценарий для клиентов без даты рождения'
+  ],
+  integrations: ['Telegram'],
+  useCases: [
+    'Программа лояльности с подарком ко дню рождения',
+    'Реактивация клиентов через персональное поздравление',
+    'Дополнение к основному workflow «Система лояльности»'
+  ],
+  installs: 0,
+  rating: 0,
+  reviews: 0,
+  author: 'Gupil Team',
+  version: '1.0.0',
   createdAt: new Date(),
   updatedAt: new Date(),
   isPublic: true
@@ -561,6 +675,8 @@ class BotTemplatesService {
     // Загружаем все шаблоны
     this.templates = [
       loyaltySystemTemplate,
+      birthdayLoyaltyTemplate,
+      b2bPartnerCabinetTemplate,
       loyaltyWithSubscriptionTemplate,
       shopTemplate,
       feedbackTemplate,
