@@ -56,6 +56,7 @@ import {
 } from './operation-mode-selector';
 import { OperationModeConfirmDialog } from './operation-mode-confirm-dialog';
 import { BonusModeSelector } from './bonus-mode-selector';
+import { B2bHierarchySettings } from './b2b-hierarchy-settings';
 
 interface ProjectSettingsViewProps {
   projectId: string;
@@ -708,6 +709,12 @@ export function ProjectSettingsView({ projectId }: ProjectSettingsViewProps) {
               отклоняться. Подключите бота в разделе "Интеграции".
             </div>
           )}
+
+          {/* B2B Иерархия партнёров (опт-ин per project) */}
+          <B2bHierarchySettings
+            projectId={projectId}
+            initialValue={Boolean((project as any)?.enablePartnerRoles)}
+          />
 
           {/* Предупреждение о несохраненных изменениях */}
           {isDirty && (
