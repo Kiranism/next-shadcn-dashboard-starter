@@ -9,7 +9,7 @@
 
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, isValidElement, createElement } from 'react';
 import { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -70,11 +70,11 @@ export function EmptyState({
     >
       {Icon && (
         <div className={cn('bg-muted mb-4 rounded-full p-3', iconClassName)}>
-          {typeof Icon === 'function' ? (
-            <Icon className={cn('text-muted-foreground', sizes.icon)} />
-          ) : (
-            Icon
-          )}
+          {isValidElement(Icon)
+            ? Icon
+            : createElement(Icon as React.ComponentType<{ className?: string }>, {
+                className: cn('text-muted-foreground', sizes.icon)
+              })}
         </div>
       )}
 

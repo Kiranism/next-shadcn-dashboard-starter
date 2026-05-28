@@ -1,5 +1,58 @@
 # Changelog
 
+## [2026-05-28] - 🐛 Fix: client-side exception на странице иерархии партнёров
+
+### 🐛 Корень бага
+
+При открытии `/dashboard/projects/[id]/referral/hierarchy` после активации
+b2b-режима пользователь видел белый экран с сообщением **«Application
+error: a client-side exception has occurred»**.
+
+Причина — баг в композитном компоненте `EmptyState` (`src/components/composite/empty-state.tsx`):
+
+```tsx
+{typeof Icon === 'function' ? (
+  <Icon className={...} />
+) : (
+  Icon  // ← объект forwardRef, React падает: "Objects are not valid as a React child"
+)}
+```
+
+Иконки из `lucide-react` создаются через `React.forwardRef`, что
+возвращает **объект** (`$$typeof: Symbol.for('react.forward_ref')`), а не
+функцию. Проверка `typeof Icon === 'function'` давала `false` → код
+попадал в `else`-ветку и пытался отрендерить forwardRef-объект как JSX
+child напрямую, что вызывало runtime exception в гидрированном Client
+Component.
+
+`HierarchyTree` рендерит `<EmptyState icon={Users} />` в трёх местах
+(пустой список, отсутствие корней, на странице — `<EmptyState icon={Users} />` для выключенного b2b),
+поэтому страница всегда падала на проектах с включённым флагом, у которых
+пока нет рассчитанных партнёров.
+
+### 🎯 Решение
+
+`isValidElement(Icon) ? Icon : createElement(Icon, { className })` —
+корректно обрабатывает оба случая (готовый ReactElement и компонент-конструктор,
+включая `forwardRef`).
+
+Дополнительно добавлен `error.tsx` для маршрута hierarchy — теперь любая
+runtime ошибка на странице покажет диагностическое сообщение с текстом и
+кнопкой «Попробовать снова», вместо белого экрана.
+
+### 📁 Затронутые файлы
+
+- `src/components/composite/empty-state.tsx` — рендер иконки через `createElement` с проверкой `isValidElement`.
+- `src/app/dashboard/projects/[id]/referral/hierarchy/error.tsx` — **новый** error boundary для маршрута.
+
+### ✅ Проверка
+
+- `<EmptyState icon={Users} />` — рендерит icon-компонент.
+- `<EmptyState icon={<CustomIcon />} />` — рендерит готовый JSX (обратная совместимость).
+- TypeScript компиляция — без новых ошибок.
+
+---
+
 ## [2026-05-28] - 🏗️ Архитектурный рефакторинг подписок: один активный план на админа
 
 ### 🐛 Корень бага
