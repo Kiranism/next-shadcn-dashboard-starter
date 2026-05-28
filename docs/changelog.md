@@ -1,5 +1,117 @@
 # Changelog
 
+## [2026-05-28] - 🏗️ Архитектурный рефакторинг подписок: один активный план на админа
+
+### 🐛 Корень бага
+
+Прошлый патч (сортировка `getActiveSubscription` по `maxProjects DESC`) был
+заплаткой: лимит проектов на платных подписках всё равно периодически
+ломался. Ревизия показала что **5 разных мест** в коде создавали подписки
+без отмены предыдущих:
+
+1. `BillingService.createSubscription` (ничего не отменяет)
+2. `/api/billing/plan` PUT — UI смены тарифа
+3. `/api/billing/yookassa/webhook` — оплата через ЮKassa
+4. `/api/auth/verify-email` — авто-Free после подтверждения email
+5. `/api/super-admin/subscriptions` POST — создание из супер-админки
+
+В результате у одного админа в БД накапливались Free + Trial + Pro
+одновременно, и `getActiveSubscription` возвращал то одну, то другую.
+
+### 🎯 Решение: ограничение на уровне БД + единая точка входа
+
+**1. Database constraint (`prisma/migrations/20260528134634_one_active_subscription_per_admin`)**
+
+```sql
+CREATE UNIQUE INDEX subscriptions_admin_account_id_active_unique
+  ON subscriptions(admin_account_id)
+  WHERE status IN ('active', 'trial', 'paused');
+```
+
+Postgres физически не позволит создать вторую активную подписку. Если
+какой-то код в будущем забудет вызвать единую точку входа — упадёт с
+constraint violation, а не молча сломает биллинг.
+
+Миграция начинается с очистки legacy-дублей: для каждого админа оставляет
+самую щедрую активную подписку (по `max_projects DESC, start_date DESC`),
+остальные → `cancelled` с `end_date = NOW()`. Идемпотентно через `IF NOT EXISTS`.
+
+**2. Единая точка входа: `BillingService.upsertActiveSubscription`**
+
+Все 5 сценариев теперь делегируют сюда. Контракт:
+
+* В одной транзакции:
+  1. Помечает все существующие активные подписки `cancelled` (`endDate=NOW()`).
+  2. Создаёт новую с указанным планом / опциями.
+  3. Пишет в `SubscriptionHistory`: `created` / `upgraded` / `downgraded` / `renewed`.
+* Поддерживает `extendFromCurrent` — для оплаты ЮKassa продлевает от текущего `endDate`, а не от `now`.
+* `trialDays` — для триала (`status='trial'`).
+* `customLimits` — для Enterprise tailor-made.
+* `performedBy` — id админа / `'system'` / `'yookassa'` для аудита.
+
+**3. Старые методы стали тонкими обёртками**
+
+`createSubscription`, `changePlan` теперь просто вызывают `upsertActiveSubscription`. Их API сохранён для обратной совместимости с супер-админкой и `verify-email`.
+
+**4. `getActiveSubscription` упрощён**
+
+Сложная сортировка по `maxProjects DESC` больше не нужна — БД гарантирует одну активную. Оставлена `orderBy startDate desc` как страховка.
+
+### 🐛 Исправлено
+
+* **Project limit reached на платных тарифах** — у `rapper@internet.ru` (Enterprise trial) висела также старая Free подписка, и POST `/api/projects` упирался в Free `limit=1`. Теперь невозможно по конструкции.
+* **Дубли подписок при оплате через ЮKassa** — webhook создавал новую вместо upsert.
+* **Гонка между `verify-email` и ручным `super-admin создаёт подписку`** — оба создавали подписку без отмены предыдущей.
+
+### 🎯 Добавлено
+
+* `BillingService.upsertActiveSubscription({ adminId, planId, performedBy, ... })` — новый контракт. См. JSDoc в `src/lib/services/billing.service.ts`.
+* `BillingService.ACTIVE_STATUSES` — константа `['active', 'trial', 'paused']`.
+* `__tests__/services/billing.upsert-active-subscription.test.ts` — 8 тестов:
+  - первая подписка
+  - апгрейд / даунгрейд
+  - renew того же плана
+  - cleanup legacy-дублей при смене плана
+  - trial-режим
+  - бессрочная подписка (`intervalMonths=0`)
+  - **stress-test: 100 хаотичных переключений → ровно одна активная**
+
+Все 8 — зелёные.
+
+### 🔄 Изменено
+
+* `src/app/api/billing/plan/route.ts` — переписан на `upsertActiveSubscription`.
+* `src/app/api/billing/yookassa/webhook/route.ts` — переписан на `upsertActiveSubscription` с `extendFromCurrent: true`.
+* `BillingService.createSubscription` — теперь обёртка над `upsertActiveSubscription`.
+* `BillingService.changePlan` — теперь обёртка над `upsertActiveSubscription`.
+* `scripts/fix-duplicate-subscriptions.ts` — добавлено сообщение что после релиза 2026-05-28 скрипт нужен только для одноразовой очистки legacy окружений.
+
+### 🚀 Деплой
+
+```bash
+git pull
+yarn install
+yarn build
+npx prisma migrate deploy   # применит cleanup + partial unique index
+pm2 restart bonus-app
+```
+
+После деплоя:
+* Невозможно создать вторую активную подписку (constraint).
+* Все pre-deploy дубликаты автоматически почищены миграцией.
+* Скрипт `yarn fix-duplicate-subscriptions` всё ещё доступен для разовых ручных вмешательств, но рутинно не нужен.
+
+### 📝 Затронутые файлы
+
+* `prisma/migrations/20260528134634_one_active_subscription_per_admin/migration.sql` — новый.
+* `src/lib/services/billing.service.ts` — `upsertActiveSubscription`, упрощённый `getActiveSubscription`, обёртки.
+* `src/app/api/billing/plan/route.ts` — использует единую точку.
+* `src/app/api/billing/yookassa/webhook/route.ts` — использует единую точку.
+* `__tests__/services/billing.upsert-active-subscription.test.ts` — 8 тестов.
+* `scripts/fix-duplicate-subscriptions.ts` — обновлён комментарий.
+
+---
+
 ## [2026-05-27] - 🐛 Исправлен лимит проектов при множественных активных подписках
 
 ### 🐛 Исправлено

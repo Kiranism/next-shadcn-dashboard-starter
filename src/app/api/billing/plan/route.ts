@@ -1,30 +1,30 @@
 /**
  * @file: src/app/api/billing/plan/route.ts
- * @description: API endpoint для смены тарифного плана
+ * @description: API endpoint для смены тарифного плана админом из UI Settings.
+ *               Делегирует в BillingService.upsertActiveSubscription —
+ *               единая точка входа, которая в одной транзакции отменяет
+ *               предыдущие активные подписки и создаёт новую. Также
+ *               поддерживает партнёрские unique constraint в БД (см.
+ *               миграцию 20260528134634_one_active_subscription_per_admin).
  * @project: SaaS Bonus System
- * @dependencies: Next.js, Prisma, JWT
+ * @dependencies: Next.js, Prisma, JWT, BillingService
  * @created: 2025-01-28
+ * @updated: 2026-05-28 — переписано на upsertActiveSubscription
  * @author: AI Assistant + User
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+
 import { db } from '@/lib/db';
 import { verifyJwt } from '@/lib/jwt';
 import { logger } from '@/lib/logger';
+import { BillingService } from '@/lib/services/billing.service';
 import { formatPlan, toNumber } from '@/lib/services/billing-plan.utils';
 
 const changePlanSchema = z.object({
   planId: z.string().min(1, 'planId is required')
 });
-
-const addMonths = (date: Date, months = 1) => {
-  const result = new Date(date);
-  result.setMonth(result.getMonth() + months);
-  return result;
-};
-
-const ACTIVE_SUBSCRIPTION_STATUSES = ['active', 'trial', 'paused'];
 
 export async function PUT(request: NextRequest) {
   try {
@@ -50,6 +50,7 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const { planId } = changePlanSchema.parse(body);
 
+    // Поддержка обоих форматов: planId и slug.
     const plan = await db.subscriptionPlan.findFirst({
       where: {
         OR: [{ id: planId }, { slug: planId }]
@@ -63,72 +64,21 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const subscription = await db.subscription.findFirst({
-      where: {
-        adminAccountId: admin.id,
-        status: { in: ACTIVE_SUBSCRIPTION_STATUSES }
-      },
-      orderBy: { startDate: 'desc' },
-      include: { plan: true }
-    });
-
-    if (subscription && subscription.planId === plan.id) {
+    // Проверяем, что не активируем тот же план повторно.
+    const current = await BillingService.getActiveSubscription(admin.id);
+    if (current && current.planId === plan.id) {
       return NextResponse.json({ error: 'План уже активен' }, { status: 400 });
     }
 
-    const now = new Date();
-    const nextPaymentDate = toNumber(plan.price) > 0 ? addMonths(now, 1) : null;
+    // Единая точка входа — отменяет предыдущие, создаёт новую, пишет history.
+    const updatedSubscription = await BillingService.upsertActiveSubscription({
+      adminId: admin.id,
+      planId: plan.id,
+      performedBy: admin.id,
+      reason: 'self_service_plan_change'
+    });
 
-    let updatedSubscription;
-    let action: string = 'created';
-
-    if (subscription) {
-      action =
-        toNumber(plan.price) > toNumber(subscription.plan?.price ?? 0)
-          ? 'upgraded'
-          : 'downgraded';
-
-      updatedSubscription = await db.subscription.update({
-        where: { id: subscription.id },
-        data: {
-          planId: plan.id,
-          status: 'active',
-          nextPaymentDate,
-          history: {
-            create: {
-              action,
-              fromPlanId: subscription.planId,
-              toPlanId: plan.id,
-              performedBy: admin.id
-            }
-          }
-        },
-        include: {
-          plan: true
-        }
-      });
-    } else {
-      updatedSubscription = await db.subscription.create({
-        data: {
-          adminAccountId: admin.id,
-          planId: plan.id,
-          status: 'active',
-          startDate: now,
-          nextPaymentDate,
-          history: {
-            create: {
-              action: 'created',
-              toPlanId: plan.id,
-              performedBy: admin.id
-            }
-          }
-        },
-        include: {
-          plan: true
-        }
-      });
-    }
-
+    // Синхронизируем роль админа с уровнем тарифа (legacy, не критично).
     if (admin.role !== 'SUPERADMIN') {
       const nextRole = plan.slug === 'free' ? 'MANAGER' : 'ADMIN';
       if (nextRole !== admin.role) {
@@ -138,6 +88,12 @@ export async function PUT(request: NextRequest) {
         });
       }
     }
+
+    const action = current
+      ? toNumber(plan.price) > toNumber(current.plan?.price ?? 0)
+        ? 'upgraded'
+        : 'downgraded'
+      : 'created';
 
     logger.info('Plan change completed', {
       adminId: admin.id,

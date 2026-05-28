@@ -134,6 +134,9 @@ async function main() {
   console.log(
     `\n📊 Итого: найдено ${totalDuplicates} дубликатов, ${args.dryRun ? 'было бы исправлено' : 'исправлено'} ${totalFixed}.`
   );
+  console.log(
+    '\n💡 Подсказка: после релиза от 2026-05-28 в БД действует partial unique index `subscriptions_admin_account_id_active_unique`. Дубликаты больше не появятся — этот скрипт оставлен для legacy-окружений и одноразовой очистки перед миграцией.'
+  );
   console.log('\n✅ Готово');
 }
 

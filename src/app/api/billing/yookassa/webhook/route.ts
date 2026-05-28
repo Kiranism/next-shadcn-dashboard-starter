@@ -9,12 +9,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
-function addMonths(date: Date, months: number) {
-  const d = new Date(date);
-  d.setMonth(d.getMonth() + months);
-  return d;
-}
-
 export async function POST(request: NextRequest) {
   try {
     const event = await request.json();
@@ -23,7 +17,10 @@ export async function POST(request: NextRequest) {
     const status: string | undefined = paymentObject.status;
 
     if (!providerPaymentId) {
-      return NextResponse.json({ error: 'payment id missing' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'payment id missing' },
+        { status: 400 }
+      );
     }
 
     const payment = await db.payment.findUnique({
@@ -32,7 +29,10 @@ export async function POST(request: NextRequest) {
     });
 
     if (!payment) {
-      logger.warn('Payment not found for webhook', { providerPaymentId, status });
+      logger.warn('Payment not found for webhook', {
+        providerPaymentId,
+        status
+      });
       return NextResponse.json({ ok: true });
     }
 
@@ -52,57 +52,35 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: true });
       }
 
-      // Найти или создать подписку для админа
-      let subscription = await db.subscription.findFirst({
-        where: {
-          adminAccountId: payment.adminAccountId,
-          status: { in: ['active', 'trial', 'paused'] }
-        },
-        include: { plan: true }
-      });
-
-      const now = new Date();
       const intervalMonths = plan.interval === 'year' ? 12 : 1;
 
-      if (!subscription) {
-        subscription = await db.subscription.create({
-          data: {
-            adminAccountId: payment.adminAccountId,
-            planId: plan.id,
-            status: 'active',
-            startDate: now,
-            endDate: addMonths(now, intervalMonths),
-            lastPaymentDate: now,
-            nextPaymentDate: addMonths(now, intervalMonths)
-          },
-          include: { plan: true }
-        });
-      } else {
-        const baseDate =
-          subscription.endDate && subscription.endDate > now
-            ? subscription.endDate
-            : now;
-        const newEnd = addMonths(baseDate, intervalMonths);
-        await db.subscription.update({
-          where: { id: subscription.id },
-          data: {
-            status: 'active',
-            planId: plan.id,
-            startDate: subscription.startDate || now,
-            endDate: newEnd,
-            lastPaymentDate: now,
-            nextPaymentDate: addMonths(now, intervalMonths)
-          }
-        });
-      }
+      // Используем единую точку входа: BillingService.upsertActiveSubscription
+      //   - Отменит существующую активную подписку (если была) в той же
+      //     транзакции, что создаст новую.
+      //   - Гарантирует partial unique index из миграции
+      //     20260528134634_one_active_subscription_per_admin.
+      //   - extendFromCurrent=true — для продления оплатой ЮKassa с
+      //     текущей даты окончания (а не от now).
+      //   - Запишет в SubscriptionHistory (action: created/upgraded/renewed/
+      //     downgraded — определяется автоматически).
+      const { BillingService } = await import('@/lib/services/billing.service');
+      const subscription = await BillingService.upsertActiveSubscription({
+        adminId: payment.adminAccountId,
+        planId: plan.id,
+        performedBy: 'yookassa',
+        reason: `yookassa_payment:${payment.id}`,
+        intervalMonths,
+        extendFromCurrent: true
+      });
 
-      await db.subscriptionHistory.create({
+      // Дополнительно проставим lastPaymentDate / nextPaymentDate
+      // (upsertActiveSubscription их не трогает — это специфично для
+      // платёжного флоу).
+      await db.subscription.update({
+        where: { id: subscription.id },
         data: {
-          subscriptionId: subscription.id,
-          action: 'paid',
-          toPlanId: plan.id,
-          reason: 'yookassa_payment',
-          performedBy: 'system'
+          lastPaymentDate: new Date(),
+          nextPaymentDate: subscription.endDate
         }
       });
     }
