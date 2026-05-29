@@ -30,7 +30,7 @@ export function SettingsCard() {
     mutationFn: (hours: number) => updateSettings(token!, { min_week_hours: hours }),
     onSuccess: (updated) => {
       toast.success(`Meta atualizada para ${updated.min_week_hours}h semanais`);
-      void queryClient.invalidateQueries({ queryKey: ['settings'] });
+      queryClient.setQueryData(['settings'], updated);
       void queryClient.invalidateQueries({ queryKey: ['time-entries', 'team'] });
       setEditing(false);
     },
