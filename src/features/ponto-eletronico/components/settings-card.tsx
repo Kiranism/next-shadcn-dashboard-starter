@@ -1,41 +1,25 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Icons } from '@/components/icons';
-import { useSession } from '@/components/providers/session-provider';
 import { useUserProfile } from '@/components/providers/user-profile-provider';
-import { settingsQueryOptions } from '../api/queries';
-import { updateSettings } from '../api/service';
+import { SettingsRepository } from '@/repositories/settings.repository';
 import { toUserMessage } from '@/lib/api-client';
 
 export function SettingsCard() {
   const { rank } = useUserProfile();
-  const { session } = useSession();
-  const token = session?.access_token ?? null;
-  const queryClient = useQueryClient();
-
   const canEdit = rank >= 3;
 
-  const { data: settings, isLoading } = useQuery(settingsQueryOptions(token));
+  const { data: settings, isLoading } = SettingsRepository.useSettings();
+  const mutation = SettingsRepository.useUpdateSettings();
+
   const [editValue, setEditValue] = useState<string>('');
   const [editing, setEditing] = useState(false);
-
-  const mutation = useMutation({
-    mutationFn: (hours: number) => updateSettings(token!, { min_week_hours: hours }),
-    onSuccess: (updated) => {
-      toast.success(`Meta atualizada para ${updated.min_week_hours}h semanais`);
-      queryClient.setQueryData(['settings'], updated);
-      void queryClient.invalidateQueries({ queryKey: ['time-entries', 'team'] });
-      setEditing(false);
-    },
-    onError: (err: Error) => toast.error(toUserMessage(err))
-  });
 
   function startEdit() {
     setEditValue(String(settings?.min_week_hours ?? ''));
@@ -48,7 +32,16 @@ export function SettingsCard() {
       toast.error('Informe um número inteiro positivo');
       return;
     }
-    mutation.mutate(parsed);
+    mutation.mutate(
+      { min_week_hours: parsed },
+      {
+        onSuccess: (updated) => {
+          toast.success(`Meta atualizada para ${updated.min_week_hours}h semanais`);
+          setEditing(false);
+        },
+        onError: (err: Error) => toast.error(toUserMessage(err))
+      }
+    );
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {

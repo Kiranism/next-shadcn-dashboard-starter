@@ -1,11 +1,10 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useSession } from '@/components/providers/session-provider';
-import { mySummaryQueryOptions, settingsQueryOptions } from '../api/queries';
+import { TimeEntriesRepository } from '@/repositories/time-entries.repository';
+import { SettingsRepository } from '@/repositories/settings.repository';
 import { ClockInOutButton } from './clock-in-out-button';
 
 function minutesToHours(minutes: number) {
@@ -37,11 +36,8 @@ function formatSessionRange(clockedIn: string, clockedOut: string) {
 }
 
 export function WeeklySummaryCard() {
-  const { session } = useSession();
-  const token = session?.access_token ?? null;
-
-  const { data: summary, isLoading: summaryLoading } = useQuery(mySummaryQueryOptions(token));
-  const { data: settings } = useQuery(settingsQueryOptions(token));
+  const { data: summary, isLoading: summaryLoading } = TimeEntriesRepository.useMySummary();
+  const { data: settings } = SettingsRepository.useSettings();
 
   const minMinutes = (settings?.min_week_hours ?? 0) * 60;
   const progressPct =
@@ -77,7 +73,6 @@ export function WeeklySummaryCard() {
           </div>
         ) : (
           <>
-            {/* Hours display */}
             <div className='flex items-end gap-2'>
               <span className='text-4xl font-bold tabular-nums'>
                 {minutesToHours(summary?.total_minutes ?? 0)}
@@ -89,7 +84,6 @@ export function WeeklySummaryCard() {
               )}
             </div>
 
-            {/* Progress bar */}
             {minMinutes > 0 && (
               <div className='space-y-1'>
                 <div className='bg-muted h-1.5 w-full overflow-hidden rounded-full'>
@@ -104,7 +98,6 @@ export function WeeklySummaryCard() {
               </div>
             )}
 
-            {/* Open session status */}
             {isOpen && summary?.current_session?.status === 'open' && (
               <div className='flex items-center gap-2 rounded-md border border-green-500/30 bg-green-500/10 px-3 py-2'>
                 <span className='size-2 shrink-0 animate-pulse rounded-full bg-green-500' />
@@ -124,10 +117,8 @@ export function WeeklySummaryCard() {
               </div>
             )}
 
-            {/* Clock in/out */}
             <ClockInOutButton summary={summary} />
 
-            {/* Sessions list */}
             {summary && summary.valid_sessions.length > 0 && (
               <div className='space-y-2'>
                 <p className='text-muted-foreground text-xs font-medium uppercase tracking-wider'>

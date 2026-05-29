@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
+import { getMinRankForPath, getRankFromRole } from '@/config/nav-config.utils';
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -44,6 +45,21 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
     return NextResponse.redirect(url);
+  }
+
+  // Role-based route protection using the wattdash-role cookie
+  if (user && isDashboardRoute) {
+    const roleCookie = request.cookies.get('wattdash-role')?.value;
+    if (roleCookie) {
+      const rank = getRankFromRole(roleCookie);
+      const minRank = getMinRankForPath(pathname);
+      if (minRank !== null && rank < minRank) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/dashboard/ponto';
+        return NextResponse.redirect(url);
+      }
+    }
+    // If cookie is absent but user is authenticated, allow through — RoleGuard handles it client-side
   }
 
   return supabaseResponse;

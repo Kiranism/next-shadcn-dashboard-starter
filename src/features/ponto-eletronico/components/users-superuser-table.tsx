@@ -1,23 +1,25 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Icons } from '@/components/icons';
-import { useSession } from '@/components/providers/session-provider';
 import { useUserProfile } from '@/components/providers/user-profile-provider';
+import { UserRepository } from '@/repositories/users.repository';
+import { TimeEntriesRepository } from '@/repositories/time-entries.repository';
+import { SettingsRepository } from '@/repositories/settings.repository';
 import {
-  teamWeekQueryOptions,
-  usersQueryOptions,
-  settingsQueryOptions,
-  userSummaryQueryOptions
-} from '../api/queries';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import { UserWeeklySummaryPanel } from './user-weekly-summary-panel';
-import type { UserResponse } from '../api/types';
+import type { UserResponse } from '@/types/api';
 
 const ROLE_LABEL: Record<string, string> = {
   consultor: 'Consultor',
@@ -50,14 +52,8 @@ function getInitials(name: string) {
 function formatWeekLabel(weekStart: string, weekEnd: string) {
   const start = new Date(weekStart + 'T00:00:00');
   const end = new Date(weekEnd + 'T00:00:00');
-  const startStr = start.toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit'
-  });
-  const endStr = end.toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit'
-  });
+  const startStr = start.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  const endStr = end.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
   return `${startStr} – ${endStr}`;
 }
 
@@ -72,11 +68,8 @@ interface MemberRow {
   previousMet: boolean;
 }
 
-function ActiveDot({ userId, token }: { userId: string; token: string | null }) {
-  const { data: summary } = useQuery({
-    ...userSummaryQueryOptions(token, userId),
-    refetchInterval: 60_000
-  });
+function ActiveDot({ userId }: { userId: string }) {
+  const { data: summary } = TimeEntriesRepository.useUserSummary(userId);
   if (summary?.current_session?.status !== 'open') return null;
   return (
     <span className='flex items-center gap-1 text-xs font-medium text-green-500'>
@@ -88,8 +81,6 @@ function ActiveDot({ userId, token }: { userId: string; token: string | null }) 
 
 export function UsersSuperuserTable() {
   const { rank } = useUserProfile();
-  const { session } = useSession();
-  const token = session?.access_token ?? null;
   const isSuperuser = rank >= 3;
 
   const [selectedUser, setSelectedUser] = useState<UserResponse | null>(null);
@@ -98,19 +89,13 @@ export function UsersSuperuserTable() {
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
 
-  const { data: users = [], isLoading: usersLoading } = useQuery(
-    usersQueryOptions(token, isSuperuser)
-  );
-  const { data: currentWeekData, isLoading: currentLoading } = useQuery(
-    teamWeekQueryOptions(token, 0, isSuperuser)
-  );
-  const { data: previousWeekData, isLoading: previousLoading } = useQuery(
-    teamWeekQueryOptions(token, 1, isSuperuser)
-  );
-  const { data: settings } = useQuery(settingsQueryOptions(token));
+  const { data: users = [], isLoading: usersLoading } = UserRepository.useAll();
+  const { data: currentWeekData, isLoading: currentLoading } = TimeEntriesRepository.useTeamWeek(0);
+  const { data: previousWeekData, isLoading: previousLoading } =
+    TimeEntriesRepository.useTeamWeek(1);
+  const { data: settings } = SettingsRepository.useSettings();
 
   const isLoading = usersLoading || currentLoading || previousLoading;
-
   const minMinutes = (settings?.min_week_hours ?? 0) * 60;
 
   const members: MemberRow[] = useMemo(() => {
@@ -214,18 +199,22 @@ export function UsersSuperuserTable() {
                 />
               </div>
               {sectors.length > 0 && (
-                <select
-                  value={sectorFilter}
-                  onChange={(e) => setSectorFilter(e.target.value)}
-                  className='border-input bg-background text-foreground h-8 rounded-md border px-2 text-sm focus:outline-none'
+                <Select
+                  value={sectorFilter || '_all'}
+                  onValueChange={(v) => setSectorFilter(v === '_all' ? '' : v)}
                 >
-                  <option value=''>Todos os setores</option>
-                  {sectors.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className='h-8 w-40 text-sm'>
+                    <SelectValue placeholder='Todos os setores' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='_all'>Todos os setores</SelectItem>
+                    {sectors.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
             </div>
           </div>
@@ -311,7 +300,7 @@ export function UsersSuperuserTable() {
                                   {ROLE_LABEL[member.role] ?? member.role}
                                   {member.sector && <> · {member.sector}</>}
                                 </p>
-                                <ActiveDot userId={member.user_id} token={token} />
+                                <ActiveDot userId={member.user_id} />
                               </div>
                             </div>
                           </td>
@@ -395,7 +384,7 @@ export function UsersSuperuserTable() {
                               {ROLE_LABEL[member.role] ?? member.role}
                               {member.sector && <> · {member.sector}</>}
                             </p>
-                            <ActiveDot userId={member.user_id} token={token} />
+                            <ActiveDot userId={member.user_id} />
                             <span className='text-muted-foreground text-xs'>
                               Ant: {minutesToHours(member.previousMinutes)}
                               {member.previousMet && ' ✓'}

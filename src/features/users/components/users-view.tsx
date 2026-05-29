@@ -2,16 +2,14 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Icons } from '@/components/icons';
-import { useSession } from '@/components/providers/session-provider';
 import { useUserProfile } from '@/components/providers/user-profile-provider';
-import { usersQueryOptions } from '../api/queries';
+import { UserRepository } from '@/repositories/users.repository';
 import { EditUserModal } from './edit-user-modal';
-import type { UserResponse } from '@/features/ponto-eletronico/api/types';
+import type { UserResponse } from '@/types/api';
 
 const ROLE_LABEL: Record<string, string> = {
   consultor: 'Consultor',
@@ -40,10 +38,7 @@ function getInitials(name: string) {
 
 export function UsersView() {
   const { rank, isLoading: profileLoading } = useUserProfile();
-  const { session } = useSession();
-  const token = session?.access_token ?? null;
   const router = useRouter();
-
   const isSuperuser = rank >= 3;
 
   const [search, setSearch] = useState('');
@@ -55,7 +50,7 @@ export function UsersView() {
     }
   }, [profileLoading, isSuperuser, router]);
 
-  const { data: users = [], isLoading } = useQuery(usersQueryOptions(token, isSuperuser));
+  const { data: users = [], isLoading } = UserRepository.useAll();
 
   const sectors = useMemo(() => {
     const s = new Set(users.map((u) => u.sector).filter(Boolean) as string[]);

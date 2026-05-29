@@ -1,9 +1,10 @@
 'use client';
 
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSession } from './session-provider';
 import { userProfileQueryOptions } from '@/features/auth/api/queries';
+import { setRoleCookie } from '@/app/actions/set-role-cookie';
 import type { UserProfile } from '@/types/user-profile';
 
 interface UserProfileContextValue {
@@ -26,8 +27,13 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
 
   const { data: profile = null, isLoading, error } = useQuery(userProfileQueryOptions(token));
 
-  // profileMissing = has session but wattapi returned error (no profile registered yet)
   const profileMissing = !!token && !isLoading && !sessionLoading && !profile && !!error;
+
+  useEffect(() => {
+    if (profile?.role) {
+      void setRoleCookie(profile.role);
+    }
+  }, [profile?.role]);
 
   return (
     <UserProfileContext.Provider

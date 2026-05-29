@@ -1,3 +1,5 @@
+// Shared API response types
+
 export interface ClockInResponse {
   id: string;
   clocked_in_at: string;
@@ -75,11 +77,13 @@ export interface UserResponse {
   cpf: string | null;
 }
 
-export interface UsersListResponse {
-  users: UserResponse[];
-  total: number;
-}
-
 export interface AppSettings {
   min_week_hours: number;
+}
+
+export interface UpdateUserPayload {
+  name?: string;
+  role?: string;
+  sector?: string | null;
+  cpf?: string | null;
 }

@@ -1,49 +1,41 @@
 'use client';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
-import { useSession } from '@/components/providers/session-provider';
-import { clockIn, clockOut } from '../api/service';
+import { TimeEntriesRepository } from '@/repositories';
 import { toUserMessage } from '@/lib/api-client';
-import type { SummaryResponse } from '../api/types';
+import type { SummaryResponse } from '@/types/api';
 
 interface ClockInOutButtonProps {
   summary: SummaryResponse | undefined;
 }
 
 export function ClockInOutButton({ summary }: ClockInOutButtonProps) {
-  const { session } = useSession();
-  const queryClient = useQueryClient();
-  const token = session?.access_token ?? '';
-
   const isOpen = summary?.current_session?.status === 'open';
 
-  const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: ['time-entries', 'summary', 'me'] });
+  const clockInMutation = TimeEntriesRepository.useClockIn();
+  const clockOutMutation = TimeEntriesRepository.useClockOut();
 
-  const clockInMutation = useMutation({
-    mutationFn: () => clockIn(token),
-    onSuccess: () => {
-      toast.success('Entrada registrada com sucesso');
-      void invalidate();
-    },
-    onError: (err: Error) => toast.error(toUserMessage(err))
-  });
+  const handleClockIn = () => {
+    clockInMutation.mutate(undefined, {
+      onSuccess: () => toast.success('Entrada registrada com sucesso'),
+      onError: (err: Error) => toast.error(toUserMessage(err))
+    });
+  };
 
-  const clockOutMutation = useMutation({
-    mutationFn: () => clockOut(token),
-    onSuccess: (data) => {
-      if (data.status === 'annulled') {
-        toast.warning('Saída registrada, mas a sessão foi anulada por exceder 8 horas');
-      } else {
-        toast.success(`Saída registrada — ${data.duration_minutes} min trabalhados`);
-      }
-      void invalidate();
-    },
-    onError: (err: Error) => toast.error(toUserMessage(err))
-  });
+  const handleClockOut = () => {
+    clockOutMutation.mutate(undefined, {
+      onSuccess: (data) => {
+        if (data.status === 'annulled') {
+          toast.warning('Saída registrada, mas a sessão foi anulada por exceder 8 horas');
+        } else {
+          toast.success(`Saída registrada — ${data.duration_minutes} min trabalhados`);
+        }
+      },
+      onError: (err: Error) => toast.error(toUserMessage(err))
+    });
+  };
 
   const isPending = clockInMutation.isPending || clockOutMutation.isPending;
 
@@ -52,13 +44,11 @@ export function ClockInOutButton({ summary }: ClockInOutButtonProps) {
       size='lg'
       variant={isOpen ? 'destructive' : 'default'}
       disabled={isPending}
-      onClick={() => (isOpen ? clockOutMutation.mutate() : clockInMutation.mutate())}
+      onClick={() => (isOpen ? handleClockOut() : handleClockIn())}
       className='w-full sm:w-auto'
     >
       {isPending ? (
         <Icons.spinner className='mr-2 size-4 animate-spin' />
-      ) : isOpen ? (
-        <Icons.clock className='mr-2 size-4' />
       ) : (
         <Icons.clock className='mr-2 size-4' />
       )}

@@ -1,6 +1,5 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import {
   Sheet,
   SheetContent,
@@ -10,9 +9,9 @@ import {
 } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useSession } from '@/components/providers/session-provider';
-import { userSummaryQueryOptions, settingsQueryOptions } from '../api/queries';
-import type { UserResponse } from '../api/types';
+import { TimeEntriesRepository } from '@/repositories/time-entries.repository';
+import { SettingsRepository } from '@/repositories/settings.repository';
+import type { UserResponse } from '@/types/api';
 
 const ROLE_LABEL: Record<string, string> = {
   consultor: 'Consultor',
@@ -68,11 +67,8 @@ function formatTime(iso: string) {
 }
 
 export function UserWeeklySummaryPanel({ user, onClose }: UserWeeklySummaryPanelProps) {
-  const { session } = useSession();
-  const token = session?.access_token ?? null;
-
-  const { data: summary, isLoading } = useQuery(userSummaryQueryOptions(token, user.id));
-  const { data: settings } = useQuery(settingsQueryOptions(token));
+  const { data: summary, isLoading } = TimeEntriesRepository.useUserSummary(user.id);
+  const { data: settings } = SettingsRepository.useSettings();
 
   const minMinutes = (settings?.min_week_hours ?? 0) * 60;
   const progressPct =
@@ -107,12 +103,10 @@ export function UserWeeklySummaryPanel({ user, onClose }: UserWeeklySummaryPanel
             </div>
           ) : summary ? (
             <>
-              {/* Week header */}
               <p className='text-muted-foreground text-xs'>
                 Semana {formatDateBR(summary.week_start)} — {formatDateBR(summary.week_end)}
               </p>
 
-              {/* Hours and badge */}
               <div className='flex flex-wrap items-center gap-3'>
                 <span className='text-3xl font-bold tabular-nums'>
                   {minutesToHours(summary.total_minutes)}
@@ -122,7 +116,6 @@ export function UserWeeklySummaryPanel({ user, onClose }: UserWeeklySummaryPanel
                 </Badge>
               </div>
 
-              {/* Progress bar */}
               {minMinutes > 0 && (
                 <div className='space-y-1'>
                   <div className='bg-muted h-1.5 w-full overflow-hidden rounded-full'>
@@ -139,7 +132,6 @@ export function UserWeeklySummaryPanel({ user, onClose }: UserWeeklySummaryPanel
                 </div>
               )}
 
-              {/* Current session status */}
               {summary.current_session.status === 'open' && (
                 <div className='flex items-center gap-2 rounded-md border border-green-500/30 bg-green-500/10 px-3 py-2'>
                   <span className='size-2 shrink-0 animate-pulse rounded-full bg-green-500' />
@@ -150,7 +142,6 @@ export function UserWeeklySummaryPanel({ user, onClose }: UserWeeklySummaryPanel
                 </div>
               )}
 
-              {/* Sessions list */}
               {summary.valid_sessions.length > 0 ? (
                 <div className='space-y-2'>
                   <p className='text-muted-foreground text-xs font-medium uppercase tracking-wider'>

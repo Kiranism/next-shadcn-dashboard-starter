@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -20,11 +20,9 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Icons } from '@/components/icons';
-import { useSession } from '@/components/providers/session-provider';
-import { updateUser } from '../api/service';
+import { UserRepository } from '@/repositories/users.repository';
 import { toUserMessage } from '@/lib/api-client';
-import type { UserResponse } from '@/features/ponto-eletronico/api/types';
-import { useState, useEffect } from 'react';
+import type { UserResponse } from '@/types/api';
 
 const ROLE_OPTIONS = [
   { value: 'consultor', label: 'Consultor' },
@@ -43,9 +41,7 @@ interface EditUserModalProps {
 }
 
 export function EditUserModal({ user, sectors, onClose }: EditUserModalProps) {
-  const { session } = useSession();
-  const token = session?.access_token ?? null;
-  const queryClient = useQueryClient();
+  const mutation = UserRepository.useUpdateOne();
 
   const [name, setName] = useState(user?.name ?? '');
   const [role, setRole] = useState(user?.role ?? '');
@@ -61,21 +57,27 @@ export function EditUserModal({ user, sectors, onClose }: EditUserModalProps) {
     }
   }, [user?.id]);
 
-  const mutation = useMutation({
-    mutationFn: () =>
-      updateUser(token!, user!.id, {
-        name: name.trim() || undefined,
-        role: role || undefined,
-        sector: sector === NONE ? null : sector,
-        cpf: cpf.trim() || null
-      }),
-    onSuccess: () => {
-      toast.success('Usuário atualizado com sucesso');
-      void queryClient.invalidateQueries({ queryKey: ['users'] });
-      onClose();
-    },
-    onError: (err: Error) => toast.error(toUserMessage(err))
-  });
+  function handleSave() {
+    if (!user) return;
+    mutation.mutate(
+      {
+        id: user.id,
+        data: {
+          name: name.trim() || undefined,
+          role: role || undefined,
+          sector: sector === NONE ? null : sector,
+          cpf: cpf.trim() || null
+        }
+      },
+      {
+        onSuccess: () => {
+          toast.success('Usuário atualizado com sucesso');
+          onClose();
+        },
+        onError: (err: Error) => toast.error(toUserMessage(err))
+      }
+    );
+  }
 
   function handleOpenChange(open: boolean) {
     if (!open) onClose();
@@ -154,7 +156,7 @@ export function EditUserModal({ user, sectors, onClose }: EditUserModalProps) {
           <Button variant='ghost' onClick={onClose} disabled={mutation.isPending}>
             Cancelar
           </Button>
-          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
+          <Button onClick={handleSave} disabled={mutation.isPending}>
             {mutation.isPending ? <Icons.spinner className='mr-2 size-4 animate-spin' /> : null}
             Salvar
           </Button>
