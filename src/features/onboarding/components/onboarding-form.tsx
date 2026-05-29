@@ -15,10 +15,10 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useSession } from '@/components/providers/session-provider';
 import { createProfile, type CreateProfileDto } from '../api/service';
 import { toUserMessage } from '@/lib/api-client';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { createClient } from '@/utils/supabase/client';
 
 const SECTORS = [
   { value: 'projetos', label: 'Projetos' },
@@ -29,7 +29,6 @@ const SECTORS = [
 ] as const;
 
 export function OnboardingForm() {
-  const { session } = useSession();
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -38,7 +37,13 @@ export function OnboardingForm() {
   const [cpf, setCpf] = useState('');
 
   const mutation = useMutation({
-    mutationFn: (dto: CreateProfileDto) => createProfile(session?.access_token ?? '', dto),
+    mutationFn: async (dto: CreateProfileDto) => {
+      const supabase = createClient();
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+      return createProfile(session?.access_token ?? '', dto);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
       toast.success('Perfil criado com sucesso! Bem-vindo(a).');
