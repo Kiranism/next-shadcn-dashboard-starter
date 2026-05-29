@@ -32,8 +32,9 @@ export async function updateSession(request: NextRequest) {
 
   const isAuthRoute = pathname.startsWith('/auth');
   const isDashboardRoute = pathname.startsWith('/dashboard');
+  const isOnboardingRoute = pathname.startsWith('/onboarding');
 
-  if (!user && isDashboardRoute) {
+  if (!user && (isDashboardRoute || isOnboardingRoute)) {
     const url = request.nextUrl.clone();
     url.pathname = '/auth/sign-in';
     return NextResponse.redirect(url);

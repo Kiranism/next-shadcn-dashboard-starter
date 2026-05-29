@@ -1,3 +1,4 @@
+import type { IconProps } from '@tabler/icons-react';
 import {
   IconAdjustmentsHorizontal,
   IconAlertCircle,
@@ -26,7 +27,6 @@ import {
   IconClipboardText,
   IconClock,
   IconCode,
-  IconCommand,
   IconCreditCard,
   IconDeviceLaptop,
   IconDots,
@@ -62,7 +62,6 @@ import {
   IconPhoto,
   IconPizza,
   IconPlus,
-  IconProps,
   IconRosetteDiscountCheck,
   IconSearch,
   IconSelector,
@@ -91,6 +90,31 @@ import {
 } from '@tabler/icons-react';
 
 export type Icon = React.ComponentType<IconProps>;
+
+function LogoIcon({ className, size = 24 }: IconProps) {
+  return (
+    <svg
+      xmlns='http://www.w3.org/2000/svg'
+      viewBox='0 0 24 24'
+      width={size}
+      height={size}
+      className={className}
+      fill='currentColor'
+      aria-hidden='true'
+    >
+      <text
+        x='12'
+        y='17'
+        textAnchor='middle'
+        fontSize='16'
+        fontWeight='700'
+        fontFamily='system-ui, sans-serif'
+      >
+        W
+      </text>
+    </svg>
+  );
+}
 
 export const Icons = {
   // General
@@ -140,7 +164,7 @@ export const Icons = {
   // Brand
   github: IconBrandGithub,
   twitter: IconBrandTwitter,
-  logo: IconCommand,
+  logo: LogoIcon,
 
   // Communication
   chat: IconMessage,

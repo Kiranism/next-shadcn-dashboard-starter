@@ -1,7 +1,5 @@
-import { ForgotPasswordForm } from '@/features/auth/components/forgot-password-form';
-
-export const metadata = { title: 'Forgot Password' };
+import { redirect } from 'next/navigation';
 
 export default function ForgotPasswordPage() {
-  return <ForgotPasswordForm />;
+  redirect('/auth/sign-in');
 }

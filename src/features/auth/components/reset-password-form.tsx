@@ -51,7 +51,7 @@ export function ResetPasswordForm() {
       const supabase = createClient();
       const { error } = await supabase.auth.updateUser({ password: value.password });
       if (error) {
-        toast.error(error.message);
+        toast.error('Não foi possível atualizar a senha. Tente novamente.');
         return;
       }
       toast.success('Password updated successfully');

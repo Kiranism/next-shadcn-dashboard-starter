@@ -3,6 +3,7 @@ import React from 'react';
 import { ActiveThemeProvider } from '../themes/active-theme';
 import QueryProvider from './query-provider';
 import { SessionProvider } from '../providers/session-provider';
+import { UserProfileProvider } from '../providers/user-profile-provider';
 
 export default function Providers({
   activeThemeValue,
@@ -15,7 +16,9 @@ export default function Providers({
     <>
       <ActiveThemeProvider initialTheme={activeThemeValue}>
         <SessionProvider>
-          <QueryProvider>{children}</QueryProvider>
+          <QueryProvider>
+            <UserProfileProvider>{children}</UserProfileProvider>
+          </QueryProvider>
         </SessionProvider>
       </ActiveThemeProvider>
     </>

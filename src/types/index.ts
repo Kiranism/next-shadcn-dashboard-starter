@@ -20,11 +20,13 @@ export interface NavItem {
   isActive?: boolean;
   items?: NavItem[];
   access?: PermissionCheck;
+  minRank?: number;
 }
 
 export interface NavGroup {
   label: string;
   items: NavItem[];
+  minRank?: number;
 }
 
 export interface NavItemWithChildren extends NavItem {

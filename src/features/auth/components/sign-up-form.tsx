@@ -44,7 +44,7 @@ export function SignUpForm() {
         if (error.message.toLowerCase().includes('already registered')) {
           toast.error('An account with this email already exists');
         } else {
-          toast.error(error.message);
+          toast.error('Could not create account. Please try again.');
         }
         return;
       }

@@ -1,7 +1,5 @@
-import { SignUpForm } from '@/features/auth/components/sign-up-form';
-
-export const metadata = { title: 'Sign Up' };
+import { redirect } from 'next/navigation';
 
 export default function SignUpPage() {
-  return <SignUpForm />;
+  redirect('/auth/sign-in');
 }

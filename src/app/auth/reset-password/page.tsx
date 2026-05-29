@@ -1,7 +1,5 @@
-import { ResetPasswordForm } from '@/features/auth/components/reset-password-form';
-
-export const metadata = { title: 'Reset Password' };
+import { redirect } from 'next/navigation';
 
 export default function ResetPasswordPage() {
-  return <ResetPasswordForm />;
+  redirect('/auth/sign-in');
 }
