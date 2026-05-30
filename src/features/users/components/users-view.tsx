@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Icons } from '@/components/icons';
@@ -10,6 +11,7 @@ import { useUserProfile } from '@/components/providers/user-profile-provider';
 import { UserRepository } from '@/repositories/users.repository';
 import { ROLE_LABEL } from '@/constants/user-options';
 import { EditUserModal } from './edit-user-modal';
+import { SendNotificationDialog } from '@/features/notifications/components/send-notification-dialog';
 import type { UserResponse } from '@/types/api';
 
 function formatCpf(cpf: string | null) {
@@ -36,6 +38,7 @@ export function UsersView() {
 
   const [search, setSearch] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserResponse | null>(null);
+  const [notifOpen, setNotifOpen] = useState(false);
 
   useEffect(() => {
     if (!profileLoading && !isSuperuser) {
@@ -80,14 +83,26 @@ export function UsersView() {
                 </p>
               )}
             </div>
-            <div className='relative w-full sm:w-56'>
-              <Icons.search className='text-muted-foreground absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2' />
-              <Input
-                placeholder='Buscar usuário...'
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className='h-8 w-full pl-8 text-sm'
-              />
+            <div className='flex items-center gap-2'>
+              <Button
+                variant='outline'
+                size='icon'
+                className='h-8 w-8 shrink-0'
+                onClick={() => setNotifOpen(true)}
+                aria-label='Enviar notificação'
+                title='Enviar notificação'
+              >
+                <Icons.notification className='size-3.5' />
+              </Button>
+              <div className='relative w-full sm:w-56'>
+                <Icons.search className='text-muted-foreground absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2' />
+                <Input
+                  placeholder='Buscar usuário...'
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className='h-8 w-full pl-8 text-sm'
+                />
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -204,6 +219,7 @@ export function UsersView() {
       </Card>
 
       <EditUserModal user={selectedUser} onClose={() => setSelectedUser(null)} />
+      <SendNotificationDialog open={notifOpen} onOpenChange={setNotifOpen} />
     </>
   );
 }

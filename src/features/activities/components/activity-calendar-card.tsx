@@ -67,7 +67,11 @@ const priorityDot: Record<string, string> = {
   baixa: 'bg-blue-500'
 };
 
-const priorityRank: Record<ActivityPriority, number> = { alta: 3, media: 2, baixa: 1 };
+const priorityRank: Record<ActivityPriority, number> = {
+  alta: 3,
+  media: 2,
+  baixa: 1
+};
 
 // Calendar day-dot positioning (color is added per priority).
 const dayDotBase =
@@ -183,7 +187,11 @@ export function ActivityCalendarCard({ selectedDate, onSelectDate }: ActivityCal
         highestByDay.set(a.date, a.priority);
       }
     }
-    const buckets: Record<ActivityPriority, Date[]> = { alta: [], media: [], baixa: [] };
+    const buckets: Record<ActivityPriority, Date[]> = {
+      alta: [],
+      media: [],
+      baixa: []
+    };
     for (const [date, priority] of highestByDay) {
       buckets[priority].push(new Date(date + 'T00:00:00'));
     }
@@ -301,7 +309,7 @@ export function ActivityCalendarCard({ selectedDate, onSelectDate }: ActivityCal
             {isLoading ? (
               <div className='space-y-2'>
                 {[1, 2].map((i) => (
-                  <div key={i} className='bg-muted h-[68px] animate-pulse rounded-lg' />
+                  <div key={i} className='bg-muted h-17 animate-pulse rounded-lg' />
                 ))}
               </div>
             ) : activities.length === 0 ? (
@@ -338,8 +346,8 @@ export function ActivityCalendarCard({ selectedDate, onSelectDate }: ActivityCal
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir atividade?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. A atividade &quot;{deletingActivity?.name}&quot; será
-              removida permanentemente.
+              Esta ação não pode ser desfeita. A atividade &quot;
+              {deletingActivity?.name}&quot; será removida permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
