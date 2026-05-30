@@ -1,4 +1,5 @@
-export type Role = 'consultor' | 'gerente' | 'diretor' | 'assessor' | 'presidente';
+export type { Role } from '@/constants/user-options';
+import type { Role } from '@/constants/user-options';
 
 export const ROLE_RANK: Record<Role, number> = {
   consultor: 0,

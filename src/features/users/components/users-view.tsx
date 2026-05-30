@@ -8,16 +8,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Icons } from '@/components/icons';
 import { useUserProfile } from '@/components/providers/user-profile-provider';
 import { UserRepository } from '@/repositories/users.repository';
+import { ROLE_LABEL } from '@/constants/user-options';
 import { EditUserModal } from './edit-user-modal';
 import type { UserResponse } from '@/types/api';
-
-const ROLE_LABEL: Record<string, string> = {
-  consultor: 'Consultor',
-  gerente: 'Gerente',
-  diretor: 'Diretor',
-  assessor: 'Assessor',
-  presidente: 'Presidente'
-};
 
 function formatCpf(cpf: string | null) {
   if (!cpf) return '—';
@@ -51,11 +44,6 @@ export function UsersView() {
   }, [profileLoading, isSuperuser, router]);
 
   const { data: users = [], isLoading } = UserRepository.useAll();
-
-  const sectors = useMemo(() => {
-    const s = new Set(users.map((u) => u.sector).filter(Boolean) as string[]);
-    return Array.from(s).toSorted();
-  }, [users]);
 
   const filtered = useMemo(() => {
     if (!search) return users;
@@ -215,7 +203,7 @@ export function UsersView() {
         </CardContent>
       </Card>
 
-      <EditUserModal user={selectedUser} sectors={sectors} onClose={() => setSelectedUser(null)} />
+      <EditUserModal user={selectedUser} onClose={() => setSelectedUser(null)} />
     </>
   );
 }

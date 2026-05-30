@@ -19,15 +19,8 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { UserWeeklySummaryPanel } from './user-weekly-summary-panel';
+import { ROLE_LABEL } from '@/constants/user-options';
 import type { UserResponse } from '@/types/api';
-
-const ROLE_LABEL: Record<string, string> = {
-  consultor: 'Consultor',
-  gerente: 'Gerente',
-  diretor: 'Diretor',
-  assessor: 'Assessor',
-  presidente: 'Presidente'
-};
 
 type SortKey = 'name' | 'currentWeek' | 'previousWeek';
 type SortDir = 'asc' | 'desc';

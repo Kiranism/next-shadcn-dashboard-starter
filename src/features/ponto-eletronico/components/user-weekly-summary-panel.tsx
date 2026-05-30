@@ -11,15 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TimeEntriesRepository } from '@/repositories/time-entries.repository';
 import { SettingsRepository } from '@/repositories/settings.repository';
+import { ROLE_LABEL } from '@/constants/user-options';
 import type { UserResponse } from '@/types/api';
-
-const ROLE_LABEL: Record<string, string> = {
-  consultor: 'Consultor',
-  gerente: 'Gerente',
-  diretor: 'Diretor',
-  assessor: 'Assessor',
-  presidente: 'Presidente'
-};
 
 interface UserWeeklySummaryPanelProps {
   user: UserResponse;
