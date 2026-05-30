@@ -16,8 +16,17 @@ const META_THEME_COLORS = {
 };
 
 export const metadata: Metadata = {
-  title: 'Next Shadcn',
-  description: 'Basic dashboard with Next.js and Shadcn'
+  title: 'WattDash',
+  description: 'Basic dashboard with Next.js and Shadcn',
+  icons: {
+    icon: [
+      { url: '/favicon/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon/favicon-96x96.png', type: 'image/png', sizes: '96x96' }
+    ],
+    apple: '/favicon/apple-touch-icon.png',
+    shortcut: '/favicon/favicon-96x96.png'
+  },
+  manifest: '/favicon/site.webmanifest'
 };
 
 export const viewport: Viewport = {
