@@ -9,6 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { createClient } from '@/utils/supabase/client';
 import type { User } from '@supabase/supabase-js';
@@ -25,13 +26,22 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
-function InitialsAvatar({ initials, size = 'md' }: { initials: string; size?: 'sm' | 'md' }) {
+function UserAvatar({
+  initials,
+  avatarUrl,
+  size = 'md'
+}: {
+  initials: string;
+  avatarUrl?: string;
+  size?: 'sm' | 'md';
+}) {
   return (
-    <div
-      className={`bg-primary text-primary-foreground flex shrink-0 items-center justify-center rounded-full font-semibold ${size === 'sm' ? 'size-7 text-[10px]' : 'size-8 text-xs'}`}
-    >
-      {initials}
-    </div>
+    <Avatar className={size === 'sm' ? 'size-7' : 'size-8'}>
+      <AvatarImage src={avatarUrl} alt={initials} referrerPolicy='no-referrer' />
+      <AvatarFallback className='bg-primary text-primary-foreground text-xs font-semibold'>
+        {initials}
+      </AvatarFallback>
+    </Avatar>
   );
 }
 
@@ -53,6 +63,7 @@ export function SidebarUserFooter() {
   const name = user?.user_metadata?.full_name ?? user?.email ?? 'Usuário';
   const email = user?.email ?? '';
   const initials = getInitials(name);
+  const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
 
   return (
     <SidebarMenu>
@@ -63,7 +74,7 @@ export function SidebarUserFooter() {
               size='lg'
               className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
             >
-              <InitialsAvatar initials={initials} />
+              <UserAvatar initials={initials} avatarUrl={avatarUrl} />
               <div className='grid flex-1 text-left text-sm leading-tight'>
                 <span className='truncate font-semibold'>{name}</span>
                 <span className='text-muted-foreground truncate text-xs'>{email}</span>
@@ -79,7 +90,7 @@ export function SidebarUserFooter() {
           >
             <DropdownMenuLabel className='p-0 font-normal'>
               <div className='flex items-center gap-2 px-1 py-1.5 text-left text-sm'>
-                <InitialsAvatar initials={initials} size='sm' />
+                <UserAvatar initials={initials} avatarUrl={avatarUrl} size='sm' />
                 <div className='grid flex-1 text-left text-sm leading-tight'>
                   <span className='truncate font-semibold'>{name}</span>
                   <span className='text-muted-foreground truncate text-xs'>{email}</span>
