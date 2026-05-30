@@ -5,6 +5,14 @@ export const navGroups: NavGroup[] = [
     label: 'Aplicação',
     items: [
       {
+        title: 'Individual',
+        url: '/dashboard/individual',
+        icon: 'user2',
+        shortcut: ['i', 'i'],
+        isActive: false,
+        items: []
+      },
+      {
         title: 'Ponto Eletrônico',
         url: '/dashboard/ponto',
         icon: 'clock',

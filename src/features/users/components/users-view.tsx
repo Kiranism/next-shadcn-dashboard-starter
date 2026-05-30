@@ -19,11 +19,11 @@ const ROLE_LABEL: Record<string, string> = {
   presidente: 'Presidente'
 };
 
-function maskCpf(cpf: string | null) {
+function formatCpf(cpf: string | null) {
   if (!cpf) return '—';
   const digits = cpf.replace(/\D/g, '');
   if (digits.length !== 11) return cpf;
-  return `${digits.slice(0, 3)}.***.***-${digits.slice(9)}`;
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
 }
 
 function getInitials(name: string) {
@@ -54,7 +54,7 @@ export function UsersView() {
 
   const sectors = useMemo(() => {
     const s = new Set(users.map((u) => u.sector).filter(Boolean) as string[]);
-    return Array.from(s).sort();
+    return Array.from(s).toSorted();
   }, [users]);
 
   const filtered = useMemo(() => {
@@ -149,9 +149,10 @@ export function UsersView() {
                       <tr
                         key={user.id}
                         className='hover:bg-muted/30 cursor-pointer transition-colors'
+                        aria-label={`Ver detalhes de ${user.name}`}
                         onClick={() => setSelectedUser(user)}
                       >
-                        <td className='px-6 py-3.5'>
+                        <td className='px-6 py-3.5' aria-label={user.name}>
                           <div className='flex items-center gap-3'>
                             <div className='bg-muted flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold'>
                               {getInitials(user.name)}
@@ -161,7 +162,7 @@ export function UsersView() {
                         </td>
                         <td className='text-muted-foreground px-4 py-3.5 text-sm'>{user.email}</td>
                         <td className='text-muted-foreground px-4 py-3.5 font-mono text-sm tabular-nums'>
-                          {maskCpf(user.cpf)}
+                          {formatCpf(user.cpf)}
                         </td>
                         <td className='px-4 py-3.5 pr-6'>
                           <div className='min-w-0'>
@@ -184,7 +185,9 @@ export function UsersView() {
                 {filtered.map((user) => (
                   <button
                     key={user.id}
+                    type='button'
                     className='hover:bg-muted/30 w-full px-4 py-3.5 text-left transition-colors'
+                    aria-label={`Ver detalhes de ${user.name}`}
                     onClick={() => setSelectedUser(user)}
                   >
                     <div className='flex min-w-0 items-center gap-3'>

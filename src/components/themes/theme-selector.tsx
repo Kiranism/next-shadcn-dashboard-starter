@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/select';
 
 import { Icons } from '../icons';
-import { Kbd } from '@/components/ui/kbd';
 import { THEMES } from './theme.config';
 
 export function ThemeSelector() {
@@ -22,7 +21,7 @@ export function ThemeSelector() {
   return (
     <div className='flex items-center gap-2'>
       <Label htmlFor='theme-selector' className='sr-only'>
-        Theme
+        Tema
       </Label>
       <Select value={activeTheme} onValueChange={setActiveTheme}>
         <SelectTrigger
@@ -32,15 +31,14 @@ export function ThemeSelector() {
           <span className='text-muted-foreground hidden sm:block'>
             <Icons.palette />
           </span>
-          <span className='text-muted-foreground block sm:hidden'>Theme</span>
-          <SelectValue placeholder='Select a theme' />
-          <Kbd>T T</Kbd>
+          <span className='text-muted-foreground block sm:hidden'>Tema</span>
+          <SelectValue placeholder='Selecione um tema' />
         </SelectTrigger>
         <SelectContent align='end'>
           {THEMES.length > 0 && (
             <>
               <SelectGroup>
-                <SelectLabel>themes</SelectLabel>
+                <SelectLabel>Temas</SelectLabel>
                 {THEMES.map((theme) => (
                   <SelectItem key={theme.name} value={theme.value}>
                     {theme.name}
