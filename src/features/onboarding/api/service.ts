@@ -1,10 +1,11 @@
 import { apiPost } from '@/lib/api-client';
 import type { UserProfile } from '@/types/user-profile';
 import { getRank } from '@/types/user-profile';
+import type { Sector } from '@/constants/user-options';
 
 export interface CreateProfileDto {
   name: string;
-  sector: 'projetos' | 'comercial' | 'marketing' | 'executivo' | 'institucional';
+  sector: Sector;
   cpf: string;
 }
 

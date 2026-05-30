@@ -22,25 +22,17 @@ import {
 import { Icons } from '@/components/icons';
 import { UserRepository } from '@/repositories/users.repository';
 import { toUserMessage } from '@/lib/api-client';
+import { ROLE_OPTIONS, SECTOR_OPTIONS } from '@/constants/user-options';
 import type { UserResponse } from '@/types/api';
-
-const ROLE_OPTIONS = [
-  { value: 'consultor', label: 'Consultor' },
-  { value: 'gerente', label: 'Gerente' },
-  { value: 'diretor', label: 'Diretor' },
-  { value: 'assessor', label: 'Assessor' },
-  { value: 'presidente', label: 'Presidente' }
-];
 
 const NONE = '__none__';
 
 interface EditUserModalProps {
   user: UserResponse | null;
-  sectors: string[];
   onClose: () => void;
 }
 
-export function EditUserModal({ user, sectors, onClose }: EditUserModalProps) {
+export function EditUserModal({ user, onClose }: EditUserModalProps) {
   const mutation = UserRepository.useUpdateOne();
 
   const [name, setName] = useState(user?.name ?? '');
@@ -125,18 +117,11 @@ export function EditUserModal({ user, sectors, onClose }: EditUserModalProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={NONE}>Sem setor</SelectItem>
-                {[
-                  ...new Set([
-                    ...sectors,
-                    ...(user?.sector && !sectors.includes(user.sector) ? [user.sector] : [])
-                  ])
-                ]
-                  .sort()
-                  .map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
-                  ))}
+                {SECTOR_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

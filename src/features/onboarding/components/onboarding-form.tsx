@@ -19,14 +19,7 @@ import { createProfile, type CreateProfileDto } from '../api/service';
 import { toUserMessage } from '@/lib/api-client';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { createClient } from '@/utils/supabase/client';
-
-const SECTORS = [
-  { value: 'projetos', label: 'Projetos' },
-  { value: 'comercial', label: 'Comercial' },
-  { value: 'marketing', label: 'Marketing' },
-  { value: 'executivo', label: 'Executivo' },
-  { value: 'institucional', label: 'Institucional' }
-] as const;
+import { SECTOR_OPTIONS } from '@/constants/user-options';
 
 export function OnboardingForm() {
   const router = useRouter();
@@ -96,7 +89,7 @@ export function OnboardingForm() {
                 <SelectValue placeholder='Selecione seu setor' />
               </SelectTrigger>
               <SelectContent>
-                {SECTORS.map((s) => (
+                {SECTOR_OPTIONS.map((s) => (
                   <SelectItem key={s.value} value={s.value}>
                     {s.label}
                   </SelectItem>
