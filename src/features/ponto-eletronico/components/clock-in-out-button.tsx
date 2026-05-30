@@ -12,7 +12,8 @@ interface ClockInOutButtonProps {
 }
 
 export function ClockInOutButton({ summary }: ClockInOutButtonProps) {
-  const isOpen = summary?.current_session?.status === 'open';
+  const isOpen =
+    summary?.current_session?.status === 'open' || summary?.current_session?.status === 'invalid';
 
   const clockInMutation = TimeEntriesRepository.useClockIn();
   const clockOutMutation = TimeEntriesRepository.useClockOut();
