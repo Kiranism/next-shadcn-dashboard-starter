@@ -1,6 +1,5 @@
-import { Suspense } from 'react';
 import PageContainer from '@/components/layout/page-container';
-import { ActivitiesSection } from '@/features/activities/components/activities-section';
+import { IndividualView } from './individual-view';
 
 export const metadata = { title: 'Dashboard: Individual' };
 
@@ -10,9 +9,7 @@ export default function IndividualPage() {
       pageTitle='Individual'
       pageDescription='Gerencie suas atividades e compromissos pessoais.'
     >
-      <Suspense>
-        <ActivitiesSection />
-      </Suspense>
+      <IndividualView />
     </PageContainer>
   );
 }

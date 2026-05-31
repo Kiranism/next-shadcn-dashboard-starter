@@ -77,7 +77,9 @@ async function request<T>(
   }
 
   if (res.status === 204) return undefined as T;
-  return res.json() as Promise<T>;
+  const text = await res.text();
+  if (!text.trim()) return undefined as T;
+  return JSON.parse(text) as T;
 }
 
 export const apiGet = <T>(path: string, token: string | null | undefined) =>
@@ -88,6 +90,9 @@ export const apiPost = <T>(path: string, token: string | null | undefined, body?
 
 export const apiPatch = <T>(path: string, token: string | null | undefined, body?: unknown) =>
   request<T>('PATCH', path, token, body);
+
+export const apiPut = <T>(path: string, token: string | null | undefined, body?: unknown) =>
+  request<T>('PUT', path, token, body);
 
 export const apiDelete = <T>(path: string, token: string | null | undefined) =>
   request<T>('DELETE', path, token);

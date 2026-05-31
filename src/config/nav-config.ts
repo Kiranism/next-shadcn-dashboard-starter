@@ -19,6 +19,15 @@ export const navGroups: NavGroup[] = [
         shortcut: ['p', 'p'],
         isActive: false,
         items: []
+      },
+      {
+        title: 'Visão do Time',
+        url: '/dashboard/team',
+        icon: 'usersGroup',
+        shortcut: ['t', 't'],
+        isActive: false,
+        items: [],
+        minRank: 1
       }
     ]
   },

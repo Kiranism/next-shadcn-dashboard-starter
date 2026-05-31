@@ -79,6 +79,7 @@ export interface UserResponse {
 
 export interface AppSettings {
   min_week_hours: number;
+  min_availability_hours: number;
 }
 
 export interface UpdateUserPayload {

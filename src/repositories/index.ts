@@ -3,6 +3,15 @@ export { TimeEntriesRepository } from './time-entries.repository';
 export { SettingsRepository } from './settings.repository';
 export { ActivitiesRepository } from './activities.repository';
 export { NotificationsRepository } from './notifications.repository';
+export { RoutineRepository } from './routine.repository';
+export type {
+  RoutineDay,
+  RoutineSlots,
+  RoutineResponse,
+  RoutineSummary,
+  RoutineAvailability,
+  RoutineSummaryMember
+} from './routine.repository';
 export type {
   Activity,
   ActivityPriority,

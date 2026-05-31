@@ -37,6 +37,7 @@ export interface UpdateActivityInput {
 }
 
 export interface ListActivitiesParams {
+  id?: string;
   date?: string;
   from?: string;
   to?: string;
@@ -50,6 +51,7 @@ const keys = {
 
 function buildActivitiesQuery(params?: ListActivitiesParams): string {
   const search = new URLSearchParams();
+  if (params?.id) search.set('id', params.id);
   if (params?.date) search.set('date', params.date);
   if (params?.from) search.set('from', params.from);
   if (params?.to) search.set('to', params.to);
