@@ -55,7 +55,7 @@ export const navGroups: NavGroup[] = [
       {
         title: 'Controle de Reembolsos',
         url: '/dashboard/reembolsos/controle',
-        icon: 'receipt',
+        icon: 'chartBar',
         shortcut: ['c', 'r'],
         isActive: false,
         items: [],

@@ -88,7 +88,8 @@ import {
   IconVideo,
   IconCrown,
   IconX,
-  IconReceipt
+  IconReceipt,
+  IconChartBar
 } from '@tabler/icons-react';
 
 export type Icon = React.ComponentType<IconProps>;
@@ -224,6 +225,7 @@ export const Icons = {
   lock: IconLock,
 
   // Data / Charts
+  chartBar: IconChartBar,
   trendingDown: IconTrendingDown,
   trendingUp: IconTrendingUp,
   eyeOff: IconEyeOff,

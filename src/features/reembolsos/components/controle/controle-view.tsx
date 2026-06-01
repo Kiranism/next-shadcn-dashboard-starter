@@ -48,38 +48,6 @@ export function ControleView() {
     [reimbursements, userMap]
   );
 
-  const topUsers = useMemo(() => {
-    const acc = new Map<string, { name: string; total: number }>();
-    for (const { reimbursement, userName } of enriched) {
-      if (reimbursement.status !== 'approved') continue;
-      const cur = acc.get(reimbursement.user_id) ?? { name: userName, total: 0 };
-      acc.set(reimbursement.user_id, {
-        name: cur.name,
-        total: cur.total + reimbursement.amount_cents
-      });
-    }
-    return Array.from(acc.values())
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 10);
-  }, [enriched]);
-
-  const categoryData = useMemo(() => {
-    const acc = new Map<string, number>();
-    for (const { reimbursement } of enriched) {
-      if (reimbursement.status !== 'approved') continue;
-      acc.set(
-        reimbursement.category,
-        (acc.get(reimbursement.category) ?? 0) + reimbursement.amount_cents
-      );
-    }
-    return Array.from(acc.entries())
-      .map(([category, total]) => ({
-        category: category as import('@/types/api').ReimbursementCategory,
-        total
-      }))
-      .sort((a, b) => b.total - a.total);
-  }, [enriched]);
-
   const filtered = useMemo(() => {
     return enriched.filter(({ reimbursement, userName, userRole, userSector }) => {
       if (filters.search) {
@@ -92,6 +60,41 @@ export function ControleView() {
       return true;
     });
   }, [enriched, filters]);
+
+  const topUsers = useMemo(() => {
+    const acc = new Map<string, { name: string; total: number }>();
+    for (const { reimbursement, userName } of filtered) {
+      if (reimbursement.status !== 'approved') continue;
+      const cur = acc.get(reimbursement.user_id) ?? {
+        name: userName,
+        total: 0
+      };
+      acc.set(reimbursement.user_id, {
+        name: cur.name,
+        total: cur.total + reimbursement.amount_cents
+      });
+    }
+    return Array.from(acc.values())
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 10);
+  }, [filtered]);
+
+  const categoryData = useMemo(() => {
+    const acc = new Map<string, number>();
+    for (const { reimbursement } of filtered) {
+      if (reimbursement.status !== 'approved') continue;
+      acc.set(
+        reimbursement.category,
+        (acc.get(reimbursement.category) ?? 0) + reimbursement.amount_cents
+      );
+    }
+    return Array.from(acc.entries())
+      .map(([category, total]) => ({
+        category: category as import('@/types/api').ReimbursementCategory,
+        total
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [filtered]);
 
   function openApprove(r: Reimbursement) {
     setDialogReimb(r);
@@ -113,9 +116,7 @@ export function ControleView() {
       <div className='grid gap-4 md:grid-cols-2'>
         <Card>
           <CardHeader className='pb-2'>
-            <CardTitle className='text-sm font-medium'>
-              Top 10 — Valor Aprovado por Usuário
-            </CardTitle>
+            <CardTitle className='text-sm font-medium'>Valor Aprovado por Usuário</CardTitle>
           </CardHeader>
           <CardContent className='pt-0'>
             {isLoading ? (
