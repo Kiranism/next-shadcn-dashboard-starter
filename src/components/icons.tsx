@@ -87,7 +87,8 @@ import {
   IconUsersGroup,
   IconVideo,
   IconCrown,
-  IconX
+  IconX,
+  IconReceipt
 } from '@tabler/icons-react';
 
 export type Icon = React.ComponentType<IconProps>;
@@ -208,6 +209,9 @@ export const Icons = {
   brightness: IconBrightness,
   laptop: IconDeviceLaptop,
   palette: IconPalette,
+
+  // Finance
+  receipt: IconReceipt,
 
   // Commerce / Plans
   billing: IconCreditCard,

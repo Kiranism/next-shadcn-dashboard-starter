@@ -28,6 +28,14 @@ export const navGroups: NavGroup[] = [
         isActive: false,
         items: [],
         minRank: 1
+      },
+      {
+        title: 'Reembolsos',
+        url: '/dashboard/reembolsos',
+        icon: 'receipt',
+        shortcut: ['r', 'r'],
+        isActive: false,
+        items: []
       }
     ]
   },
@@ -40,6 +48,15 @@ export const navGroups: NavGroup[] = [
         url: '/dashboard/users',
         icon: 'teams',
         shortcut: ['u', 'u'],
+        isActive: false,
+        items: [],
+        minRank: 3
+      },
+      {
+        title: 'Controle de Reembolsos',
+        url: '/dashboard/reembolsos/controle',
+        icon: 'receipt',
+        shortcut: ['c', 'r'],
         isActive: false,
         items: [],
         minRank: 3

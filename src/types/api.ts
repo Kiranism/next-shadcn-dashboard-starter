@@ -88,3 +88,45 @@ export interface UpdateUserPayload {
   sector?: string | null;
   cpf?: string | null;
 }
+
+export type ReimbursementStatus = 'pending' | 'approved' | 'rejected';
+
+export type ReimbursementCategory =
+  | 'ingresso'
+  | 'alimentação'
+  | 'transporte'
+  | 'equipamento'
+  | 'outro';
+
+export interface ReimbursementAttachment {
+  id: string;
+  name: string;
+  signed_url: string;
+}
+
+export interface Reimbursement {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string;
+  amount_cents: number;
+  category: ReimbursementCategory;
+  pix_key: string;
+  status: ReimbursementStatus;
+  attachments: ReimbursementAttachment[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateReimbursementPayload {
+  title: string;
+  description: string;
+  amount_cents: number;
+  category: ReimbursementCategory;
+  pix_key: string;
+  attachments?: { path: string; name: string }[];
+}
+
+export interface UpdateReimbursementStatusPayload {
+  status: 'approved' | 'rejected';
+}
