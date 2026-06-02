@@ -2,7 +2,7 @@ import { NavGroup } from '@/types';
 
 export const navGroups: NavGroup[] = [
   {
-    label: 'Aplicação',
+    label: 'Geral',
     items: [
       {
         title: 'Individual',
@@ -36,6 +36,33 @@ export const navGroups: NavGroup[] = [
         shortcut: ['r', 'r'],
         isActive: false,
         items: []
+      }
+    ]
+  },
+  {
+    label: 'Comercial',
+    minRank: 3,
+    allowedSectors: ['comercial', 'marketing'],
+    items: [
+      {
+        title: 'Leads',
+        url: '/dashboard/comercial/leads',
+        icon: 'briefcase',
+        shortcut: ['l', 'l'],
+        isActive: false,
+        items: [],
+        minRank: 3,
+        allowedSectors: ['comercial', 'marketing']
+      },
+      {
+        title: 'Portfólio',
+        url: '/dashboard/comercial/portfolio',
+        icon: 'tag',
+        shortcut: ['o', 'p'],
+        isActive: false,
+        items: [],
+        minRank: 3,
+        allowedSectors: ['comercial', 'marketing']
       }
     ]
   },

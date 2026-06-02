@@ -1,4 +1,6 @@
 export { UserRepository } from './users.repository';
+export { LeadsRepository } from './leads.repository';
+export { PortfolioRepository } from './portfolio.repository';
 export { TimeEntriesRepository } from './time-entries.repository';
 export { SettingsRepository } from './settings.repository';
 export { ActivitiesRepository } from './activities.repository';

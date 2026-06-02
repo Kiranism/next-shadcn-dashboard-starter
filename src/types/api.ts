@@ -130,3 +130,108 @@ export interface CreateReimbursementPayload {
 export interface UpdateReimbursementStatusPayload {
   status: 'approved' | 'rejected';
 }
+
+// Portfolio
+
+export interface PortfolioItem {
+  id: string;
+  name: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreatePortfolioPayload {
+  name: string;
+  description?: string;
+}
+
+export interface UpdatePortfolioPayload {
+  name?: string;
+  description?: string;
+}
+
+// Leads
+
+export type LeadStatus = 'nao_contatado' | 'em_progresso' | 'finalizado';
+
+export interface LeadContact {
+  id: string;
+  lead_id: string;
+  name: string;
+  role: string;
+  email: string | null;
+  phone: string | null;
+}
+
+export interface LeadComment {
+  id: string;
+  lead_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Lead {
+  id: string;
+  company_name: string;
+  created_by: string;
+  status: LeadStatus;
+  address_logradouro: string;
+  address_numero: string;
+  address_complemento: string | null;
+  address_bairro: string;
+  address_cidade: string;
+  address_estado: string;
+  address_cep: string;
+  interest_items: string[];
+  contacts?: LeadContact[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LeadDetail extends Lead {
+  contacts: LeadContact[];
+  comments: LeadComment[];
+}
+
+export interface CreateLeadPayload {
+  company_name: string;
+  address_logradouro: string;
+  address_numero: string;
+  address_complemento?: string;
+  address_bairro: string;
+  address_cidade: string;
+  address_estado: string;
+  address_cep: string;
+  status?: LeadStatus;
+  interest_items?: string[];
+}
+
+export interface UpdateLeadPayload {
+  company_name?: string;
+  address_logradouro?: string;
+  address_numero?: string;
+  address_complemento?: string | null;
+  address_bairro?: string;
+  address_cidade?: string;
+  address_estado?: string;
+  address_cep?: string;
+  status?: LeadStatus;
+  interest_items?: string[];
+}
+
+export interface CreateContactPayload {
+  name: string;
+  role: string;
+  email?: string;
+  phone?: string;
+}
+
+export interface UpdateContactPayload {
+  name?: string;
+  role?: string;
+  email?: string | null;
+  phone?: string | null;
+}

@@ -5,6 +5,10 @@ import {
   IconAlertTriangle,
   IconArrowRight,
   IconBell,
+  IconBriefcase,
+  IconBuilding,
+  IconMapPin,
+  IconTag,
   IconBold,
   IconBox,
   IconBrandGithub,
@@ -209,6 +213,12 @@ export const Icons = {
   brightness: IconBrightness,
   laptop: IconDeviceLaptop,
   palette: IconPalette,
+
+  // CRM / Comercial
+  briefcase: IconBriefcase,
+  building: IconBuilding,
+  mapPin: IconMapPin,
+  tag: IconTag,
 
   // Finance
   receipt: IconReceipt,

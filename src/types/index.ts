@@ -21,12 +21,14 @@ export interface NavItem {
   items?: NavItem[];
   access?: PermissionCheck;
   minRank?: number;
+  allowedSectors?: string[];
 }
 
 export interface NavGroup {
   label: string;
   items: NavItem[];
   minRank?: number;
+  allowedSectors?: string[];
 }
 
 export interface NavItemWithChildren extends NavItem {
