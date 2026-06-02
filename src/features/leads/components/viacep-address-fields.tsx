@@ -143,7 +143,7 @@ export function ViacepAddressFields({ values, onChange, disabled }: ViacepAddres
             id='lead-cidade'
             value={values.cidade}
             onChange={(e) => onChange('cidade', e.target.value)}
-            placeholder='São Paulo'
+            placeholder='Recife'
             disabled={disabled}
           />
         </div>
@@ -153,7 +153,7 @@ export function ViacepAddressFields({ values, onChange, disabled }: ViacepAddres
             id='lead-estado'
             value={values.estado}
             onChange={(e) => onChange('estado', e.target.value.toUpperCase().slice(0, 2))}
-            placeholder='SP'
+            placeholder='PE'
             maxLength={2}
             disabled={disabled}
           />

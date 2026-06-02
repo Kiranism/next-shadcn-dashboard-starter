@@ -12,7 +12,7 @@ const STATUS_CONFIG: Record<LeadStatus, { label: string; color: string; bg: stri
     color: 'bg-amber-500',
     bg: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
   },
-  finalizado: {
+  contatado: {
     label: 'Finalizado',
     color: 'bg-emerald-500',
     bg: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'

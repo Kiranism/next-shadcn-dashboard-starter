@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const leadSchema = z.object({
   company_name: z.string().min(1, 'Nome da empresa é obrigatório'),
-  status: z.enum(['nao_contatado', 'em_progresso', 'finalizado']).optional(),
+  status: z.enum(['nao_contatado', 'em_progresso', 'contatado']).optional(),
   interest_items: z.array(z.string()).optional(),
   address_cep: z
     .string()

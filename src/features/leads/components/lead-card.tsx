@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { formatPhone } from '@/lib/format-phone';
 import { Icons } from '@/components/icons';
 import { LeadStatusDot } from './lead-status-badge';
 import type { Lead } from '@/types/api';
@@ -45,7 +46,7 @@ export function LeadCard({ lead, onClick }: LeadCardProps) {
             {primary.phone && (
               <div className='flex items-center gap-1.5 text-sm text-muted-foreground'>
                 <Icons.phone className='size-3.5 shrink-0' />
-                <span>{primary.phone}</span>
+                <span>{formatPhone(primary.phone)}</span>
               </div>
             )}
           </>

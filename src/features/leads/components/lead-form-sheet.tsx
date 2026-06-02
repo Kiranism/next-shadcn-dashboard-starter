@@ -2,7 +2,13 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,7 +30,7 @@ import type { Lead, LeadStatus } from '@/types/api';
 const STATUS_OPTIONS: { value: LeadStatus; label: string }[] = [
   { value: 'nao_contatado', label: 'Não contatado' },
   { value: 'em_progresso', label: 'Em progresso' },
-  { value: 'finalizado', label: 'Finalizado' }
+  { value: 'contatado', label: 'Finalizado' }
 ];
 
 interface AddressState {
@@ -200,15 +206,15 @@ export function LeadFormSheet({ open, onOpenChange, lead }: LeadFormSheetProps) 
   }
 
   return (
-    <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetContent side='right' className='flex w-full flex-col sm:max-w-lg overflow-y-auto'>
-        <SheetHeader className='shrink-0'>
-          <SheetTitle>{isEdit ? 'Editar Lead' : 'Novo Lead'}</SheetTitle>
-        </SheetHeader>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className='flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden'>
+        <DialogHeader className='shrink-0'>
+          <DialogTitle>{isEdit ? 'Editar Lead' : 'Novo Lead'}</DialogTitle>
+        </DialogHeader>
 
         <form
           onSubmit={handleSubmit}
-          className='flex flex-1 flex-col gap-4 overflow-y-auto py-4 px-1'
+          className='flex flex-1 flex-col gap-4 overflow-y-auto py-2 px-1'
         >
           {/* Company name */}
           <div className='space-y-1.5'>
@@ -351,7 +357,7 @@ export function LeadFormSheet({ open, onOpenChange, lead }: LeadFormSheetProps) 
           />
         </form>
 
-        <SheetFooter className='shrink-0 flex gap-2 pt-2 border-t'>
+        <DialogFooter className='shrink-0 flex gap-2 pt-2 border-t'>
           <Button
             type='button'
             variant='outline'
@@ -363,8 +369,8 @@ export function LeadFormSheet({ open, onOpenChange, lead }: LeadFormSheetProps) 
           <Button type='submit' disabled={!canSubmit} isLoading={isPending} onClick={handleSubmit}>
             {isEdit ? 'Salvar' : 'Criar Lead'}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

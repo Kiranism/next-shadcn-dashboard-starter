@@ -10,13 +10,13 @@ const STATUS_FILTER_OPTIONS: { value: LeadStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'Todos' },
   { value: 'nao_contatado', label: 'Não contatado' },
   { value: 'em_progresso', label: 'Em progresso' },
-  { value: 'finalizado', label: 'Finalizado' }
+  { value: 'contatado', label: 'Finalizado' }
 ];
 
 const DOT_COLORS: Record<LeadStatus, string> = {
   nao_contatado: 'bg-red-500',
   em_progresso: 'bg-amber-500',
-  finalizado: 'bg-emerald-500'
+  contatado: 'bg-emerald-500'
 };
 
 interface LeadsFiltersProps {

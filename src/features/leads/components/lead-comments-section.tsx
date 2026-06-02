@@ -91,10 +91,24 @@ export function LeadCommentsSection({ leadId, comments }: LeadCommentsSectionPro
             const isOwn = comment.user_id === profile?.id;
             const canDelete = isOwn || rank > 0;
 
+            const displayName = isOwn ? (profile?.name ?? comment.user_name) : comment.user_name;
+
             return (
               <div key={comment.id} className='group rounded-lg border bg-card p-3 space-y-1.5'>
                 <div className='flex items-start justify-between gap-2'>
-                  <p className='text-xs text-muted-foreground'>{formatDate(comment.created_at)}</p>
+                  <div className='flex items-center gap-1.5 min-w-0'>
+                    {displayName && (
+                      <span className='text-xs font-medium truncate'>{displayName}</span>
+                    )}
+                    {isOwn && (
+                      <span className='text-xs font-bold text-muted-foreground shrink-0'>
+                        (você)
+                      </span>
+                    )}
+                    <span className='text-xs text-muted-foreground shrink-0'>
+                      · {formatDate(comment.created_at)}
+                    </span>
+                  </div>
                   <div className='flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100'>
                     {isOwn && (
                       <Button

@@ -153,7 +153,7 @@ export interface UpdatePortfolioPayload {
 
 // Leads
 
-export type LeadStatus = 'nao_contatado' | 'em_progresso' | 'finalizado';
+export type LeadStatus = 'nao_contatado' | 'em_progresso' | 'contatado';
 
 export interface LeadContact {
   id: string;
@@ -168,6 +168,7 @@ export interface LeadComment {
   id: string;
   lead_id: string;
   user_id: string;
+  user_name?: string;
   content: string;
   created_at: string;
   updated_at: string;

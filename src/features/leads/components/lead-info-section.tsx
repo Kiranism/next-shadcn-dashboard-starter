@@ -17,7 +17,7 @@ import type { Lead, LeadStatus } from '@/types/api';
 const STATUS_OPTIONS: { value: LeadStatus; label: string }[] = [
   { value: 'nao_contatado', label: 'Não contatado' },
   { value: 'em_progresso', label: 'Em progresso' },
-  { value: 'finalizado', label: 'Finalizado' }
+  { value: 'contatado', label: 'Finalizado' }
 ];
 
 interface LeadInfoSectionProps {
