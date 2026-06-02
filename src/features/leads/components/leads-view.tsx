@@ -43,8 +43,8 @@ export function LeadsView() {
     const all = leads.length;
     const nao_contatado = leads.filter((l) => l.status === 'nao_contatado').length;
     const em_progresso = leads.filter((l) => l.status === 'em_progresso').length;
-    const finalizado = leads.filter((l) => l.status === 'contatado').length;
-    return { all, nao_contatado, em_progresso, finalizado };
+    const contatado = leads.filter((l) => l.status === 'contatado').length;
+    return { all, nao_contatado, em_progresso, contatado };
   }, [leads]);
 
   function clearFilters() {
