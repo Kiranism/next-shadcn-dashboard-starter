@@ -177,6 +177,7 @@ export interface LeadComment {
 export interface Lead {
   id: string;
   company_name: string;
+  cnpj: string;
   created_by: string;
   status: LeadStatus;
   address_logradouro: string;
@@ -199,6 +200,7 @@ export interface LeadDetail extends Lead {
 
 export interface CreateLeadPayload {
   company_name: string;
+  cnpj: string;
   address_logradouro: string;
   address_numero: string;
   address_complemento?: string;
@@ -212,6 +214,7 @@ export interface CreateLeadPayload {
 
 export interface UpdateLeadPayload {
   company_name?: string;
+  cnpj?: string;
   address_logradouro?: string;
   address_numero?: string;
   address_complemento?: string | null;

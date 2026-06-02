@@ -1,7 +1,12 @@
 import { z } from 'zod';
+import { validateCnpj } from '@/lib/format-cnpj';
 
 export const leadSchema = z.object({
   company_name: z.string().min(1, 'Nome da empresa é obrigatório'),
+  cnpj: z
+    .string()
+    .min(1, 'CNPJ é obrigatório')
+    .refine((val) => validateCnpj(val), 'CNPJ inválido'),
   status: z.enum(['nao_contatado', 'em_progresso', 'contatado']).optional(),
   interest_items: z.array(z.string()).optional(),
   address_cep: z

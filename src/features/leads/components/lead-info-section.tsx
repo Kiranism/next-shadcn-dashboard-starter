@@ -67,6 +67,12 @@ export function LeadInfoSection({ lead }: LeadInfoSectionProps) {
         </Select>
       </div>
 
+      {/* CNPJ */}
+      <div className='flex items-center gap-2 text-sm'>
+        <Icons.building className='size-4 shrink-0 text-muted-foreground' />
+        <span className='font-mono text-muted-foreground'>{lead.cnpj}</span>
+      </div>
+
       {/* Interest items */}
       {lead.interest_items.length > 0 && (
         <div className='space-y-1.5'>

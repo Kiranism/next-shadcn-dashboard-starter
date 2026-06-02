@@ -25,6 +25,7 @@ import { ContactForm } from './contact-form';
 import { LeadsRepository } from '@/repositories/leads.repository';
 import { PortfolioRepository } from '@/repositories/portfolio.repository';
 import { toUserMessage } from '@/lib/api-client';
+import { formatCnpj, validateCnpj } from '@/lib/format-cnpj';
 import type { Lead, LeadStatus } from '@/types/api';
 
 const STATUS_OPTIONS: { value: LeadStatus; label: string }[] = [
@@ -89,6 +90,7 @@ export function LeadFormSheet({ open, onOpenChange, lead }: LeadFormSheetProps) 
   const { data: portfolioItems = [] } = PortfolioRepository.useList();
 
   const [companyName, setCompanyName] = useState(lead?.company_name ?? '');
+  const [cnpj, setCnpj] = useState(lead?.cnpj ?? '');
   const [status, setStatus] = useState<LeadStatus>(lead?.status ?? 'nao_contatado');
   const [selectedItems, setSelectedItems] = useState<string[]>(lead?.interest_items ?? []);
   const [address, setAddress] = useState<AddressState>(lead ? leadToAddress(lead) : emptyAddress());
@@ -99,6 +101,7 @@ export function LeadFormSheet({ open, onOpenChange, lead }: LeadFormSheetProps) 
   const isPending = createMutation.isPending || updateMutation.isPending || createContact.isPending;
   const canSubmit =
     companyName.trim() &&
+    validateCnpj(cnpj) &&
     address.logradouro.trim() &&
     address.numero.trim() &&
     address.bairro.trim() &&
@@ -134,11 +137,13 @@ export function LeadFormSheet({ open, onOpenChange, lead }: LeadFormSheetProps) 
   function reset() {
     if (lead) {
       setCompanyName(lead.company_name);
+      setCnpj(lead.cnpj);
       setStatus(lead.status);
       setSelectedItems(lead.interest_items);
       setAddress(leadToAddress(lead));
     } else {
       setCompanyName('');
+      setCnpj('');
       setStatus('nao_contatado');
       setSelectedItems([]);
       setAddress(emptyAddress());
@@ -160,6 +165,7 @@ export function LeadFormSheet({ open, onOpenChange, lead }: LeadFormSheetProps) 
 
     const payload = {
       company_name: companyName.trim(),
+      cnpj,
       status,
       interest_items: selectedItems,
       address_cep: address.cep,
@@ -226,6 +232,21 @@ export function LeadFormSheet({ open, onOpenChange, lead }: LeadFormSheetProps) 
               placeholder='Nome da empresa'
               disabled={isPending}
             />
+          </div>
+
+          {/* CNPJ */}
+          <div className='space-y-1.5'>
+            <Label htmlFor='lead-cnpj'>CNPJ *</Label>
+            <Input
+              id='lead-cnpj'
+              value={cnpj}
+              onChange={(e) => setCnpj(formatCnpj(e.target.value))}
+              placeholder='00.000.000/0000-00'
+              disabled={isPending}
+            />
+            {cnpj.length > 0 && !validateCnpj(cnpj) && (
+              <p className='text-xs text-destructive'>CNPJ inválido</p>
+            )}
           </div>
 
           {/* Status */}

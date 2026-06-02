@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -35,14 +35,18 @@ export function PortfolioFormDialog({ open, onOpenChange, item }: PortfolioFormD
   const isPending = createMutation.isPending || updateMutation.isPending;
   const canSubmit = name.trim().length > 0 && !isPending;
 
-  function reset() {
-    setName(item?.name ?? '');
-    setDescription(item?.description ?? '');
-  }
+  // Sync form state when the dialog opens or a different item is selected.
+  // useState initial values are ignored after first mount, so without this
+  // the fields would show stale data whenever the dialog re-opens.
+  useEffect(() => {
+    if (open) {
+      setName(item?.name ?? '');
+      setDescription(item?.description ?? '');
+    }
+  }, [open, item?.id]);
 
   function handleOpenChange(v: boolean) {
     if (!isPending) {
-      reset();
       onOpenChange(v);
     }
   }
@@ -68,7 +72,6 @@ export function PortfolioFormDialog({ open, onOpenChange, item }: PortfolioFormD
       createMutation.mutate(payload, {
         onSuccess: () => {
           toast.success('Serviço criado.');
-          reset();
           onOpenChange(false);
         },
         onError: (err) => toast.error(toUserMessage(err))
@@ -101,7 +104,7 @@ export function PortfolioFormDialog({ open, onOpenChange, item }: PortfolioFormD
               onChange={(e) => setDescription(e.target.value)}
               placeholder='Descreva brevemente o serviço'
               rows={3}
-              className='resize-none'
+              className='resize-none break-all'
               disabled={isPending}
             />
           </div>
