@@ -191,6 +191,8 @@ export async function GET(
               showButton: getLegacyBoolean(legacy, 'showButton') ?? true,
               showFallbackText:
                 getLegacyBoolean(legacy, 'showFallbackText') ?? true,
+              showPromocodeForGuests:
+                getLegacyBoolean(legacy, 'showPromocodeForGuests') ?? true,
               productBadgeEnabled:
                 getLegacyBoolean(legacy, 'productBadgeEnabled') ?? true,
               productBadgeShowOnCards:

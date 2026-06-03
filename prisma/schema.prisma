@@ -235,6 +235,7 @@ model WidgetSettings {
   showDescription                 Boolean  @default(true) @map("show_description")
   showButton                      Boolean  @default(true) @map("show_button")
   showFallbackText                Boolean  @default(true) @map("show_fallback_text")
+  showPromocodeForGuests          Boolean  @default(true) @map("show_promocode_for_guests")
   
   // Настройки бонусных плашек на товарах
   productBadgeEnabled             Boolean  @default(true) @map("product_badge_enabled")

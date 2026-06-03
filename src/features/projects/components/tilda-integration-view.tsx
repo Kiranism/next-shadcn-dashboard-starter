@@ -79,6 +79,7 @@ export function ProjectIntegrationView({
     showDescription: true,
     showButton: true,
     showFallbackText: true,
+    showPromocodeForGuests: true,
 
     // Цветовые настройки плашки регистрации
     backgroundColor: '#667eea',
@@ -283,6 +284,10 @@ export function ProjectIntegrationView({
               showFallbackText:
                 widgetData.showFallbackText !== undefined
                   ? widgetData.showFallbackText
+                  : true,
+              showPromocodeForGuests:
+                widgetData.showPromocodeForGuests !== undefined
+                  ? widgetData.showPromocodeForGuests
                   : true,
 
               // Цветовые настройки
@@ -872,7 +877,28 @@ export function ProjectIntegrationView({
                               Показывать текст без бота
                             </Label>
                           </div>
+                          <div className='flex items-center space-x-2'>
+                            <input
+                              type='checkbox'
+                              id='showPromocodeForGuests'
+                              checked={widgetSettings.showPromocodeForGuests}
+                              onChange={(e) =>
+                                setWidgetSettings({
+                                  ...widgetSettings,
+                                  showPromocodeForGuests: e.target.checked
+                                })
+                              }
+                              className='rounded'
+                            />
+                            <Label htmlFor='showPromocodeForGuests'>
+                              Показывать поле промокода без авторизации
+                            </Label>
+                          </div>
                         </div>
+                        <p className='text-muted-foreground text-xs'>
+                          Если выключено, незарегистрированный клиент увидит
+                          только плашку регистрации, без поля промокода Tilda.
+                        </p>
                       </AccordionContent>
                     </AccordionItem>
 

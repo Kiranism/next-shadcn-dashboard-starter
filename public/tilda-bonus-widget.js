@@ -63,6 +63,13 @@
     syncPromocodeFieldVisibility: function () {
       if (this.state.isDestroyed) return;
       const mode = this.state.mode;
+      const isGuestPromptVisible =
+        !!document.querySelector('.registration-prompt-inline') &&
+        !document.querySelector('.bonus-widget-container');
+      const shouldShowGuestPromocode =
+        this.state.widgetSettings?.showPromocodeForGuests !== false;
+      const shouldShowPromocode =
+        mode !== 'bonus' || (isGuestPromptVisible && shouldShowGuestPromocode);
 
       // Находим все возможные обертки/контейнеры промокода
       const wrappers = document.querySelectorAll(
@@ -74,10 +81,18 @@
         '.t-inputpromocode__message, .t-inputpromocode__applied-text, .t-promocode__message, .t-promocode__applied-text'
       );
 
-      if (mode === 'bonus') {
-        // Режим БОНУСОВ/СКИДОК - скрываем все элементы промокода
+      if (!shouldShowPromocode) {
+        // Режим бонусов или гостевая плашка с отключённым промокодом.
         wrappers.forEach((wrapper) => {
           if (wrapper) {
+            if (
+              isGuestPromptVisible &&
+              !shouldShowGuestPromocode &&
+              wrapper.querySelector &&
+              wrapper.querySelector('.registration-prompt-inline')
+            ) {
+              return;
+            }
             this.capturePromoWrapperStyles(wrapper);
             if (!wrapper.classList.contains(this.PROMO_HIDDEN_CLASS)) {
               wrapper.classList.add(this.PROMO_HIDDEN_CLASS);
@@ -2079,6 +2094,7 @@
               showDescription: settings.showDescription,
               showButton: settings.showButton,
               showFallbackText: settings.showFallbackText,
+              showPromocodeForGuests: settings.showPromocodeForGuests !== false,
               productBadgeEnabled: settings.productBadgeEnabled,
               productBadgeShowOnCards: settings.productBadgeShowOnCards,
               productBadgeShowOnProductPage:
@@ -2571,6 +2587,7 @@
           showDescription: data.showDescription,
           showButton: data.showButton,
           showFallbackText: data.showFallbackText,
+          showPromocodeForGuests: data.showPromocodeForGuests !== false,
 
           // Настройки бонусных плашек
           productBadgeEnabled: data.productBadgeEnabled,
@@ -2909,10 +2926,11 @@
         // Добавляем плашку ПЕРЕД полем промокода
         promocodeWrapper.parentNode.insertBefore(promptDiv, promocodeWrapper);
 
-        // Поле промокода остаётся видимым для неавторизованных (не скрываем его)
-        promocodeWrapper.style.display = 'block';
+        // Поле промокода для гостей управляется настройкой виджета.
+        this.capturePromoWrapperStyles(promocodeWrapper);
+        this.syncPromocodeFieldVisibility();
         console.log(
-          '✅ Плашка добавлена, поле промокода Tilda остаётся видимым'
+          `✅ Плашка добавлена, поле промокода Tilda ${widgetSettings.showPromocodeForGuests === false ? 'скрыто' : 'видимо'}`
         );
 
         this.log('✅ Плашка регистрации успешно отображена:', {
