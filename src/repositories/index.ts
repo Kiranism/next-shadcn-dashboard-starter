@@ -1,4 +1,6 @@
 export { UserRepository } from './users.repository';
+export { NormsRepository } from './norms.repository';
+export { ViolationsRepository } from './violations.repository';
 export { LeadsRepository } from './leads.repository';
 export { PortfolioRepository } from './portfolio.repository';
 export { TimeEntriesRepository } from './time-entries.repository';

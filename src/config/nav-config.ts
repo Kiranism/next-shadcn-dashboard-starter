@@ -36,6 +36,14 @@ export const navGroups: NavGroup[] = [
         shortcut: ['r', 'r'],
         isActive: false,
         items: []
+      },
+      {
+        title: 'Manual de Conduta',
+        url: '/dashboard/manual-de-conduta',
+        icon: 'post',
+        shortcut: ['m', 'c'],
+        isActive: false,
+        items: []
       }
     ]
   },
@@ -87,6 +95,15 @@ export const navGroups: NavGroup[] = [
         isActive: false,
         items: [],
         minRank: 3
+      },
+      {
+        title: 'Faltas',
+        url: '/dashboard/faltas',
+        icon: 'warning',
+        shortcut: ['f', 'f'],
+        isActive: false,
+        items: [],
+        minRank: 1
       }
     ]
   }
