@@ -19,12 +19,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { templateId, projectId, userId, customName } = body;
 
-    if (!templateId || !projectId || !userId) {
+    if (!templateId || !projectId) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            'Не указаны обязательные параметры: templateId, projectId, userId'
+          error: 'Не указаны обязательные параметры: templateId, projectId'
         },
         { status: 400 }
       );

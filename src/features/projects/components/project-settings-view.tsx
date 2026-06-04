@@ -60,9 +60,14 @@ import { B2bHierarchySettings } from './b2b-hierarchy-settings';
 
 interface ProjectSettingsViewProps {
   projectId: string;
+  /** Clerk sub — для импорта workflow B2B из настроек. */
+  adminSub?: string;
 }
 
-export function ProjectSettingsView({ projectId }: ProjectSettingsViewProps) {
+export function ProjectSettingsView({
+  projectId,
+  adminSub
+}: ProjectSettingsViewProps) {
   const router = useRouter();
   const { toast } = useToast();
 
@@ -714,6 +719,7 @@ export function ProjectSettingsView({ projectId }: ProjectSettingsViewProps) {
           <B2bHierarchySettings
             projectId={projectId}
             initialValue={Boolean((project as any)?.enablePartnerRoles)}
+            adminSub={adminSub}
           />
 
           {/* Предупреждение о несохраненных изменениях */}

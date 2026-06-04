@@ -24,7 +24,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -70,6 +70,31 @@ export function B2bHierarchySettings({
   const [enabled, setEnabled] = useState(Boolean(initialValue));
   const [saving, setSaving] = useState(false);
   const [installing, setInstalling] = useState(false);
+  /** Clerk sub для install API; подгружаем с /api/auth/me, если родитель не передал. */
+  const [resolvedAdminId, setResolvedAdminId] = useState<string | undefined>(
+    adminSub
+  );
+
+  useEffect(() => {
+    if (adminSub) {
+      setResolvedAdminId(adminSub);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (!res.ok) return;
+        const data = (await res.json()) as { id?: string };
+        if (!cancelled && data.id) setResolvedAdminId(data.id);
+      } catch {
+        /* auth/me недоступен — install всё равно авторизуется по cookie */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [adminSub]);
 
   const toggle = async (next: boolean) => {
     setSaving(true);
@@ -106,14 +131,6 @@ export function B2bHierarchySettings({
   };
 
   const installTemplate = async () => {
-    if (!adminSub) {
-      toast({
-        title: 'Не удалось определить владельца',
-        description: 'Перезагрузите страницу и попробуйте снова.',
-        variant: 'destructive'
-      });
-      return;
-    }
     setInstalling(true);
     try {
       const res = await fetch('/api/templates/install', {
@@ -122,7 +139,7 @@ export function B2bHierarchySettings({
         body: JSON.stringify({
           templateId: BOT_TEMPLATE_ID,
           projectId,
-          userId: adminSub
+          ...(resolvedAdminId ? { userId: resolvedAdminId } : {})
         })
       });
       const data = await res.json().catch(() => ({}));
@@ -167,12 +184,14 @@ export function B2bHierarchySettings({
             <p className='text-muted-foreground text-sm'>
               По умолчанию выключено. Все существующие проекты не затронуты —
               c2c-логика сохраняется. Подробнее —{' '}
-              <Link
+              <a
                 href='/docs/b2b-referral-hierarchy-guide.md'
+                target='_blank'
+                rel='noopener noreferrer'
                 className='text-primary underline'
               >
                 в гайде
-              </Link>
+              </a>
               .
             </p>
           </div>
@@ -202,10 +221,10 @@ export function B2bHierarchySettings({
             </Link>
             <Button
               type='button'
-              variant='secondary'
+              variant='outline'
               onClick={installTemplate}
               disabled={installing}
-              className='w-full justify-start'
+              className='w-full cursor-pointer justify-start'
             >
               {installing ? (
                 <Loader2 className='mr-2 h-4 w-4 animate-spin' />

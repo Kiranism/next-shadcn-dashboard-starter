@@ -8,6 +8,8 @@
  */
 
 import { Metadata } from 'next';
+import { redirect } from 'next/navigation';
+import { getCurrentAdmin } from '@/lib/auth';
 import { ProjectSettingsView } from '@/features/projects/components/project-settings-view';
 
 export const metadata: Metadata = {
@@ -21,10 +23,14 @@ interface SettingsPageProps {
 
 export default async function SettingsPage({ params }: SettingsPageProps) {
   const { id } = await params;
+  const admin = await getCurrentAdmin();
+  if (!admin?.sub) {
+    redirect('/auth/sign-in');
+  }
 
   return (
     <div className='p-6'>
-      <ProjectSettingsView projectId={id} />
+      <ProjectSettingsView projectId={id} adminSub={admin.sub} />
     </div>
   );
 }
