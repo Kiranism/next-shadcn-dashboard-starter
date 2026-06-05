@@ -10,6 +10,7 @@
 import { Context } from 'grammy';
 import { logger } from '@/lib/logger';
 import { db } from '@/lib/db';
+import { findCallbackTriggerNode } from './workflow/callback-trigger-match';
 import { nodeHandlersRegistry } from './workflow/node-handlers-registry';
 import { ExecutionContextManager } from './workflow/execution-context-manager';
 import { RateLimiterService } from './rate-limiter.service';
@@ -856,31 +857,16 @@ export class SimpleWorkflowProcessor {
    * Поиск trigger.callback по callback_data
    */
   private findCallbackTrigger(callbackData: string): WorkflowNode | undefined {
-    logger.debug('findCallbackTrigger searching', {
-      callbackData,
-      nodeCount: this.nodesMap.size
-    });
-
-    for (const node of Array.from(this.nodesMap.values())) {
-      logger.debug('Checking node', {
-        id: node.id,
-        type: node.type,
-        hasConfig: !!node.data?.config,
-        hasTriggerCallback: !!node.data?.config?.['trigger.callback'],
-        callbackData: node.data?.config?.['trigger.callback']?.callbackData
+    const nodes = Array.from(this.nodesMap.values());
+    const match = findCallbackTriggerNode(nodes, callbackData);
+    if (match) {
+      logger.debug('Matching callback trigger found', {
+        nodeId: match.id,
+        callbackData
       });
-
-      if (node.type === 'trigger.callback') {
-        const config = node.data?.config?.['trigger.callback'];
-        logger.debug('Node config', { config });
-
-        if (config?.callbackData === callbackData) {
-          logger.debug('Matching callback trigger found', { nodeId: node.id });
-          return node;
-        }
-      }
+    } else {
+      logger.debug('No callback trigger found', { callbackData });
     }
-    logger.debug('No callback trigger found', { callbackData });
-    return undefined;
+    return match;
   }
 }

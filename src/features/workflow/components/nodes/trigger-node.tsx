@@ -21,6 +21,7 @@ export const TriggerNode = memo(({ data }: NodeProps) => {
     config['trigger.command']?.command ||
     config['trigger.message']?.pattern ||
     config['trigger.callback']?.callbackData ||
+    config['trigger.callback']?.data ||
     config['trigger.schedule']?.cron ||
     'Нажмите для редактирования';
 

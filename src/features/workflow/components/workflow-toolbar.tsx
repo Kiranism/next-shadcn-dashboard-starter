@@ -68,6 +68,7 @@ type ToolbarCategoryKey =
   | 'triggers'
   | 'messages'
   | 'actions'
+  | 'partners'
   | 'logic'
   | 'flow'
   | 'integrations';
@@ -271,6 +272,48 @@ const NODE_TEMPLATES: NodeTemplate[] = [
     description: 'Проверка подписки пользователя на Telegram канал'
   },
 
+  // B2B партнёрские действия (требуют enablePartnerRoles)
+  {
+    type: 'action.partner_org_summary',
+    label: 'Сводка организации',
+    icon: BarChart3,
+    color: '#6366f1',
+    category: 'partners',
+    description: 'Сводка по дереву партнёров (DIRECTOR)'
+  },
+  {
+    type: 'action.partner_team',
+    label: 'Команда партнёра',
+    icon: Users,
+    color: '#6366f1',
+    category: 'partners',
+    description: 'Список подопечных с пагинацией'
+  },
+  {
+    type: 'action.partner_link',
+    label: 'Реф. ссылка партнёра',
+    icon: Link2,
+    color: '#6366f1',
+    category: 'partners',
+    description: 'Выдача utm_ref ссылки (TRAINER+)'
+  },
+  {
+    type: 'action.partner_payouts',
+    label: 'Выплаты партнёра',
+    icon: Coins,
+    color: '#6366f1',
+    category: 'partners',
+    description: 'Последние REFERRAL начисления'
+  },
+  {
+    type: 'action.partner_subject_stats',
+    label: 'Стата подопечного',
+    icon: User,
+    color: '#6366f1',
+    category: 'partners',
+    description: 'Детали клиента/тренера с проверкой доступа'
+  },
+
   // Logic & Flow
   {
     type: 'condition',
@@ -355,6 +398,10 @@ const CATEGORY_METADATA: Record<
   triggers: { label: 'Триггеры', description: 'Точки входа в сценарий' },
   messages: { label: 'Сообщения', description: 'Коммуникация с пользователем' },
   actions: { label: 'Действия', description: 'Работа с данными и сервисами' },
+  partners: {
+    label: 'B2B партнёры',
+    description: 'Кабинет тренера / менеджера / директора'
+  },
   logic: { label: 'Логика', description: 'Ветвления и switch-case' },
   flow: {
     label: 'Управление потоком',

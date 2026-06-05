@@ -1,6 +1,6 @@
 {
   "name": "B2B Партнёр",
-  "description": "Личный кабинет партнёра (тренер / менеджер / директор) в b2b-иерархии. Меню адаптируется под роль: CLIENT видит базовое меню (баланс / история / реферальная программа); TRAINER+ получает доступ к ссылке, команде и выплатам; MANAGER — к команде; DIRECTOR — к сводке по организации. Требует `enablePartnerRoles = true` у проекта и заполненные `partnerRole` у пользователей.",
+  "description": "B2B кабинет партнёра v1.1 — меню по роли (CLIENT/TRAINER/MANAGER/DIRECTOR), партнёрские callback-ветки (ссылка, команда, выплаты, сводка) и базовое меню лояльности (баланс, история, уровень). Требует enablePartnerRoles и partnerRole у пользователей.",
   "nodes": [
     {
       "id": "start-trigger",
@@ -189,7 +189,7 @@
         "label": "Сводка организации (callback)",
         "config": {
           "trigger.callback": {
-            "data": "partner_org_summary"
+            "callbackData": "partner_org_summary"
           }
         }
       }
@@ -215,7 +215,7 @@
         "label": "Команда (callback)",
         "config": {
           "trigger.callback": {
-            "data": "partner_team_page"
+            "callbackData": "partner_team_page"
           }
         }
       }
@@ -242,7 +242,7 @@
         "label": "Реф. ссылка (callback)",
         "config": {
           "trigger.callback": {
-            "data": "partner_link"
+            "callbackData": "partner_link"
           }
         }
       }
@@ -270,7 +270,7 @@
         "label": "Выплаты (callback)",
         "config": {
           "trigger.callback": {
-            "data": "partner_payouts"
+            "callbackData": "partner_payouts"
           }
         }
       }
@@ -296,7 +296,7 @@
         "label": "Стата подопечного (callback)",
         "config": {
           "trigger.callback": {
-            "data": "partner_subject"
+            "callbackData": "partner_subject"
           }
         }
       }
@@ -311,6 +311,172 @@
           "action.partner_subject_stats": {
             "subjectUserId": "{{telegram.callback.params[0]}}"
           }
+        }
+      }
+    },
+    {
+      "id": "menu-balance-trigger",
+      "type": "trigger.callback",
+      "position": { "x": 760, "y": 800 },
+      "data": {
+        "label": "Баланс (callback)",
+        "config": {
+          "trigger.callback": { "callbackData": "menu_balance" }
+        }
+      }
+    },
+    {
+      "id": "show-balance-details",
+      "type": "message",
+      "position": { "x": 1140, "y": 800 },
+      "data": {
+        "label": "Показать баланс",
+        "config": {
+          "message": {
+            "text": "<b>💰 Ваш баланс бонусов</b>\n\n💵 <b>Текущий баланс:</b> {user.balanceFormatted}\n📈 <b>Всего заработано:</b> {user.totalEarnedFormatted}\n📉 <b>Всего потрачено:</b> {user.totalSpentFormatted}\n🛍️ <b>Покупок на сумму:</b> {user.totalPurchasesFormatted}",
+            "parseMode": "HTML",
+            "keyboard": {
+              "type": "inline",
+              "buttons": [
+                [{ "text": "⬅️ В меню", "callback_data": "back_to_menu" }]
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "menu-history-trigger",
+      "type": "trigger.callback",
+      "position": { "x": 760, "y": 920 },
+      "data": {
+        "label": "История (callback)",
+        "config": {
+          "trigger.callback": { "callbackData": "menu_history" }
+        }
+      }
+    },
+    {
+      "id": "show-history-list",
+      "type": "message",
+      "position": { "x": 1140, "y": 920 },
+      "data": {
+        "label": "Показать историю",
+        "config": {
+          "message": {
+            "text": "<b>📜 История операций</b>\n\n<b>Последние 10 операций:</b>\n\n{transactions.formatted}\n\n💡 Полная история — в личном кабинете на сайте.",
+            "parseMode": "HTML",
+            "keyboard": {
+              "type": "inline",
+              "buttons": [
+                [{ "text": "⬅️ В меню", "callback_data": "back_to_menu" }]
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "menu-level-trigger",
+      "type": "trigger.callback",
+      "position": { "x": 760, "y": 1040 },
+      "data": {
+        "label": "Уровень (callback)",
+        "config": {
+          "trigger.callback": { "callbackData": "menu_level" }
+        }
+      }
+    },
+    {
+      "id": "show-level-info",
+      "type": "message",
+      "position": { "x": 1140, "y": 1040 },
+      "data": {
+        "label": "Показать уровень",
+        "config": {
+          "message": {
+            "text": "<b>🏆 Ваш уровень:</b> {user.currentLevel}\n\n<b>📊 Прогресс:</b> {user.progressBar} ({user.progressPercent}%)\n\n<b>💰 Бонусный %:</b> {user.levelBonusPercent}%\n<b>Следующий уровень:</b> {user.nextLevelName}",
+            "parseMode": "HTML",
+            "keyboard": {
+              "type": "inline",
+              "buttons": [
+                [{ "text": "⬅️ В меню", "callback_data": "back_to_menu" }]
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "menu-referrals-trigger",
+      "type": "trigger.callback",
+      "position": { "x": 760, "y": 1160 },
+      "data": {
+        "label": "Рефералы (callback)",
+        "config": {
+          "trigger.callback": { "callbackData": "menu_referrals" }
+        }
+      }
+    },
+    {
+      "id": "show-referrals-stats",
+      "type": "message",
+      "position": { "x": 1140, "y": 1160 },
+      "data": {
+        "label": "Показать рефералы",
+        "config": {
+          "message": {
+            "text": "<b>👥 Реферальная программа</b>\n\n👤 <b>Приглашено:</b> {user.referralCount}\n💰 <b>Бонусов от рефералов:</b> {user.referralBonusTotalFormatted}\n\nℹ️ В B2B-режиме реф-ссылку выдают партнёры (тренер / менеджер / директор).",
+            "parseMode": "HTML",
+            "keyboard": {
+              "type": "inline",
+              "buttons": [
+                [{ "text": "⬅️ В меню", "callback_data": "back_to_menu" }]
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "menu-help-trigger",
+      "type": "trigger.callback",
+      "position": { "x": 760, "y": 1280 },
+      "data": {
+        "label": "Помощь (callback)",
+        "config": {
+          "trigger.callback": { "callbackData": "menu_help" }
+        }
+      }
+    },
+    {
+      "id": "show-help-info",
+      "type": "message",
+      "position": { "x": 1140, "y": 1280 },
+      "data": {
+        "label": "Показать помощь",
+        "config": {
+          "message": {
+            "text": "<b>❓ Помощь</b>\n\n/start — главное меню\n💰 Баланс · 📜 История · 🏆 Уровень\n\nПартнёрам: 🔗 ссылка · 👥 команда · 💵 выплаты\nДиректору: 📊 сводка по организации",
+            "parseMode": "HTML",
+            "keyboard": {
+              "type": "inline",
+              "buttons": [
+                [{ "text": "⬅️ В меню", "callback_data": "back_to_menu" }]
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "back-to-menu-trigger",
+      "type": "trigger.callback",
+      "position": { "x": 1520, "y": 800 },
+      "data": {
+        "label": "Назад в меню (callback)",
+        "config": {
+          "trigger.callback": { "callbackData": "back_to_menu" }
         }
       }
     },
@@ -460,6 +626,72 @@
       "type": "default",
       "source": "action-subject-stats",
       "target": "flow-end"
+    },
+    {
+      "id": "e-menu-balance",
+      "type": "default",
+      "source": "menu-balance-trigger",
+      "target": "show-balance-details"
+    },
+    {
+      "id": "e-balance-end",
+      "type": "default",
+      "source": "show-balance-details",
+      "target": "flow-end"
+    },
+    {
+      "id": "e-menu-history",
+      "type": "default",
+      "source": "menu-history-trigger",
+      "target": "show-history-list"
+    },
+    {
+      "id": "e-history-end",
+      "type": "default",
+      "source": "show-history-list",
+      "target": "flow-end"
+    },
+    {
+      "id": "e-menu-level",
+      "type": "default",
+      "source": "menu-level-trigger",
+      "target": "show-level-info"
+    },
+    {
+      "id": "e-level-end",
+      "type": "default",
+      "source": "show-level-info",
+      "target": "flow-end"
+    },
+    {
+      "id": "e-menu-referrals",
+      "type": "default",
+      "source": "menu-referrals-trigger",
+      "target": "show-referrals-stats"
+    },
+    {
+      "id": "e-referrals-end",
+      "type": "default",
+      "source": "show-referrals-stats",
+      "target": "flow-end"
+    },
+    {
+      "id": "e-menu-help",
+      "type": "default",
+      "source": "menu-help-trigger",
+      "target": "show-help-info"
+    },
+    {
+      "id": "e-help-end",
+      "type": "default",
+      "source": "show-help-info",
+      "target": "flow-end"
+    },
+    {
+      "id": "e-back-menu",
+      "type": "default",
+      "source": "back-to-menu-trigger",
+      "target": "cond-is-director"
     }
   ],
   "variables": [

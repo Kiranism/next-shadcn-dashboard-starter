@@ -107,7 +107,7 @@ const b2bPartnerCabinetTemplate: BotTemplate = {
   rating: 0,
   reviews: 0,
   author: 'Gupil Team',
-  version: '1.0.0',
+  version: '1.1.0',
   createdAt: new Date(),
   updatedAt: new Date(),
   isPublic: true

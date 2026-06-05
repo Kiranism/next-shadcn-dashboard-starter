@@ -320,6 +320,16 @@ export function WorkflowConstructor({ projectId }: WorkflowConstructorProps) {
         return 'Получить баланс';
       case 'action.check_channel_subscription':
         return 'Проверка подписки';
+      case 'action.partner_org_summary':
+        return 'Сводка организации';
+      case 'action.partner_team':
+        return 'Команда партнёра';
+      case 'action.partner_link':
+        return 'Реф. ссылка партнёра';
+      case 'action.partner_payouts':
+        return 'Выплаты партнёра';
+      case 'action.partner_subject_stats':
+        return 'Стата подопечного';
 
       // Условия
       case 'condition':
@@ -443,6 +453,29 @@ export function WorkflowConstructor({ projectId }: WorkflowConstructorProps) {
           'action.check_channel_subscription': {
             channelId: '@channelname',
             assignTo: 'isChannelSubscribed'
+          }
+        };
+      case 'action.partner_org_summary':
+        return { 'action.partner_org_summary': { topLimit: 5 } };
+      case 'action.partner_team':
+        return {
+          'action.partner_team': {
+            pageSize: 5,
+            page: '{{telegram.callback.params[0]}}'
+          }
+        };
+      case 'action.partner_link':
+        return {
+          'action.partner_link': {
+            additionalParams: { utm_source: 'partner-bot' }
+          }
+        };
+      case 'action.partner_payouts':
+        return { 'action.partner_payouts': { limit: 20 } };
+      case 'action.partner_subject_stats':
+        return {
+          'action.partner_subject_stats': {
+            subjectUserId: '{{telegram.callback.params[0]}}'
           }
         };
 

@@ -941,20 +941,13 @@ export class WorkflowRuntimeService {
               );
 
               // Find the callback trigger node
-              const callbackTriggerNode = Object.values(
-                versionToUse.nodes
-              ).find((node: WorkflowNode) => {
-                console.log('🔧 Checking node:', {
-                  id: node.id,
-                  type: node.type,
-                  config: node.data?.config
-                });
-                return (
-                  node.type === 'trigger.callback' &&
-                  node.data?.config?.['trigger.callback']?.callbackData ===
-                    callbackData
-                );
-              });
+              const { findCallbackTriggerNode } = await import(
+                './workflow/callback-trigger-match'
+              );
+              const callbackTriggerNode = findCallbackTriggerNode(
+                Object.values(versionToUse.nodes) as WorkflowNode[],
+                callbackData
+              );
 
               if (callbackTriggerNode) {
                 console.log('🔧 Found callback trigger node', {

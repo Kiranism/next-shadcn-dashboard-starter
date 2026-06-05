@@ -18,6 +18,7 @@ import { ActionNode } from './action-node';
 import { DelayNode } from './delay-node';
 import { EndNode } from './end-node';
 import { ContactRequestNode } from './contact-request-node';
+import { PartnerActionNode } from './partner-action-node';
 
 // Define workflow node types mapping (новая система типов из плана)
 export const workflowNodeTypes: NodeTypes = {
@@ -50,6 +51,14 @@ export const workflowNodeTypes: NodeTypes = {
   'action.link_telegram_account': ActionNode,
   'action.get_user_balance': ActionNode,
   'action.check_channel_subscription': ActionNode,
+  'action.menu_command': ActionNode,
+
+  // B2B партнёрские действия
+  'action.partner_team': PartnerActionNode,
+  'action.partner_subject_stats': PartnerActionNode,
+  'action.partner_payouts': PartnerActionNode,
+  'action.partner_link': PartnerActionNode,
+  'action.partner_org_summary': PartnerActionNode,
 
   // Условия
   condition: ConditionNode,
