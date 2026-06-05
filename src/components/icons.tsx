@@ -75,6 +75,7 @@ import {
   IconSlash,
   IconSparkles,
   IconStack2,
+  IconTrophyFilled,
   IconStar,
   IconSun,
   IconTrash,
@@ -259,5 +260,6 @@ export const Icons = {
   slash: IconSlash,
   calendar: IconCalendar,
   galleryVerticalEnd: IconStack2,
+  trophy: IconTrophyFilled,
   moreHorizontal: IconDots
 };

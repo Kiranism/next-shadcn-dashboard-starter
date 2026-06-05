@@ -44,6 +44,14 @@ export const navGroups: NavGroup[] = [
         shortcut: ['m', 'c'],
         isActive: false,
         items: []
+      },
+      {
+        title: 'Hogwatts',
+        url: '/dashboard/hogwatts',
+        icon: 'trophy',
+        shortcut: ['g', 'g'],
+        isActive: false,
+        items: []
       }
     ]
   },
