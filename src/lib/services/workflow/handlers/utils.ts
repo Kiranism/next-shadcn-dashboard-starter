@@ -6,8 +6,11 @@
  */
 
 import type { ExecutionContext } from '@/types/workflow';
+import { QueryExecutor } from '@/lib/services/workflow/query-executor';
+import { UserVariablesService } from '@/lib/services/workflow/user-variables.service';
 
 const VARIABLE_PATTERN = /\{\{([^}]+)\}\}/g;
+const USER_VARS_CACHE_KEY = '_userVariablesFlat';
 
 /**
  * Резолвит переменные в строке вида {{var.path}}
@@ -94,7 +97,10 @@ export async function resolveTemplateValue<T = any>(
 /**
  * Получает значение из объекта по пути вида "foo.bar[0].baz"
  */
-export function getValueByPath<T = any>(source: any, path: string | undefined): T | undefined {
+export function getValueByPath<T = any>(
+  source: any,
+  path: string | undefined
+): T | undefined {
   if (!path) {
     return source;
   }
@@ -137,8 +143,127 @@ export function normalizePhone(value: string): string {
   return trimmed.startsWith('+') ? `+${digitsOnly}` : digitsOnly;
 }
 
-async function resolveVariablePath(path: string, context: ExecutionContext): Promise<any> {
-  const segments = path.split('.').map((segment) => segment.trim()).filter(Boolean);
+async function resolveWorkflowUserId(
+  context: ExecutionContext
+): Promise<string | undefined> {
+  if (context.userId) {
+    return context.userId;
+  }
+
+  for (const sessionKey of ['telegramUser', 'contactUser'] as const) {
+    try {
+      const record = await context.variables.get(sessionKey, 'session');
+      if (record?.id) {
+        context.userId = record.id;
+        return record.id;
+      }
+    } catch {
+      // ignore missing session variable
+    }
+  }
+
+  if (!context.telegram?.userId) {
+    return undefined;
+  }
+
+  try {
+    const found = await QueryExecutor.execute(
+      context.services.db,
+      'check_user_by_platform',
+      {
+        telegramId:
+          context.platform === 'telegram' ? context.telegram.userId : undefined,
+        maxId: context.platform === 'max' ? context.telegram.userId : undefined,
+        projectId: context.projectId
+      }
+    );
+    if (found?.id) {
+      context.userId = found.id;
+      return found.id;
+    }
+  } catch {
+    // ignore lookup failure
+  }
+
+  return undefined;
+}
+
+async function loadUserVariablesFlat(
+  context: ExecutionContext
+): Promise<Record<string, unknown>> {
+  const cached = (context as Record<string, unknown>)[USER_VARS_CACHE_KEY];
+  if (cached && typeof cached === 'object') {
+    return cached as Record<string, unknown>;
+  }
+
+  const userId = await resolveWorkflowUserId(context);
+  if (!userId) {
+    return {};
+  }
+
+  const variables = await UserVariablesService.getUserVariables(
+    context.services.db,
+    userId,
+    context.projectId
+  );
+
+  (context as Record<string, unknown>)[USER_VARS_CACHE_KEY] = variables;
+  return variables;
+}
+
+function flatUserVarsToNested(
+  flat: Record<string, unknown>
+): Record<string, unknown> {
+  const user: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(flat)) {
+    if (!key.startsWith('user.')) {
+      continue;
+    }
+    const path = key.slice('user.'.length);
+    const parts = path.split('.');
+    let current = user;
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      if (i === parts.length - 1) {
+        current[part] = value;
+      } else {
+        if (!current[part] || typeof current[part] !== 'object') {
+          current[part] = {};
+        }
+        current = current[part] as Record<string, unknown>;
+      }
+    }
+  }
+
+  return user;
+}
+
+async function resolveUserVariablePath(
+  rest: string[],
+  context: ExecutionContext
+): Promise<unknown> {
+  const flat = await loadUserVariablesFlat(context);
+  if (rest.length === 0) {
+    return flatUserVarsToNested(flat);
+  }
+
+  const flatKey = `user.${rest.join('.')}`;
+  if (flatKey in flat) {
+    return flat[flatKey];
+  }
+
+  return getValueByPath(flatUserVarsToNested(flat), rest.join('.'));
+}
+
+async function resolveVariablePath(
+  path: string,
+  context: ExecutionContext
+): Promise<any> {
+  const segments = path
+    .split('.')
+    .map((segment) => segment.trim())
+    .filter(Boolean);
 
   if (segments.length === 0) {
     return undefined;
@@ -175,15 +300,22 @@ async function resolveVariablePath(path: string, context: ExecutionContext): Pro
     return mapping[rest[0]];
   }
 
+  if (root === 'user') {
+    return resolveUserVariablePath(rest, context);
+  }
+
   // Доступ к полям контекста напрямую (projectId, userId и т.д.)
   console.log(`🔍 DEBUG: Checking context.${root}:`, {
     rootValue: (context as any)[root],
     isDefined: (context as any)[root] !== undefined,
     contextKeys: Object.keys(context)
   });
-  
+
   if ((context as any)[root] !== undefined) {
-    const result = rest.reduce((acc: any, key) => acc?.[key], (context as any)[root]);
+    const result = rest.reduce(
+      (acc: any, key) => acc?.[key],
+      (context as any)[root]
+    );
     console.log(`✅ DEBUG: Resolved context.${root} =`, result);
     return result;
   }
@@ -192,7 +324,7 @@ async function resolveVariablePath(path: string, context: ExecutionContext): Pro
   try {
     const baseValue = await context.variables.get(root, 'session');
     console.log(`🔍 DEBUG: Base variable ${root} from session:`, baseValue);
-    
+
     if (rest.length === 0) {
       return baseValue;
     }
@@ -204,7 +336,7 @@ async function resolveVariablePath(path: string, context: ExecutionContext): Pro
       }
       return undefined;
     }, baseValue as any);
-    
+
     console.log(`✅ DEBUG: Resolved ${root}.${rest.join('.')} =`, result);
     return result;
   } catch (error) {
@@ -213,5 +345,3 @@ async function resolveVariablePath(path: string, context: ExecutionContext): Pro
     return undefined;
   }
 }
-
-
