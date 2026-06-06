@@ -51,13 +51,258 @@ export class PartnerOrganizationService {
   }
 
   static async getById(projectId: string, organizationId: string) {
-    return db.partnerOrganization.findFirst({
+    const org = await db.partnerOrganization.findFirst({
       where: { id: organizationId, projectId },
       include: {
         defaultReferralCommissionPlan: { select: { id: true, name: true } },
         _count: { select: { members: true } }
       }
     });
+    if (!org) return null;
+
+    let director: {
+      id: string;
+      firstName: string | null;
+      lastName: string | null;
+      email: string | null;
+      phone: string | null;
+    } | null = null;
+
+    if (org.directorUserId) {
+      director = await db.user.findFirst({
+        where: { id: org.directorUserId, projectId },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true
+        }
+      });
+    }
+
+    return { ...org, director };
+  }
+
+  static async listMembers(projectId: string, organizationId: string) {
+    const org = await this.getById(projectId, organizationId);
+    if (!org) throw new Error('Организация не найдена');
+
+    const members = await db.user.findMany({
+      where: { projectId, organizationId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        partnerRole: true,
+        referredBy: true,
+        outboundReferralPlanId: true,
+        registeredAt: true,
+        totalPurchases: true,
+        isActive: true
+      },
+      orderBy: [{ partnerRole: 'desc' }, { registeredAt: 'asc' }]
+    });
+
+    const referrerIds = [
+      ...new Set(members.map((m) => m.referredBy).filter(Boolean))
+    ] as string[];
+
+    const referrers =
+      referrerIds.length > 0
+        ? await db.user.findMany({
+            where: { id: { in: referrerIds }, projectId },
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true
+            }
+          })
+        : [];
+
+    const referrerMap = new Map(referrers.map((r) => [r.id, r]));
+
+    const planIds = [
+      ...new Set(members.map((m) => m.outboundReferralPlanId).filter(Boolean))
+    ] as string[];
+
+    const plans =
+      planIds.length > 0
+        ? await db.referralCommissionPlan.findMany({
+            where: { id: { in: planIds }, projectId },
+            select: { id: true, name: true }
+          })
+        : [];
+
+    const planMap = new Map(plans.map((p) => [p.id, p.name]));
+
+    return members.map((m) => {
+      const ref = m.referredBy ? referrerMap.get(m.referredBy) : null;
+      const refName = ref
+        ? [ref.firstName, ref.lastName].filter(Boolean).join(' ').trim() ||
+          ref.email ||
+          ref.id.slice(0, 8)
+        : null;
+      return {
+        id: m.id,
+        name:
+          [m.firstName, m.lastName].filter(Boolean).join(' ').trim() ||
+          m.email ||
+          m.phone ||
+          m.id.slice(0, 8),
+        email: m.email,
+        phone: m.phone,
+        partnerRole: m.partnerRole,
+        referredBy: m.referredBy,
+        referrerName: refName,
+        outboundReferralPlanId: m.outboundReferralPlanId,
+        outboundPlanName: m.outboundReferralPlanId
+          ? (planMap.get(m.outboundReferralPlanId) ?? null)
+          : null,
+        registeredAt: m.registeredAt.toISOString(),
+        totalPurchases: Number(m.totalPurchases ?? 0),
+        isActive: m.isActive
+      };
+    });
+  }
+
+  static async addMember(
+    projectId: string,
+    organizationId: string,
+    input: {
+      userId: string;
+      partnerRole?: 'CLIENT' | 'TRAINER' | 'MANAGER' | 'DIRECTOR';
+      referredBy?: string | null;
+      outboundReferralPlanId?: string | null;
+    }
+  ) {
+    const org = await this.getById(projectId, organizationId);
+    if (!org) throw new Error('Организация не найдена');
+
+    const user = await db.user.findFirst({
+      where: { id: input.userId, projectId }
+    });
+    if (!user) throw new Error('Пользователь не найден');
+
+    if (input.referredBy) {
+      if (input.referredBy === input.userId) {
+        throw new Error('Пользователь не может быть реферером сам себе');
+      }
+      const referrer = await db.user.findFirst({
+        where: { id: input.referredBy, projectId }
+      });
+      if (!referrer) throw new Error('Реферер не найден');
+    }
+
+    const updated = await db.user.update({
+      where: { id: input.userId },
+      data: {
+        organizationId,
+        ...(input.partnerRole ? { partnerRole: input.partnerRole } : {}),
+        ...(input.referredBy !== undefined
+          ? { referredBy: input.referredBy }
+          : {}),
+        ...(input.outboundReferralPlanId !== undefined
+          ? { outboundReferralPlanId: input.outboundReferralPlanId }
+          : {})
+      }
+    });
+
+    if (
+      input.partnerRole === 'DIRECTOR' ||
+      (org.directorUserId === input.userId && input.partnerRole !== 'CLIENT')
+    ) {
+      await db.partnerOrganization.update({
+        where: { id: organizationId },
+        data: { directorUserId: input.userId }
+      });
+    }
+
+    return updated;
+  }
+
+  static async removeMember(
+    projectId: string,
+    organizationId: string,
+    userId: string
+  ) {
+    const user = await db.user.findFirst({
+      where: { id: userId, projectId, organizationId }
+    });
+    if (!user) throw new Error('Участник не найден в этой организации');
+
+    const org = await this.getById(projectId, organizationId);
+    if (org?.directorUserId === userId) {
+      await db.partnerOrganization.update({
+        where: { id: organizationId },
+        data: { directorUserId: null }
+      });
+    }
+
+    return db.user.update({
+      where: { id: userId },
+      data: { organizationId: null }
+    });
+  }
+
+  static async updateMember(
+    projectId: string,
+    organizationId: string,
+    userId: string,
+    input: {
+      partnerRole?: 'CLIENT' | 'TRAINER' | 'MANAGER' | 'DIRECTOR';
+      referredBy?: string | null;
+      outboundReferralPlanId?: string | null;
+    }
+  ) {
+    const user = await db.user.findFirst({
+      where: { id: userId, projectId, organizationId }
+    });
+    if (!user) throw new Error('Участник не найден в этой организации');
+
+    if (input.referredBy) {
+      if (input.referredBy === userId) {
+        throw new Error('Пользователь не может быть реферером сам себе');
+      }
+      const referrer = await db.user.findFirst({
+        where: { id: input.referredBy, projectId }
+      });
+      if (!referrer) throw new Error('Реферер не найден');
+    }
+
+    const updated = await db.user.update({
+      where: { id: userId },
+      data: {
+        ...(input.partnerRole !== undefined
+          ? { partnerRole: input.partnerRole }
+          : {}),
+        ...(input.referredBy !== undefined
+          ? { referredBy: input.referredBy }
+          : {}),
+        ...(input.outboundReferralPlanId !== undefined
+          ? { outboundReferralPlanId: input.outboundReferralPlanId }
+          : {})
+      }
+    });
+
+    if (input.partnerRole === 'DIRECTOR') {
+      await db.partnerOrganization.update({
+        where: { id: organizationId },
+        data: { directorUserId: userId }
+      });
+    } else if (
+      (await this.getById(projectId, organizationId))?.directorUserId === userId
+    ) {
+      await db.partnerOrganization.update({
+        where: { id: organizationId },
+        data: { directorUserId: null }
+      });
+    }
+
+    return updated;
   }
 
   static async resolveBySlug(

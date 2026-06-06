@@ -12,8 +12,7 @@
  *                       `referralPlansEnabled = true` (legacy ReferralLevel
  *                       editor спрятан в этом случае на уровне родителя)
  * @project: SaaS Bonus System
- * @dependencies: shadcn/ui (Command, Popover, Slider, Alert, Switch),
- *                composite ConfirmDialog
+ * @dependencies: shadcn/ui (Command, Popover, Slider, Alert, Switch, Dialog)
  * @created: 2026-05-12
  * @updated: 2026-05-24
  * @author: AI Assistant + User
@@ -28,8 +27,7 @@ import {
   Loader2,
   Plus,
   Trash2,
-  UserPlus,
-  Users
+  UserPlus
 } from 'lucide-react';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -42,7 +40,14 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card';
-import { ConfirmDialog } from '@/components/composite/confirm-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -54,7 +59,9 @@ import {
 } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
+import { getPartnerRoleLabel } from '@/features/bonuses/components/partner-role-badge';
 import { PartnerUserCombobox, type PartnerUser } from './partner-user-combobox';
 
 type PlanLevel = {
@@ -109,6 +116,14 @@ function formatPlanLevels(
   return sorted.map((l) => `L${l.level}: ${l.percent}%`).join(' · ');
 }
 
+type AssignTarget = 'one' | 'role';
+
+const ROLE_PLURAL: Record<'TRAINER' | 'MANAGER' | 'DIRECTOR', string> = {
+  TRAINER: 'тренеров',
+  MANAGER: 'менеджеров',
+  DIRECTOR: 'руководителей'
+};
+
 export function ReferralCommissionPlansPanel({
   projectId,
   enablePartnerRoles = false
@@ -126,23 +141,22 @@ export function ReferralCommissionPlansPanel({
   const [l3, setL3] = useState(1);
   const [maxDepth, setMaxDepth] = useState(3);
 
-  // Назначение outbound-плана конкретному пользователю
+  // Единый диалог назначения плана
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [assignTarget, setAssignTarget] = useState<AssignTarget>('one');
+  const [assignPlanId, setAssignPlanId] = useState('');
   const [assignUser, setAssignUser] = useState<PartnerUser | null>(null);
-  const [assignPlanId, setAssignPlanId] = useState<string>('');
-
-  // Bulk-assign (Phase 6.4)
-  const [bulkPlanId, setBulkPlanId] = useState<string>('');
-  const [bulkRole, setBulkRole] = useState<'TRAINER' | 'MANAGER' | 'DIRECTOR'>(
-    'TRAINER'
-  );
-  const [bulkOnlyEmpty, setBulkOnlyEmpty] = useState(false);
-  const [bulkPreview, setBulkPreview] = useState<{
+  const [assignRole, setAssignRole] = useState<
+    'TRAINER' | 'MANAGER' | 'DIRECTOR'
+  >('TRAINER');
+  /** true = не перезаписывать партнёров, у которых уже есть свой план */
+  const [assignOnlyWithoutPlan, setAssignOnlyWithoutPlan] = useState(true);
+  const [rolePreview, setRolePreview] = useState<{
     total: number;
     empty: number;
-    role: string;
   } | null>(null);
-  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
-  const [bulkLoadingPreview, setBulkLoadingPreview] = useState(false);
+  const [loadingRolePreview, setLoadingRolePreview] = useState(false);
+  const [createPlanOpen, setCreatePlanOpen] = useState(false);
 
   const planNameById = useMemo(() => {
     const map: Record<string, string> = {};
@@ -175,6 +189,44 @@ export function ReferralCommissionPlansPanel({
   useEffect(() => {
     load();
   }, [load]);
+
+  const openAssignDialog = (preselectedPlanId?: string) => {
+    setAssignPlanId(preselectedPlanId ?? defaultPlanId ?? plans[0]?.id ?? '');
+    setAssignTarget('one');
+    setAssignUser(null);
+    setAssignRole('TRAINER');
+    setAssignOnlyWithoutPlan(true);
+    setRolePreview(null);
+    setAssignDialogOpen(true);
+  };
+
+  const loadRolePreview = useCallback(async () => {
+    if (!assignPlanId || assignTarget !== 'role') {
+      setRolePreview(null);
+      return;
+    }
+    setLoadingRolePreview(true);
+    try {
+      const res = await fetch(
+        `/api/projects/${projectId}/referral-commission-plans/${assignPlanId}/bulk-assign?role=${assignRole}`
+      );
+      if (!res.ok) throw new Error('preview failed');
+      const data = await res.json();
+      setRolePreview({
+        total: Number(data.total ?? 0),
+        empty: Number(data.empty ?? 0)
+      });
+    } catch {
+      setRolePreview(null);
+    } finally {
+      setLoadingRolePreview(false);
+    }
+  }, [assignPlanId, assignRole, assignTarget, projectId]);
+
+  useEffect(() => {
+    if (!assignDialogOpen || assignTarget !== 'role') return;
+    void loadRolePreview();
+  }, [assignDialogOpen, assignTarget, loadRolePreview]);
 
   const saveSettings = async (next?: {
     enabled?: boolean;
@@ -262,6 +314,7 @@ export function ReferralCommissionPlansPanel({
         throw new Error(err.error || 'create failed');
       }
       toast({ title: 'План создан' });
+      setCreatePlanOpen(false);
       await load();
     } catch (e) {
       toast({
@@ -299,41 +352,99 @@ export function ReferralCommissionPlansPanel({
     }
   };
 
-  const assignOutbound = async () => {
-    if (!assignUser) {
+  const submitAssign = async () => {
+    if (!assignPlanId) {
+      toast({ title: 'Выберите план', variant: 'destructive' });
+      return;
+    }
+
+    if (assignTarget === 'one') {
+      if (!assignUser) {
+        toast({ title: 'Выберите партнёра', variant: 'destructive' });
+        return;
+      }
+      setSaving(true);
+      try {
+        const res = await fetch(
+          `/api/projects/${projectId}/users/${assignUser.id}/referral-outbound-plan`,
+          {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ outboundReferralPlanId: assignPlanId })
+          }
+        );
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || 'assign failed');
+        }
+        toast({
+          title: 'План назначен',
+          description: `«${planNameById[assignPlanId]}» → ${assignUser.name}`
+        });
+        setAssignDialogOpen(false);
+        await load();
+      } catch (e) {
+        toast({
+          title: 'Ошибка',
+          description: e instanceof Error ? e.message : 'Не удалось',
+          variant: 'destructive'
+        });
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
+    const affected = assignOnlyWithoutPlan
+      ? (rolePreview?.empty ?? 0)
+      : (rolePreview?.total ?? 0);
+
+    if (affected === 0) {
       toast({
-        title: 'Выберите партнёра',
+        title: 'Никого не затронет',
+        description: assignOnlyWithoutPlan
+          ? `У всех ${ROLE_PLURAL[assignRole]} уже есть свой план`
+          : `В проекте нет ${ROLE_PLURAL[assignRole]}`,
         variant: 'destructive'
       });
       return;
     }
+
+    if (
+      !assignOnlyWithoutPlan &&
+      rolePreview &&
+      rolePreview.total > rolePreview.empty &&
+      !confirm(
+        `Перезаписать план у ${rolePreview.total} ${ROLE_PLURAL[assignRole]}? У ${rolePreview.total - rolePreview.empty} уже есть другой план.`
+      )
+    ) {
+      return;
+    }
+
     setSaving(true);
     try {
       const res = await fetch(
-        `/api/projects/${projectId}/users/${assignUser.id}/referral-outbound-plan`,
+        `/api/projects/${projectId}/referral-commission-plans/${assignPlanId}/bulk-assign`,
         {
-          method: 'PATCH',
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            outboundReferralPlanId: assignPlanId || null
+            role: assignRole,
+            onlyEmpty: assignOnlyWithoutPlan
           })
         }
       );
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'assign failed');
+        throw new Error(err.error || 'Не удалось назначить');
       }
+      const data = await res.json();
       toast({
-        title: 'Назначено',
-        description: assignPlanId
-          ? `План «${planNameById[assignPlanId] ?? assignPlanId}» применён`
-          : 'Outbound-план сброшен'
+        title: 'План назначен',
+        description: `«${planNameById[assignPlanId]}» → ${data.updated} ${ROLE_PLURAL[assignRole]}`
       });
-      // Обновим состояние выбранного пользователя
-      setAssignUser({
-        ...assignUser,
-        outboundReferralPlanId: assignPlanId || null
-      });
+      setAssignDialogOpen(false);
+      await load();
     } catch (e) {
       toast({
         title: 'Ошибка',
@@ -344,65 +455,6 @@ export function ReferralCommissionPlansPanel({
       setSaving(false);
     }
   };
-
-  // ──────────────────────────────────────────────────────────────────
-  // Phase 6.4 — Bulk assign
-  // ──────────────────────────────────────────────────────────────────
-
-  const openBulkConfirm = async (planId: string) => {
-    if (!planId) return;
-    setBulkPlanId(planId);
-    setBulkLoadingPreview(true);
-    try {
-      const res = await fetch(
-        `/api/projects/${projectId}/referral-commission-plans/${planId}/bulk-assign?role=${bulkRole}`
-      );
-      if (!res.ok) throw new Error('preview failed');
-      const data = await res.json();
-      setBulkPreview({
-        total: Number(data.total ?? 0),
-        empty: Number(data.empty ?? 0),
-        role: String(data.role ?? bulkRole)
-      });
-      setBulkConfirmOpen(true);
-    } catch {
-      toast({
-        title: 'Не удалось получить превью',
-        description: 'Проверьте подключение и попробуйте снова',
-        variant: 'destructive'
-      });
-    } finally {
-      setBulkLoadingPreview(false);
-    }
-  };
-
-  const performBulkAssign = async () => {
-    const res = await fetch(
-      `/api/projects/${projectId}/referral-commission-plans/${bulkPlanId}/bulk-assign`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: bulkRole, onlyEmpty: bulkOnlyEmpty })
-      }
-    );
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Не удалось назначить план');
-    }
-    const data = await res.json();
-    toast({
-      title: 'Готово',
-      description: `Обновлено пользователей: ${data.updated}`
-    });
-    await load();
-  };
-
-  const roleLabel = (r: 'TRAINER' | 'MANAGER' | 'DIRECTOR') =>
-    r === 'TRAINER'
-      ? 'тренерам'
-      : r === 'MANAGER'
-        ? 'менеджерам'
-        : 'руководителям';
 
   if (loading) {
     return (
@@ -432,43 +484,48 @@ export function ReferralCommissionPlansPanel({
       {enablePartnerRoles && (
         <Alert>
           <AlertCircle className='h-4 w-4' />
-          <AlertTitle>Как работать с планами в B2B</AlertTitle>
-          <AlertDescription className='space-y-2 text-sm'>
-            <p>
-              1. Создайте план (например «Стандарт» или «Инфлюенсер») с
-              процентами L1/L2/L3.
-            </p>
-            <p>
-              2. Включите «Персональные планы» и выберите план по умолчанию.
-            </p>
-            <p>
-              3. Назначьте план каждому партнёру (тренер / менеджер / директор)
-              — кнопкой «Назначить тренерам» или в блоке «Назначить план
-              партнёру» ниже.
-            </p>
-            <p className='text-muted-foreground'>
-              При покупке клиента комиссия делится по цепочке вверх: тренер (L1)
-              → менеджер (L2) → директор (L3). Проценты берутся из плана того
-              партнёра, который пригласил клиента.
-            </p>
+          <AlertTitle>Планы комиссий ≠ бонусы клиентам</AlertTitle>
+          <AlertDescription className='text-sm'>
+            Здесь задаётся, сколько % от покупки получают тренер (L1), менеджер
+            (L2) и директор (L3). Бонусы для клиентов — во вкладке «Настройки».
+            Приоритет плана: персональный outbound → план организации → план по
+            умолчанию.
           </AlertDescription>
         </Alert>
       )}
 
       <Card>
-        <CardHeader>
-          <CardTitle>
-            {enablePartnerRoles
-              ? 'Планы комиссий для партнёров'
-              : 'Персональные планы комиссий'}
-          </CardTitle>
-          <CardDescription>
-            {enablePartnerRoles
-              ? 'Определяют, сколько % получают тренер, менеджер и директор с каждой покупки приглашённого клиента. Не путать с бонусами для клиента во вкладке «Настройки».'
-              : 'При включении для каждого нового приглашённого фиксируется план выплат: сначала outbound-план партнёра, иначе план по умолчанию.'}
-          </CardDescription>
+        <CardHeader className='flex flex-row items-start justify-between gap-4'>
+          <div>
+            <CardTitle>Настройки планов</CardTitle>
+            <CardDescription>
+              Включите персональные планы и выберите дефолт для новых
+              приглашённых
+            </CardDescription>
+          </div>
+          <div className='flex shrink-0 flex-wrap gap-2'>
+            {plans.length > 0 && (
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                onClick={() => openAssignDialog()}
+              >
+                <UserPlus className='mr-2 h-4 w-4' />
+                Назначить план
+              </Button>
+            )}
+            <Button
+              type='button'
+              size='sm'
+              onClick={() => setCreatePlanOpen(true)}
+            >
+              <Plus className='mr-2 h-4 w-4' />
+              Новый план
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent className='space-y-6'>
+        <CardContent className='space-y-4'>
           <div className='flex flex-row items-center justify-between rounded-lg border p-4'>
             <div className='space-y-0.5'>
               <Label htmlFor='ref-plans-enabled'>
@@ -517,10 +574,11 @@ export function ReferralCommissionPlansPanel({
             <Button
               type='button'
               variant='secondary'
+              size='sm'
               onClick={() => void seedFromLegacy()}
               disabled={saving}
             >
-              Создать план из текущей программы
+              Из текущей программы
             </Button>
           </div>
         </CardContent>
@@ -528,135 +586,59 @@ export function ReferralCommissionPlansPanel({
 
       <Card>
         <CardHeader>
-          <CardTitle>Новый план</CardTitle>
+          <CardTitle>Планы ({plans.length})</CardTitle>
           <CardDescription>
-            До 3 уровней выплат (в процентах от покупки)
-          </CardDescription>
-        </CardHeader>
-        <CardContent className='space-y-4'>
-          <div className='grid gap-4 sm:grid-cols-2'>
-            <div className='space-y-2'>
-              <Label>Название</Label>
-              <Input
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                maxLength={120}
-              />
-            </div>
-            {/* Phase 6.5 — Slider 1..3 с подсказкой */}
-            <div className='space-y-2'>
-              <div className='flex items-center justify-between'>
-                <Label>
-                  Глубина выплат:{' '}
-                  <Badge variant='secondary' className='font-mono'>
-                    {maxDepth}
-                  </Badge>
-                </Label>
-              </div>
-              <Slider
-                min={SLIDER_MIN}
-                max={SLIDER_MAX}
-                step={1}
-                value={[maxDepth]}
-                onValueChange={(v) => setMaxDepth(v[0] ?? 3)}
-                className='py-2'
-              />
-              <p className='text-muted-foreground text-xs'>
-                Сколько уровней вверх по дереву получают комиссию. Рекомендуется
-                3 для b2b (тренер → менеджер → руководитель). Большая глубина
-                почти не используется и ухудшает аналитику.
-              </p>
-            </div>
-          </div>
-          <div className='grid grid-cols-1 gap-3 sm:grid-cols-3'>
-            {[l1, l2, l3].map((value, index) => (
-              <div key={index} className='space-y-2'>
-                <Label>
-                  {enablePartnerRoles
-                    ? LEVEL_ROLE_LABELS[index]
-                    : `Уровень ${index + 1}`}{' '}
-                  %
-                </Label>
-                <Input
-                  type='number'
-                  value={value}
-                  onChange={(e) => {
-                    const n = Number(e.target.value);
-                    if (index === 0) setL1(n);
-                    else if (index === 1) setL2(n);
-                    else setL3(n);
-                  }}
-                />
-                {enablePartnerRoles && (
-                  <p className='text-muted-foreground text-xs'>
-                    {index === 0
-                      ? 'Прямой пригласивший клиента'
-                      : index === 1
-                        ? 'Руководитель тренера'
-                        : 'Руководитель сети'}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-          <Button
-            type='button'
-            onClick={() => void createPlan()}
-            disabled={saving}
-          >
-            <Plus className='mr-2 h-4 w-4' />
-            Создать план
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Планы</CardTitle>
-          <CardDescription>
-            Выберите план и при необходимости назначьте его всем партнёрам одной
-            роли разом.
+            Проценты выплат по уровням иерархии с каждой покупки приглашённого
+            клиента
           </CardDescription>
         </CardHeader>
         <CardContent className='space-y-3'>
           {plans.length === 0 ? (
-            <p className='text-muted-foreground text-sm'>Пока нет планов</p>
+            <p className='text-muted-foreground py-4 text-center text-sm'>
+              Планов пока нет.{' '}
+              <button
+                type='button'
+                className='text-primary underline'
+                onClick={() => setCreatePlanOpen(true)}
+              >
+                Создать первый
+              </button>
+            </p>
           ) : (
             plans.map((p) => (
               <div
                 key={p.id}
-                className='flex flex-wrap items-center justify-between gap-2 rounded-md border p-3'
+                className='flex items-center justify-between gap-3 rounded-lg border p-3'
               >
-                <div>
-                  <div className='font-medium'>{p.name}</div>
-                  <div className='text-muted-foreground font-mono text-xs'>
-                    {p.id}
+                <div className='min-w-0'>
+                  <div className='flex flex-wrap items-center gap-2'>
+                    <span className='font-medium'>{p.name}</span>
+                    {defaultPlanId === p.id && (
+                      <Badge variant='secondary' className='text-xs'>
+                        по умолчанию
+                      </Badge>
+                    )}
                   </div>
-                  <div className='text-muted-foreground text-sm'>
+                  <p className='text-muted-foreground mt-0.5 text-sm'>
                     {formatPlanLevels(p.levels, enablePartnerRoles)}
                     {' · '}
                     глубина {p.maxPayoutDepth}
-                  </div>
+                  </p>
                 </div>
-                <div className='flex flex-wrap items-center gap-2'>
-                  {/* Phase 6.4 — Bulk assign по роли */}
-                  {enablePartnerRoles && (
-                    <Button
-                      type='button'
-                      size='sm'
-                      variant='secondary'
-                      onClick={() => void openBulkConfirm(p.id)}
-                      disabled={saving || bulkLoadingPreview}
-                    >
-                      <Users className='mr-2 h-4 w-4' />
-                      Назначить {roleLabel(bulkRole)}
-                    </Button>
-                  )}
+                <div className='flex shrink-0 items-center gap-2'>
+                  <Button
+                    type='button'
+                    size='sm'
+                    variant='secondary'
+                    onClick={() => openAssignDialog(p.id)}
+                  >
+                    Назначить
+                  </Button>
                   <Button
                     type='button'
                     size='sm'
                     variant='ghost'
-                    className='text-destructive'
+                    className='text-destructive hover:text-destructive'
                     onClick={() => void deletePlan(p.id)}
                     disabled={saving || defaultPlanId === p.id}
                   >
@@ -666,151 +648,255 @@ export function ReferralCommissionPlansPanel({
               </div>
             ))
           )}
-
-          {enablePartnerRoles && plans.length > 0 && (
-            <div className='flex flex-wrap items-end gap-3 rounded-md border border-dashed p-3'>
-              <div className='space-y-1'>
-                <Label className='text-xs'>Роль для bulk-назначения</Label>
-                <Select
-                  value={bulkRole}
-                  onValueChange={(v) =>
-                    setBulkRole(v as 'TRAINER' | 'MANAGER' | 'DIRECTOR')
-                  }
-                  disabled={saving}
-                >
-                  <SelectTrigger className='w-[180px]'>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value='TRAINER'>Тренеры</SelectItem>
-                    <SelectItem value='MANAGER'>Менеджеры</SelectItem>
-                    <SelectItem value='DIRECTOR'>Руководители</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <label className='text-muted-foreground flex cursor-pointer items-center gap-2 text-xs'>
-                <input
-                  type='checkbox'
-                  checked={bulkOnlyEmpty}
-                  onChange={(e) => setBulkOnlyEmpty(e.target.checked)}
-                />
-                Только тем, у кого нет плана
-              </label>
-            </div>
-          )}
         </CardContent>
       </Card>
 
-      <Card className={enablePartnerRoles ? 'border-primary/30' : undefined}>
-        <CardHeader>
-          <CardTitle className='flex items-center gap-2'>
-            <UserPlus className='h-5 w-5' />
-            Назначить план партнёру
-          </CardTitle>
-          <CardDescription>
-            Найдите пользователя по имени, email или телефону. Фильтр по роли
-            применяется автоматически когда включена b2b-иерархия.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className='flex flex-wrap items-end gap-3'>
-          <div className='space-y-2'>
-            <Label>Партнёр</Label>
-            <PartnerUserCombobox
-              projectId={projectId}
-              value={assignUser?.id ?? ''}
-              onChange={(u) => setAssignUser(u)}
-              partnerRolesOnly={enablePartnerRoles}
-              planNameById={planNameById}
-              disabled={saving}
-            />
-            {assignUser?.outboundReferralPlanId && (
-              <p className='text-muted-foreground text-xs'>
-                Текущий план:{' '}
-                <span className='font-medium'>
-                  {planNameById[assignUser.outboundReferralPlanId] ??
-                    assignUser.outboundReferralPlanId}
-                </span>
-              </p>
+      {/* Create plan dialog */}
+      <Dialog open={createPlanOpen} onOpenChange={setCreatePlanOpen}>
+        <DialogContent className='max-w-lg'>
+          <DialogHeader>
+            <DialogTitle>Новый план комиссий</DialogTitle>
+            <DialogDescription>
+              До 3 уровней выплат в процентах от суммы покупки
+            </DialogDescription>
+          </DialogHeader>
+          <div className='grid gap-4 py-2'>
+            <div className='space-y-2'>
+              <Label>Название</Label>
+              <Input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                maxLength={120}
+              />
+            </div>
+            <div className='space-y-2'>
+              <Label>
+                Глубина выплат:{' '}
+                <Badge variant='secondary' className='font-mono'>
+                  {maxDepth}
+                </Badge>
+              </Label>
+              <Slider
+                min={SLIDER_MIN}
+                max={SLIDER_MAX}
+                step={1}
+                value={[maxDepth]}
+                onValueChange={(v) => setMaxDepth(v[0] ?? 3)}
+                className='py-2'
+              />
+            </div>
+            <div className='grid grid-cols-1 gap-3 sm:grid-cols-3'>
+              {[l1, l2, l3].map((value, index) => {
+                const levelNum = index + 1;
+                if (levelNum > maxDepth) return null;
+                return (
+                  <div key={index} className='space-y-2'>
+                    <Label>
+                      {enablePartnerRoles
+                        ? LEVEL_ROLE_LABELS[index]
+                        : `Уровень ${levelNum}`}{' '}
+                      %
+                    </Label>
+                    <Input
+                      type='number'
+                      value={value}
+                      onChange={(e) => {
+                        const n = Number(e.target.value);
+                        if (index === 0) setL1(n);
+                        else if (index === 1) setL2(n);
+                        else setL3(n);
+                      }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant='outline' onClick={() => setCreatePlanOpen(false)}>
+              Отмена
+            </Button>
+            <Button onClick={() => void createPlan()} disabled={saving}>
+              {saving && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+              Создать
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Назначить план — один диалог: одному партнёру или всей роли */}
+      <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
+        <DialogContent className='max-w-lg'>
+          <DialogHeader>
+            <DialogTitle>Назначить план комиссий</DialogTitle>
+            <DialogDescription>
+              План определяет проценты L1/L2/L3 для клиентов, которых пригласил
+              партнёр
+            </DialogDescription>
+          </DialogHeader>
+          <div className='grid gap-5 py-2'>
+            <div className='space-y-2'>
+              <Label>Какой план</Label>
+              <Select value={assignPlanId} onValueChange={setAssignPlanId}>
+                <SelectTrigger>
+                  <SelectValue placeholder='Выберите план' />
+                </SelectTrigger>
+                <SelectContent>
+                  {plans.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                      {defaultPlanId === p.id ? ' (по умолчанию)' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className='space-y-3'>
+              <Label>Кому назначить</Label>
+              <RadioGroup
+                value={assignTarget}
+                onValueChange={(v) => setAssignTarget(v as AssignTarget)}
+                className='grid gap-2'
+              >
+                <label
+                  htmlFor='assign-one'
+                  className='hover:bg-muted/50 flex cursor-pointer items-start gap-3 rounded-lg border p-3'
+                >
+                  <RadioGroupItem
+                    value='one'
+                    id='assign-one'
+                    className='mt-0.5'
+                  />
+                  <div>
+                    <p className='text-sm font-medium'>Одному партнёру</p>
+                    <p className='text-muted-foreground text-xs'>
+                      Найти по имени, email или телефону
+                    </p>
+                  </div>
+                </label>
+                {enablePartnerRoles && (
+                  <label
+                    htmlFor='assign-role'
+                    className='hover:bg-muted/50 flex cursor-pointer items-start gap-3 rounded-lg border p-3'
+                  >
+                    <RadioGroupItem
+                      value='role'
+                      id='assign-role'
+                      className='mt-0.5'
+                    />
+                    <div>
+                      <p className='text-sm font-medium'>
+                        Всем партнёрам одной роли
+                      </p>
+                      <p className='text-muted-foreground text-xs'>
+                        Например, всем тренерам сразу
+                      </p>
+                    </div>
+                  </label>
+                )}
+              </RadioGroup>
+            </div>
+
+            {assignTarget === 'one' ? (
+              <div className='space-y-2'>
+                <Label>Партнёр</Label>
+                <PartnerUserCombobox
+                  projectId={projectId}
+                  value={assignUser?.id ?? ''}
+                  onChange={(u) => setAssignUser(u)}
+                  partnerRolesOnly={enablePartnerRoles}
+                  planNameById={planNameById}
+                  disabled={saving}
+                />
+                {assignUser?.outboundReferralPlanId && (
+                  <p className='text-muted-foreground text-xs'>
+                    Сейчас:{' '}
+                    {planNameById[assignUser.outboundReferralPlanId] ??
+                      'другой план'}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className='space-y-4 rounded-lg border p-3'>
+                <div className='space-y-2'>
+                  <Label>Роль</Label>
+                  <Select
+                    value={assignRole}
+                    onValueChange={(v) =>
+                      setAssignRole(v as 'TRAINER' | 'MANAGER' | 'DIRECTOR')
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='TRAINER'>Тренеры</SelectItem>
+                      <SelectItem value='MANAGER'>Менеджеры</SelectItem>
+                      <SelectItem value='DIRECTOR'>Руководители</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <label className='flex cursor-pointer items-start gap-2 text-sm'>
+                  <input
+                    type='checkbox'
+                    className='mt-1'
+                    checked={assignOnlyWithoutPlan}
+                    onChange={(e) => setAssignOnlyWithoutPlan(e.target.checked)}
+                  />
+                  <span>
+                    Только тем, у кого ещё нет своего плана
+                    <span className='text-muted-foreground block text-xs'>
+                      Не перезаписывать уже настроенных партнёров
+                    </span>
+                  </span>
+                </label>
+                <div className='bg-muted/50 rounded-md px-3 py-2 text-sm'>
+                  {loadingRolePreview ? (
+                    <span className='text-muted-foreground flex items-center gap-2'>
+                      <Loader2 className='h-3 w-3 animate-spin' />
+                      Считаем…
+                    </span>
+                  ) : rolePreview ? (
+                    <>
+                      Будет назначено:{' '}
+                      <strong>
+                        {assignOnlyWithoutPlan
+                          ? rolePreview.empty
+                          : rolePreview.total}
+                      </strong>{' '}
+                      {ROLE_PLURAL[assignRole]}
+                      {!assignOnlyWithoutPlan &&
+                        rolePreview.total > rolePreview.empty && (
+                          <span className='text-muted-foreground block text-xs'>
+                            из них {rolePreview.total - rolePreview.empty} уже
+                            имеют другой план — он будет заменён
+                          </span>
+                        )}
+                    </>
+                  ) : (
+                    <span className='text-muted-foreground'>
+                      Выберите роль для подсчёта
+                    </span>
+                  )}
+                </div>
+              </div>
             )}
           </div>
-          <div className='space-y-2'>
-            <Label>План</Label>
-            <Select
-              value={assignPlanId || '__clear__'}
-              onValueChange={(v) => setAssignPlanId(v === '__clear__' ? '' : v)}
+          <DialogFooter>
+            <Button
+              variant='outline'
+              onClick={() => setAssignDialogOpen(false)}
             >
-              <SelectTrigger className='w-[220px]'>
-                <SelectValue placeholder='План' />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='__clear__'>Сбросить</SelectItem>
-                {plans.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <Button
-            type='button'
-            onClick={() => void assignOutbound()}
-            disabled={saving || !assignUser}
-          >
-            <UserPlus className='mr-2 h-4 w-4' />
-            Сохранить
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Статистика партнёра (API)</CardTitle>
-          <CardDescription>
-            GET{' '}
-            <code className='bg-muted rounded px-1 text-xs'>
-              /api/projects/{projectId}/referral-insights/{'{userId}'}
-            </code>{' '}
-            — владелец проекта (авторизованный админ) видит агрегаты по
-            указанному пользователю. Для «руководителя» без доступа к админке
-            используйте выдачу grant: POST{' '}
-            <code className='bg-muted rounded px-1 text-xs'>
-              /api/projects/.../referral-stats-grants
-            </code>
-            .
-          </CardDescription>
-        </CardHeader>
-      </Card>
-
-      {/* Phase 6.4 — Confirm dialog для bulk-assign */}
-      <ConfirmDialog
-        open={bulkConfirmOpen}
-        onOpenChange={setBulkConfirmOpen}
-        title={`Назначить план «${
-          bulkPlanId ? (planNameById[bulkPlanId] ?? bulkPlanId) : ''
-        }»`}
-        description={
-          bulkPreview ? (
-            <span>
-              План будет применён{' '}
-              <strong>
-                {bulkOnlyEmpty
-                  ? `${bulkPreview.empty} пользователям без плана`
-                  : `всем ${bulkPreview.total} пользователям`}
-              </strong>{' '}
-              с ролью <strong>{roleLabel(bulkRole)}</strong>. Существующие
-              атрибуции (рефералы, у которых уже зафиксирован план) останутся
-              без изменений.
-            </span>
-          ) : (
-            'Загрузка превью…'
-          )
-        }
-        confirmLabel='Назначить'
-        cancelLabel='Отмена'
-        successMessage='План назначен'
-        onConfirm={performBulkAssign}
-      />
+              Отмена
+            </Button>
+            <Button onClick={() => void submitAssign()} disabled={saving}>
+              {saving && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+              Назначить
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

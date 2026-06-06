@@ -391,7 +391,17 @@ export function ReferralProgramView({ projectId }: ReferralProgramViewProps) {
                 </p>
               </div>
               <div>
-                <label className='text-sm font-medium'>Уровни</label>
+                <label className='text-sm font-medium'>
+                  {activeTab === 'plans' && project?.enablePartnerRoles
+                    ? 'Уровни (legacy, для клиентов)'
+                    : 'Уровни'}
+                </label>
+                {activeTab === 'plans' && project?.enablePartnerRoles && (
+                  <p className='text-muted-foreground mb-2 text-xs'>
+                    Не путать с вкладкой «Комиссии». Здесь — старая c2c-схема
+                    бонусов рефералам-клиентам.
+                  </p>
+                )}
                 <div className='mt-2 space-y-2'>
                   {(referralProgram?.levels || []).length > 0 ? (
                     referralProgram?.levels

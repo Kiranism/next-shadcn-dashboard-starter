@@ -1,6 +1,6 @@
 /**
  * @file: partner-organizations-panel.tsx
- * @description: Управление B2B-организациями (сети фитнес-клубов) внутри проекта
+ * @description: Список B2B-организаций — компактный UI, создание в диалоге
  * @project: SaaS Bonus System
  * @created: 2026-06-06
  */
@@ -9,9 +9,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Building2, Loader2, Network, Plus, Trash2 } from 'lucide-react';
+import { Building2, ChevronRight, Loader2, Plus, Trash2 } from 'lucide-react';
 
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +21,15 @@ import {
   CardTitle
 } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/composite/confirm-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -59,13 +67,14 @@ export function PartnerOrganizationsPanel({ projectId }: Props) {
   const [saving, setSaving] = useState(false);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [plans, setPlans] = useState<PlanOption[]>([]);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Organization | null>(null);
 
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
-  const [defaultPlanId, setDefaultPlanId] = useState<string>('');
+  const [defaultPlanId, setDefaultPlanId] = useState('');
   const [directorUserId, setDirectorUserId] = useState('');
-  const [deleteTarget, setDeleteTarget] = useState<Organization | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -102,9 +111,17 @@ export function PartnerOrganizationsPanel({ projectId }: Props) {
     load();
   }, [load]);
 
+  const resetForm = () => {
+    setName('');
+    setSlug('');
+    setDescription('');
+    setDefaultPlanId('');
+    setDirectorUserId('');
+  };
+
   const handleCreate = async () => {
     if (!name.trim()) {
-      toast({ title: 'Укажите название организации', variant: 'destructive' });
+      toast({ title: 'Укажите название', variant: 'destructive' });
       return;
     }
     setSaving(true);
@@ -122,13 +139,9 @@ export function PartnerOrganizationsPanel({ projectId }: Props) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Не удалось создать');
-
       toast({ title: 'Организация создана' });
-      setName('');
-      setSlug('');
-      setDescription('');
-      setDefaultPlanId('');
-      setDirectorUserId('');
+      setCreateOpen(false);
+      resetForm();
       await load();
     } catch (e) {
       toast({
@@ -174,128 +187,143 @@ export function PartnerOrganizationsPanel({ projectId }: Props) {
   }
 
   return (
-    <div className='space-y-6'>
-      <Alert>
-        <Building2 className='h-4 w-4' />
-        <AlertTitle>Организации — сети внутри проекта</AlertTitle>
-        <AlertDescription>
-          Создайте отдельные сети (например, три фитнес-бренда). У каждой — свой
-          директор, план комиссий и изолированная иерархия. Реферальные ссылки
-          партнёров автоматически добавляют{' '}
+    <div className='space-y-4'>
+      <div className='flex flex-wrap items-center justify-between gap-3'>
+        <p className='text-muted-foreground max-w-2xl text-sm'>
+          Отдельные партнёрские сети внутри проекта — свой директор, план
+          комиссий и изолированная иерархия. Ссылки партнёров добавляют{' '}
           <code className='text-xs'>utm_org=slug</code>.
-        </AlertDescription>
-      </Alert>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className='flex items-center gap-2'>
-            <Plus className='h-5 w-5' />
-            Новая организация
-          </CardTitle>
-          <CardDescription>
-            Slug используется в ссылках и скрипте атрибуции на Tilda
-          </CardDescription>
-        </CardHeader>
-        <CardContent className='grid gap-4 md:grid-cols-2'>
-          <div className='space-y-2'>
-            <Label>Название</Label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder='Сеть X-Fit Москва'
-            />
-          </div>
-          <div className='space-y-2'>
-            <Label>Slug (URL)</Label>
-            <Input
-              value={slug}
-              onChange={(e) => setSlug(e.target.value)}
-              placeholder='xfit-moscow — опционально'
-            />
-          </div>
-          <div className='space-y-2 md:col-span-2'>
-            <Label>Описание</Label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-            />
-          </div>
-          <div className='space-y-2'>
-            <Label>План комиссий по умолчанию</Label>
-            <Select
-              value={defaultPlanId || '__none__'}
-              onValueChange={(v) => setDefaultPlanId(v === '__none__' ? '' : v)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder='Не выбран' />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='__none__'>Не выбран</SelectItem>
-                {plans.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className='space-y-2'>
-            <Label>Директор сети</Label>
-            <PartnerUserCombobox
-              projectId={projectId}
-              value={directorUserId}
-              onChange={(user) => setDirectorUserId(user?.id ?? '')}
-              partnerRolesOnly
-              placeholder='Выберите директора…'
-            />
-          </div>
-          <div className='md:col-span-2'>
-            <Button onClick={handleCreate} disabled={saving}>
-              {saving && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-              Создать организацию
+        </p>
+        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className='mr-2 h-4 w-4' />
+              Новая организация
             </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </DialogTrigger>
+          <DialogContent className='max-w-lg'>
+            <DialogHeader>
+              <DialogTitle>Новая организация</DialogTitle>
+              <DialogDescription>
+                Slug попадёт в реферальные ссылки и атрибуцию Tilda
+              </DialogDescription>
+            </DialogHeader>
+            <div className='grid gap-4 py-2'>
+              <div className='space-y-2'>
+                <Label>Название</Label>
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder='Сеть X-Fit Москва'
+                />
+              </div>
+              <div className='space-y-2'>
+                <Label>Slug</Label>
+                <Input
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value)}
+                  placeholder='xfit-moscow (авто из названия)'
+                />
+              </div>
+              <div className='space-y-2'>
+                <Label>Описание</Label>
+                <Textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={2}
+                />
+              </div>
+              <div className='space-y-2'>
+                <Label>План комиссий по умолчанию</Label>
+                <Select
+                  value={defaultPlanId || '__none__'}
+                  onValueChange={(v) =>
+                    setDefaultPlanId(v === '__none__' ? '' : v)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='__none__'>Не выбран</SelectItem>
+                    {plans.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className='space-y-2'>
+                <Label>Директор</Label>
+                <PartnerUserCombobox
+                  projectId={projectId}
+                  value={directorUserId}
+                  onChange={(u) => setDirectorUserId(u?.id ?? '')}
+                  partnerRolesOnly
+                  placeholder='Выберите директора…'
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant='outline' onClick={() => setCreateOpen(false)}>
+                Отмена
+              </Button>
+              <Button onClick={handleCreate} disabled={saving}>
+                {saving && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+                Создать
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
 
-      <div className='grid gap-4'>
-        {organizations.length === 0 ? (
-          <Card>
-            <CardContent className='text-muted-foreground py-10 text-center text-sm'>
-              Организаций пока нет. Создайте первую сеть выше.
-            </CardContent>
-          </Card>
-        ) : (
-          organizations.map((org) => (
-            <Card key={org.id}>
-              <CardHeader className='flex flex-row items-start justify-between gap-4'>
-                <div>
-                  <CardTitle className='flex flex-wrap items-center gap-2'>
-                    {org.name}
+      {organizations.length === 0 ? (
+        <Card>
+          <CardContent className='flex flex-col items-center gap-3 py-12 text-center'>
+            <Building2 className='text-muted-foreground h-10 w-10' />
+            <p className='text-muted-foreground text-sm'>
+              Организаций пока нет. Создайте первую сеть.
+            </p>
+            <Button variant='outline' onClick={() => setCreateOpen(true)}>
+              <Plus className='mr-2 h-4 w-4' />
+              Создать
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className='grid gap-3'>
+          {organizations.map((org) => (
+            <Card key={org.id} className='hover:bg-muted/30 transition-colors'>
+              <CardHeader className='flex flex-row items-center justify-between gap-4 py-4'>
+                <Link
+                  href={`/dashboard/projects/${projectId}/referral/organizations/${org.id}`}
+                  className='min-w-0 flex-1'
+                >
+                  <div className='flex flex-wrap items-center gap-2'>
+                    <CardTitle className='text-lg'>{org.name}</CardTitle>
                     <Badge variant={org.isActive ? 'default' : 'secondary'}>
-                      {org.isActive ? 'Активна' : 'Выключена'}
+                      {org.isActive ? 'Активна' : 'Выкл.'}
                     </Badge>
-                  </CardTitle>
+                  </div>
                   <CardDescription className='mt-1'>
-                    slug: <code>{org.slug}</code>
+                    <code>{org.slug}</code>
                     {' · '}
-                    участников: {org._count?.members ?? 0}
+                    {org._count?.members ?? 0} участн.
                     {org.defaultReferralCommissionPlan && (
                       <>
                         {' · '}
-                        план: {org.defaultReferralCommissionPlan.name}
+                        {org.defaultReferralCommissionPlan.name}
                       </>
                     )}
                   </CardDescription>
-                </div>
-                <div className='flex shrink-0 gap-2'>
-                  <Button variant='outline' size='sm' asChild>
+                </Link>
+                <div className='flex shrink-0 items-center gap-1'>
+                  <Button variant='ghost' size='icon' asChild>
                     <Link
-                      href={`/dashboard/projects/${projectId}/referral/hierarchy?organizationId=${org.id}`}
+                      href={`/dashboard/projects/${projectId}/referral/organizations/${org.id}`}
                     >
-                      <Network className='mr-2 h-4 w-4' />
-                      Иерархия
+                      <ChevronRight className='h-5 w-5' />
                     </Link>
                   </Button>
                   <Button
@@ -307,15 +335,10 @@ export function PartnerOrganizationsPanel({ projectId }: Props) {
                   </Button>
                 </div>
               </CardHeader>
-              {org.description && (
-                <CardContent className='text-muted-foreground pt-0 text-sm'>
-                  {org.description}
-                </CardContent>
-              )}
             </Card>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}
@@ -323,7 +346,7 @@ export function PartnerOrganizationsPanel({ projectId }: Props) {
         title='Удалить организацию?'
         description={
           deleteTarget
-            ? `«${deleteTarget.name}» будет удалена. Участники останутся в проекте, но потеряют привязку к сети.`
+            ? `«${deleteTarget.name}» будет удалена. Участники останутся в проекте без привязки к сети.`
             : ''
         }
         confirmLabel='Удалить'
