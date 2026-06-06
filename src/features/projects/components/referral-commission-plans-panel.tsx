@@ -87,6 +87,28 @@ interface Props {
 const SLIDER_MIN = 1;
 const SLIDER_MAX = 3;
 
+const LEVEL_ROLE_LABELS = [
+  'Тренер (L1)',
+  'Менеджер (L2)',
+  'Директор (L3)'
+] as const;
+
+function formatPlanLevels(
+  levels: PlanLevel[],
+  enablePartnerRoles: boolean
+): string {
+  const sorted = [...levels].sort((a, b) => a.level - b.level);
+  if (enablePartnerRoles) {
+    return sorted
+      .map(
+        (l) =>
+          `${LEVEL_ROLE_LABELS[l.level - 1] ?? `L${l.level}`}: ${l.percent}%`
+      )
+      .join(' · ');
+  }
+  return sorted.map((l) => `L${l.level}: ${l.percent}%`).join(' · ');
+}
+
 export function ReferralCommissionPlansPanel({
   projectId,
   enablePartnerRoles = false
@@ -407,14 +429,43 @@ export function ReferralCommissionPlansPanel({
         </Alert>
       )}
 
+      {enablePartnerRoles && (
+        <Alert>
+          <AlertCircle className='h-4 w-4' />
+          <AlertTitle>Как работать с планами в B2B</AlertTitle>
+          <AlertDescription className='space-y-2 text-sm'>
+            <p>
+              1. Создайте план (например «Стандарт» или «Инфлюенсер») с
+              процентами L1/L2/L3.
+            </p>
+            <p>
+              2. Включите «Персональные планы» и выберите план по умолчанию.
+            </p>
+            <p>
+              3. Назначьте план каждому партнёру (тренер / менеджер / директор)
+              — кнопкой «Назначить тренерам» или в блоке «Назначить план
+              партнёру» ниже.
+            </p>
+            <p className='text-muted-foreground'>
+              При покупке клиента комиссия делится по цепочке вверх: тренер (L1)
+              → менеджер (L2) → директор (L3). Проценты берутся из плана того
+              партнёра, который пригласил клиента.
+            </p>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <CardHeader>
-          <CardTitle>Персональные планы комиссий</CardTitle>
+          <CardTitle>
+            {enablePartnerRoles
+              ? 'Планы комиссий для партнёров'
+              : 'Персональные планы комиссий'}
+          </CardTitle>
           <CardDescription>
-            При включении для каждого нового приглашённого фиксируется план
-            выплат: сначала план блогера (outbound), иначе план по умолчанию.
-            Изменение процентов у блогера не затрагивает уже зарегистрированных
-            рефералов.
+            {enablePartnerRoles
+              ? 'Определяют, сколько % получают тренер, менеджер и директор с каждой покупки приглашённого клиента. Не путать с бонусами для клиента во вкладке «Настройки».'
+              : 'При включении для каждого нового приглашённого фиксируется план выплат: сначала outbound-план партнёра, иначе план по умолчанию.'}
           </CardDescription>
         </CardHeader>
         <CardContent className='space-y-6'>
@@ -517,31 +568,36 @@ export function ReferralCommissionPlansPanel({
               </p>
             </div>
           </div>
-          <div className='grid grid-cols-3 gap-3'>
-            <div className='space-y-2'>
-              <Label>Уровень 1 %</Label>
-              <Input
-                type='number'
-                value={l1}
-                onChange={(e) => setL1(Number(e.target.value))}
-              />
-            </div>
-            <div className='space-y-2'>
-              <Label>Уровень 2 %</Label>
-              <Input
-                type='number'
-                value={l2}
-                onChange={(e) => setL2(Number(e.target.value))}
-              />
-            </div>
-            <div className='space-y-2'>
-              <Label>Уровень 3 %</Label>
-              <Input
-                type='number'
-                value={l3}
-                onChange={(e) => setL3(Number(e.target.value))}
-              />
-            </div>
+          <div className='grid grid-cols-1 gap-3 sm:grid-cols-3'>
+            {[l1, l2, l3].map((value, index) => (
+              <div key={index} className='space-y-2'>
+                <Label>
+                  {enablePartnerRoles
+                    ? LEVEL_ROLE_LABELS[index]
+                    : `Уровень ${index + 1}`}{' '}
+                  %
+                </Label>
+                <Input
+                  type='number'
+                  value={value}
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    if (index === 0) setL1(n);
+                    else if (index === 1) setL2(n);
+                    else setL3(n);
+                  }}
+                />
+                {enablePartnerRoles && (
+                  <p className='text-muted-foreground text-xs'>
+                    {index === 0
+                      ? 'Прямой пригласивший клиента'
+                      : index === 1
+                        ? 'Руководитель тренера'
+                        : 'Руководитель сети'}
+                  </p>
+                )}
+              </div>
+            ))}
           </div>
           <Button
             type='button'
@@ -577,9 +633,9 @@ export function ReferralCommissionPlansPanel({
                     {p.id}
                   </div>
                   <div className='text-muted-foreground text-sm'>
-                    Уровни:{' '}
-                    {p.levels.map((l) => `${l.level}:${l.percent}%`).join(', ')}{' '}
-                    · глубина {p.maxPayoutDepth}
+                    {formatPlanLevels(p.levels, enablePartnerRoles)}
+                    {' · '}
+                    глубина {p.maxPayoutDepth}
                   </div>
                 </div>
                 <div className='flex flex-wrap items-center gap-2'>
@@ -645,9 +701,12 @@ export function ReferralCommissionPlansPanel({
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className={enablePartnerRoles ? 'border-primary/30' : undefined}>
         <CardHeader>
-          <CardTitle>Назначить план партнёру</CardTitle>
+          <CardTitle className='flex items-center gap-2'>
+            <UserPlus className='h-5 w-5' />
+            Назначить план партнёру
+          </CardTitle>
           <CardDescription>
             Найдите пользователя по имени, email или телефону. Фильтр по роли
             применяется автоматически когда включена b2b-иерархия.

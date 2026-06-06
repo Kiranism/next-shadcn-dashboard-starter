@@ -35,6 +35,9 @@ export class OrderProcessingService {
       order.email,
       order.phone
     );
+    const userAlreadyExisted = Boolean(user);
+    const isSignupForm =
+      order.amount <= 0 && (!order.products || order.products.length === 0);
 
     // Handle Email/Phone Conflict
     // If we found a user by phone, but they provided a DIFFERENT email:
@@ -153,12 +156,20 @@ export class OrderProcessingService {
 
     return {
       success: true,
-      message: 'Order processed',
+      message: userAlreadyExisted
+        ? isSignupForm
+          ? 'Пользователь с таким email или телефоном уже зарегистрирован — новая запись не создана'
+          : 'Order processed'
+        : isSignupForm
+          ? 'Пользователь зарегистрирован'
+          : 'Order processed',
       data: {
         spent: spentAmount,
         earned: earnedBonusAmount,
         userId: user.id,
-        orderId: savedOrder?.id
+        orderId: savedOrder?.id,
+        userCreated: !userAlreadyExisted,
+        signupForm: isSignupForm
       }
     };
   }

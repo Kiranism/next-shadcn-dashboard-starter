@@ -10,6 +10,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -24,6 +25,7 @@ import {
   Eye,
   Calendar,
   Download,
+  Network,
   Bot,
   AlertCircle
 } from 'lucide-react';
@@ -43,6 +45,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ReferralSettingsForm } from './referral-settings-form';
 import { ReferralStatsView } from './referral-stats-view';
 import { ReferralCommissionPlansPanel } from './referral-commission-plans-panel';
+import { ReferralProgramGuide } from './referral-program-guide';
 import type { Project, ReferralProgram } from '@/types/bonus';
 import { getReferralLinkExample } from '@/lib/utils/referral-link';
 
@@ -217,7 +220,25 @@ export function ReferralProgramView({ projectId }: ReferralProgramViewProps) {
             description='Настройка и статистика привлечения новых пользователей'
           />
         </div>
-        <div className='flex items-center space-x-2'>
+        <div className='flex flex-wrap items-center gap-2'>
+          {project?.enablePartnerRoles && (
+            <>
+              <Button variant='outline' size='sm' asChild>
+                <Link
+                  href={`/dashboard/projects/${projectId}/referral/hierarchy`}
+                >
+                  <Network className='mr-2 h-4 w-4' />
+                  Иерархия
+                </Link>
+              </Button>
+              <Button variant='outline' size='sm' asChild>
+                <Link href={`/dashboard/projects/${projectId}/users`}>
+                  <Users className='mr-2 h-4 w-4' />
+                  Роли пользователей
+                </Link>
+              </Button>
+            </>
+          )}
           <Badge variant={referralProgram?.isActive ? 'default' : 'secondary'}>
             {referralProgram?.isActive ? 'Активна' : 'Неактивна'}
           </Badge>
@@ -225,6 +246,10 @@ export function ReferralProgramView({ projectId }: ReferralProgramViewProps) {
       </div>
 
       <Separator />
+
+      <ReferralProgramGuide
+        enablePartnerRoles={Boolean(project?.enablePartnerRoles)}
+      />
 
       <div className='grid grid-cols-1 gap-6 lg:grid-cols-4'>
         {/* Main content */}
@@ -245,7 +270,7 @@ export function ReferralProgramView({ projectId }: ReferralProgramViewProps) {
               </TabsTrigger>
               <TabsTrigger value='plans' className='flex items-center'>
                 <Target className='mr-2 h-4 w-4' />
-                Планы %
+                {project?.enablePartnerRoles ? 'Комиссии' : 'Планы %'}
               </TabsTrigger>
             </TabsList>
 

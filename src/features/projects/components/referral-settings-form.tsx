@@ -206,11 +206,25 @@ export function ReferralSettingsForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className='space-y-6'>
       {/* Main Settings */}
+      {project?.enablePartnerRoles && (
+        <Alert>
+          <Users className='h-4 w-4' />
+          <AlertDescription className='text-sm'>
+            Эта вкладка настраивает <strong>вознаграждение для клиентов</strong>{' '}
+            (приветственные бонусы, % с первой покупки). Комиссии партнёрам
+            (тренер / менеджер / директор) настраиваются во вкладке{' '}
+            <strong>«Комиссии»</strong>.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Основные настройки</CardTitle>
           <CardDescription>
-            Основные параметры реферальной программы
+            {project?.enablePartnerRoles
+              ? 'Бонусы и условия для новых клиентов, пришедших по реф-ссылке'
+              : 'Основные параметры реферальной программы'}
           </CardDescription>
         </CardHeader>
         <CardContent className='space-y-6'>
@@ -426,18 +440,36 @@ export function ReferralSettingsForm({
                 <div>
                   <Label className='text-base'>Многоуровневая программа</Label>
                   <p className='text-sm text-gray-600'>
-                    Настройте проценты начислений для каждого уровня рефералов
+                    {project?.enablePartnerRoles
+                      ? 'Шаблон для кнопки «Создать план из текущей программы». Реальные выплаты партнёрам — во вкладке «Комиссии».'
+                      : 'Настройте проценты начислений для каждого уровня рефералов'}
                   </p>
                 </div>
+                {project?.enablePartnerRoles && (
+                  <Alert>
+                    <AlertCircle className='h-4 w-4' />
+                    <AlertDescription className='text-sm'>
+                      При включённых персональных планах этот блок не влияет на
+                      выплаты. Используйте его только чтобы быстро создать план
+                      комиссий с теми же процентами.
+                    </AlertDescription>
+                  </Alert>
+                )}
                 <div className='grid gap-4 md:grid-cols-3'>
                   {levels?.map((levelField, index) => {
                     const fieldBase = `levels.${index}` as const;
                     const isLevelActive = levelField?.isActive ?? false;
-                    const levelDescriptions = [
-                      'Прямые приглашения',
-                      'Рефералы ваших рефералов',
-                      'Третий уровень сети'
-                    ];
+                    const levelDescriptions = project?.enablePartnerRoles
+                      ? [
+                          '→ Тренер (L1), комиссия в «Комиссии»',
+                          '→ Менеджер (L2)',
+                          '→ Директор (L3)'
+                        ]
+                      : [
+                          'Прямые приглашения',
+                          'Рефералы ваших рефералов',
+                          'Третий уровень сети'
+                        ];
                     return (
                       <div
                         key={levelField.level}
