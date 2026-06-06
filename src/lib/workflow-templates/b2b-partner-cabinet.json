@@ -1,6 +1,6 @@
 {
   "name": "B2B Партнёр",
-  "description": "B2B кабинет партнёра v1.1 — меню по роли (CLIENT/TRAINER/MANAGER/DIRECTOR), партнёрские callback-ветки (ссылка, команда, выплаты, сводка) и базовое меню лояльности (баланс, история, уровень). Требует enablePartnerRoles и partnerRole у пользователей.",
+  "description": "B2B кабинет партнёра v1.2 — привязка Telegram по телефону, меню по роли, партнёрские callback-ветки и базовое меню лояльности. Требует enablePartnerRoles.",
   "nodes": [
     {
       "id": "start-trigger",
@@ -11,6 +11,176 @@
         "config": {
           "trigger.command": {
             "command": "/start"
+          }
+        }
+      }
+    },
+    {
+      "id": "check-telegram-user",
+      "type": "action.database_query",
+      "position": { "x": 380, "y": 320 },
+      "data": {
+        "label": "Проверить по Telegram ID",
+        "config": {
+          "action.database_query": {
+            "query": "check_user_by_telegram",
+            "assignTo": "telegramUser",
+            "parameters": {
+              "projectId": "{{projectId}}",
+              "telegramId": "{{telegram.userId}}"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "cond-user-found",
+      "type": "condition",
+      "position": { "x": 760, "y": 320 },
+      "data": {
+        "label": "Пользователь найден?",
+        "config": {
+          "condition": {
+            "operator": "is_not_empty",
+            "variable": "telegramUser"
+          }
+        }
+      }
+    },
+    {
+      "id": "cond-user-active",
+      "type": "condition",
+      "position": { "x": 1140, "y": 240 },
+      "data": {
+        "label": "Telegram привязан и активен?",
+        "config": {
+          "condition": {
+            "operator": "equals",
+            "variable": "telegramUser.isActive",
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "id": "msg-request-contact",
+      "type": "message",
+      "position": { "x": 1140, "y": 480 },
+      "data": {
+        "label": "Запрос контакта",
+        "config": {
+          "message": {
+            "text": "🎁 <b>Добро пожаловать!</b>\n\n📱 Чтобы открыть личный кабинет, поделитесь номером телефона — мы найдём ваш аккаунт с сайта и привяжем Telegram.\n\nЕсли вы ещё не регистрировались на сайте, сначала оформите заказ или регистрацию на сайте.",
+            "parseMode": "HTML",
+            "keyboard": {
+              "type": "reply",
+              "buttons": [
+                [{ "text": "📱 Поделиться контактом", "request_contact": true }]
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "contact-trigger",
+      "type": "trigger.contact",
+      "position": { "x": 0, "y": 520 },
+      "data": {
+        "label": "Получен контакт",
+        "config": {
+          "trigger.contact": {}
+        }
+      }
+    },
+    {
+      "id": "db-check-contact",
+      "type": "action.database_query",
+      "position": { "x": 380, "y": 520 },
+      "data": {
+        "label": "Найти по телефону",
+        "config": {
+          "action.database_query": {
+            "query": "check_user_by_contact",
+            "assignTo": "contactUser",
+            "parameters": {
+              "projectId": "{{projectId}}",
+              "phone": "{{contactReceived.phoneNumber}}"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "cond-contact-found",
+      "type": "condition",
+      "position": { "x": 760, "y": 520 },
+      "data": {
+        "label": "Аккаунт на сайте найден?",
+        "config": {
+          "condition": {
+            "operator": "is_not_empty",
+            "variable": "contactUser"
+          }
+        }
+      }
+    },
+    {
+      "id": "cond-telegram-linked",
+      "type": "condition",
+      "position": { "x": 1140, "y": 520 },
+      "data": {
+        "label": "Telegram уже занят?",
+        "config": {
+          "condition": {
+            "operator": "is_not_empty",
+            "variable": "contactUser.telegramId"
+          }
+        }
+      }
+    },
+    {
+      "id": "msg-already-linked",
+      "type": "message",
+      "position": { "x": 1520, "y": 420 },
+      "data": {
+        "label": "Другой Telegram привязан",
+        "config": {
+          "message": {
+            "text": "ℹ️ К этому телефону уже привязан другой Telegram. Обратитесь в поддержку магазина.",
+            "parseMode": "HTML"
+          }
+        }
+      }
+    },
+    {
+      "id": "msg-contact-not-found",
+      "type": "message",
+      "position": { "x": 1140, "y": 680 },
+      "data": {
+        "label": "Аккаунт не найден",
+        "config": {
+          "message": {
+            "text": "⚠️ Аккаунт с этим телефоном не найден.\n\nСначала зарегистрируйтесь на сайте (форма или заказ), затем снова нажмите /start и поделитесь контактом.",
+            "parseMode": "HTML"
+          }
+        }
+      }
+    },
+    {
+      "id": "db-activate-user",
+      "type": "action.database_query",
+      "position": { "x": 1520, "y": 560 },
+      "data": {
+        "label": "Привязать Telegram",
+        "config": {
+          "action.database_query": {
+            "query": "activate_user",
+            "parameters": {
+              "userId": "{{contactUser.id}}",
+              "telegramId": "{{telegram.userId}}",
+              "telegramUsername": "{{telegram.username}}"
+            }
           }
         }
       }
@@ -496,10 +666,108 @@
   ],
   "connections": [
     {
-      "id": "e-start-cond-director",
+      "id": "e-start-check",
       "type": "default",
       "source": "start-trigger",
+      "target": "check-telegram-user"
+    },
+    {
+      "id": "e-check-found",
+      "type": "default",
+      "source": "check-telegram-user",
+      "target": "cond-user-found"
+    },
+    {
+      "id": "e-found-active",
+      "type": "default",
+      "source": "cond-user-found",
+      "target": "cond-user-active",
+      "sourceHandle": "true"
+    },
+    {
+      "id": "e-found-contact",
+      "type": "default",
+      "source": "cond-user-found",
+      "target": "msg-request-contact",
+      "sourceHandle": "false"
+    },
+    {
+      "id": "e-active-b2b",
+      "type": "default",
+      "source": "cond-user-active",
+      "target": "cond-is-director",
+      "sourceHandle": "true"
+    },
+    {
+      "id": "e-inactive-contact",
+      "type": "default",
+      "source": "cond-user-active",
+      "target": "msg-request-contact",
+      "sourceHandle": "false"
+    },
+    {
+      "id": "e-request-end",
+      "type": "default",
+      "source": "msg-request-contact",
+      "target": "flow-end"
+    },
+    {
+      "id": "e-contact-check",
+      "type": "default",
+      "source": "contact-trigger",
+      "target": "db-check-contact"
+    },
+    {
+      "id": "e-contact-cond",
+      "type": "default",
+      "source": "db-check-contact",
+      "target": "cond-contact-found"
+    },
+    {
+      "id": "e-contact-found-linked",
+      "type": "default",
+      "source": "cond-contact-found",
+      "target": "cond-telegram-linked",
+      "sourceHandle": "true"
+    },
+    {
+      "id": "e-contact-notfound",
+      "type": "default",
+      "source": "cond-contact-found",
+      "target": "msg-contact-not-found",
+      "sourceHandle": "false"
+    },
+    {
+      "id": "e-linked-already",
+      "type": "default",
+      "source": "cond-telegram-linked",
+      "target": "msg-already-linked",
+      "sourceHandle": "true"
+    },
+    {
+      "id": "e-linked-activate",
+      "type": "default",
+      "source": "cond-telegram-linked",
+      "target": "db-activate-user",
+      "sourceHandle": "false"
+    },
+    {
+      "id": "e-activate-b2b",
+      "type": "default",
+      "source": "db-activate-user",
       "target": "cond-is-director"
+    },
+    {
+      "id": "e-already-end",
+      "type": "default",
+      "source": "msg-already-linked",
+      "target": "flow-end"
+    },
+    {
+      "id": "e-notfound-end",
+      "type": "default",
+      "source": "msg-contact-not-found",
+      "target": "flow-end"
     },
     {
       "id": "e-director-yes",
@@ -695,6 +963,16 @@
     }
   ],
   "variables": [
+    {
+      "name": "telegramUser",
+      "type": "object",
+      "description": "Пользователь, найденный по telegramId"
+    },
+    {
+      "name": "contactUser",
+      "type": "object",
+      "description": "Пользователь, найденный по телефону при привязке"
+    },
     {
       "name": "partner_subject_id",
       "type": "string",

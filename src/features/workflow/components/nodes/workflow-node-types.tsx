@@ -28,6 +28,7 @@ export const workflowNodeTypes: NodeTypes = {
   'trigger.callback': TriggerNode,
   'trigger.webhook': TriggerNode,
   'trigger.schedule': TriggerNode,
+  'trigger.contact': TriggerNode,
 
   // Сообщения
   message: MessageNode,
