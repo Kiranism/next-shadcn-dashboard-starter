@@ -16,7 +16,7 @@ import { withApiRateLimit } from '@/lib';
 function generateBootloaderJs(
   projectId: string,
   platform = 'tilda',
-  widgetVersion = 'v=30'
+  widgetVersion = 'v=31'
 ) {
   // Логика загрузки:
   // 1. Определяем базовый URL скрипта (origin)

@@ -2,7 +2,7 @@
  * @file: tilda-bonus-widget.js
  * @description: Готовый виджет для интеграции бонусной системы с Tilda
  * @project: SaaS Bonus System
- * @version: 2.9.14
+ * @version: 2.9.15
  * @author: AI Assistant + User
  * @architecture: Modular design with memory management, rate limiting, and graceful degradation
  */
@@ -43,6 +43,234 @@
       enableLogging: true, // ВКЛЮЧЕНО для отладки
       rateLimitMs: 1000, // Минимальный интервал между API запросами
       maxConcurrentRequests: 2 // Максимум одновременных запросов
+    },
+
+    /**
+     * B2B реферальная атрибуция: utm_ref / utm_org → storage → скрытые поля форм Tilda.
+     * Запускается при загрузке скрипта (capture) и при init виджета (inject + observers).
+     */
+    referralAttribution: {
+      STORAGE_KEY: 'gupil_attribution_v1',
+      COOKIE_REF: 'gupil_utm_ref',
+      COOKIE_ORG: 'gupil_utm_org',
+      DEFAULT_TTL_DAYS: 30,
+      _domReady: false,
+      _submitHandler: null,
+      _mutationObserver: null,
+      _injectDebounce: null,
+
+      _ttlDays: function (widget) {
+        var cfg = window.GUPIL_ATTRIBUTION_CONFIG || {};
+        if (typeof cfg.ttlDays === 'number' && cfg.ttlDays > 0)
+          return cfg.ttlDays;
+        return this.DEFAULT_TTL_DAYS;
+      },
+
+      _maxAgeSec: function (widget) {
+        return Math.floor(this._ttlDays(widget) * 86400);
+      },
+
+      _log: function (widget) {
+        var args = Array.prototype.slice.call(arguments, 1);
+        if (widget && typeof widget.log === 'function') {
+          widget.log.apply(widget, ['[ReferralAttribution]'].concat(args));
+          return;
+        }
+        if ((window.GUPIL_ATTRIBUTION_CONFIG || {}).debug) {
+          console.log.apply(console, ['[ReferralAttribution]'].concat(args));
+        }
+      },
+
+      _readQuery: function () {
+        try {
+          return new URLSearchParams(window.location.search);
+        } catch (e) {
+          return null;
+        }
+      },
+
+      _setCookie: function (name, value, widget) {
+        try {
+          document.cookie =
+            name +
+            '=' +
+            encodeURIComponent(value) +
+            '; path=/; max-age=' +
+            this._maxAgeSec(widget) +
+            '; SameSite=Lax';
+        } catch (e) {
+          /* ignore */
+        }
+      },
+
+      _getCookie: function (name) {
+        try {
+          var match = document.cookie.match(
+            new RegExp(
+              '(?:^|; )' +
+                name.replace(/[.$?*|{}()[\]\\/+^]/g, '\\$&') +
+                '=([^;]*)'
+            )
+          );
+          return match ? decodeURIComponent(match[1]) : null;
+        } catch (e) {
+          return null;
+        }
+      },
+
+      _loadStored: function () {
+        try {
+          var raw = localStorage.getItem(this.STORAGE_KEY);
+          if (!raw) return null;
+          var data = JSON.parse(raw);
+          if (!data || !data.ref) return null;
+          if (data.expiresAt && Date.now() > data.expiresAt) {
+            localStorage.removeItem(this.STORAGE_KEY);
+            return null;
+          }
+          return data;
+        } catch (e) {
+          return null;
+        }
+      },
+
+      _saveStored: function (ref, org, widget) {
+        if (!ref) return;
+        var ttlDays = this._ttlDays(widget);
+        var payload = {
+          ref: ref,
+          org: org || null,
+          landing: window.location.pathname,
+          capturedAt: Date.now(),
+          expiresAt: Date.now() + ttlDays * 86400000
+        };
+        try {
+          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(payload));
+        } catch (e) {
+          /* ignore */
+        }
+        this._setCookie(this.COOKIE_REF, ref, widget);
+        if (org) this._setCookie(this.COOKIE_ORG, org, widget);
+        this._log(widget, 'saved', payload);
+      },
+
+      captureFromUrl: function (widget) {
+        var params = this._readQuery();
+        if (!params) return;
+
+        var ref = params.get('utm_ref') || params.get('utmRef');
+        var org = params.get('utm_org') || params.get('utmOrg');
+
+        if (ref) {
+          this._saveStored(ref, org, widget);
+          return;
+        }
+
+        var stored = this._loadStored();
+        if (!stored) {
+          var cookieRef = this._getCookie(this.COOKIE_REF);
+          var cookieOrg = this._getCookie(this.COOKIE_ORG);
+          if (cookieRef) this._saveStored(cookieRef, cookieOrg, widget);
+        }
+      },
+
+      _ensureHiddenInput: function (form, name, value) {
+        if (!value) return;
+        var existing = form.querySelector('input[name="' + name + '"]');
+        if (existing) {
+          if (!existing.value) existing.value = value;
+          return;
+        }
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+      },
+
+      _injectForms: function (widget) {
+        var stored = this._loadStored();
+        var ref =
+          stored && stored.ref ? stored.ref : this._getCookie(this.COOKIE_REF);
+        var org =
+          (stored && stored.org) || this._getCookie(this.COOKIE_ORG) || null;
+
+        if (!ref) return;
+
+        var forms = document.querySelectorAll('form');
+        var self = this;
+        forms.forEach(function (form) {
+          self._ensureHiddenInput(form, 'utm_ref', ref);
+          if (org) self._ensureHiddenInput(form, 'utm_org', org);
+        });
+
+        this._log(widget, 'injected into', forms.length, 'form(s)', {
+          ref: ref,
+          org: org
+        });
+      },
+
+      _onSubmitCapture: function (widget, e) {
+        var form = e.target;
+        if (!form || form.tagName !== 'FORM') return;
+        var stored = this._loadStored();
+        var ref = (stored && stored.ref) || this._getCookie(this.COOKIE_REF);
+        var org = (stored && stored.org) || this._getCookie(this.COOKIE_ORG);
+        if (ref) this._ensureHiddenInput(form, 'utm_ref', ref);
+        if (org) this._ensureHiddenInput(form, 'utm_org', org);
+      },
+
+      initDom: function (widget) {
+        if (this._domReady) return;
+        this._domReady = true;
+
+        var self = this;
+        this.captureFromUrl(widget);
+        this._injectForms(widget);
+
+        this._submitHandler = function (e) {
+          self._onSubmitCapture(widget, e);
+        };
+        document.addEventListener('submit', this._submitHandler, true);
+
+        if (typeof MutationObserver !== 'undefined') {
+          this._mutationObserver = new MutationObserver(function () {
+            clearTimeout(self._injectDebounce);
+            self._injectDebounce = setTimeout(function () {
+              self._injectForms(widget);
+            }, 300);
+          });
+          this._mutationObserver.observe(document.documentElement, {
+            childList: true,
+            subtree: true
+          });
+          if (widget && widget.state && widget.state.observers) {
+            widget.state.observers.add(this._mutationObserver);
+          }
+        }
+
+        this._log(widget, 'initialized', { ttlDays: this._ttlDays(widget) });
+      },
+
+      destroy: function () {
+        if (this._submitHandler) {
+          document.removeEventListener('submit', this._submitHandler, true);
+          this._submitHandler = null;
+        }
+        if (this._mutationObserver) {
+          try {
+            this._mutationObserver.disconnect();
+          } catch (e) {
+            /* ignore */
+          }
+          this._mutationObserver = null;
+        }
+        if (this._injectDebounce) {
+          clearTimeout(this._injectDebounce);
+          this._injectDebounce = null;
+        }
+        this._domReady = false;
+      }
     },
 
     capturePromoWrapperStyles: function (wrapper) {
@@ -223,6 +451,9 @@
 
       // Объединяем конфигурацию
       this.config = Object.assign({}, this.config, userConfig);
+
+      // B2B: реферальная атрибуция (utm_ref / utm_org в формы Tilda)
+      this.referralAttribution.initDom(this);
 
       // Проверяем обязательные параметры
       if (!this.config.projectId) {
@@ -1958,6 +2189,10 @@
     // Полная очистка ресурсов для предотвращения утечек памяти
     destroy: function () {
       this.log('🧹 Начинаем полную очистку ресурсов виджета');
+
+      if (this.referralAttribution) {
+        this.referralAttribution.destroy();
+      }
 
       // Устанавливаем флаг уничтожения
       this.state.isDestroyed = true;
@@ -6284,6 +6519,11 @@
       this.log('✅ appliedBonuses полностью сброшен');
     }
   };
+
+  // First-touch: захват utm_ref из URL сразу при загрузке скрипта
+  window.TildaBonusWidget.referralAttribution.captureFromUrl(
+    window.TildaBonusWidget
+  );
 
   // Безопасная инициализация виджета
   safeInit();
