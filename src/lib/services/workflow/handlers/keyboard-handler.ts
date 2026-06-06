@@ -306,7 +306,7 @@ export class KeyboardBuilder {
   static async buildKeyboard(
     config:
       | {
-          type?: 'inline' | 'reply';
+          type?: 'inline' | 'reply' | 'remove';
           buttons?: InlineButton[][] | ReplyButton[][];
           resize_keyboard?: boolean;
           one_time_keyboard?: boolean;
@@ -318,7 +318,15 @@ export class KeyboardBuilder {
     projectId: string,
     additionalVariables: KeyboardVariables = {}
   ): Promise<any | null> {
-    if (!config || !config.buttons || !Array.isArray(config.buttons)) {
+    if (!config) {
+      return null;
+    }
+
+    if (config.type === 'remove') {
+      return { remove_keyboard: true };
+    }
+
+    if (!config.buttons || !Array.isArray(config.buttons)) {
       return null;
     }
 

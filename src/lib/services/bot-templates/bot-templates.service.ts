@@ -107,13 +107,13 @@ const b2bPartnerCabinetTemplate: BotTemplate = {
   rating: 0,
   reviews: 0,
   author: 'Gupil Team',
-  version: '1.2.0',
+  version: '1.2.1',
   createdAt: new Date(),
   updatedAt: new Date(),
   isPublic: true
 };
 
-// 🎂 Шаблон «Бонусы ко дню рождения» — scheduled workflow с trigger.schedule.
+// 🎂 Шаблон «Бонусы ко дню рождения»
 // Дополняет loyaltySystemTemplate: каждое утро в 9:00 находит именинников
 // и автоматически начисляет им подарочные бонусы + поздравление в Telegram.
 // Один проект может одновременно иметь несколько активных workflow,

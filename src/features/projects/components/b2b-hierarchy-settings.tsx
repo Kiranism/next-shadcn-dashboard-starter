@@ -32,10 +32,17 @@ import {
   Building2,
   Loader2,
   Network,
-  PackagePlus
+  PackagePlus,
+  CheckCircle
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog';
 import {
   Card,
   CardContent,
@@ -70,6 +77,10 @@ export function B2bHierarchySettings({
   const [enabled, setEnabled] = useState(Boolean(initialValue));
   const [saving, setSaving] = useState(false);
   const [installing, setInstalling] = useState(false);
+  const [showInstallSuccess, setShowInstallSuccess] = useState(false);
+  const [installedWorkflowId, setInstalledWorkflowId] = useState<string | null>(
+    null
+  );
   /** Clerk sub для install API; подгружаем с /api/auth/me, если родитель не передал. */
   const [resolvedAdminId, setResolvedAdminId] = useState<string | undefined>(
     adminSub
@@ -146,11 +157,15 @@ export function B2bHierarchySettings({
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'Не удалось установить шаблон');
       }
+      setInstalledWorkflowId(
+        typeof data.workflowId === 'string' ? data.workflowId : null
+      );
+      setShowInstallSuccess(true);
       toast({
         title: 'Workflow «B2B Партнёр» импортирован',
-        description:
-          'Откройте конструктор workflow, чтобы настроить меню под свою команду.'
+        description: 'Сценарий активен. Откройте конструктор для проверки.'
       });
+      router.refresh();
     } catch (e) {
       toast({
         title: 'Не удалось импортировать',
@@ -247,6 +262,44 @@ export function B2bHierarchySettings({
           </ul>
         </div>
       </CardContent>
+
+      <Dialog open={showInstallSuccess} onOpenChange={setShowInstallSuccess}>
+        <DialogContent className='sm:max-w-[425px]'>
+          <DialogHeader>
+            <div className='mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20'>
+              <CheckCircle className='h-6 w-6 text-green-600 dark:text-green-400' />
+            </div>
+            <DialogTitle className='text-center text-xl'>
+              Workflow импортирован
+            </DialogTitle>
+          </DialogHeader>
+          <p className='text-muted-foreground py-2 text-center text-sm'>
+            «B2B Партнёр» установлен и активирован. Проверьте сценарий в
+            конструкторе и протестируйте бота в Telegram.
+          </p>
+          <div className='flex flex-col-reverse gap-2 sm:flex-row sm:justify-end'>
+            <Button
+              type='button'
+              variant='outline'
+              onClick={() => setShowInstallSuccess(false)}
+            >
+              Закрыть
+            </Button>
+            <Button
+              type='button'
+              onClick={() => {
+                const href = installedWorkflowId
+                  ? `/dashboard/projects/${projectId}/workflow?workflowId=${installedWorkflowId}`
+                  : `/dashboard/projects/${projectId}/workflow`;
+                setShowInstallSuccess(false);
+                router.push(href);
+              }}
+            >
+              Перейти в конструктор
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

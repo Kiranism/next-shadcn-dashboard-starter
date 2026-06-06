@@ -186,6 +186,23 @@
       }
     },
     {
+      "id": "msg-remove-keyboard",
+      "type": "message",
+      "position": { "x": 1520, "y": 320 },
+      "data": {
+        "label": "Убрать reply-клавиатуру",
+        "config": {
+          "message": {
+            "text": "✅ Telegram привязан. Открываю меню…",
+            "parseMode": "HTML",
+            "keyboard": {
+              "type": "remove"
+            }
+          }
+        }
+      }
+    },
+    {
       "id": "cond-is-director",
       "type": "condition",
       "position": { "x": 380, "y": 80 },
@@ -695,7 +712,7 @@
       "id": "e-active-b2b",
       "type": "default",
       "source": "cond-user-active",
-      "target": "cond-is-director",
+      "target": "msg-remove-keyboard",
       "sourceHandle": "true"
     },
     {
@@ -755,6 +772,12 @@
       "id": "e-activate-b2b",
       "type": "default",
       "source": "db-activate-user",
+      "target": "msg-remove-keyboard"
+    },
+    {
+      "id": "e-remove-keyboard-b2b",
+      "type": "default",
+      "source": "msg-remove-keyboard",
       "target": "cond-is-director"
     },
     {
