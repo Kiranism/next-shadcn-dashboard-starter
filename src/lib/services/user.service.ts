@@ -20,6 +20,7 @@ import { BonusLevelService } from './bonus-level.service';
 import { ReferralService } from './referral.service';
 import { ReferralCommissionService } from './referral-commission.service';
 import { PartnerNotificationService } from './partner-notification.service';
+import { PartnerOrganizationService } from './partner-organization.service';
 import {
   sendBonusNotification,
   sendBonusSpentNotification
@@ -76,6 +77,14 @@ export class UserService {
         }
       }
 
+      const organizationId =
+        data.organizationId ??
+        (await PartnerOrganizationService.resolveOrganizationIdForRegistration({
+          projectId: data.projectId,
+          utmOrgSlug: data.utmOrg,
+          referrerId: referredBy
+        }));
+
       // Генерируем реферальный код для нового пользователя
       const user = await db.user.create({
         data: {
@@ -84,6 +93,7 @@ export class UserService {
           email: normalizedEmail,
           phone: normalizedPhone,
           referredBy,
+          organizationId,
           // Устанавливаем isActive на основе режима работы проекта
           isActive,
           // UTM метки сохраняются как есть из data
@@ -114,7 +124,8 @@ export class UserService {
           await ReferralCommissionService.syncAttributionForInvitedUser({
             invitedUserId: user.id,
             projectId: data.projectId,
-            referrerId: referredBy
+            referrerId: referredBy,
+            organizationId: organizationId ?? null
           });
         } catch (attrError) {
           logger.error('Ошибка создания referral attribution', {
@@ -225,6 +236,85 @@ export class UserService {
       });
       throw error;
     }
+  }
+
+  /**
+   * Привязать реферала к существующему пользователю (signup-форма Tilda без
+   * создания дубликата). Срабатывает только если `referredBy` ещё пуст.
+   */
+  static async linkReferralFromAttribution(params: {
+    userId: string;
+    projectId: string;
+    utmRef?: string | null;
+    utmOrg?: string | null;
+  }): Promise<{ linked: boolean; referrerId?: string }> {
+    const { userId, projectId, utmRef, utmOrg } = params;
+    if (!utmRef?.trim()) {
+      return { linked: false };
+    }
+
+    const user = await db.user.findFirst({
+      where: { id: userId, projectId },
+      select: { id: true, referredBy: true, organizationId: true }
+    });
+    if (!user || user.referredBy || utmRef.trim() === userId) {
+      return { linked: false };
+    }
+
+    const referrer = await ReferralService.findReferrer(
+      projectId,
+      utmRef.trim()
+    );
+    if (!referrer) {
+      return { linked: false };
+    }
+
+    const organizationId =
+      user.organizationId ??
+      (await PartnerOrganizationService.resolveOrganizationIdForRegistration({
+        projectId,
+        utmOrgSlug: utmOrg,
+        referrerId: referrer.id
+      }));
+
+    await db.user.update({
+      where: { id: userId },
+      data: {
+        referredBy: referrer.id,
+        ...(organizationId && !user.organizationId ? { organizationId } : {})
+      }
+    });
+
+    try {
+      await ReferralCommissionService.syncAttributionForInvitedUser({
+        invitedUserId: userId,
+        projectId,
+        referrerId: referrer.id,
+        organizationId: organizationId ?? null
+      });
+    } catch (attrError) {
+      logger.error('Ошибка attribution при linkReferralFromAttribution', {
+        userId,
+        projectId,
+        error:
+          attrError instanceof Error ? attrError.message : 'Неизвестная ошибка',
+        component: 'user-service'
+      });
+    }
+
+    void PartnerNotificationService.notifyAncestorsAboutNewMember(
+      userId,
+      projectId
+    );
+
+    logger.info('Referral linked to existing user', {
+      userId,
+      projectId,
+      referrerId: referrer.id,
+      component: 'user-service'
+    });
+
+    return { linked: true, referrerId: referrer.id };
   }
 
   // Поиск пользователя по email или телефону в рамках проекта

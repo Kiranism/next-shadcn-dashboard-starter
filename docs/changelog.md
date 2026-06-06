@@ -1,5 +1,24 @@
 # Changelog
 
+## [2026-06-06] - B2B атрибуция Tilda + организации (мульти-сеть)
+
+### 🎯 Добавлено
+- `public/gupil-attribution.js` — first-touch захват `utm_ref` / `utm_org` → localStorage, cookie, скрытые поля форм Tilda.
+- `PartnerOrganization` (Prisma + миграция): отдельные сети внутри проекта с slug, директором и планом комиссий по умолчанию.
+- API `GET/POST /api/projects/[id]/organizations` и `GET/PATCH/DELETE .../[organizationId]`.
+- Админ-страница `/dashboard/projects/[id]/referral/organizations`.
+- `UserService.linkReferralFromAttribution` — привязка реферала к существующему пользователю при signup webhook с `utm_ref`.
+- Фильтр иерархии по `?organizationId=`.
+- Реферальные ссылки партнёров дополняются `utm_org=<slug>` при наличии организации.
+- Шаг 2 в интеграции Tilda: код скрипта атрибуции.
+
+### 🔄 Изменено
+- `OrderProcessingService` передаёт `utmOrg`, использует `isSignupForm` из парсера, вызывает link referral для существующих пользователей.
+- `ReferralCommissionService.resolvePlanIdForNewReferral` — приоритет: outbound-план реферера → план организации → проектный default.
+- PATCH `/users/[userId]` — поля `organizationId` и `referredBy` для ручной настройки в админке.
+
+---
+
 ## [2026-06-03] - Настройка промокода для гостей Tilda-виджета
 
 ### 🎯 Добавлено

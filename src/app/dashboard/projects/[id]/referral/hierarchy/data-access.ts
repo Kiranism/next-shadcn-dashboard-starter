@@ -77,6 +77,8 @@ interface BuildOptions {
   period?: HierarchyPeriod;
   /** Поиск (Phase 6.11) — фронт получает все узлы и подсвечивает сам. */
   search?: string;
+  /** Фильтр по B2B-организации (сеть фитнес-клубов). */
+  organizationId?: string | null;
 }
 
 /**
@@ -94,6 +96,7 @@ export async function getHierarchyTree(
 ): Promise<HierarchyTreeResult> {
   const period: HierarchyPeriod = options.period ?? '30d';
   const since = periodToSince(period);
+  const organizationId = options.organizationId ?? null;
 
   const project = await db.project.findUnique({
     where: { id: projectId },
@@ -108,6 +111,7 @@ export async function getHierarchyTree(
   // `directCount` родителя.
   const partnerWhere: Parameters<typeof db.user.findMany>[0]['where'] = {
     projectId,
+    ...(organizationId ? { organizationId } : {}),
     ...(enablePartnerRoles
       ? { partnerRole: { in: ['TRAINER', 'MANAGER', 'DIRECTOR'] } }
       : {})
@@ -151,6 +155,7 @@ export async function getHierarchyTree(
     by: ['referredBy'],
     where: {
       projectId,
+      ...(organizationId ? { organizationId } : {}),
       referredBy: { in: partners.map((p) => p.id) }
     },
     _count: { _all: true }

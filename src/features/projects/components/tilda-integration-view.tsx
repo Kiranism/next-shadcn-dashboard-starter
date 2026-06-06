@@ -506,6 +506,13 @@ export function ProjectIntegrationView({
     widgetUrl !== ''
       ? '<script src="' + widgetUrl + '?v=27"></' + 'script>'
       : '';
+  const attributionCode =
+    typeof window !== 'undefined'
+      ? '<script src="' +
+        window.location.origin +
+        '/gupil-attribution.js?v=1"></' +
+        'script>'
+      : '';
   const testWebhookData = JSON.stringify(
     {
       action: 'purchase',
@@ -628,6 +635,64 @@ export function ProjectIntegrationView({
                           email/телефону
                         </li>
                         <li>Работает со всеми типами корзин Tilda</li>
+                      </ul>
+                    </AlertDescription>
+                  </Alert>
+                </CardContent>
+              </Card>
+
+              <Card className='overflow-hidden'>
+                <CardHeader>
+                  <CardTitle>Шаг 2: Скрипт реферальной атрибуции</CardTitle>
+                  <CardDescription>
+                    Обязателен для B2B: сохраняет utm_ref и utm_org из ссылки
+                    партнёра и передаёт их в формы регистрации Tilda
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className='space-y-4'>
+                  <div className='space-y-2'>
+                    <Label>Код для вставки (рядом с виджетом, в футер):</Label>
+                    <div className='relative'>
+                      <pre className='bg-muted overflow-x-auto rounded-lg p-4 text-sm'>
+                        <code>{attributionCode}</code>
+                      </pre>
+                      <Button
+                        size='sm'
+                        variant='outline'
+                        className='absolute top-2 right-2'
+                        onClick={() =>
+                          copyToClipboard(attributionCode, 'attribution')
+                        }
+                      >
+                        {copied === 'attribution' ? (
+                          <CheckCircle2 className='h-4 w-4 text-green-600' />
+                        ) : (
+                          <Copy className='h-4 w-4' />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                  <Alert>
+                    <AlertCircle className='h-4 w-4' />
+                    <AlertTitle>Как это работает</AlertTitle>
+                    <AlertDescription>
+                      <ul className='mt-2 list-inside list-disc space-y-1'>
+                        <li>
+                          Партнёр делится ссылкой вида{' '}
+                          <code>?utm_ref=USER_ID&amp;utm_org=slug</code>
+                        </li>
+                        <li>
+                          Скрипт сохраняет метки в localStorage и cookie на 30
+                          дней
+                        </li>
+                        <li>
+                          При отправке любой формы Tilda добавляются скрытые
+                          поля utm_ref / utm_org
+                        </li>
+                        <li>
+                          Webhook получает метки и привязывает клиента к
+                          партнёру
+                        </li>
                       </ul>
                     </AlertDescription>
                   </Alert>

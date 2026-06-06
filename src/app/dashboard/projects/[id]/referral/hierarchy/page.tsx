@@ -48,6 +48,7 @@ interface PageProps {
   searchParams: Promise<{
     period?: string;
     search?: string;
+    organizationId?: string;
   }>;
 }
 
@@ -76,7 +77,8 @@ export default async function HierarchyPage({
 
   const tree = await getHierarchyTreeSafe(id, {
     period,
-    search: sp.search
+    search: sp.search,
+    organizationId: sp.organizationId || null
   });
 
   return (

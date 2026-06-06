@@ -1,3 +1,8 @@
+import {
+  extractReferralFromWebhookBody,
+  isSignupOnlyPayload
+} from './referral-attribution.service';
+
 export type TildaOrder = {
   name?: string;
   email?: string;
@@ -15,6 +20,7 @@ export type TildaOrder = {
   utm_content?: string;
   utm_term?: string;
   utm_ref?: string;
+  utm_org?: string;
   [key: string]: any;
 };
 
@@ -36,8 +42,10 @@ export interface NormalizedOrder {
   products: TildaProduct[];
   promocode?: string;
   utmSource?: string;
+  utmOrg?: string;
   raw: any;
   appliedBonuses: number;
+  isSignupForm?: boolean;
 }
 
 export class TildaParserService {
@@ -110,6 +118,8 @@ export class TildaParserService {
     const orderId =
       out.payment?.orderid || out.orderid || `tilda_gen_${Date.now()}`;
 
+    const extracted = extractReferralFromWebhookBody(out);
+
     return {
       orderId,
       email: out.email,
@@ -118,9 +128,11 @@ export class TildaParserService {
       amount,
       products,
       promocode,
-      utmSource: out.utm_ref || out.utm_source,
+      utmSource: extracted.utmRef || out.utm_ref || out.utm_source,
+      utmOrg: extracted.utmOrg || out.utm_org,
       raw: out,
-      appliedBonuses
+      appliedBonuses,
+      isSignupForm: isSignupOnlyPayload(out)
     };
   }
 }

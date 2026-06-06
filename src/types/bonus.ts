@@ -259,6 +259,9 @@ export interface CreateUserInput {
   utmCampaign?: string;
   utmContent?: string;
   utmTerm?: string;
+  utmOrg?: string;
+
+  organizationId?: string | null;
 
   // Реферальная система
   referralCode?: string;

@@ -22,7 +22,11 @@ import { normalizePhone, isValidNormalizedPhone } from '@/lib/phone';
  */
 const PatchUserSchema = z
   .object({
-    partnerRole: z.enum(['CLIENT', 'TRAINER', 'MANAGER', 'DIRECTOR']).optional()
+    partnerRole: z
+      .enum(['CLIENT', 'TRAINER', 'MANAGER', 'DIRECTOR'])
+      .optional(),
+    organizationId: z.string().nullable().optional(),
+    referredBy: z.string().nullable().optional()
   })
   .passthrough();
 
@@ -84,6 +88,8 @@ export async function GET(
       isActive: user.isActive,
       referralCode: user.referralCode,
       partnerRole: user.partnerRole,
+      organizationId: user.organizationId ?? null,
+      referredBy: user.referredBy ?? null,
       outboundReferralPlanId: (user as any).outboundReferralPlanId ?? null,
       currentLevel: user.currentLevel || null,
       bonusBalance,
@@ -214,6 +220,40 @@ export async function PATCH(
     if (parsed.data.partnerRole !== undefined) {
       updateData.partnerRole = parsed.data.partnerRole;
     }
+    if (parsed.data.organizationId !== undefined) {
+      if (parsed.data.organizationId) {
+        const org = await db.partnerOrganization.findFirst({
+          where: { id: parsed.data.organizationId, projectId }
+        });
+        if (!org) {
+          return NextResponse.json(
+            { error: 'Организация не найдена' },
+            { status: 404 }
+          );
+        }
+      }
+      updateData.organizationId = parsed.data.organizationId;
+    }
+    if (parsed.data.referredBy !== undefined) {
+      if (parsed.data.referredBy) {
+        if (parsed.data.referredBy === userId) {
+          return NextResponse.json(
+            { error: 'Пользователь не может быть реферером сам себе' },
+            { status: 400 }
+          );
+        }
+        const referrer = await db.user.findFirst({
+          where: { id: parsed.data.referredBy, projectId }
+        });
+        if (!referrer) {
+          return NextResponse.json(
+            { error: 'Реферер не найден' },
+            { status: 404 }
+          );
+        }
+      }
+      updateData.referredBy = parsed.data.referredBy;
+    }
 
     // Обновляем пользователя
     const updatedUser = await db.user.update({
@@ -244,6 +284,8 @@ export async function PATCH(
         telegramUsername: updatedUser.telegramUsername,
         isActive: updatedUser.isActive,
         partnerRole: updatedUser.partnerRole,
+        organizationId: updatedUser.organizationId ?? null,
+        referredBy: updatedUser.referredBy ?? null,
         currentLevel: updatedUser.currentLevel || null,
         updatedAt: updatedUser.updatedAt.toISOString()
       }

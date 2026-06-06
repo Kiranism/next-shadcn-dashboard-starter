@@ -75,6 +75,8 @@ model Project {
   /// Когда `false`, поведение полностью совпадает с прежней c2c-логикой (опт-ин per project).
   enablePartnerRoles              Boolean                  @default(false) @map("enable_partner_roles")
 
+  partnerOrganizations            PartnerOrganization[]
+
   @@map("projects")
 }
 
@@ -89,6 +91,7 @@ model ReferralCommissionPlan {
 
   project              Project                         @relation("ProjectCommissionPlans", fields: [projectId], references: [id], onDelete: Cascade)
   defaultForProjects   Project[]                       @relation("ProjectDefaultCommissionPlan")
+  organizationDefaults PartnerOrganization[]           @relation("OrganizationDefaultPlan")
   levels               ReferralCommissionPlanLevel[]
   outboundUsers        User[]                          @relation("UserOutboundReferralPlan")
   referralAttributions ReferralAttribution[]
@@ -125,10 +128,37 @@ model ReferralAttribution {
 
   user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   commissionPlan ReferralCommissionPlan @relation(fields: [commissionPlanId], references: [id], onDelete: Restrict)
+  organizationId String?                @map("organization_id")
+  organization   PartnerOrganization?   @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
   @@index([projectId])
   @@index([referrerId])
+  @@index([organizationId])
   @@map("referral_attributions")
+}
+
+/// B2B-сеть / филиал (фитнес-клуб, партнёрская сеть) внутри проекта
+model PartnerOrganization {
+  id                            String   @id @default(cuid())
+  projectId                     String   @map("project_id")
+  name                          String
+  slug                          String
+  description                   String?
+  isActive                      Boolean  @default(true) @map("is_active")
+  defaultReferralCommissionPlanId String? @map("default_referral_commission_plan_id")
+  directorUserId                String?  @map("director_user_id")
+  settings                      Json?    @default("{}")
+  createdAt                     DateTime @default(now()) @map("created_at")
+  updatedAt                     DateTime @updatedAt @map("updated_at")
+
+  project                       Project                  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  defaultReferralCommissionPlan ReferralCommissionPlan?  @relation("OrganizationDefaultPlan", fields: [defaultReferralCommissionPlanId], references: [id], onDelete: SetNull)
+  members                       User[]                   @relation("UserOrganization")
+  referralAttributions          ReferralAttribution[]
+
+  @@unique([projectId, slug])
+  @@index([projectId])
+  @@map("partner_organizations")
 }
 
 /// Право смотреть реферальную статистику subjectUserId (блогер + руководитель / партнёр)
@@ -350,10 +380,14 @@ model User {
   /// По умолчанию CLIENT. Применяется только когда у проекта включён `enablePartnerRoles`.
   partnerRole            PartnerRole             @default(CLIENT) @map("partner_role")
 
+  organizationId         String?                 @map("organization_id")
+  organization           PartnerOrganization?    @relation("UserOrganization", fields: [organizationId], references: [id], onDelete: SetNull)
+
   @@unique([projectId, email])
   @@unique([projectId, phone])
   @@unique([projectId, telegramId])
   @@index([projectId, partnerRole])
+  @@index([projectId, organizationId])
   @@map("users")
 }
 

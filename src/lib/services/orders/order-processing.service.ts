@@ -37,7 +37,8 @@ export class OrderProcessingService {
     );
     const userAlreadyExisted = Boolean(user);
     const isSignupForm =
-      order.amount <= 0 && (!order.products || order.products.length === 0);
+      order.isSignupForm ??
+      (order.amount <= 0 && (!order.products || order.products.length === 0));
 
     // Handle Email/Phone Conflict
     // If we found a user by phone, but they provided a DIFFERENT email:
@@ -81,8 +82,22 @@ export class OrderProcessingService {
         phone: order.phone || '',
         firstName: nameParts[0],
         lastName: nameParts.slice(1).join(' '),
-        utmSource: order.utmSource || ''
+        utmSource: order.utmSource || '',
+        utmOrg: order.utmOrg
       });
+    } else if (isSignupForm && order.utmSource) {
+      const linkResult = await UserService.linkReferralFromAttribution({
+        userId: user.id,
+        projectId,
+        utmRef: order.utmSource,
+        utmOrg: order.utmOrg
+      });
+      if (linkResult.linked) {
+        user = (await db.user.findFirst({
+          where: { id: user.id, projectId },
+          include: { project: true, bonuses: true, transactions: true }
+        })) as any;
+      }
     }
 
     // 4. Link Order to User
@@ -158,7 +173,9 @@ export class OrderProcessingService {
       success: true,
       message: userAlreadyExisted
         ? isSignupForm
-          ? 'Пользователь с таким email или телефоном уже зарегистрирован — новая запись не создана'
+          ? order.utmSource
+            ? 'Пользователь уже существует — проверена привязка по реферальной ссылке'
+            : 'Пользователь с таким email или телефоном уже зарегистрирован — новая запись не создана'
           : 'Order processed'
         : isSignupForm
           ? 'Пользователь зарегистрирован'

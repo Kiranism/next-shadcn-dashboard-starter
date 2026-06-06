@@ -783,6 +783,8 @@ export class ReferralService {
         where: { id: userId },
         select: {
           partnerRole: true,
+          organizationId: true,
+          organization: { select: { slug: true, isActive: true } },
           project: { select: { enablePartnerRoles: true } }
         }
       });
@@ -797,8 +799,11 @@ export class ReferralService {
         base = `https://${base}`;
       }
       const url = new URL(base);
-      // Новая схема: только utm_ref с userId
+      // Новая схема: utm_ref с userId (+ utm_org для мульти-сетей)
       url.searchParams.set('utm_ref', userId);
+      if (user?.organization?.isActive && user.organization.slug) {
+        url.searchParams.set('utm_org', user.organization.slug);
+      }
 
       // Добавляем дополнительные параметры
       if (additionalParams) {

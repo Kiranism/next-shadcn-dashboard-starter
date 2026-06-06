@@ -36,8 +36,9 @@ export class ReferralCommissionService {
     invitedUserId: string;
     projectId: string;
     referrerId: string;
+    organizationId?: string | null;
   }): Promise<void> {
-    const { invitedUserId, projectId, referrerId } = params;
+    const { invitedUserId, projectId, referrerId, organizationId } = params;
 
     const project = await db.project.findUnique({
       where: { id: projectId },
@@ -61,7 +62,8 @@ export class ReferralCommissionService {
     const planId = await this.resolvePlanIdForNewReferral(
       projectId,
       referrerId,
-      project.defaultReferralCommissionPlanId
+      project.defaultReferralCommissionPlanId,
+      organizationId ?? undefined
     );
 
     if (!planId) {
@@ -80,6 +82,7 @@ export class ReferralCommissionService {
         projectId,
         referrerId,
         commissionPlanId: planId,
+        organizationId: organizationId ?? null,
         locked: true
       }
     });
@@ -96,11 +99,12 @@ export class ReferralCommissionService {
   static async resolvePlanIdForNewReferral(
     projectId: string,
     referrerId: string,
-    projectDefaultPlanId: string | null
+    projectDefaultPlanId: string | null,
+    organizationId?: string | null
   ): Promise<string | null> {
     const referrer = await db.user.findFirst({
       where: { id: referrerId, projectId },
-      select: { outboundReferralPlanId: true }
+      select: { outboundReferralPlanId: true, organizationId: true }
     });
 
     const preferred = referrer?.outboundReferralPlanId;
@@ -110,6 +114,21 @@ export class ReferralCommissionService {
         select: { id: true }
       });
       if (ok) return ok.id;
+    }
+
+    const orgId = organizationId ?? referrer?.organizationId;
+    if (orgId) {
+      const org = await db.partnerOrganization.findFirst({
+        where: { id: orgId, projectId },
+        select: { defaultReferralCommissionPlanId: true }
+      });
+      if (org?.defaultReferralCommissionPlanId) {
+        const ok = await db.referralCommissionPlan.findFirst({
+          where: { id: org.defaultReferralCommissionPlanId, projectId },
+          select: { id: true }
+        });
+        if (ok) return ok.id;
+      }
     }
 
     if (projectDefaultPlanId) {
