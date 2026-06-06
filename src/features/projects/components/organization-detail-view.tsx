@@ -92,6 +92,7 @@ type Organization = {
     lastName: string | null;
     email: string | null;
     phone: string | null;
+    partnerRole: string;
   } | null;
   _count?: { members: number };
 };
@@ -376,6 +377,17 @@ export function OrganizationDetailView({ projectId, organizationId }: Props) {
       organization.director.phone
     : null;
 
+  const directorInitialUser = organization.director
+    ? {
+        id: organization.director.id,
+        name: directorName || organization.director.id,
+        email: organization.director.email,
+        phone: organization.director.phone,
+        partnerRole: organization.director.partnerRole,
+        outboundReferralPlanId: null
+      }
+    : null;
+
   return (
     <div className='space-y-6'>
       <div className='flex flex-wrap items-start justify-between gap-4'>
@@ -614,9 +626,11 @@ export function OrganizationDetailView({ projectId, organizationId }: Props) {
               <PartnerUserCombobox
                 projectId={projectId}
                 value={editDirectorId}
+                initialUser={directorInitialUser}
                 onChange={(u) => setEditDirectorId(u?.id ?? '')}
                 partnerRolesOnly
                 placeholder='Выберите директора…'
+                className='w-full max-w-none'
               />
             </div>
             <div className='flex items-center justify-between rounded-lg border p-3'>

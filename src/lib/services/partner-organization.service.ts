@@ -76,7 +76,8 @@ export class PartnerOrganizationService {
           firstName: true,
           lastName: true,
           email: true,
-          phone: true
+          phone: true,
+          partnerRole: true
         }
       });
     }

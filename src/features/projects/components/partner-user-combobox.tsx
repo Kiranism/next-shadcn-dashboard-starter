@@ -48,6 +48,8 @@ interface PartnerUserComboboxProps {
   projectId: string;
   /** Текущий выбранный userId (или пустая строка). */
   value: string;
+  /** Уже известные данные выбранного пользователя (без лишнего запроса). */
+  initialUser?: PartnerUser | null;
   /** Колбэк при выборе/очистке (передаёт обогащённого пользователя для UI). */
   onChange: (user: PartnerUser | null) => void;
   /** Включить роль-фильтр (только партнёры). По умолчанию true. */
@@ -69,9 +71,36 @@ const FETCH_LIMIT = 20;
  * Поиск + выбор пользователя проекта с фильтром по партнёрской роли.
  * Возвращает обогащённый объект через `onChange`. Если убрать выбор — `null`.
  */
+function mapApiUser(
+  raw: Record<string, unknown>,
+  fallbackId?: string
+): PartnerUser {
+  const firstName = (raw.firstName as string | null | undefined) ?? '';
+  const lastName = (raw.lastName as string | null | undefined) ?? '';
+  const email = (raw.email as string | null | undefined) ?? null;
+  const phone = (raw.phone as string | null | undefined) ?? null;
+  const id = (raw.id as string | undefined) ?? fallbackId ?? '';
+
+  return {
+    id,
+    name:
+      (raw.name as string | undefined) ||
+      `${firstName} ${lastName}`.trim() ||
+      email ||
+      phone ||
+      id,
+    email,
+    phone,
+    partnerRole: (raw.partnerRole as string | undefined) ?? 'CLIENT',
+    outboundReferralPlanId:
+      (raw.outboundReferralPlanId as string | null | undefined) ?? null
+  };
+}
+
 export function PartnerUserCombobox({
   projectId,
   value,
+  initialUser,
   onChange,
   partnerRolesOnly = true,
   planNameById,
@@ -108,19 +137,7 @@ export function PartnerUserCombobox({
         }
         const data = await res.json();
         const users: PartnerUser[] = Array.isArray(data?.users)
-          ? data.users.map((u: any) => ({
-              id: u.id,
-              name:
-                u.name ||
-                `${u.firstName || ''} ${u.lastName || ''}`.trim() ||
-                u.email ||
-                u.phone ||
-                u.id,
-              email: u.email ?? null,
-              phone: u.phone ?? null,
-              partnerRole: u.partnerRole ?? 'CLIENT',
-              outboundReferralPlanId: u.outboundReferralPlanId ?? null
-            }))
+          ? data.users.map((u: Record<string, unknown>) => mapApiUser(u))
           : [];
         // Защита от race condition: учитываем только последний запрос.
         if (myReqId === requestIdRef.current) setItems(users);
@@ -147,6 +164,10 @@ export function PartnerUserCombobox({
       setSelected(null);
       return;
     }
+    if (initialUser?.id === value) {
+      setSelected(initialUser);
+      return;
+    }
     if (selected?.id === value) return;
 
     let cancelled = false;
@@ -158,19 +179,8 @@ export function PartnerUserCombobox({
         if (!res || !res.ok) return;
         const data = await res.json();
         if (cancelled) return;
-        setSelected({
-          id: data.id ?? value,
-          name:
-            data.name ||
-            `${data.firstName || ''} ${data.lastName || ''}`.trim() ||
-            data.email ||
-            data.phone ||
-            value,
-          email: data.email ?? null,
-          phone: data.phone ?? null,
-          partnerRole: data.partnerRole ?? 'CLIENT',
-          outboundReferralPlanId: data.outboundReferralPlanId ?? null
-        });
+        const raw = (data.user ?? data) as Record<string, unknown>;
+        setSelected(mapApiUser(raw, value));
       } catch {
         // ignore
       }
@@ -178,7 +188,7 @@ export function PartnerUserCombobox({
     return () => {
       cancelled = true;
     };
-  }, [value, projectId, selected?.id]);
+  }, [value, projectId, selected?.id, initialUser]);
 
   const handleSelect = (user: PartnerUser) => {
     setSelected(user);

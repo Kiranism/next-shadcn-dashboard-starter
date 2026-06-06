@@ -8,7 +8,6 @@ type BreadcrumbItem = {
   link: string;
 };
 
-// Словарь для перевода сегментов URL на русский
 const segmentTranslations: Record<string, string> = {
   dashboard: 'Панель управления',
   projects: 'Проекты',
@@ -19,6 +18,8 @@ const segmentTranslations: Record<string, string> = {
   analytics: 'Аналитика',
   bot: 'Бот',
   referral: 'Реферальная программа',
+  organizations: 'Организации',
+  hierarchy: 'Иерархия',
   'bonus-levels': 'Уровни бонусов',
   bonuses: 'Бонусы',
   overview: 'Обзор',
@@ -40,7 +41,6 @@ const segmentTranslations: Record<string, string> = {
   tilda: 'Tilda'
 };
 
-// Пользовательские маршруты с полными переводами
 const routeMapping: Record<string, BreadcrumbItem[]> = {
   '/dashboard': [{ title: 'Панель управления', link: '/dashboard' }],
   '/dashboard/projects': [
@@ -71,14 +71,19 @@ const routeMapping: Record<string, BreadcrumbItem[]> = {
     { title: 'Панель управления', link: '/dashboard' },
     { title: 'Профиль', link: '/dashboard/settings?tab=profile' }
   ]
-  // Add more custom mappings as needed
 };
+
+function looksLikeEntityId(segment: string): boolean {
+  return segment.length >= 20 && /^[a-z0-9]+$/i.test(segment);
+}
 
 export function useBreadcrumbs() {
   const pathname = usePathname();
   const [projectNames, setProjectNames] = useState<Record<string, string>>({});
+  const [organizationNames, setOrganizationNames] = useState<
+    Record<string, string>
+  >({});
 
-  // Получаем название проекта по ID
   const getProjectName = async (projectId: string): Promise<string> => {
     if (projectNames[projectId]) {
       return projectNames[projectId];
@@ -91,49 +96,77 @@ export function useBreadcrumbs() {
         const name = project.name || 'Проект';
         setProjectNames((prev) => ({ ...prev, [projectId]: name }));
         return name;
-      } else if (response.status === 403) {
-        // При ошибке доступа показываем просто "Проект" без ID
+      }
+      if (response.status === 403) {
         const name = 'Проект';
         setProjectNames((prev) => ({ ...prev, [projectId]: name }));
         return name;
       }
-    } catch (error) {
-      // Не логируем ошибки для breadcrumbs - это не критично
-      // При сетевой ошибке показываем просто "Проект"
+    } catch {
       const name = 'Проект';
       setProjectNames((prev) => ({ ...prev, [projectId]: name }));
       return name;
     }
 
-    // Fallback: показываем просто "Проект" без ID
     return 'Проект';
   };
 
+  const getOrganizationName = async (
+    projectId: string,
+    organizationId: string
+  ): Promise<string> => {
+    const cacheKey = `${projectId}:${organizationId}`;
+    if (organizationNames[cacheKey]) {
+      return organizationNames[cacheKey];
+    }
+
+    try {
+      const response = await fetch(
+        `/api/projects/${projectId}/organizations/${organizationId}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        const name = data.organization?.name || 'Организация';
+        setOrganizationNames((prev) => ({ ...prev, [cacheKey]: name }));
+        return name;
+      }
+    } catch {
+      // ignore
+    }
+
+    const fallback = 'Организация';
+    setOrganizationNames((prev) => ({ ...prev, [cacheKey]: fallback }));
+    return fallback;
+  };
+
   const breadcrumbs = useMemo(() => {
-    // Check if we have a custom mapping for this exact path
     if (routeMapping[pathname]) {
       return routeMapping[pathname];
     }
 
-    // If no exact match, fall back to generating breadcrumbs from the path
     const segments = pathname.split('/').filter(Boolean);
+    const projectsIndex = segments.indexOf('projects');
+    const projectId =
+      projectsIndex !== -1 && projectsIndex + 1 < segments.length
+        ? segments[projectsIndex + 1]
+        : null;
+
     return segments.map((segment, index) => {
       const path = `/${segments.slice(0, index + 1).join('/')}`;
+      const prev = index > 0 ? segments[index - 1] : null;
 
-      // Специальная обработка для ID проекта
-      if (segment === 'projects' && index + 1 < segments.length) {
-        const projectId = segments[index + 1];
+      if (segment === 'projects') {
         return {
           title: 'Проекты',
           link: '/dashboard/projects'
         };
       }
 
-      // Если это ID проекта (UUID или cuid), получаем название
       if (
-        index > 0 &&
-        segments[index - 1] === 'projects' &&
-        segment.length > 10
+        projectId &&
+        prev === 'projects' &&
+        segment === projectId &&
+        looksLikeEntityId(segment)
       ) {
         return {
           title: projectNames[segment] || 'Проект',
@@ -141,29 +174,46 @@ export function useBreadcrumbs() {
         };
       }
 
-      // Используем перевод если есть, иначе делаем первую букву заглавной
+      if (projectId && prev === 'organizations' && looksLikeEntityId(segment)) {
+        const cacheKey = `${projectId}:${segment}`;
+        return {
+          title: organizationNames[cacheKey] || 'Организация',
+          link: path
+        };
+      }
+
       const title =
         segmentTranslations[segment] ||
         segment.charAt(0).toUpperCase() + segment.slice(1);
-      return {
-        title,
-        link: path
-      };
-    });
-  }, [pathname, projectNames]);
 
-  // Загружаем названия проектов при изменении pathname
+      return { title, link: path };
+    });
+  }, [pathname, projectNames, organizationNames]);
+
   useEffect(() => {
     const segments = pathname.split('/').filter(Boolean);
     const projectsIndex = segments.indexOf('projects');
 
     if (projectsIndex !== -1 && projectsIndex + 1 < segments.length) {
       const projectId = segments[projectsIndex + 1];
-      if (projectId.length > 10 && !projectNames[projectId]) {
-        getProjectName(projectId);
+      if (looksLikeEntityId(projectId) && !projectNames[projectId]) {
+        void getProjectName(projectId);
+      }
+
+      const orgIndex = segments.indexOf('organizations');
+      if (
+        orgIndex !== -1 &&
+        orgIndex + 1 < segments.length &&
+        looksLikeEntityId(segments[orgIndex + 1])
+      ) {
+        const organizationId = segments[orgIndex + 1];
+        const cacheKey = `${projectId}:${organizationId}`;
+        if (!organizationNames[cacheKey]) {
+          void getOrganizationName(projectId, organizationId);
+        }
       }
     }
-  }, [pathname, projectNames]);
+  }, [pathname, projectNames, organizationNames]);
 
   return breadcrumbs;
 }

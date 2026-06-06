@@ -15,16 +15,10 @@ import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   Users,
-  Gift,
-  TrendingUp,
   Settings,
   BarChart3,
   Share2,
   Target,
-  DollarSign,
-  Eye,
-  Calendar,
-  Download,
   Network,
   Bot,
   AlertCircle
@@ -46,8 +40,8 @@ import { ReferralSettingsForm } from './referral-settings-form';
 import { ReferralStatsView } from './referral-stats-view';
 import { ReferralCommissionPlansPanel } from './referral-commission-plans-panel';
 import { ReferralProgramGuide } from './referral-program-guide';
+import { ReferralProgramSidebar } from './referral-program-sidebar';
 import type { Project, ReferralProgram } from '@/types/bonus';
-import { getReferralLinkExample } from '@/lib/utils/referral-link';
 
 interface ReferralProgramViewProps {
   projectId: string;
@@ -304,185 +298,14 @@ export function ReferralProgramView({ projectId }: ReferralProgramViewProps) {
           </Tabs>
         </div>
 
-        {/* Sidebar */}
-        <div className='space-y-6'>
-          {/* Quick stats */}
-          <Card>
-            <CardHeader>
-              <CardTitle className='text-lg'>Краткая статистика</CardTitle>
-            </CardHeader>
-            <CardContent className='space-y-3'>
-              <div className='flex items-center justify-between'>
-                <div className='flex items-center space-x-2'>
-                  <Users className='h-4 w-4 text-blue-600' />
-                  <span className='text-sm'>Всего рефералов</span>
-                </div>
-                <span className='font-semibold'>-</span>
-              </div>
-              <div className='flex items-center justify-between'>
-                <div className='flex items-center space-x-2'>
-                  <Gift className='h-4 w-4 text-green-600' />
-                  <span className='text-sm'>Выплачено бонусов</span>
-                </div>
-                <span className='font-semibold'>-</span>
-              </div>
-              <div className='flex items-center justify-between'>
-                <div className='flex items-center space-x-2'>
-                  <TrendingUp className='h-4 w-4 text-purple-600' />
-                  <span className='text-sm'>За месяц</span>
-                </div>
-                <span className='font-semibold'>-</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Program info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className='text-lg'>О программе</CardTitle>
-            </CardHeader>
-            <CardContent className='space-y-3'>
-              <div>
-                <label className='text-sm font-medium'>Статус</label>
-                <p className='text-muted-foreground text-sm'>
-                  {referralProgram?.isActive ? 'Активна' : 'Неактивна'}
-                </p>
-              </div>
-              <div>
-                <label className='text-sm font-medium'>Бонус новому</label>
-                <p className='text-muted-foreground text-sm'>
-                  {referralProgram?.refereeBonus || 0}%
-                </p>
-              </div>
-              <div>
-                <label className='text-sm font-medium'>
-                  Приветственное вознаграждение
-                </label>
-                <p className='text-muted-foreground text-sm'>
-                  {referralProgram?.welcomeRewardType === 'DISCOUNT' ? (
-                    <>
-                      Скидка{' '}
-                      {referralProgram?.firstPurchaseDiscountPercent || 0}% на
-                      первую покупку
-                    </>
-                  ) : (
-                    <>
-                      {Number(
-                        referralProgram?.welcomeBonus || 0
-                      ).toLocaleString('ru-RU')}{' '}
-                      бонусов
-                    </>
-                  )}
-                </p>
-              </div>
-              <div>
-                <label className='text-sm font-medium'>Мин. сумма заказа</label>
-                <p className='text-muted-foreground text-sm'>
-                  {Number(
-                    referralProgram?.minPurchaseAmount || 0
-                  ).toLocaleString('ru-RU')}{' '}
-                  руб.
-                </p>
-              </div>
-              <div>
-                <label className='text-sm font-medium'>Отслеживание</label>
-                <p className='text-muted-foreground text-sm'>
-                  {referralProgram?.cookieLifetime || 0} дней
-                </p>
-              </div>
-              <div>
-                <label className='text-sm font-medium'>
-                  {activeTab === 'plans' && project?.enablePartnerRoles
-                    ? 'Уровни (legacy, для клиентов)'
-                    : 'Уровни'}
-                </label>
-                {activeTab === 'plans' && project?.enablePartnerRoles && (
-                  <p className='text-muted-foreground mb-2 text-xs'>
-                    Не путать с вкладкой «Комиссии». Здесь — старая c2c-схема
-                    бонусов рефералам-клиентам.
-                  </p>
-                )}
-                <div className='mt-2 space-y-2'>
-                  {(referralProgram?.levels || []).length > 0 ? (
-                    referralProgram?.levels
-                      ?.slice()
-                      .sort((a, b) => a.level - b.level)
-                      .map((level) => (
-                        <div
-                          key={level.id}
-                          className='flex items-center justify-between rounded border px-2 py-1 text-sm'
-                        >
-                          <span>Уровень {level.level}</span>
-                          <span className='font-semibold'>
-                            {Number(level.percent)}%
-                          </span>
-                        </div>
-                      ))
-                  ) : (
-                    <p className='text-muted-foreground text-sm'>
-                      Уровни не настроены
-                    </p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* How it works */}
-          <Card>
-            <CardHeader>
-              <CardTitle className='text-lg'>Как это работает</CardTitle>
-            </CardHeader>
-            <CardContent className='space-y-3 text-sm'>
-              <div className='flex items-start space-x-2'>
-                <Share2 className='mt-0.5 h-4 w-4 shrink-0 text-blue-600' />
-                <div>
-                  <p className='font-medium'>UTM метки</p>
-                  <p className='text-muted-foreground'>
-                    Отслеживание по utm_source, utm_medium и utm_campaign
-                  </p>
-                </div>
-              </div>
-              <div className='flex items-start space-x-2'>
-                <Target className='mt-0.5 h-4 w-4 shrink-0 text-green-600' />
-                <div>
-                  <p className='font-medium'>Автоматические бонусы</p>
-                  <p className='text-muted-foreground'>
-                    Начисление при регистрации и первой покупке
-                  </p>
-                </div>
-              </div>
-              <div className='flex items-start space-x-2'>
-                <DollarSign className='mt-0.5 h-4 w-4 shrink-0 text-purple-600' />
-                <div>
-                  <p className='font-medium'>Минимальная сумма</p>
-                  <p className='text-muted-foreground'>
-                    Можно установить минимальную сумму покупки
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Обновленная справка по ссылке */}
-          <Card>
-            <CardHeader>
-              <CardTitle className='text-lg'>
-                Как выглядит реферальная ссылка
-              </CardTitle>
-            </CardHeader>
-            <CardContent className='space-y-3 text-sm'>
-              <p className='text-muted-foreground text-sm'>
-                Ссылка формируется в формате:{' '}
-                <code className='text-xs'>
-                  {getReferralLinkExample(project?.domain)}
-                </code>
-                . Параметры utm_source/utm_medium/utm_campaign больше не
-                используются.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Sidebar — контекст по активной вкладке */}
+        <ReferralProgramSidebar
+          projectId={projectId}
+          activeTab={activeTab}
+          project={project}
+          referralProgram={referralProgram}
+          enablePartnerRoles={Boolean(project?.enablePartnerRoles)}
+        />
       </div>
     </div>
   );
