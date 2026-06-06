@@ -44,13 +44,13 @@ export function ReferralProgramGuide({
             </div>
             <div className='rounded-md border border-blue-200/80 bg-white/70 p-3 dark:border-blue-800/50 dark:bg-blue-950/20'>
               <div className='mb-2 flex items-center gap-2'>
-                <Badge variant='secondary'>Комиссии</Badge>
+                <Badge variant='secondary'>Планы партнёров</Badge>
                 <ArrowRight className='h-4 w-4' />
               </div>
-              <p className='font-medium'>Комиссии партнёрам</p>
+              <p className='font-medium'>Вознаграждения партнёрам</p>
               <p className='text-muted-foreground mt-1 text-xs'>
-                L1 тренер → L2 менеджер → L3 директор. Планы назначаются
-                партнёрам, а не клиентам
+                L1 тренер → L2 менеджер → L3 директор. Проценты задаются
+                партнёрскими планами, а не клиентскими бонусами
               </p>
             </div>
             <div className='rounded-md border border-blue-200/80 bg-white/70 p-3 dark:border-blue-800/50 dark:bg-blue-950/20'>
@@ -77,8 +77,8 @@ export function ReferralProgramGuide({
           </div>
           <p className='text-muted-foreground text-xs'>
             Блок «Многоуровневая программа» во вкладке «Настройки» — legacy для
-            c2c-рефералов. При включённых персональных планах комиссии считаются
-            только по планам на вкладке «Комиссии».
+            c2c-рефералов. При включённых персональных планах выплаты считаются
+            только по партнёрским планам на одноимённой вкладке.
           </p>
         </AlertDescription>
       </Alert>
@@ -95,7 +95,7 @@ export function ReferralProgramGuide({
           уровни реферальной программы (c2c-режим).
         </p>
         <p>
-          <strong>«Планы %»</strong> — персональные схемы комиссий для отдельных
+          <strong>«Планы %»</strong> — персональные схемы выплат для отдельных
           партнёров. Включите переключатель «Персональные планы», если разным
           партнёрам нужны разные проценты.
         </p>

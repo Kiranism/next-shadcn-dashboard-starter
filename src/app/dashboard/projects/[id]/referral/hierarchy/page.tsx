@@ -143,7 +143,7 @@ export default async function HierarchyPage({
               accent='amber'
             />
             <SummaryCard
-              label='Комиссия за период'
+              label='Вознаграждение за период'
               value={formatRub(tree.totals.commissionTotal)}
               accent='emerald'
             />

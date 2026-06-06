@@ -191,8 +191,8 @@ export function PartnerOrganizationsPanel({ projectId }: Props) {
       <div className='flex flex-wrap items-center justify-between gap-3'>
         <p className='text-muted-foreground max-w-2xl text-sm'>
           Отдельные партнёрские сети внутри проекта — свой директор, план
-          комиссий и изолированная иерархия. Ссылки партнёров добавляют{' '}
-          <code className='text-xs'>utm_org=slug</code>.
+          партнёрских планов и изолированная иерархия. Ссылки партнёров
+          добавляют <code className='text-xs'>utm_org=slug</code>.
         </p>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
@@ -234,7 +234,7 @@ export function PartnerOrganizationsPanel({ projectId }: Props) {
                 />
               </div>
               <div className='space-y-2'>
-                <Label>План комиссий по умолчанию</Label>
+                <Label>Партнёрский план по умолчанию</Label>
                 <Select
                   value={defaultPlanId || '__none__'}
                   onValueChange={(v) =>

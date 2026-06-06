@@ -211,9 +211,9 @@ export function ReferralSettingsForm({
           <Users className='h-4 w-4' />
           <AlertDescription className='text-sm'>
             Эта вкладка настраивает <strong>вознаграждение для клиентов</strong>{' '}
-            (приветственные бонусы, % с первой покупки). Комиссии партнёрам
-            (тренер / менеджер / директор) настраиваются во вкладке{' '}
-            <strong>«Комиссии»</strong>.
+            (приветственные бонусы, % с первой покупки). Вознаграждения
+            партнёрам (тренер / менеджер / директор) настраиваются во вкладке{' '}
+            <strong>«Планы партнёров»</strong>.
           </AlertDescription>
         </Alert>
       )}
@@ -441,7 +441,7 @@ export function ReferralSettingsForm({
                   <Label className='text-base'>Многоуровневая программа</Label>
                   <p className='text-sm text-gray-600'>
                     {project?.enablePartnerRoles
-                      ? 'Шаблон для кнопки «Создать план из текущей программы». Реальные выплаты партнёрам — во вкладке «Комиссии».'
+                      ? 'Шаблон для кнопки «Создать план из текущей программы». Реальные выплаты партнёрам — во вкладке «Планы партнёров».'
                       : 'Настройте проценты начислений для каждого уровня рефералов'}
                   </p>
                 </div>
@@ -451,7 +451,7 @@ export function ReferralSettingsForm({
                     <AlertDescription className='text-sm'>
                       При включённых персональных планах этот блок не влияет на
                       выплаты. Используйте его только чтобы быстро создать план
-                      комиссий с теми же процентами.
+                      партнёрских планов с теми же процентами.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -461,7 +461,7 @@ export function ReferralSettingsForm({
                     const isLevelActive = levelField?.isActive ?? false;
                     const levelDescriptions = project?.enablePartnerRoles
                       ? [
-                          '→ Тренер (L1), комиссия в «Комиссии»',
+                          '→ Тренер (L1), план на вкладке «Планы партнёров»',
                           '→ Менеджер (L2)',
                           '→ Директор (L3)'
                         ]

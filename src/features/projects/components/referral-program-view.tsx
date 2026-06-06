@@ -272,7 +272,7 @@ export function ReferralProgramView({ projectId }: ReferralProgramViewProps) {
               </TabsTrigger>
               <TabsTrigger value='plans' className='flex items-center'>
                 <Target className='mr-2 h-4 w-4' />
-                {project?.enablePartnerRoles ? 'Комиссии' : 'Планы %'}
+                {project?.enablePartnerRoles ? 'Планы партнёров' : 'Планы %'}
               </TabsTrigger>
             </TabsList>
 

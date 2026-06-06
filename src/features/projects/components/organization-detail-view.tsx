@@ -451,7 +451,7 @@ export function OrganizationDetailView({ projectId, organizationId }: Props) {
               value: formatRub(stats.totalPurchases)
             },
             {
-              label: 'Комиссия',
+              label: 'Вознаграждение',
               value: formatRub(stats.commissionEarned)
             }
           ].map((item) => (
@@ -603,7 +603,7 @@ export function OrganizationDetailView({ projectId, organizationId }: Props) {
               />
             </div>
             <div className='space-y-2'>
-              <Label>План комиссий по умолчанию</Label>
+              <Label>Партнёрский план по умолчанию</Label>
               <Select
                 value={editPlanId || '__none__'}
                 onValueChange={(v) => setEditPlanId(v === '__none__' ? '' : v)}
@@ -705,7 +705,7 @@ export function OrganizationDetailView({ projectId, organizationId }: Props) {
               />
             </div>
             <div className='space-y-2'>
-              <Label>План комиссий (outbound)</Label>
+              <Label>Партнёрский план (outbound)</Label>
               <Select
                 value={newPlanId || '__none__'}
                 onValueChange={(v) => setNewPlanId(v === '__none__' ? '' : v)}
@@ -745,7 +745,7 @@ export function OrganizationDetailView({ projectId, organizationId }: Props) {
           <DialogHeader>
             <DialogTitle>Участник: {editMember?.name}</DialogTitle>
             <DialogDescription>
-              Роль, реферер и план комиссий для этой сети
+              Роль, реферер и партнёрский план для этой сети
             </DialogDescription>
           </DialogHeader>
           <div className='grid gap-4 py-2'>
@@ -780,7 +780,7 @@ export function OrganizationDetailView({ projectId, organizationId }: Props) {
               />
             </div>
             <div className='space-y-2'>
-              <Label>План комиссий</Label>
+              <Label>Партнёрский план</Label>
               <Select
                 value={memberPlanId || '__none__'}
                 onValueChange={(v) =>

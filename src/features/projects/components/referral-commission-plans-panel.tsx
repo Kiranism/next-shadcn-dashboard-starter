@@ -472,7 +472,7 @@ export function ReferralCommissionPlansPanel({
       {showBanner && (
         <Alert className='border-emerald-200 bg-emerald-50/60 dark:border-emerald-900/40 dark:bg-emerald-950/40'>
           <Info className='h-4 w-4 text-emerald-600' />
-          <AlertTitle>Используются персональные планы комиссий</AlertTitle>
+          <AlertTitle>Используются персональные партнёрские планы</AlertTitle>
           <AlertDescription>
             Старые уровни реферальной программы (вкладка «Настройки» → «Уровни»)
             больше не применяются для новых атрибуций. Существующие начисления
@@ -484,7 +484,7 @@ export function ReferralCommissionPlansPanel({
       {enablePartnerRoles && (
         <Alert>
           <AlertCircle className='h-4 w-4' />
-          <AlertTitle>Планы комиссий ≠ бонусы клиентам</AlertTitle>
+          <AlertTitle>Партнёрские планы ≠ бонусы клиентам</AlertTitle>
           <AlertDescription className='text-sm'>
             Здесь задаётся, сколько % от покупки получают тренер (L1), менеджер
             (L2) и директор (L3). Бонусы для клиентов — во вкладке «Настройки».
@@ -655,7 +655,7 @@ export function ReferralCommissionPlansPanel({
       <Dialog open={createPlanOpen} onOpenChange={setCreatePlanOpen}>
         <DialogContent className='max-w-lg'>
           <DialogHeader>
-            <DialogTitle>Новый план комиссий</DialogTitle>
+            <DialogTitle>Новый партнёрский план</DialogTitle>
             <DialogDescription>
               До 3 уровней выплат в процентах от суммы покупки
             </DialogDescription>
@@ -728,7 +728,7 @@ export function ReferralCommissionPlansPanel({
       <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
         <DialogContent className='max-w-lg'>
           <DialogHeader>
-            <DialogTitle>Назначить план комиссий</DialogTitle>
+            <DialogTitle>Назначить партнёрский план</DialogTitle>
             <DialogDescription>
               План определяет проценты L1/L2/L3 для клиентов, которых пригласил
               партнёр

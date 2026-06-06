@@ -134,9 +134,7 @@ export function ReferralProgramSidebar({
         <div className='space-y-6'>
           <Card>
             <CardHeader>
-              <CardTitle className='text-lg'>
-                Как начисляются комиссии
-              </CardTitle>
+              <CardTitle className='text-lg'>Как начисляются выплаты</CardTitle>
             </CardHeader>
             <CardContent className='space-y-3 text-sm'>
               <div className='rounded-md border px-3 py-2'>
@@ -207,7 +205,7 @@ export function ReferralProgramSidebar({
             <CardContent className='text-muted-foreground text-sm'>
               Приветственные бонусы и скидки настраиваются на вкладке{' '}
               <strong>«Настройки»</strong> и начисляются клиентам независимо от
-              комиссий партнёрам.
+              вознаграждений партнёрам.
             </CardContent>
           </Card>
         </div>
@@ -292,8 +290,8 @@ export function ReferralProgramSidebar({
           {enablePartnerRoles && (
             <div className='rounded-md border border-amber-200/80 bg-amber-50/50 p-2 dark:border-amber-900/40 dark:bg-amber-950/20'>
               <p className='text-xs'>
-                Уровни ниже — legacy для c2c-рефералов. Комиссии партнёрам
-                настраиваются на вкладке «Комиссии».
+                Уровни ниже — legacy для c2c-рефералов. Вознаграждения партнёрам
+                настраиваются на вкладке «Планы партнёров».
               </p>
             </div>
           )}
@@ -355,9 +353,10 @@ export function ReferralProgramSidebar({
             <div className='flex items-start space-x-2'>
               <Target className='mt-0.5 h-4 w-4 shrink-0 text-purple-600' />
               <div>
-                <p className='font-medium'>Комиссии партнёрам</p>
+                <p className='font-medium'>Вознаграждения партнёрам</p>
                 <p className='text-muted-foreground'>
-                  Отдельно на вкладке «Комиссии» — не путать с бонусами клиенту
+                  Отдельно на вкладке «Планы партнёров» — не путать с бонусами
+                  клиенту
                 </p>
               </div>
             </div>

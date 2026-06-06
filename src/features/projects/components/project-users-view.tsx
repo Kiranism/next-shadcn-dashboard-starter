@@ -1503,7 +1503,7 @@ export function ProjectUsersView({ projectId }: ProjectUsersViewProps) {
                           htmlFor='outbound-plan-select'
                           className='text-xs font-medium'
                         >
-                          Outbound-план комиссий
+                          Партнёрский план (outbound)
                         </Label>
                         <Select
                           value={profileOutboundPlanId ?? '__none__'}
