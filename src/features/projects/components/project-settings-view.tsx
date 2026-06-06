@@ -719,6 +719,12 @@ export function ProjectSettingsView({
           <B2bHierarchySettings
             projectId={projectId}
             initialValue={Boolean((project as any)?.enablePartnerRoles)}
+            initialTeamManagement={Boolean(
+              (project as any)?.enablePartnerTeamManagement ?? true
+            )}
+            initialJoinApproval={Boolean(
+              (project as any)?.referralJoinRequiresApproval
+            )}
             adminSub={adminSub}
           />
 

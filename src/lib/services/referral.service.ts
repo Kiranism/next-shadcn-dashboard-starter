@@ -21,6 +21,7 @@ import type {
   ReferralLevelInput
 } from '@/types/bonus';
 import { BonusService } from './user.service';
+import { PartnerTeamService } from './partner-team.service';
 // Crypto импорт только для server-side
 
 type ReferralProgramEntity = Prisma.ReferralProgramGetPayload<{
@@ -436,11 +437,22 @@ export class ReferralService {
         levelMap.size || maxPayoutDepth
       );
 
-      const chain = await this.resolveReferrerChain(
-        user.referredBy,
-        user.projectId,
-        chainDepth
-      );
+      const projectFlags = await db.project.findUnique({
+        where: { id: user.projectId },
+        select: { enablePartnerRoles: true }
+      });
+
+      const chain = projectFlags?.enablePartnerRoles
+        ? await PartnerTeamService.resolvePayoutChain(
+            user.referredBy,
+            user.projectId,
+            chainDepth
+          )
+        : await this.resolveReferrerChain(
+            user.referredBy,
+            user.projectId,
+            chainDepth
+          );
 
       if (!chain.length) {
         return { bonusAwarded: false };

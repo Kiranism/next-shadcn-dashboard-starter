@@ -10,6 +10,7 @@ import { z } from 'zod';
 
 import { withProjectAccess } from '@/lib/with-project-access';
 import { PartnerOrganizationService } from '@/lib/services/partner-organization.service';
+import { PartnerTeamService } from '@/lib/services/partner-team.service';
 
 const UpdateOrgSchema = z.object({
   name: z.string().min(1).max(120).optional(),
@@ -38,7 +39,13 @@ export const GET = withProjectAccess<OrgRouteParams>(
       organizationId
     );
 
-    return NextResponse.json({ organization, stats });
+    const hierarchyWarnings =
+      await PartnerTeamService.validateOrganizationHierarchy(
+        projectId,
+        organizationId
+      );
+
+    return NextResponse.json({ organization, stats, hierarchyWarnings });
   }
 );
 

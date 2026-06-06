@@ -7,6 +7,7 @@
 
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { PartnerTeamService } from './partner-team.service';
 
 export interface CreateOrganizationInput {
   projectId: string;
@@ -198,14 +199,25 @@ export class PartnerOrganizationService {
       if (!referrer) throw new Error('Реферер не найден');
     }
 
+    let referredBy = input.referredBy;
+    if (referredBy === undefined) {
+      const members = await this.listMembers(projectId, organizationId);
+      referredBy = PartnerTeamService.resolveDefaultReferrerForOrgMember({
+        partnerRole: input.partnerRole ?? 'CLIENT',
+        members: members.map((m) => ({
+          id: m.id,
+          partnerRole: m.partnerRole
+        })),
+        directorUserId: org.directorUserId
+      });
+    }
+
     const updated = await db.user.update({
       where: { id: input.userId },
       data: {
         organizationId,
         ...(input.partnerRole ? { partnerRole: input.partnerRole } : {}),
-        ...(input.referredBy !== undefined
-          ? { referredBy: input.referredBy }
-          : {}),
+        ...(referredBy !== undefined ? { referredBy } : {}),
         ...(input.outboundReferralPlanId !== undefined
           ? { outboundReferralPlanId: input.outboundReferralPlanId }
           : {})

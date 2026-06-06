@@ -177,7 +177,10 @@ export class PartnerNotificationService {
       AncestorProfile,
       'id' | 'telegramId' | 'maxId' | 'partnerRole'
     >,
-    message: string
+    message: string,
+    replyMarkup?: {
+      inline_keyboard: Array<Array<{ text: string; callback_data: string }>>;
+    }
   ): Promise<void> {
     // Telegram
     if (profile.telegramId) {
@@ -186,7 +189,11 @@ export class PartnerNotificationService {
         if (botInstance?.isActive) {
           await botInstance.bot.api.sendMessage(
             Number(profile.telegramId),
-            message
+            message,
+            {
+              parse_mode: 'HTML',
+              ...(replyMarkup ? { reply_markup: replyMarkup } : {})
+            }
           );
           logger.info('partner-notification sent (telegram)', {
             ancestorId: profile.id,
@@ -231,6 +238,71 @@ export class PartnerNotificationService {
           component: COMPONENT
         });
       }
+    }
+  }
+
+  /**
+   * Уведомить реферера о заявке на вступление (режим approve).
+   */
+  static async notifyJoinRequestPending(
+    requestId: string,
+    projectId: string
+  ): Promise<void> {
+    try {
+      const request = await db.partnerJoinRequest.findFirst({
+        where: { id: requestId, projectId, status: 'PENDING' }
+      });
+      if (!request) return;
+
+      const [referrer, applicant] = await Promise.all([
+        db.user.findFirst({
+          where: { id: request.referrerId, projectId },
+          select: {
+            id: true,
+            telegramId: true,
+            maxId: true,
+            partnerRole: true,
+            metadata: true
+          }
+        }),
+        db.user.findFirst({
+          where: { id: request.userId, projectId },
+          select: {
+            firstName: true,
+            lastName: true,
+            phone: true,
+            email: true
+          }
+        })
+      ]);
+
+      if (!referrer || isOptedOut(referrer.metadata)) return;
+
+      const name = formatName(applicant ?? {});
+      const message = `📥 <b>Новая заявка</b>\n${name} хочет присоединиться к вашей команде.\n\nОдобрите или отклоните:`;
+
+      await this.dispatchPartnerNotification(projectId, referrer, message, {
+        inline_keyboard: [
+          [
+            {
+              text: '✅ Принять',
+              callback_data: `partner_join_approve:${requestId}`
+            },
+            {
+              text: '❌ Отклонить',
+              callback_data: `partner_join_reject:${requestId}`
+            }
+          ],
+          [{ text: '📥 Все заявки', callback_data: 'partner_requests' }]
+        ]
+      });
+    } catch (error) {
+      logger.error('notifyJoinRequestPending failed', {
+        requestId,
+        projectId,
+        error: error instanceof Error ? error.message : String(error),
+        component: COMPONENT
+      });
     }
   }
 }

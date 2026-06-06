@@ -58,6 +58,8 @@ interface Props {
   projectId: string;
   /** Текущее значение, прочитанное родителем при загрузке. */
   initialValue: boolean;
+  initialTeamManagement?: boolean;
+  initialJoinApproval?: boolean;
   /** Sub текущего админа (для install-шаблона). */
   adminSub?: string;
   /** Колбэк после успешного toggle — родитель может перечитать проект. */
@@ -69,12 +71,20 @@ const BOT_TEMPLATE_ID = 'b2b-partner-cabinet';
 export function B2bHierarchySettings({
   projectId,
   initialValue,
+  initialTeamManagement = true,
+  initialJoinApproval = false,
   adminSub,
   onToggled
 }: Props) {
   const router = useRouter();
   const { toast } = useToast();
   const [enabled, setEnabled] = useState(Boolean(initialValue));
+  const [teamManagement, setTeamManagement] = useState(
+    Boolean(initialTeamManagement)
+  );
+  const [joinApproval, setJoinApproval] = useState(
+    Boolean(initialJoinApproval)
+  );
   const [saving, setSaving] = useState(false);
   const [installing, setInstalling] = useState(false);
   const [showInstallSuccess, setShowInstallSuccess] = useState(false);
@@ -107,30 +117,24 @@ export function B2bHierarchySettings({
     };
   }, [adminSub]);
 
-  const toggle = async (next: boolean) => {
+  const patchProject = async (
+    payload: Record<string, boolean>,
+    rollback: () => void
+  ) => {
     setSaving(true);
-    // Оптимистично переключаем — откатываем если PATCH упадёт.
-    setEnabled(next);
     try {
       const res = await fetch(`/api/projects/${projectId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enablePartnerRoles: next })
+        body: JSON.stringify(payload)
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || 'Не удалось сохранить');
       }
-      toast({
-        title: next ? 'B2B-иерархия включена' : 'B2B-иерархия выключена',
-        description: next
-          ? 'Доступны роли партнёров, страница иерархии и фильтр findReferrer.'
-          : 'Поведение возвращено к c2c-режиму. Существующие назначения ролей сохранены.'
-      });
-      onToggled?.(next);
       router.refresh();
     } catch (e) {
-      setEnabled(!next); // rollback
+      rollback();
       toast({
         title: 'Ошибка',
         description: e instanceof Error ? e.message : 'Не удалось сохранить',
@@ -139,6 +143,49 @@ export function B2bHierarchySettings({
     } finally {
       setSaving(false);
     }
+  };
+
+  const toggle = async (next: boolean) => {
+    setEnabled(next);
+    await patchProject({ enablePartnerRoles: next }, () => setEnabled(!next));
+    if (next) {
+      toast({
+        title: 'B2B-иерархия включена',
+        description:
+          'Доступны роли партнёров, страница иерархии и фильтр findReferrer.'
+      });
+    } else {
+      toast({
+        title: 'B2B-иерархия выключена',
+        description:
+          'Поведение возвращено к c2c-режиму. Существующие назначения ролей сохранены.'
+      });
+    }
+    onToggled?.(next);
+  };
+
+  const toggleTeamManagement = async (next: boolean) => {
+    setTeamManagement(next);
+    await patchProject({ enablePartnerTeamManagement: next }, () =>
+      setTeamManagement(!next)
+    );
+    toast({
+      title: next
+        ? 'Управление командой включено'
+        : 'Управление командой выключено'
+    });
+  };
+
+  const toggleJoinApproval = async (next: boolean) => {
+    setJoinApproval(next);
+    await patchProject({ referralJoinRequiresApproval: next }, () =>
+      setJoinApproval(!next)
+    );
+    toast({
+      title: next
+        ? 'Режим заявок на вступление включён'
+        : 'Рефералы привязываются сразу'
+    });
   };
 
   const installTemplate = async () => {
@@ -222,33 +269,79 @@ export function B2bHierarchySettings({
         </div>
 
         {enabled && (
-          <div className='grid gap-3 sm:grid-cols-2'>
-            <Link href={`/dashboard/projects/${projectId}/referral/hierarchy`}>
+          <>
+            <div className='flex items-start justify-between gap-4 rounded-lg border p-4'>
+              <div className='space-y-1'>
+                <Label
+                  htmlFor='enable-team-management'
+                  className='cursor-pointer'
+                >
+                  Управление командой в боте
+                </Label>
+                <p className='text-muted-foreground text-sm'>
+                  Менеджеры и директора видят команду, могут одобрять заявки и
+                  убирать подопечных из своей ветки.
+                </p>
+              </div>
+              <Switch
+                id='enable-team-management'
+                checked={teamManagement}
+                onCheckedChange={toggleTeamManagement}
+                disabled={saving}
+              />
+            </div>
+
+            <div className='flex items-start justify-between gap-4 rounded-lg border p-4'>
+              <div className='space-y-1'>
+                <Label
+                  htmlFor='join-requires-approval'
+                  className='cursor-pointer'
+                >
+                  Заявки на вступление по реф. ссылке
+                </Label>
+                <p className='text-muted-foreground text-sm'>
+                  Новый клиент по utm_ref не привязывается сразу — реферер
+                  получает уведомление и подтверждает в Telegram.
+                </p>
+              </div>
+              <Switch
+                id='join-requires-approval'
+                checked={joinApproval}
+                onCheckedChange={toggleJoinApproval}
+                disabled={saving || !teamManagement}
+              />
+            </div>
+
+            <div className='grid gap-3 sm:grid-cols-2'>
+              <Link
+                href={`/dashboard/projects/${projectId}/referral/hierarchy`}
+              >
+                <Button
+                  type='button'
+                  variant='outline'
+                  className='w-full justify-start'
+                >
+                  <Building2 className='mr-2 h-4 w-4' />
+                  Открыть дерево партнёров
+                  <ArrowRight className='ml-auto h-4 w-4 opacity-50' />
+                </Button>
+              </Link>
               <Button
                 type='button'
                 variant='outline'
-                className='w-full justify-start'
+                onClick={installTemplate}
+                disabled={installing}
+                className='w-full cursor-pointer justify-start'
               >
-                <Building2 className='mr-2 h-4 w-4' />
-                Открыть дерево партнёров
-                <ArrowRight className='ml-auto h-4 w-4 opacity-50' />
+                {installing ? (
+                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                ) : (
+                  <PackagePlus className='mr-2 h-4 w-4' />
+                )}
+                Импортировать workflow «B2B Партнёр»
               </Button>
-            </Link>
-            <Button
-              type='button'
-              variant='outline'
-              onClick={installTemplate}
-              disabled={installing}
-              className='w-full cursor-pointer justify-start'
-            >
-              {installing ? (
-                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-              ) : (
-                <PackagePlus className='mr-2 h-4 w-4' />
-              )}
-              Импортировать workflow «B2B Партнёр»
-            </Button>
-          </div>
+            </div>
+          </>
         )}
 
         <div className='text-muted-foreground rounded-md border-l-2 border-amber-300 bg-amber-50/50 p-3 text-xs dark:border-amber-700 dark:bg-amber-950/20'>

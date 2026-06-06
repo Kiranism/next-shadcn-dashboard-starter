@@ -17,6 +17,7 @@ import {
 } from '@/lib/services/bot-session.service';
 import { SimpleWorkflowProcessor } from '@/lib/services/simple-workflow-processor';
 import { WorkflowRuntimeService } from '@/lib/services/workflow-runtime.service';
+import { PartnerCabinetService } from '@/lib/services/partner-cabinet.service';
 
 // Интерфейс для сессии (расширен для конструктора)
 type MyContext = Context & SessionFlavor<BotConstructorSession>;
@@ -164,6 +165,25 @@ export function createBot(token: string, projectId: string, botSettings?: any) {
         projectId,
         userId: ctx.from?.id
       });
+
+      // Партнёрский кабинет: approve/reject, фильтры команды, заявки — до workflow
+      if (trigger === 'callback' && ctx.callbackQuery?.data) {
+        const data = ctx.callbackQuery.data;
+        const isPartnerCabinet =
+          data.startsWith('partner_join_') ||
+          data.startsWith('partner_team_remove:') ||
+          data.startsWith('partner_team_tab:') ||
+          data.startsWith('partner_team_page:') ||
+          data === 'partner_requests';
+
+        if (isPartnerCabinet) {
+          const handled = await PartnerCabinetService.tryHandleTelegramCallback(
+            projectId,
+            ctx
+          );
+          if (handled) return;
+        }
+      }
 
       // Проверяем наличие активного workflow ДО выполнения
       const hasActiveWorkflow =

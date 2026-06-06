@@ -262,7 +262,8 @@
               "buttons": [
                 [
                   { "text": "📊 Сводка по организации", "callback_data": "partner_org_summary" },
-                  { "text": "👥 Моя команда", "callback_data": "partner_team_page:0" }
+                  { "text": "👥 Моя команда", "callback_data": "partner_team_page:0" },
+                  { "text": "📥 Заявки", "callback_data": "partner_requests" }
                 ],
                 [
                   { "text": "🔗 Моя ссылка", "callback_data": "partner_link" },
@@ -292,7 +293,8 @@
               "type": "inline",
               "buttons": [
                 [
-                  { "text": "👥 Моя команда", "callback_data": "partner_team_page:0" }
+                  { "text": "👥 Моя команда", "callback_data": "partner_team_page:0" },
+                  { "text": "📥 Заявки", "callback_data": "partner_requests" }
                 ],
                 [
                   { "text": "🔗 Моя ссылка", "callback_data": "partner_link" },

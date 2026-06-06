@@ -112,6 +112,28 @@ type Member = {
   isActive: boolean;
 };
 
+type HierarchyWarning = {
+  code: string;
+  message: string;
+  userId?: string;
+  userName?: string;
+};
+
+function resolveDefaultReferrerForRole(
+  role: 'CLIENT' | 'TRAINER' | 'MANAGER' | 'DIRECTOR',
+  members: Member[],
+  directorUserId: string | null
+): string {
+  if (role === 'DIRECTOR' || role === 'CLIENT') return '';
+  if (role === 'MANAGER' && directorUserId) return directorUserId;
+  if (role === 'TRAINER') {
+    const manager = members.find((m) => m.partnerRole === 'MANAGER');
+    if (manager) return manager.id;
+    if (directorUserId) return directorUserId;
+  }
+  return '';
+}
+
 interface Props {
   projectId: string;
   organizationId: string;
@@ -132,6 +154,9 @@ export function OrganizationDetailView({ projectId, organizationId }: Props) {
   const [stats, setStats] = useState<OrgStats | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [plans, setPlans] = useState<PlanOption[]>([]);
+  const [hierarchyWarnings, setHierarchyWarnings] = useState<
+    HierarchyWarning[]
+  >([]);
 
   const [editOpen, setEditOpen] = useState(false);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
@@ -175,6 +200,7 @@ export function OrganizationDetailView({ projectId, organizationId }: Props) {
         const data = await orgRes.json();
         setOrganization(data.organization);
         setStats(data.stats);
+        setHierarchyWarnings(data.hierarchyWarnings ?? []);
       }
       if (membersRes.ok) {
         const data = await membersRes.json();
@@ -264,7 +290,7 @@ export function OrganizationDetailView({ projectId, organizationId }: Props) {
           body: JSON.stringify({
             userId: newUserId,
             partnerRole: newRole,
-            referredBy: newReferrerId || null,
+            ...(newReferrerId ? { referredBy: newReferrerId } : {}),
             outboundReferralPlanId: newPlanId || null
           })
         }
@@ -390,6 +416,24 @@ export function OrganizationDetailView({ projectId, organizationId }: Props) {
 
   return (
     <div className='space-y-6'>
+      {hierarchyWarnings.length > 0 && (
+        <Alert variant='destructive'>
+          <AlertTitle>Проблемы иерархии сети</AlertTitle>
+          <AlertDescription>
+            <ul className='mt-2 list-inside list-disc space-y-1'>
+              {hierarchyWarnings.map((w) => (
+                <li key={`${w.code}-${w.userId ?? w.message}`}>{w.message}</li>
+              ))}
+            </ul>
+            <p className='mt-2 text-sm'>
+              Без корректных связей referredBy выплаты L2/L3 могут не
+              начисляться. Назначьте реферера участникам или добавляйте их с
+              автозаполнением.
+            </p>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className='flex flex-wrap items-start justify-between gap-4'>
         <div>
           <Button variant='ghost' size='sm' className='mb-2 -ml-2' asChild>
@@ -678,7 +722,17 @@ export function OrganizationDetailView({ projectId, organizationId }: Props) {
               <Label>Роль в сети</Label>
               <Select
                 value={newRole}
-                onValueChange={(v) => setNewRole(v as typeof newRole)}
+                onValueChange={(v) => {
+                  const role = v as typeof newRole;
+                  setNewRole(role);
+                  setNewReferrerId(
+                    resolveDefaultReferrerForRole(
+                      role,
+                      members,
+                      organization.directorUserId
+                    )
+                  );
+                }}
               >
                 <SelectTrigger>
                   <SelectValue />

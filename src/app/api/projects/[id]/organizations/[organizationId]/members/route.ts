@@ -60,7 +60,12 @@ export const POST = withProjectAccess<OrgParams>(
       const user = await PartnerOrganizationService.addMember(
         projectId,
         organizationId,
-        parsed.data
+        {
+          userId: parsed.data.userId,
+          partnerRole: parsed.data.partnerRole,
+          referredBy: parsed.data.referredBy,
+          outboundReferralPlanId: parsed.data.outboundReferralPlanId
+        }
       );
       return NextResponse.json({ user }, { status: 201 });
     } catch (e) {

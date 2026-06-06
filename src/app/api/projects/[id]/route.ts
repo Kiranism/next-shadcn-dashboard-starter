@@ -467,6 +467,15 @@ export async function PATCH(
       updateData.enablePartnerRoles = body.enablePartnerRoles;
     }
 
+    if (typeof body.enablePartnerTeamManagement === 'boolean') {
+      updateData.enablePartnerTeamManagement = body.enablePartnerTeamManagement;
+    }
+
+    if (typeof body.referralJoinRequiresApproval === 'boolean') {
+      updateData.referralJoinRequiresApproval =
+        body.referralJoinRequiresApproval;
+    }
+
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
         { error: 'Нет поддерживаемых полей для обновления' },

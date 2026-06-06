@@ -27,6 +27,10 @@ import type {
   ValidationResult
 } from '@/types/workflow';
 import { sendPlatformMessage, sendPlatformAction } from '../platform-messaging';
+import {
+  PartnerTeamService,
+  type TeamListFilter
+} from '@/lib/services/partner-team.service';
 
 /**
  * Обработчик для action.database_query
@@ -1921,7 +1925,6 @@ export class PartnerTeamHandler extends BaseNodeHandler {
       const config = node.data.config?.['action.partner_team'] || {};
       const pageSize = Math.max(1, Math.min(20, Number(config.pageSize ?? 5)));
 
-      // Текущая страница: либо из конфига (после resolveTemplate), либо 0
       let page = 0;
       const rawPage =
         config.page !== undefined
@@ -1942,33 +1945,37 @@ export class PartnerTeamHandler extends BaseNodeHandler {
       }
 
       const db: PrismaClient = context.services.db as PrismaClient;
-      const where = { projectId: context.projectId, referredBy: userId };
-      const [total, directs] = await Promise.all([
-        db.user.count({ where }),
-        db.user.findMany({
-          where,
-          orderBy: [{ registeredAt: 'desc' }],
-          skip: page * pageSize,
-          take: pageSize,
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            phone: true,
-            partnerRole: true,
-            totalPurchases: true,
-            registeredAt: true
-          }
-        })
-      ]);
+      const me = await db.user.findFirst({
+        where: { id: userId, projectId: context.projectId },
+        select: { partnerRole: true }
+      });
 
-      if (total === 0) {
+      const filter: TeamListFilter =
+        me?.partnerRole === 'TRAINER' ? 'clients' : 'direct';
+
+      const filterLabel: Record<TeamListFilter, string> = {
+        direct: 'Прямые',
+        clients: 'Клиенты',
+        partners: 'Партнёры',
+        all: 'Вся команда'
+      };
+
+      const result = await PartnerTeamService.listTeam({
+        projectId: context.projectId,
+        viewerUserId: userId,
+        filter,
+        page: page + 1,
+        pageSize
+      });
+
+      if (result.total === 0) {
         await sendPlatformMessage(
           context,
           '👥 <b>Моя команда</b>\n\nУ вас пока нет подопечных. Поделитесь реферальной ссылкой — и команда начнёт расти.',
           {
             replyMarkup: {
               inline_keyboard: [
+                [{ text: '📥 Заявки', callback_data: 'partner_requests' }],
                 [{ text: '⬅️ Назад в меню', callback_data: 'back_to_menu' }]
               ]
             }
@@ -1977,56 +1984,52 @@ export class PartnerTeamHandler extends BaseNodeHandler {
         return null;
       }
 
-      // Агрегат комиссии viewer'а с каждого подопечного — group by referralUserId
-      const directIds = directs.map((d) => d.id);
-      const commissionAgg =
-        directIds.length > 0
-          ? await db.transaction.groupBy({
-              by: ['referralUserId'],
-              where: {
-                userId,
-                type: 'EARN',
-                isReferralBonus: true,
-                referralUserId: { in: directIds }
-              },
-              _sum: { amount: true }
-            })
-          : [];
-      const commissionByUser = new Map<string, number>();
-      for (const row of commissionAgg) {
-        if (row.referralUserId) {
-          commissionByUser.set(
-            row.referralUserId,
-            Number(row._sum.amount ?? 0)
-          );
-        }
-      }
+      const totalPages = Math.max(1, Math.ceil(result.total / pageSize));
 
-      const totalPages = Math.ceil(total / pageSize);
       const lines: string[] = [
-        `<b>👥 Моя команда</b> (${total})`,
+        `<b>👥 Моя команда</b> · ${filterLabel[filter]} (${result.total})`,
         `Страница ${page + 1} из ${totalPages}`,
         ''
       ];
 
-      directs.forEach((u, idx) => {
-        const commission = commissionByUser.get(u.id) ?? 0;
+      result.items.forEach((u, idx) => {
         const roleLabel = partnerRoleLabel(u.partnerRole);
-        const purchases = formatRub(Number(u.totalPurchases));
-        const earned = formatRub(commission);
+        const purchases = formatRub(u.totalPurchases);
+        const earned = formatRub(u.commissionEarned);
         lines.push(
-          `${idx + 1 + page * pageSize}. <b>${formatName(u)}</b> · ${roleLabel}\n   💼 Оборот: ${purchases} · 💰 Комиссия: ${earned}`
+          `${idx + 1 + page * pageSize}. <b>${u.name}</b> · ${roleLabel}\n   💼 Оборот: ${purchases} · 💰 Комиссия: ${earned}`
         );
       });
 
-      // Inline-клавиатура: кнопки «стата» по каждому + пагинация
-      const detailButtons = directs.map((u) => [
-        {
-          text: `📊 ${formatName(u).slice(0, 24)}`,
-          callback_data: `partner_subject:${u.id}`
+      const canManage = me && me.partnerRole !== 'CLIENT';
+
+      const detailButtons = result.items.map((u) => {
+        const row: Array<{ text: string; callback_data: string }> = [
+          {
+            text: `📊 ${u.name.slice(0, 24)}`,
+            callback_data: `partner_subject:${u.id}`
+          }
+        ];
+        if (
+          canManage &&
+          u.id !== userId &&
+          !['DIRECTOR', 'MANAGER'].includes(u.partnerRole)
+        ) {
+          row.push({
+            text: '➖',
+            callback_data: `partner_team_remove:${u.id}`
+          });
         }
-      ]);
-      const pagerRow: any[] = [];
+        return row;
+      });
+
+      const tabRow = [
+        { text: '👤 Клиенты', callback_data: 'partner_team_tab:clients:0' },
+        { text: '🏃 Партнёры', callback_data: 'partner_team_tab:partners:0' },
+        { text: '🌳 Все', callback_data: 'partner_team_tab:all:0' }
+      ];
+
+      const pagerRow: Array<{ text: string; callback_data: string }> = [];
       if (page > 0) {
         pagerRow.push({
           text: '⬅️ Назад',
@@ -2039,11 +2042,14 @@ export class PartnerTeamHandler extends BaseNodeHandler {
           callback_data: `partner_team_page:${page + 1}`
         });
       }
+
       const keyboard = {
         replyMarkup: {
           inline_keyboard: [
+            tabRow,
             ...detailButtons,
             ...(pagerRow.length > 0 ? [pagerRow] : []),
+            [{ text: '📥 Заявки', callback_data: 'partner_requests' }],
             [{ text: '⬅️ В меню', callback_data: 'back_to_menu' }]
           ]
         }
@@ -2055,7 +2061,8 @@ export class PartnerTeamHandler extends BaseNodeHandler {
         userId,
         page,
         pageSize,
-        total
+        total: result.total,
+        filter
       });
       return null;
     } catch (error) {

@@ -12,6 +12,7 @@ import { Prisma } from '@prisma/client';
 
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { PartnerTeamService } from './partner-team.service';
 
 /** Безопасная глубина обхода реферальных цепочек (защита от циклов / runaway-запросов). */
 const MAX_TREE_DEPTH = 10;
@@ -722,6 +723,11 @@ export class ReferralCommissionService {
 // внутри одного запроса (например, /team + /payouts отдают один и тот же
 // результат) не повторяют CTE.
 // ──────────────────────────────────────────────────────────────────────────────
+
+export const cachedCanManageSubject = cache(
+  (projectId: string, viewerUserId: string, subjectUserId: string) =>
+    PartnerTeamService.canManageSubject(projectId, viewerUserId, subjectUserId)
+);
 
 export const cachedCanViewSubject = cache(
   (projectId: string, viewerUserId: string, subjectUserId: string) =>

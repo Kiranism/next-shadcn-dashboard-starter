@@ -21,6 +21,7 @@ import { ReferralService } from './referral.service';
 import { ReferralCommissionService } from './referral-commission.service';
 import { PartnerNotificationService } from './partner-notification.service';
 import { PartnerOrganizationService } from './partner-organization.service';
+import { PartnerTeamService } from './partner-team.service';
 import {
   sendBonusNotification,
   sendBonusSpentNotification
@@ -66,14 +67,14 @@ export class UserService {
       });
 
       // Ищем рефера только по utm_ref (теперь используем utmSource как utm_ref)
-      let referredBy: string | undefined;
+      let referrerId: string | undefined;
       if (data.utmSource) {
         const referrer = await ReferralService.findReferrer(
           data.projectId,
           data.utmSource
         );
         if (referrer) {
-          referredBy = referrer.id;
+          referrerId = referrer.id;
         }
       }
 
@@ -82,21 +83,25 @@ export class UserService {
         (await PartnerOrganizationService.resolveOrganizationIdForRegistration({
           projectId: data.projectId,
           utmOrgSlug: data.utmOrg,
-          referrerId: referredBy
+          referrerId
         }));
 
-      // Генерируем реферальный код для нового пользователя
+      const partnerFlags = await PartnerTeamService.getProjectPartnerFlags(
+        data.projectId
+      );
+      const pendingReferral =
+        Boolean(referrerId) &&
+        Boolean(partnerFlags?.referralJoinRequiresApproval) &&
+        Boolean(partnerFlags?.enablePartnerTeamManagement);
+
       const user = await db.user.create({
         data: {
           ...data,
-          // Перезаписываем нормализованными значениями
           email: normalizedEmail,
           phone: normalizedPhone,
-          referredBy,
-          organizationId,
-          // Устанавливаем isActive на основе режима работы проекта
+          referredBy: pendingReferral ? undefined : referrerId,
+          organizationId: pendingReferral ? undefined : organizationId,
           isActive,
-          // UTM метки сохраняются как есть из data
           totalPurchases: 0,
           currentLevel: 'Базовый'
         },
@@ -112,41 +117,47 @@ export class UserService {
       logger.info('Создан новый пользователь', {
         userId: user.id,
         projectId: data.projectId,
-        hasReferrer: !!referredBy,
+        hasReferrer: !!referrerId,
+        pendingReferral,
         utmSource: data.utmSource,
         isActive,
         operationMode: project?.operationMode || 'WITH_BOT',
         component: 'user-service'
       });
 
-      if (referredBy) {
-        try {
-          await ReferralCommissionService.syncAttributionForInvitedUser({
-            invitedUserId: user.id,
+      if (referrerId) {
+        if (pendingReferral) {
+          await PartnerTeamService.createJoinRequest({
             projectId: data.projectId,
-            referrerId: referredBy,
+            userId: user.id,
+            referrerId,
             organizationId: organizationId ?? null
           });
-        } catch (attrError) {
-          logger.error('Ошибка создания referral attribution', {
-            userId: user.id,
-            projectId: data.projectId,
-            error:
-              attrError instanceof Error
-                ? attrError.message
-                : 'Неизвестная ошибка',
-            component: 'user-service'
-          });
-        }
+        } else {
+          try {
+            await ReferralCommissionService.syncAttributionForInvitedUser({
+              invitedUserId: user.id,
+              projectId: data.projectId,
+              referrerId,
+              organizationId: organizationId ?? null
+            });
+          } catch (attrError) {
+            logger.error('Ошибка создания referral attribution', {
+              userId: user.id,
+              projectId: data.projectId,
+              error:
+                attrError instanceof Error
+                  ? attrError.message
+                  : 'Неизвестная ошибка',
+              component: 'user-service'
+            });
+          }
 
-        // Phase 5.4: уведомить дерево предков о новом подопечном.
-        // Неблокирующее: ошибки внутри сервиса логируются, регистрация
-        // продолжается. Сам сервис уважает `enablePartnerRoles` (5.5)
-        // и opt-out пользователей.
-        void PartnerNotificationService.notifyAncestorsAboutNewMember(
-          user.id,
-          data.projectId
-        );
+          void PartnerNotificationService.notifyAncestorsAboutNewMember(
+            user.id,
+            data.projectId
+          );
+        }
       }
 
       // Начисляем приветственные бонусы если настроено
@@ -247,7 +258,7 @@ export class UserService {
     projectId: string;
     utmRef?: string | null;
     utmOrg?: string | null;
-  }): Promise<{ linked: boolean; referrerId?: string }> {
+  }): Promise<{ linked: boolean; referrerId?: string; pending?: boolean }> {
     const { userId, projectId, utmRef, utmOrg } = params;
     if (!utmRef?.trim()) {
       return { linked: false };
@@ -277,44 +288,30 @@ export class UserService {
         referrerId: referrer.id
       }));
 
-    await db.user.update({
-      where: { id: userId },
-      data: {
-        referredBy: referrer.id,
-        ...(organizationId && !user.organizationId ? { organizationId } : {})
-      }
+    const linkResult = await PartnerTeamService.linkReferralWithPolicy({
+      userId,
+      projectId,
+      referrerId: referrer.id,
+      organizationId: organizationId ?? null
     });
 
-    try {
-      await ReferralCommissionService.syncAttributionForInvitedUser({
-        invitedUserId: userId,
-        projectId,
-        referrerId: referrer.id,
-        organizationId: organizationId ?? null
-      });
-    } catch (attrError) {
-      logger.error('Ошибка attribution при linkReferralFromAttribution', {
-        userId,
-        projectId,
-        error:
-          attrError instanceof Error ? attrError.message : 'Неизвестная ошибка',
-        component: 'user-service'
-      });
+    if (!linkResult.linked && !linkResult.pending) {
+      return { linked: false };
     }
-
-    void PartnerNotificationService.notifyAncestorsAboutNewMember(
-      userId,
-      projectId
-    );
 
     logger.info('Referral linked to existing user', {
       userId,
       projectId,
       referrerId: referrer.id,
+      pending: linkResult.pending,
       component: 'user-service'
     });
 
-    return { linked: true, referrerId: referrer.id };
+    return {
+      linked: linkResult.linked,
+      referrerId: referrer.id,
+      pending: linkResult.pending
+    };
   }
 
   // Поиск пользователя по email или телефону в рамках проекта

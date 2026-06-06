@@ -74,8 +74,13 @@ model Project {
   /// фильтр в `findReferrer` (только партнёры могут быть реферерами), hierarchy UI и т.д.
   /// Когда `false`, поведение полностью совпадает с прежней c2c-логикой (опт-ин per project).
   enablePartnerRoles              Boolean                  @default(false) @map("enable_partner_roles")
+  /// Партнёры могут управлять командой через бот (добавление, удаление, заявки)
+  enablePartnerTeamManagement     Boolean                  @default(true) @map("enable_partner_team_management")
+  /// Регистрация по реф-ссылке создаёт заявку вместо мгновенной привязки referredBy
+  referralJoinRequiresApproval    Boolean                  @default(false) @map("referral_join_requires_approval")
 
   partnerOrganizations            PartnerOrganization[]
+  partnerJoinRequests             PartnerJoinRequest[]
 
   @@map("projects")
 }
@@ -172,6 +177,35 @@ model ReferralStatsGrant {
   @@unique([projectId, subjectUserId, viewerUserId])
   @@index([projectId, viewerUserId])
   @@map("referral_stats_grants")
+}
+
+enum PartnerJoinRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+/// Заявка на вступление в команду по реферальной ссылке (ожидает одобрения реферера)
+model PartnerJoinRequest {
+  id             String                   @id @default(cuid())
+  projectId      String                   @map("project_id")
+  userId         String                   @map("user_id")
+  referrerId     String                   @map("referrer_id")
+  organizationId String?                  @map("organization_id")
+  status         PartnerJoinRequestStatus @default(PENDING)
+  reviewedBy     String?                  @map("reviewed_by")
+  reviewedAt     DateTime?                @map("reviewed_at")
+  rejectReason   String?                  @map("reject_reason")
+  createdAt      DateTime                 @default(now()) @map("created_at")
+  updatedAt      DateTime                 @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([projectId, referrerId, status])
+  @@index([projectId, status])
+  @@map("partner_join_requests")
 }
 
 model BonusLevel {
