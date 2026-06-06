@@ -94,16 +94,29 @@ export class UserService {
         Boolean(partnerFlags?.referralJoinRequiresApproval) &&
         Boolean(partnerFlags?.enablePartnerTeamManagement);
 
+      const {
+        utmOrg: _utmOrg,
+        organizationId: _inputOrgId,
+        ...userFields
+      } = data;
+
       const user = await db.user.create({
         data: {
-          ...data,
+          ...userFields,
           email: normalizedEmail,
           phone: normalizedPhone,
           referredBy: pendingReferral ? undefined : referrerId,
           organizationId: pendingReferral ? undefined : organizationId,
           isActive,
           totalPurchases: 0,
-          currentLevel: 'Базовый'
+          currentLevel: 'Базовый',
+          ...(data.utmOrg
+            ? {
+                metadata: {
+                  utmOrg: data.utmOrg
+                }
+              }
+            : {})
         },
         include: {
           project: true,
