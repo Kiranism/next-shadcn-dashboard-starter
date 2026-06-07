@@ -16,10 +16,16 @@ import { ProjectService } from '@/lib/services/project.service';
 import { AudienceResolver } from '@/lib/services/workflow/scheduled/audience-resolver';
 
 const audienceSchema = z.object({
-  type: z.enum(['birthday_today', 'birthday_in_days', 'all_active_users']),
+  type: z.enum([
+    'birthday_today',
+    'birthday_in_days',
+    'birthday_after_days',
+    'all_active_users'
+  ]),
   params: z
     .object({
-      daysBefore: z.number().int().min(1).max(365).optional()
+      daysBefore: z.number().int().min(1).max(365).optional(),
+      daysAfter: z.number().int().min(1).max(365).optional()
     })
     .optional()
 });

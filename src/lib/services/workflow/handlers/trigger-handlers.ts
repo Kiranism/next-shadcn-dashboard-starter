@@ -249,6 +249,7 @@ export class ScheduleTriggerHandler extends BaseNodeHandler {
       const validTypes = [
         'birthday_today',
         'birthday_in_days',
+        'birthday_after_days',
         'all_active_users'
       ];
       if (!validTypes.includes(config.audience.type)) {
@@ -264,6 +265,16 @@ export class ScheduleTriggerHandler extends BaseNodeHandler {
       ) {
         errors.push(
           'Audience "birthday_in_days" requires params.daysBefore (1-365)'
+        );
+      }
+      if (
+        config.audience.type === 'birthday_after_days' &&
+        (typeof config.audience.params?.daysAfter !== 'number' ||
+          config.audience.params.daysAfter < 1 ||
+          config.audience.params.daysAfter > 365)
+      ) {
+        errors.push(
+          'Audience "birthday_after_days" requires params.daysAfter (1-365)'
         );
       }
     }

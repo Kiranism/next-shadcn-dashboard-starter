@@ -45,6 +45,8 @@ export const TriggerNode = memo(({ data }: NodeProps) => {
               return 'день рождения';
             case 'birthday_in_days':
               return `за ${config['trigger.schedule']?.audience?.params?.daysBefore ?? '?'} дн. до ДР`;
+            case 'birthday_after_days':
+              return `через ${config['trigger.schedule']?.audience?.params?.daysAfter ?? '?'} дн. после ДР`;
             case 'all_active_users':
               return 'все активные';
             default:

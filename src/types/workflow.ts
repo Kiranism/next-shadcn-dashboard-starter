@@ -206,10 +206,15 @@ export interface ScheduleTriggerConfig {
  * Резолвится `AudienceResolver` в список `userId` непосредственно перед запуском.
  */
 export interface AudienceConfig {
-  type: 'birthday_today' | 'birthday_in_days' | 'all_active_users';
-  /** Параметры для конкретного типа (например `daysBefore` для `birthday_in_days`). */
+  type:
+    | 'birthday_today'
+    | 'birthday_in_days'
+    | 'birthday_after_days'
+    | 'all_active_users';
+  /** Параметры для конкретного типа (например `daysBefore` / `daysAfter`). */
   params?: {
     daysBefore?: number;
+    daysAfter?: number;
     [key: string]: unknown;
   };
 }

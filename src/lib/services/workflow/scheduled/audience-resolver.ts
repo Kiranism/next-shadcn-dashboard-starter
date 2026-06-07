@@ -48,6 +48,15 @@ export class AudienceResolver {
         }
         return this.byBirthdayOffset(projectId, days);
       }
+      case 'birthday_after_days': {
+        const days = Number(audience.params?.daysAfter);
+        if (!Number.isFinite(days) || days < 1 || days > 365) {
+          throw new Error(
+            `Audience "birthday_after_days" requires params.daysAfter (1-365), got ${audience.params?.daysAfter}`
+          );
+        }
+        return this.byBirthdayOffset(projectId, -days);
+      }
       case 'all_active_users':
         return this.allActiveUsers(projectId);
       default: {
@@ -112,7 +121,11 @@ export class AudienceResolver {
     `;
 
     const audienceType: AudienceConfig['type'] =
-      daysOffset === 0 ? 'birthday_today' : 'birthday_in_days';
+      daysOffset === 0
+        ? 'birthday_today'
+        : daysOffset > 0
+          ? 'birthday_in_days'
+          : 'birthday_after_days';
 
     if (rows.length >= MAX_AUDIENCE_SIZE) {
       logger.warn(

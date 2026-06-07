@@ -50,8 +50,8 @@ interface ScheduleTriggerConfig {
 }
 
 interface AudienceConfig {
-  type: 'birthday_today' | 'birthday_in_days' | 'all_active_users';
-  params?: { daysBefore?: number };
+  type: 'birthday_today' | 'birthday_in_days' | 'birthday_after_days' | 'all_active_users';
+  params?: { daysBefore?: number; daysAfter?: number };
 }
 ```
 
@@ -75,6 +75,7 @@ interface AudienceConfig {
 |-----|----------|---------------|
 | `birthday_today` | ДР сегодня (по UTC дню/месяцу из `User.birthDate`) | `year` |
 | `birthday_in_days` | ДР через N дней (`params.daysBefore`, 1..365) | `day` |
+| `birthday_after_days` | ДР был N дней назад (`params.daysAfter`, 1..365) | `day` |
 | `all_active_users` | Все `isActive=true` пользователи проекта | `day` |
 
 Все запросы изолированы по `projectId` (multitenancy). Лимит 5000 юзеров на один запуск.

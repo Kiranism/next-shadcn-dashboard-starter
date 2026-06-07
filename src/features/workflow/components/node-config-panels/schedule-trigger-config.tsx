@@ -140,6 +140,10 @@ export function ScheduleTriggerConfigPanel({
     () => config.audience?.params?.daysBefore ?? 7,
     [config.audience?.params?.daysBefore]
   );
+  const daysAfter = useMemo(
+    () => config.audience?.params?.daysAfter ?? 1,
+    [config.audience?.params?.daysAfter]
+  );
 
   return (
     <div className='space-y-4'>
@@ -208,6 +212,9 @@ export function ScheduleTriggerConfigPanel({
             <SelectItem value='birthday_in_days'>
               📅 За N дней до дня рождения
             </SelectItem>
+            <SelectItem value='birthday_after_days'>
+              📆 Через N дней после дня рождения
+            </SelectItem>
             <SelectItem value='all_active_users'>
               👥 Все активные пользователи
             </SelectItem>
@@ -227,6 +234,24 @@ export function ScheduleTriggerConfigPanel({
             onChange={(e) =>
               updateAudience({
                 params: { daysBefore: Number(e.target.value) }
+              })
+            }
+          />
+        </div>
+      )}
+
+      {audienceType === 'birthday_after_days' && (
+        <div className='space-y-2'>
+          <Label htmlFor='daysAfter'>Через сколько дней после ДР</Label>
+          <Input
+            id='daysAfter'
+            type='number'
+            min={1}
+            max={365}
+            value={daysAfter}
+            onChange={(e) =>
+              updateAudience({
+                params: { daysAfter: Number(e.target.value) }
               })
             }
           />
