@@ -1,5 +1,64 @@
 # Changelog
 
+## [2026-06-07] - Scheduled triggers: аудитория «после дня рождения»
+
+### 🎯 Добавлено
+- Аудитория `birthday_after_days` для `trigger.schedule` — клиенты, у которых ДР был N дней назад (`params.daysAfter`, 1–365).
+- Пункт в редакторе workflow: «Через N дней после дня рождения».
+
+---
+
+## [2026-06-07] - Автопродление: UI super-admin и self-service
+
+### 🎯 Добавлено
+- Super-admin: колонка «Автопродление», диалог управления картой и автопродлением.
+- `PATCH /api/super-admin/subscriptions/[id]/auto-renew` — вкл/выкл + удаление карты.
+- `PATCH /api/billing/auto-renew` — самостоятельное управление для админа.
+- `BillingService.setAutoRenewSettings` — аудит в `SubscriptionHistory`.
+- Блок «Автопродление подписки» в табе Биллинг (отключение / удаление карты).
+
+---
+
+## [2026-06-07] - Биллинг: скидки, автопродление, безопасность webhook
+
+### 🎯 Добавлено
+- `BillingPricingService` — расчёт цены с `PlanDiscount` + `PromoCode` (стек: сначала скидка плана, затем промо).
+- `POST /api/billing/pricing` — превью цены с промокодом.
+- Автопродление: `save_payment_method` при оплате, cron `/api/cron/subscription-renewal` (06:00 UTC).
+- Проверка IP webhook ЮKassa (`src/lib/yookassa/ip-validator.ts`).
+- UI: поле промокода, чекбокс автопродления, зачёркнутая цена со скидкой.
+
+### 🔄 Изменено
+- `GET /api/billing/plans` — возвращает `pricing` с активными скидками плана.
+- Webhook — сохраняет `payment_method.id`, `promoCodeId`, `autoRenewEnabled`.
+- Prisma: поле `Subscription.autoRenewEnabled`.
+
+### ⚙️ Env (добавьте вручную)
+- `YOOKASSA_WEBHOOK_SKIP_IP_CHECK=true` — только для локальной отладки webhook.
+- Автоплатежи в ЮKassa нужно включить через менеджера ЮKassa (save_payment_method).
+
+---
+
+## [2026-06-06] - Биллинг: синхронизация тарифов, лимитов и ЮKassa
+
+### 🐛 Исправлено
+- `/api/billing/plan` — платные тарифы нельзя активировать без оплаты (только Free/даунгрейд).
+- Webhook ЮKassa — идемпотентность повторных `succeeded`, привязка `payment.subscriptionId`.
+- `BillingService.checkLimit` — единая формула лимитов с UI (`derivePlanLimits`); боты/уведомления из полей плана.
+- Лимит пользователей при добавлении — проверка **на проект** (`maxUsersPerProject`), не суммарно по аккаунту.
+- `/api/billing` — активная подписка через `getActiveSubscription` (учёт `endDate`).
+
+### 🔄 Изменено
+- Seed тарифов — upsert с `maxBots` / `maxNotifications`; синхронизация существующих планов в БД.
+- Лендинг `HomepagePricing` — цены и фичи из БД (RUB), fallback при недоступности БД.
+- `YOOKASSA_RETURN_URL` fallback — текущий origin + `/dashboard/settings?tab=billing`.
+
+### 🎯 Добавлено
+- `resolveEffectiveLimits`, `FREE_PLAN_DEFAULTS` в `billing-plan.utils.ts`.
+- Тесты `__tests__/services/billing-plan.utils.test.ts`.
+
+---
+
 ## [2026-06-06] - Реферальная атрибуция встроена в Tilda-виджет
 
 ### 🔄 Изменено

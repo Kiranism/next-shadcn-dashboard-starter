@@ -18,6 +18,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -45,6 +48,14 @@ type PlanLimits = {
   notifications: number;
 };
 
+type PlanPricing = {
+  basePrice: number;
+  finalPrice: number;
+  currency: string;
+  hasDiscount: boolean;
+  discounts: Array<{ name: string; amountOff: number }>;
+};
+
 type BillingPlan = {
   id: string;
   slug: string;
@@ -60,6 +71,7 @@ type BillingPlan = {
   startDate?: string | null;
   endDate?: string | null;
   nextPaymentDate?: string | null;
+  pricing?: PlanPricing;
 };
 
 type UsageMetric = { used: number; limit: number };
@@ -90,6 +102,8 @@ type SubscriptionInfo = {
   nextPaymentDate: string | null;
   daysUntilExpiration: number | null;
   expirationWarning: string | null;
+  autoRenewEnabled?: boolean;
+  hasSavedPaymentMethod?: boolean;
 };
 
 const formatCurrency = (value: number, currency: string) =>
@@ -127,6 +141,14 @@ export function BillingTab() {
   const [downloadingInvoice, setDownloadingInvoice] = useState<string | null>(
     null
   );
+  const [promoCode, setPromoCode] = useState('');
+  const [promoApplied, setPromoApplied] = useState<string | null>(null);
+  const [promoPricing, setPromoPricing] = useState<Record<string, PlanPricing>>(
+    {}
+  );
+  const [validatingPromo, setValidatingPromo] = useState(false);
+  const [enableAutoRenew, setEnableAutoRenew] = useState(true);
+  const [savingAutoRenew, setSavingAutoRenew] = useState(false);
 
   const loadBillingData = useCallback(async () => {
     try {
@@ -140,7 +162,9 @@ export function BillingTab() {
       setCurrentPlan(data.currentPlan);
       setUsageStats(data.usageStats);
       setSubscriptionInfo(data.subscription);
-      // Используем paymentsWithInvoices если есть, иначе paymentHistory
+      if (data.subscription?.autoRenewEnabled !== undefined) {
+        setEnableAutoRenew(data.subscription.autoRenewEnabled);
+      }
       const payments = data.paymentsWithInvoices || data.paymentHistory || [];
       setPaymentHistory(
         payments.map((p: Record<string, unknown>) => {
@@ -231,6 +255,106 @@ export function BillingTab() {
     }
   };
 
+  const handleApplyPromo = async () => {
+    const code = promoCode.trim();
+    if (!code) {
+      setPromoApplied(null);
+      setPromoPricing({});
+      return;
+    }
+
+    try {
+      setValidatingPromo(true);
+      const paidPlans = planCatalog.filter((p) => p.price > 0);
+      const results: Record<string, PlanPricing> = {};
+
+      for (const plan of paidPlans) {
+        const response = await fetch('/api/billing/pricing', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ planId: plan.id, promoCode: code })
+        });
+
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          toast.error(error.error || 'Промокод недействителен');
+          setPromoApplied(null);
+          setPromoPricing({});
+          return;
+        }
+
+        const data = await response.json();
+        results[plan.id] = {
+          basePrice: data.pricing.basePrice,
+          finalPrice: data.pricing.finalPrice,
+          currency: data.pricing.currency,
+          hasDiscount: data.pricing.discounts.length > 0,
+          discounts: data.pricing.discounts.map(
+            (d: { name: string; amountOff: number }) => ({
+              name: d.name,
+              amountOff: d.amountOff
+            })
+          )
+        };
+      }
+
+      setPromoApplied(code);
+      setPromoPricing(results);
+      toast.success('Промокод применён');
+    } catch {
+      toast.error('Ошибка проверки промокода');
+    } finally {
+      setValidatingPromo(false);
+    }
+  };
+
+  const getPlanDisplayPrice = (plan: BillingPlan) => {
+    const promoPrice = promoPricing[plan.id];
+    const catalogPrice = plan.pricing;
+    const base = plan.price;
+    const final = promoPrice?.finalPrice ?? catalogPrice?.finalPrice ?? base;
+    const hasDiscount =
+      (promoPrice?.hasDiscount ?? false) ||
+      (catalogPrice?.hasDiscount ?? false) ||
+      final < base;
+    return { base, final, hasDiscount, currency: plan.currency };
+  };
+
+  const handleUpdateAutoRenew = async (options: {
+    enabled: boolean;
+    removePaymentMethod?: boolean;
+  }) => {
+    try {
+      setSavingAutoRenew(true);
+      const response = await fetch('/api/billing/auto-renew', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(options)
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        toast.error(error.error || 'Не удалось обновить автопродление');
+        return;
+      }
+
+      const data = await response.json();
+      setEnableAutoRenew(data.autoRenewEnabled);
+      toast.success(
+        options.removePaymentMethod
+          ? 'Сохранённая карта удалена'
+          : options.enabled
+            ? 'Автопродление включено'
+            : 'Автопродление отключено'
+      );
+      await loadBillingData();
+    } catch {
+      toast.error('Ошибка обновления автопродления');
+    } finally {
+      setSavingAutoRenew(false);
+    }
+  };
+
   const handleUpgradePlan = async (plan: BillingPlan) => {
     if (plan.slug === currentPlan?.slug) {
       toast.info('Этот тариф уже активен');
@@ -244,7 +368,12 @@ export function BillingTab() {
         const response = await fetch('/api/billing/payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ planId: plan.id })
+          body: JSON.stringify({
+            planId: plan.id,
+            returnUrl: `${window.location.origin}/dashboard/settings?tab=billing`,
+            promoCode: promoApplied || undefined,
+            enableAutoRenew
+          })
         });
 
         if (!response.ok) {
@@ -372,6 +501,70 @@ export function BillingTab() {
         </CardContent>
       </Card>
 
+      {(subscriptionInfo?.hasSavedPaymentMethod ||
+        subscriptionInfo?.autoRenewEnabled) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className='flex items-center gap-2 text-base'>
+              <CreditCard className='h-5 w-5' />
+              Автопродление подписки
+            </CardTitle>
+            <CardDescription>
+              {subscriptionInfo.hasSavedPaymentMethod
+                ? 'Карта сохранена в ЮKassa для автоматического продления'
+                : 'Автопродление настроено'}
+              {subscriptionInfo.nextPaymentDate && (
+                <>
+                  {' '}
+                  · следующее списание{' '}
+                  {formatDate(subscriptionInfo.nextPaymentDate)}
+                </>
+              )}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className='space-y-4'>
+            <div className='flex items-center gap-2'>
+              <Checkbox
+                id='manage-auto-renew'
+                checked={enableAutoRenew}
+                disabled={
+                  savingAutoRenew || !subscriptionInfo.hasSavedPaymentMethod
+                }
+                onCheckedChange={(v) => {
+                  const next = v === true;
+                  setEnableAutoRenew(next);
+                  void handleUpdateAutoRenew({ enabled: next });
+                }}
+              />
+              <Label
+                htmlFor='manage-auto-renew'
+                className='cursor-pointer font-normal'
+              >
+                Автоматически продлевать подписку
+              </Label>
+            </div>
+            {subscriptionInfo.hasSavedPaymentMethod && (
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                disabled={savingAutoRenew}
+                onClick={() =>
+                  handleUpdateAutoRenew({
+                    enabled: false,
+                    removePaymentMethod: true
+                  })
+                }
+              >
+                {savingAutoRenew
+                  ? 'Сохранение...'
+                  : 'Удалить сохранённую карту'}
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className='flex items-center gap-2'>
@@ -439,89 +632,156 @@ export function BillingTab() {
         </TabsList>
 
         <TabsContent value='plans'>
+          <Card className='mb-6'>
+            <CardHeader className='pb-3'>
+              <CardTitle className='text-base'>
+                Промокод и автопродление
+              </CardTitle>
+              <CardDescription>
+                Скидка применяется при оплате. Автопродление сохраняет карту в
+                ЮKassa для продления без повторного ввода.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className='space-y-4'>
+              <div className='flex flex-col gap-2 sm:flex-row sm:items-end'>
+                <div className='flex-1 space-y-2'>
+                  <Label htmlFor='promo-code'>Промокод</Label>
+                  <Input
+                    id='promo-code'
+                    placeholder='SUMMER2026'
+                    value={promoCode}
+                    onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                  />
+                </div>
+                <Button
+                  type='button'
+                  variant='secondary'
+                  disabled={validatingPromo || !promoCode.trim()}
+                  onClick={handleApplyPromo}
+                >
+                  {validatingPromo ? 'Проверка...' : 'Применить'}
+                </Button>
+              </div>
+              {promoApplied && (
+                <p className='text-muted-foreground text-sm'>
+                  Промокод «{promoApplied}» будет учтён при оплате
+                </p>
+              )}
+              <div className='flex items-center gap-2'>
+                <Checkbox
+                  id='auto-renew'
+                  checked={enableAutoRenew}
+                  onCheckedChange={(v) => setEnableAutoRenew(v === true)}
+                />
+                <Label
+                  htmlFor='auto-renew'
+                  className='cursor-pointer font-normal'
+                >
+                  Автоматически продлевать подписку
+                </Label>
+              </div>
+            </CardContent>
+          </Card>
+
           <div className='grid gap-6 md:grid-cols-3'>
-            {plansToRender.map((plan) => (
-              <Card
-                key={plan.id}
-                className={`relative border-2 ${plan.popular ? 'border-primary' : 'border-border'}`}
-              >
-                {plan.popular && (
-                  <Badge className='bg-primary text-primary-foreground absolute top-4 right-4 flex items-center gap-1'>
-                    <Star className='h-3 w-3' />
-                    Популярный
-                  </Badge>
-                )}
-                <CardHeader>
-                  <CardTitle>{plan.name}</CardTitle>
-                  <CardDescription>
-                    <div className='text-2xl font-bold'>
-                      {plan.price === 0
-                        ? 'Бесплатно'
-                        : formatCurrency(plan.price, plan.currency)}
-                    </div>
-                    {plan.price > 0 && (
-                      <p className='text-muted-foreground text-sm'>
-                        за {plan.interval === 'month' ? 'месяц' : 'год'}
-                      </p>
-                    )}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className='space-y-4'>
-                  {plan.description && (
-                    <>
-                      <p className='text-muted-foreground text-sm'>
-                        {plan.description}
-                      </p>
-                      <Separator />
-                    </>
+            {plansToRender.map((plan) => {
+              const { base, final, hasDiscount, currency } =
+                getPlanDisplayPrice(plan);
+
+              return (
+                <Card
+                  key={plan.id}
+                  className={`relative border-2 ${plan.popular ? 'border-primary' : 'border-border'}`}
+                >
+                  {plan.popular && (
+                    <Badge className='bg-primary text-primary-foreground absolute top-4 right-4 flex items-center gap-1'>
+                      <Star className='h-3 w-3' />
+                      Популярный
+                    </Badge>
                   )}
-                  <ul className='text-muted-foreground space-y-2 text-sm'>
-                    {plan.features.map((feature) => (
-                      <li key={feature} className='flex items-center gap-2'>
-                        <CheckCircle className='h-4 w-4 text-green-500' />
-                        {feature}
+                  <CardHeader>
+                    <CardTitle>{plan.name}</CardTitle>
+                    <CardDescription>
+                      <div className='flex flex-wrap items-baseline gap-2'>
+                        {plan.price === 0 ? (
+                          <span className='text-2xl font-bold'>Бесплатно</span>
+                        ) : (
+                          <>
+                            {hasDiscount && (
+                              <span className='text-muted-foreground text-lg line-through'>
+                                {formatCurrency(base, currency)}
+                              </span>
+                            )}
+                            <span className='text-2xl font-bold'>
+                              {formatCurrency(final, currency)}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      {plan.price > 0 && (
+                        <p className='text-muted-foreground text-sm'>
+                          за {plan.interval === 'month' ? 'месяц' : 'год'}
+                        </p>
+                      )}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className='space-y-4'>
+                    {plan.description && (
+                      <>
+                        <p className='text-muted-foreground text-sm'>
+                          {plan.description}
+                        </p>
+                        <Separator />
+                      </>
+                    )}
+                    <ul className='text-muted-foreground space-y-2 text-sm'>
+                      {plan.features.map((feature) => (
+                        <li key={feature} className='flex items-center gap-2'>
+                          <CheckCircle className='h-4 w-4 text-green-500' />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                    <Separator />
+                    <ul className='text-muted-foreground space-y-2 text-sm'>
+                      <li className='flex items-center justify-between'>
+                        <span>Проекты</span>
+                        <span>{renderLimit(plan.limits.projects)}</span>
                       </li>
-                    ))}
-                  </ul>
-                  <Separator />
-                  <ul className='text-muted-foreground space-y-2 text-sm'>
-                    <li className='flex items-center justify-between'>
-                      <span>Проекты</span>
-                      <span>{renderLimit(plan.limits.projects)}</span>
-                    </li>
-                    <li className='flex items-center justify-between'>
-                      <span>Пользователи</span>
-                      <span>{renderLimit(plan.limits.users)}</span>
-                    </li>
-                    <li className='flex items-center justify-between'>
-                      <span>Telegram боты</span>
-                      <span>{renderLimit(plan.limits.bots)}</span>
-                    </li>
-                    <li className='flex items-center justify-between'>
-                      <span>Уведомления</span>
-                      <span>{renderLimit(plan.limits.notifications)}</span>
-                    </li>
-                  </ul>
-                  <Button
-                    className='mt-2 w-full'
-                    variant={
-                      plan.slug === currentPlan.slug ? 'outline' : 'default'
-                    }
-                    disabled={
-                      plan.slug === currentPlan.slug ||
-                      changingPlanId === plan.id
-                    }
-                    onClick={() => handleUpgradePlan(plan)}
-                  >
-                    {changingPlanId === plan.id
-                      ? 'Обновление...'
-                      : plan.slug === currentPlan.slug
-                        ? 'Текущий план'
-                        : 'Выбрать план'}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+                      <li className='flex items-center justify-between'>
+                        <span>Пользователи</span>
+                        <span>{renderLimit(plan.limits.users)}</span>
+                      </li>
+                      <li className='flex items-center justify-between'>
+                        <span>Telegram боты</span>
+                        <span>{renderLimit(plan.limits.bots)}</span>
+                      </li>
+                      <li className='flex items-center justify-between'>
+                        <span>Уведомления</span>
+                        <span>{renderLimit(plan.limits.notifications)}</span>
+                      </li>
+                    </ul>
+                    <Button
+                      className='mt-2 w-full'
+                      variant={
+                        plan.slug === currentPlan.slug ? 'outline' : 'default'
+                      }
+                      disabled={
+                        plan.slug === currentPlan.slug ||
+                        changingPlanId === plan.id
+                      }
+                      onClick={() => handleUpgradePlan(plan)}
+                    >
+                      {changingPlanId === plan.id
+                        ? 'Обновление...'
+                        : plan.slug === currentPlan.slug
+                          ? 'Текущий план'
+                          : 'Выбрать план'}
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </TabsContent>
 

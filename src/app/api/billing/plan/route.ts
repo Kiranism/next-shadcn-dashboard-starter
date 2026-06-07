@@ -70,6 +70,17 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'План уже активен' }, { status: 400 });
     }
 
+    // Платные тарифы — только через оплату (ЮKassa webhook).
+    if (toNumber(plan.price) > 0) {
+      return NextResponse.json(
+        {
+          error:
+            'Для подключения платного тарифа необходима оплата. Используйте раздел «Биллинг».'
+        },
+        { status: 402 }
+      );
+    }
+
     // Единая точка входа — отменяет предыдущие, создаёт новую, пишет history.
     const updatedSubscription = await BillingService.upsertActiveSubscription({
       adminId: admin.id,

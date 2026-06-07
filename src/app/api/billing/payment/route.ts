@@ -3,22 +3,17 @@
  * @description: Создание платежа через ЮKassa (разовый платеж за период)
  * @project: SaaS Bonus System
  * @created: 2025-12-10
+ * @updated: 2026-06-06 — скидки, автопродление
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { getCurrentAdmin } from '@/lib/auth';
 import { logger } from '@/lib/logger';
-import { formatPlan } from '@/lib/services/billing-plan.utils';
+import { BillingPricingService } from '@/lib/services/billing-pricing.service';
 import { randomUUID } from 'crypto';
-
-const YK_API_URL = 'https://api.yookassa.ru/v3/payments';
-
-function getBasicAuth(shopId?: string, secret?: string) {
-  if (!shopId || !secret) return null;
-  const token = Buffer.from(`${shopId}:${secret}`).toString('base64');
-  return `Basic ${token}`;
-}
+import { createYooKassaPayment } from '@/lib/yookassa/client';
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,6 +24,8 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const planId: string | undefined = body.planId;
+    const promoCode: string | undefined = body.promoCode;
+    const enableAutoRenew: boolean = body.enableAutoRenew === true;
 
     if (!planId) {
       return NextResponse.json(
@@ -37,88 +34,96 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const plan = await db.subscriptionPlan.findUnique({ where: { id: planId } });
-    if (!plan) {
-      return NextResponse.json({ error: 'Plan not found' }, { status: 404 });
+    const resolved = await BillingPricingService.resolvePricing({
+      planId,
+      promoCode
+    });
+
+    if (resolved.ok === false) {
+      return NextResponse.json(
+        { error: resolved.error },
+        { status: resolved.status }
+      );
     }
 
-    const formattedPlan = formatPlan(plan);
-    if (formattedPlan.price <= 0) {
+    const { pricing, plan } = resolved;
+
+    if (pricing.finalPrice <= 0) {
       return NextResponse.json(
-        { error: 'Plan is free. Payment is not required.' },
+        {
+          error:
+            'После скидки оплата не требуется. Активируйте тариф через смену плана.'
+        },
         { status: 400 }
       );
     }
 
-    const shopId = process.env.YOOKASSA_SHOP_ID;
-    const secretKey = process.env.YOOKASSA_SECRET_KEY;
     const returnUrl =
       body.returnUrl ||
       process.env.YOOKASSA_RETURN_URL ||
-      'https://example.com/billing';
-
-    const authHeader = getBasicAuth(shopId, secretKey);
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'YooKassa credentials are not configured' },
-        { status: 500 }
-      );
-    }
+      `${request.nextUrl.origin}/dashboard/settings?tab=billing`;
 
     const idempotenceKey = randomUUID();
+    const description =
+      pricing.discounts.length > 0
+        ? `Оплата тарифа ${plan.name} (скидка)`
+        : `Оплата тарифа ${plan.name}`;
 
-    const paymentPayload = {
-      amount: {
-        value: formattedPlan.price.toFixed(2),
-        currency: formattedPlan.currency || 'RUB'
-      },
-      capture: true,
-      description: `Оплата тарифа ${formattedPlan.name}`,
-      confirmation: {
-        type: 'redirect',
-        return_url: returnUrl
-      },
-      metadata: {
-        adminId: admin.sub,
-        planId: plan.id
-      }
-    };
-
-    // Создаем запись Payment со статусом created
     const paymentRecord = await db.payment.create({
       data: {
         adminAccountId: admin.sub,
         planId: plan.id,
-        amount: plan.price,
+        amount: pricing.finalPrice,
         currency: plan.currency || 'RUB',
         status: 'created',
         provider: 'yookassa',
-        providerPaymentId: `temp-${idempotenceKey}`, // будет обновлен после запроса
-        description: paymentPayload.description
+        providerPaymentId: `temp-${idempotenceKey}`,
+        description,
+        metadata: {
+          pricing,
+          promoCodeId: pricing.promoCodeId,
+          planDiscountId: pricing.planDiscountId,
+          enableAutoRenew
+        } as Prisma.InputJsonValue
       }
     });
 
-    const response = await fetch(YK_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: authHeader,
-        'Idempotence-Key': idempotenceKey
+    const ykResult = await createYooKassaPayment(
+      {
+        amount: {
+          value: pricing.finalPrice.toFixed(2),
+          currency: plan.currency || 'RUB'
+        },
+        capture: true,
+        description,
+        confirmation: {
+          type: 'redirect',
+          return_url: returnUrl
+        },
+        save_payment_method: enableAutoRenew,
+        metadata: {
+          adminId: admin.sub,
+          planId: plan.id,
+          paymentRecordId: paymentRecord.id,
+          promoCodeId: pricing.promoCodeId ?? '',
+          planDiscountId: pricing.planDiscountId ?? '',
+          enableAutoRenew: enableAutoRenew ? 'true' : 'false',
+          type: 'subscription'
+        }
       },
-      body: JSON.stringify(paymentPayload)
-    });
+      idempotenceKey
+    );
 
-    if (!response.ok) {
-      const errorText = await response.text();
+    if (ykResult.ok === false) {
       logger.error('YooKassa create payment failed', {
-        status: response.status,
-        body: errorText
+        status: ykResult.status,
+        body: ykResult.body
       });
       await db.payment.update({
         where: { id: paymentRecord.id },
         data: {
           status: 'failed',
-          metadata: { error: errorText }
+          metadata: { error: ykResult.body, pricing } as Prisma.InputJsonValue
         }
       });
       return NextResponse.json(
@@ -127,11 +132,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const paymentResponse = await response.json();
-    const providerPaymentId = paymentResponse.id;
+    const paymentResponse = ykResult.data;
+    const providerPaymentId = String(paymentResponse.id);
     const confirmationUrl =
-      paymentResponse.confirmation?.confirmation_url || null;
-    const status = paymentResponse.status || 'pending';
+      (
+        paymentResponse.confirmation as
+          | { confirmation_url?: string }
+          | undefined
+      )?.confirmation_url ?? null;
+    const status = String(paymentResponse.status || 'pending');
 
     await db.payment.update({
       where: { id: paymentRecord.id },
@@ -139,7 +148,13 @@ export async function POST(request: NextRequest) {
         providerPaymentId,
         confirmationUrl,
         status,
-        metadata: paymentResponse
+        metadata: {
+          pricing,
+          promoCodeId: pricing.promoCodeId,
+          planDiscountId: pricing.planDiscountId,
+          enableAutoRenew,
+          yookassa: paymentResponse
+        } as Prisma.InputJsonValue
       }
     });
 
@@ -147,7 +162,8 @@ export async function POST(request: NextRequest) {
       paymentId: paymentRecord.id,
       providerPaymentId,
       status,
-      confirmationUrl
+      confirmationUrl,
+      pricing
     });
   } catch (error) {
     logger.error('Error creating payment', {

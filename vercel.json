@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/subscription-expiration",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/subscription-renewal",
+      "schedule": "0 6 * * *"
     }
   ]
 }

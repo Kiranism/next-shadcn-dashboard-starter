@@ -1,70 +1,129 @@
 /**
  * @file: homepage-pricing.tsx
- * @description: Секция тарифов в стиле Meridian (Server Component)
+ * @description: Секция тарифов — данные из БД (синхрон с биллингом)
  * @project: SaaS Bonus System
- * @dependencies: React, Next.js, Shadcn/ui, Lucide-react
+ * @dependencies: React, Next.js, db, billing-plan.utils
  * @created: 2026-01-06
- * @updated: 2026-01-21 - Оптимизация: Server Component (статичный контент)
+ * @updated: 2026-06-06
  * @author: AI Assistant + User
  */
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Check, ArrowRight } from 'lucide-react';
+import { db } from '@/lib/db';
+import { formatPlan, toNumber } from '@/lib/services/billing-plan.utils';
 
-const plans = [
+const FALLBACK_PLANS = [
   {
-    name: 'Foundations',
-    price: '$299',
+    name: 'Free',
+    priceLabel: '0 ₽',
     period: '/мес',
-    description: 'Для небольших проектов',
-    features: [
-      'До 1,000 пользователей',
-      '1 проект',
-      'Telegram бот',
-      'Базовая аналитика',
-      'Email поддержка'
-    ],
-    popular: false
+    description: 'Для тестирования и небольших проектов',
+    features: ['1 проект', '10 пользователей', 'Email поддержка'],
+    popular: false,
+    cta: 'Начать'
   },
   {
-    name: 'Growth',
-    price: '$999',
+    name: 'Pro',
+    priceLabel: '2 990 ₽',
     period: '/мес',
-    description: 'Для растущего бизнеса',
+    description: 'Для растущих бизнесов',
     features: [
-      'До 10,000 пользователей',
       '5 проектов',
-      'Telegram бот + виджет',
-      'Расширенная аналитика',
-      'Реферальная программа',
-      'API доступ',
+      '1000 пользователей на проект',
+      'Аналитика',
       'Приоритетная поддержка'
     ],
-    popular: true
+    popular: true,
+    cta: 'Начать'
   },
   {
     name: 'Enterprise',
-    price: 'Custom',
-    period: '',
+    priceLabel: '9 990 ₽',
+    period: '/мес',
     description: 'Для крупных компаний',
     features: [
-      'Безлимитные пользователи',
-      'Безлимитные проекты',
-      'White-label решение',
+      '10 проектов',
+      'Безлимит пользователей',
       'Кастомные интеграции',
-      'Выделенный менеджер',
-      'SLA гарантии'
+      'Персональный менеджер',
+      'SLA 99.9%'
     ],
-    popular: false
+    popular: false,
+    cta: 'Связаться'
   }
 ];
 
-export function HomepagePricing() {
+const formatPrice = (price: number, currency: string, interval: string) => {
+  if (price <= 0) {
+    return { priceLabel: '0 ₽', period: '' };
+  }
+
+  const formatted = new Intl.NumberFormat('ru-RU', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(price);
+
+  return {
+    priceLabel: formatted,
+    period: interval === 'year' ? '/год' : '/мес'
+  };
+};
+
+export async function HomepagePricing() {
+  let plans: Array<{
+    name: string;
+    priceLabel: string;
+    period: string;
+    description: string;
+    features: string[];
+    popular: boolean;
+    cta: string;
+  }> = FALLBACK_PLANS;
+
+  try {
+    const dbPlans = await db.subscriptionPlan.findMany({
+      where: { isActive: true, isPublic: true },
+      orderBy: { sortOrder: 'asc' }
+    });
+
+    if (dbPlans.length > 0) {
+      plans = dbPlans.map((plan) => {
+        const formatted = formatPlan(plan);
+        const { priceLabel, period } = formatPrice(
+          toNumber(plan.price),
+          plan.currency,
+          plan.interval
+        );
+
+        return {
+          name: formatted.name,
+          priceLabel,
+          period,
+          description: formatted.description ?? '',
+          features:
+            formatted.features.length > 0
+              ? formatted.features
+              : [
+                  `${formatted.limits.projects === -1 ? '∞' : formatted.limits.projects} проектов`,
+                  `${formatted.limits.users === -1 ? '∞' : formatted.limits.users} пользователей`,
+                  `${formatted.limits.bots === -1 ? '∞' : formatted.limits.bots} Telegram ботов`
+                ],
+          popular: formatted.popular ?? false,
+          cta: plan.slug === 'enterprise' ? 'Связаться' : 'Начать'
+        };
+      });
+    }
+  } catch {
+    // Fallback при недоступности БД (build/SSG)
+  }
+
   return (
     <section id='pricing' className='bg-white py-24'>
       <div className='mx-auto max-w-[1200px] px-6'>
-        {/* Header */}
         <div className='mb-16 text-center'>
           <h2 className='mb-4 text-[40px] leading-[1.15] font-semibold tracking-[-0.02em] text-[#1A1A1A]'>
             Простые и понятные тарифы
@@ -74,25 +133,22 @@ export function HomepagePricing() {
           </p>
         </div>
 
-        {/* Pricing Cards */}
         <div className='grid gap-6 lg:grid-cols-3'>
-          {plans.map((plan, i) => (
+          {plans.map((plan) => (
             <div
-              key={i}
+              key={plan.name}
               className={`relative rounded-3xl p-8 transition-all ${
                 plan.popular
                   ? 'bg-[#1A1A1A] text-white shadow-2xl shadow-black/20'
                   : 'bg-[#FAFAFA] hover:bg-[#F5F5F5]'
               }`}
             >
-              {/* Popular badge */}
               {plan.popular && (
                 <div className='absolute -top-3 left-8 rounded-full bg-[#FF4D00] px-4 py-1 text-xs font-medium text-white'>
                   Популярный
                 </div>
               )}
 
-              {/* Plan name */}
               <p
                 className={`mb-2 text-[13px] font-medium tracking-wider uppercase ${
                   plan.popular ? 'text-[#666666]' : 'text-[#999999]'
@@ -101,22 +157,23 @@ export function HomepagePricing() {
                 {plan.name}
               </p>
 
-              {/* Price */}
               <div className='mb-2'>
                 <span
                   className={`text-4xl font-semibold ${
                     plan.popular ? 'text-white' : 'text-[#1A1A1A]'
                   }`}
                 >
-                  {plan.price}
+                  {plan.priceLabel}
                 </span>
-                <span
-                  className={`text-sm ${
-                    plan.popular ? 'text-[#666666]' : 'text-[#999999]'
-                  }`}
-                >
-                  {plan.period}
-                </span>
+                {plan.period && (
+                  <span
+                    className={`text-sm ${
+                      plan.popular ? 'text-[#666666]' : 'text-[#999999]'
+                    }`}
+                  >
+                    {plan.period}
+                  </span>
+                )}
               </div>
 
               <p
@@ -127,10 +184,9 @@ export function HomepagePricing() {
                 {plan.description}
               </p>
 
-              {/* Features */}
               <ul className='mb-8 space-y-3'>
-                {plan.features.map((feature, j) => (
-                  <li key={j} className='flex items-start gap-3'>
+                {plan.features.map((feature) => (
+                  <li key={feature} className='flex items-start gap-3'>
                     <Check
                       className={`mt-0.5 h-5 w-5 flex-shrink-0 ${
                         plan.popular ? 'text-[#FF4D00]' : 'text-emerald-500'
@@ -147,7 +203,6 @@ export function HomepagePricing() {
                 ))}
               </ul>
 
-              {/* CTA */}
               <Button
                 asChild
                 className={`w-full rounded-full py-6 text-[15px] font-medium ${
@@ -157,7 +212,7 @@ export function HomepagePricing() {
                 }`}
               >
                 <Link href='/auth/sign-up' className='flex items-center gap-2'>
-                  {plan.name === 'Enterprise' ? 'Связаться' : 'Начать'}
+                  {plan.cta}
                   <ArrowRight className='h-4 w-4' />
                 </Link>
               </Button>

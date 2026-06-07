@@ -7,86 +7,40 @@
  */
 
 import { PrismaClient } from '@prisma/client';
+import { SUBSCRIPTION_PLANS_SEED } from './seeds/subscription-plans.seed';
 
 const prisma = new PrismaClient();
 
 /**
- * Seed тарифных планов
+ * Seed тарифных планов (upsert — синхронизация лимитов с кодом)
  */
 async function seedSubscriptionPlans() {
   console.log('🌱 Seeding subscription plans...');
 
-  const plans = [
-    {
-      name: 'Free',
-      slug: 'free',
-      description: 'Для тестирования и небольших проектов',
-      price: 0,
-      currency: 'RUB',
-      interval: 'month',
-      maxProjects: 1,
-      maxUsersPerProject: 10,
-      features: ['1 проект', '10 пользователей', 'Email поддержка'],
-      isPublic: true,
-      sortOrder: 1
-    },
-    {
-      name: 'Pro',
-      slug: 'pro',
-      description: 'Для растущих бизнесов',
-      price: 2990,
-      currency: 'RUB',
-      interval: 'month',
-      maxProjects: 5,
-      maxUsersPerProject: 1000,
-      features: [
-        '5 проектов',
-        '1000 пользователей на проект',
-        'Аналитика',
-        'Приоритетная поддержка'
-      ],
-      isPublic: true,
-      sortOrder: 2
-    },
-    {
-      name: 'Enterprise',
-      slug: 'enterprise',
-      description: 'Для крупных компаний',
-      price: 9990,
-      currency: 'RUB',
-      interval: 'month',
-      maxProjects: 10,
-      maxUsersPerProject: 999999,
-      features: [
-        '10 проектов',
-        'Безлимит пользователей',
-        'Кастомные интеграции',
-        'Персональный менеджер',
-        'SLA 99.9%'
-      ],
-      isPublic: true,
-      sortOrder: 3
-    }
-  ];
-
-  for (const planData of plans) {
-    const existing = await prisma.subscriptionPlan.findUnique({
-      where: { slug: planData.slug }
-    });
-
-    if (existing) {
-      console.log(`  ⏭️  Plan ${planData.slug} already exists, skipping...`);
-      continue;
-    }
-
-    const plan = await prisma.subscriptionPlan.create({
-      data: {
+  for (const planData of SUBSCRIPTION_PLANS_SEED) {
+    const plan = await prisma.subscriptionPlan.upsert({
+      where: { slug: planData.slug },
+      create: {
         ...planData,
-        features: planData.features as any
+        features: planData.features as unknown as object
+      },
+      update: {
+        name: planData.name,
+        description: planData.description,
+        price: planData.price,
+        currency: planData.currency,
+        interval: planData.interval,
+        maxProjects: planData.maxProjects,
+        maxUsersPerProject: planData.maxUsersPerProject,
+        maxBots: planData.maxBots,
+        maxNotifications: planData.maxNotifications,
+        features: planData.features as unknown as object,
+        isPublic: planData.isPublic,
+        sortOrder: planData.sortOrder
       }
     });
 
-    console.log(`  ✅ Created plan: ${plan.name} (${plan.slug})`);
+    console.log(`  ✅ Synced plan: ${plan.name} (${plan.slug})`);
   }
 
   console.log('✅ Subscription plans seeded!');
@@ -119,7 +73,9 @@ async function seedAdminSubscriptions() {
     }
   });
 
-  console.log(`  📊 Found ${admins.length} admins without active subscriptions`);
+  console.log(
+    `  📊 Found ${admins.length} admins without active subscriptions`
+  );
 
   let created = 0;
   for (const admin of admins) {
@@ -132,7 +88,9 @@ async function seedAdminSubscriptions() {
     });
 
     if (existingSubscription) {
-      console.log(`  ⏭️  Admin ${admin.email || admin.id} already has a subscription, skipping...`);
+      console.log(
+        `  ⏭️  Admin ${admin.email || admin.id} already has a subscription, skipping...`
+      );
       continue;
     }
 
@@ -152,7 +110,9 @@ async function seedAdminSubscriptions() {
     });
 
     created++;
-    console.log(`  ✅ Created free subscription for admin: ${admin.email || admin.id}`);
+    console.log(
+      `  ✅ Created free subscription for admin: ${admin.email || admin.id}`
+    );
   }
 
   console.log(`✅ Created ${created} free subscriptions for admins!`);

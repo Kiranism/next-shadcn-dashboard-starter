@@ -41,8 +41,17 @@ export const parseFeatures = (features: Prisma.JsonValue | null): string[] => {
 const isSet = (value: number | null | undefined) =>
   typeof value === 'number' && value !== 0;
 
+/** Дефолтные лимиты Free-плана (нет активной подписки). */
+export const FREE_PLAN_DEFAULTS = {
+  slug: 'free',
+  maxProjects: 1,
+  maxUsersPerProject: 10,
+  maxBots: 1,
+  maxNotifications: 1000
+} as const;
+
 export const derivePlanLimits = (plan: {
-  slug: string;
+  slug?: string;
   maxProjects: number;
   maxUsersPerProject: number;
   maxBots?: number | null;
@@ -76,6 +85,44 @@ export const derivePlanLimits = (plan: {
   };
 };
 
+/** Лимиты плана с учётом customLimits подписки (Enterprise tailor-made). */
+export const resolveEffectiveLimits = (
+  plan: {
+    slug?: string;
+    maxProjects: number;
+    maxUsersPerProject: number;
+    maxBots?: number | null;
+    maxNotifications?: number | null;
+  },
+  customLimits?: Record<string, unknown> | null
+): PlanLimits => {
+  if (!customLimits) {
+    return derivePlanLimits(plan);
+  }
+
+  const merged = {
+    slug: plan.slug,
+    maxProjects:
+      typeof customLimits.maxProjects === 'number'
+        ? customLimits.maxProjects
+        : plan.maxProjects,
+    maxUsersPerProject:
+      typeof customLimits.maxUsersPerProject === 'number'
+        ? customLimits.maxUsersPerProject
+        : plan.maxUsersPerProject,
+    maxBots:
+      typeof customLimits.maxBots === 'number'
+        ? customLimits.maxBots
+        : plan.maxBots,
+    maxNotifications:
+      typeof customLimits.maxNotifications === 'number'
+        ? customLimits.maxNotifications
+        : plan.maxNotifications
+  };
+
+  return derivePlanLimits(merged);
+};
+
 export const formatPlan = (
   plan: {
     id: string;
@@ -88,8 +135,8 @@ export const formatPlan = (
     features: Prisma.JsonValue | null;
     maxProjects: number;
     maxUsersPerProject: number;
-  maxBots?: number | null;
-  maxNotifications?: number | null;
+    maxBots?: number | null;
+    maxNotifications?: number | null;
     isActive: boolean;
     isPublic: boolean;
     sortOrder: number;

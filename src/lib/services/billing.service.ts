@@ -10,6 +10,14 @@
 
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import {
+  derivePlanLimits,
+  formatPlan,
+  FREE_PLAN_DEFAULTS,
+  PlanLimits,
+  resolveEffectiveLimits
+} from '@/lib/services/billing-plan.utils';
+import { isPromoCodeValid } from '@/lib/services/billing-pricing.service';
 
 /** Прибавить N месяцев к дате (immutable). */
 function addMonths(date: Date, months: number): Date {
@@ -258,63 +266,45 @@ export class BillingService {
   }
 
   /**
-   * Получить лимиты с учетом кастомных настроек
+   * Получить лимиты с учетом кастомных настроек (единая формула с UI).
    */
-  static async getLimits(adminId: string): Promise<{
-    maxProjects: number;
-    maxUsersPerProject: number;
-    maxBots?: number;
-    maxNotifications?: number;
-  }> {
+  static async getLimits(adminId: string): Promise<PlanLimits> {
     const subscription = await this.getActiveSubscription(adminId);
 
     if (!subscription) {
-      // Дефолтный Free план
-      return {
-        maxProjects: 1,
-        maxUsersPerProject: 10,
-        maxBots: undefined,
-        maxNotifications: undefined
-      };
+      return derivePlanLimits(FREE_PLAN_DEFAULTS);
     }
 
-    const planFeatures =
-      (subscription.plan.features as unknown as Record<string, unknown>) || {};
-    const planMaxBots =
-      typeof planFeatures.maxBots === 'number'
-        ? (planFeatures.maxBots as number)
-        : undefined;
+    return resolveEffectiveLimits(
+      subscription.plan,
+      subscription.customLimits as Record<string, unknown> | null
+    );
+  }
 
-    // Кастомные лимиты переопределяют план
-    if (subscription.customLimits) {
-      const custom = subscription.customLimits as any;
-      return {
-        maxProjects: custom.maxProjects || subscription.plan.maxProjects,
-        maxUsersPerProject:
-          custom.maxUsersPerProject || subscription.plan.maxUsersPerProject,
-        maxBots:
-          typeof custom.maxBots === 'number' ? custom.maxBots : planMaxBots,
-        maxNotifications:
-          typeof custom.maxNotifications === 'number'
-            ? custom.maxNotifications
-            : subscription.plan.maxNotifications || undefined
-      };
+  /** Лимит пользователей на один проект (для enforcement при добавлении user). */
+  static async getMaxUsersPerProject(adminId: string): Promise<number> {
+    const subscription = await this.getActiveSubscription(adminId);
+
+    if (!subscription) {
+      return FREE_PLAN_DEFAULTS.maxUsersPerProject;
     }
 
-    return {
-      maxProjects: subscription.plan.maxProjects,
-      maxUsersPerProject: subscription.plan.maxUsersPerProject,
-      maxBots: planMaxBots,
-      maxNotifications: subscription.plan.maxNotifications || undefined
-    };
+    const custom = subscription.customLimits as Record<string, unknown> | null;
+    if (typeof custom?.maxUsersPerProject === 'number') {
+      return custom.maxUsersPerProject;
+    }
+
+    return subscription.plan.maxUsersPerProject;
   }
 
   /**
-   * Проверка лимита (расширенная версия)
+   * Проверка лимита (расширенная версия).
+   * Для users: с projectId — лимит на проект; без — суммарный лимит аккаунта.
    */
   static async checkLimit(
     adminId: string,
-    type: 'projects' | 'users' | 'bots' | 'notifications'
+    type: 'projects' | 'users' | 'bots' | 'notifications',
+    options?: { projectId?: string }
   ): Promise<{
     allowed: boolean;
     used: number;
@@ -324,20 +314,36 @@ export class BillingService {
     const limits = await this.getLimits(adminId);
     const subscription = await this.getActiveSubscription(adminId);
 
+    const isUnlimited = (limit: number) => limit === -1;
+
     if (type === 'projects') {
       const projectCount = await db.project.count({
         where: { ownerId: adminId }
       });
 
       return {
-        allowed: projectCount < limits.maxProjects,
+        allowed: isUnlimited(limits.projects) || projectCount < limits.projects,
         used: projectCount,
-        limit: limits.maxProjects,
+        limit: limits.projects,
         planId: subscription?.planId
       };
     }
 
     if (type === 'users') {
+      if (options?.projectId) {
+        const perProjectLimit = await this.getMaxUsersPerProject(adminId);
+        const userCount = await db.user.count({
+          where: { projectId: options.projectId }
+        });
+
+        return {
+          allowed: isUnlimited(perProjectLimit) || userCount < perProjectLimit,
+          used: userCount,
+          limit: perProjectLimit,
+          planId: subscription?.planId
+        };
+      }
+
       const userCount = await db.user.count({
         where: {
           project: { ownerId: adminId }
@@ -345,22 +351,22 @@ export class BillingService {
       });
 
       return {
-        allowed: userCount < limits.maxUsersPerProject,
+        allowed: isUnlimited(limits.users) || userCount < limits.users,
         used: userCount,
-        limit: limits.maxUsersPerProject,
+        limit: limits.users,
         planId: subscription?.planId
       };
     }
 
     if (type === 'bots') {
-      const maxBots =
-        typeof limits.maxBots === 'number' ? limits.maxBots : undefined;
-
-      if (!maxBots) {
+      if (isUnlimited(limits.bots)) {
+        const botsCount = await db.botSettings.count({
+          where: { project: { ownerId: adminId } }
+        });
         return {
           allowed: true,
-          used: 0,
-          limit: Number.MAX_SAFE_INTEGER,
+          used: botsCount,
+          limit: -1,
           planId: subscription?.planId
         };
       }
@@ -372,38 +378,33 @@ export class BillingService {
       });
 
       return {
-        allowed: botsCount < maxBots,
+        allowed: botsCount < limits.bots,
         used: botsCount,
-        limit: maxBots,
+        limit: limits.bots,
         planId: subscription?.planId
       };
     }
 
     if (type === 'notifications') {
-      const maxNotifications =
-        typeof limits.maxNotifications === 'number'
-          ? limits.maxNotifications
-          : undefined;
-
-      if (!maxNotifications) {
-        return {
-          allowed: true,
-          used: 0,
-          limit: Number.MAX_SAFE_INTEGER,
-          planId: subscription?.planId
-        };
-      }
-
       const notificationsCount = await db.notification.count({
         where: {
           project: { ownerId: adminId }
         }
       });
 
+      if (isUnlimited(limits.notifications)) {
+        return {
+          allowed: true,
+          used: notificationsCount,
+          limit: -1,
+          planId: subscription?.planId
+        };
+      }
+
       return {
-        allowed: notificationsCount < maxNotifications,
+        allowed: notificationsCount < limits.notifications,
         used: notificationsCount,
-        limit: maxNotifications,
+        limit: limits.notifications,
         planId: subscription?.planId
       };
     }
@@ -436,7 +437,7 @@ export class BillingService {
         where: { code: data.promoCode }
       });
 
-      if (promo && plan && this.isPromoCodeValid(promo, plan.slug)) {
+      if (promo && plan && isPromoCodeValid(promo, plan.slug)) {
         promoCodeId = promo.id;
         await db.promoCode.update({
           where: { id: promo.id },
@@ -519,20 +520,73 @@ export class BillingService {
   }
 
   /**
-   * Валидация промокода
+   * Управление автопродлением и сохранённым способом оплаты ЮKassa.
    */
-  private static isPromoCodeValid(promo: any, planSlug: string): boolean {
-    if (!promo.isActive) return false;
-    if (promo.validFrom > new Date()) return false;
-    if (promo.validUntil && promo.validUntil < new Date()) return false;
-    if (promo.maxUses && promo.usedCount >= promo.maxUses) return false;
-    if (
-      promo.applicablePlans.length > 0 &&
-      !promo.applicablePlans.includes(planSlug)
-    )
-      return false;
+  static async setAutoRenewSettings(params: {
+    subscriptionId: string;
+    enabled: boolean;
+    removePaymentMethod?: boolean;
+    performedBy: string;
+    reason?: string;
+  }) {
+    const subscription = await db.subscription.findUnique({
+      where: { id: params.subscriptionId },
+      select: {
+        id: true,
+        planId: true,
+        autoRenewEnabled: true,
+        paymentMethod: true
+      }
+    });
 
-    return true;
+    if (!subscription) {
+      throw new Error('Подписка не найдена');
+    }
+
+    const clearPaymentMethod =
+      params.removePaymentMethod === true || !params.enabled;
+
+    await db.$transaction([
+      db.subscription.update({
+        where: { id: params.subscriptionId },
+        data: {
+          autoRenewEnabled: params.enabled,
+          ...(clearPaymentMethod ? { paymentMethod: null } : {})
+        }
+      }),
+      db.subscriptionHistory.create({
+        data: {
+          subscriptionId: params.subscriptionId,
+          action: 'auto_renew_changed',
+          toPlanId: subscription.planId,
+          reason:
+            params.reason ??
+            (params.enabled
+              ? 'auto_renew_enabled'
+              : clearPaymentMethod
+                ? 'auto_renew_disabled_card_removed'
+                : 'auto_renew_disabled'),
+          performedBy: params.performedBy
+        }
+      })
+    ]);
+
+    logger.info('Subscription auto-renew updated', {
+      subscriptionId: params.subscriptionId,
+      enabled: params.enabled,
+      removePaymentMethod: clearPaymentMethod,
+      performedBy: params.performedBy
+    });
+  }
+
+  /**
+   * @deprecated Используйте isPromoCodeValid из billing-pricing.service
+   */
+  private static isPromoCodeValid(
+    promo: Parameters<typeof isPromoCodeValid>[0],
+    planSlug: string
+  ) {
+    return isPromoCodeValid(promo, planSlug);
   }
 
   /**
@@ -597,26 +651,25 @@ export class BillingService {
   static async getCurrentPlan(adminId: string): Promise<BillingPlan | null> {
     const subscription = await this.getActiveSubscription(adminId);
     if (subscription) {
-      const features = (subscription.plan.features as any) || [];
+      const formatted = formatPlan(subscription.plan, {
+        status: subscription.status,
+        startDate: subscription.startDate,
+        endDate: subscription.endDate,
+        nextPaymentDate: subscription.nextPaymentDate
+      });
+      const limits = resolveEffectiveLimits(
+        subscription.plan,
+        subscription.customLimits as Record<string, unknown> | null
+      );
       return {
-        id: subscription.plan.id,
-        name: subscription.plan.name,
-        price: Number(subscription.plan.price),
-        currency: subscription.plan.currency,
-        interval: subscription.plan.interval as 'month' | 'year',
-        features: Array.isArray(features) ? features : [],
-        limits: {
-          projects: subscription.plan.maxProjects,
-          users: subscription.plan.maxUsersPerProject,
-          bots:
-            typeof subscription.plan.maxBots === 'number'
-              ? subscription.plan.maxBots
-              : 5,
-          notifications:
-            typeof subscription.plan.maxNotifications === 'number'
-              ? subscription.plan.maxNotifications
-              : 10000
-        }
+        id: formatted.id,
+        name: formatted.name,
+        price: formatted.price,
+        currency: formatted.currency,
+        interval: formatted.interval,
+        features: formatted.features,
+        limits,
+        popular: formatted.popular
       };
     }
 
@@ -689,18 +742,9 @@ export class BillingService {
     resourceType: 'projects' | 'users' | 'bots' | 'notifications',
     threshold: number = 0.8
   ): Promise<boolean> {
-    if (resourceType === 'projects' || resourceType === 'users') {
-      const { used, limit } = await this.checkLimit(adminId, resourceType);
-      if (limit === -1) return false; // Безлимитный план
-      return used / limit >= threshold;
-    }
-
-    // Для bots и notifications используем старую логику
-    const usage = await this.getUsageStats(adminId);
-    if (!usage) return false;
-
-    const resourceUsage = usage.usage[resourceType];
-    if (resourceUsage.limit === -1) return false;
-    return resourceUsage.used / resourceUsage.limit >= threshold;
+    const { used, limit } = await this.checkLimit(adminId, resourceType);
+    if (limit === -1) return false;
+    if (limit === 0) return false;
+    return used / limit >= threshold;
   }
 }

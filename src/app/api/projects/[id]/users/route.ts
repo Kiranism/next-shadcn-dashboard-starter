@@ -260,7 +260,9 @@ async function postHandler(
     // Проверка лимита пользователей
     try {
       const { BillingService } = await import('@/lib/services/billing.service');
-      const limitCheck = await BillingService.checkLimit(admin.sub, 'users');
+      const limitCheck = await BillingService.checkLimit(admin.sub, 'users', {
+        projectId: id
+      });
 
       if (!limitCheck.allowed) {
         return NextResponse.json(

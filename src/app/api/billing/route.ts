@@ -11,11 +11,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { verifyJwt } from '@/lib/jwt';
 import { logger } from '@/lib/logger';
+import { BillingService } from '@/lib/services/billing.service';
 import { formatPlan, toNumber } from '@/lib/services/billing-plan.utils';
 import { InvoiceService } from '@/lib/services/invoice.service';
 import { Prisma } from '@prisma/client';
-
-const ACTIVE_SUBSCRIPTION_STATUSES = ['active', 'trial', 'paused'];
 
 const buildPaymentHistory = async (
   subscription:
@@ -62,6 +61,8 @@ const buildPaymentHistory = async (
         return 'Подписка продлена';
       case 'cancelled':
         return 'Подписка отменена';
+      case 'auto_renew_changed':
+        return 'Изменение автопродления';
       default:
         return 'Изменение подписки';
     }
@@ -132,20 +133,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Admin not found' }, { status: 404 });
     }
 
-    const subscription = await db.subscription.findFirst({
-      where: {
-        adminAccountId: admin.id,
-        status: { in: ACTIVE_SUBSCRIPTION_STATUSES }
-      },
-      orderBy: { startDate: 'desc' },
-      include: {
-        plan: true,
-        history: {
-          orderBy: { createdAt: 'desc' },
-          take: 10
+    const activeSubscription = await BillingService.getActiveSubscription(
+      admin.id
+    );
+
+    const subscription = activeSubscription
+      ? {
+          ...activeSubscription,
+          history: await db.subscriptionHistory.findMany({
+            where: { subscriptionId: activeSubscription.id },
+            orderBy: { createdAt: 'desc' },
+            take: 10
+          })
         }
-      }
-    });
+      : null;
 
     let planRecord = subscription?.plan;
 
@@ -246,7 +247,9 @@ export async function GET(request: NextRequest) {
             nextPaymentDate:
               subscription.nextPaymentDate?.toISOString() ?? null,
             daysUntilExpiration,
-            expirationWarning
+            expirationWarning,
+            autoRenewEnabled: subscription.autoRenewEnabled,
+            hasSavedPaymentMethod: Boolean(subscription.paymentMethod)
           }
         : null
     });

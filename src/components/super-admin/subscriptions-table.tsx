@@ -28,7 +28,8 @@ import {
   RefreshCw,
   Ban,
   History,
-  Plus
+  Plus,
+  Repeat
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,6 +62,7 @@ import {
 import { ChangePlanDialog } from './change-plan-dialog';
 import { CancelSubscriptionDialog } from './cancel-subscription-dialog';
 import { SubscriptionDialog } from './subscription-dialog';
+import { AutoRenewDialog } from './auto-renew-dialog';
 import { toast } from 'sonner';
 
 interface Subscription {
@@ -68,6 +70,9 @@ interface Subscription {
   status: 'active' | 'cancelled' | 'expired' | 'trial';
   startDate: string;
   endDate: string | null;
+  nextPaymentDate?: string | null;
+  autoRenewEnabled?: boolean;
+  paymentMethod?: string | null;
   adminAccount: {
     id: string;
     email: string;
@@ -157,6 +162,28 @@ const columns: ColumnDef<Subscription>[] = [
     }
   },
   {
+    accessorKey: 'autoRenewEnabled',
+    header: 'Автопродление',
+    cell: ({ row }) => {
+      const sub = row.original;
+      if (!sub.paymentMethod && !sub.autoRenewEnabled) {
+        return <span className='text-muted-foreground'>—</span>;
+      }
+      return (
+        <div className='flex flex-col gap-0.5'>
+          <Badge variant={sub.autoRenewEnabled ? 'default' : 'secondary'}>
+            {sub.autoRenewEnabled ? 'Вкл.' : 'Выкл.'}
+          </Badge>
+          {sub.paymentMethod && (
+            <span className='text-muted-foreground text-xs'>
+              карта сохранена
+            </span>
+          )}
+        </div>
+      );
+    }
+  },
+  {
     accessorKey: 'promoCode',
     header: 'Промокод',
     cell: ({ row }) => {
@@ -225,6 +252,7 @@ function SubscriptionActions({
 }) {
   const [showChangePlan, setShowChangePlan] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
+  const [showAutoRenew, setShowAutoRenew] = useState(false);
 
   const handleSuccess = () => {
     onUpdate();
@@ -253,6 +281,10 @@ function SubscriptionActions({
               </DropdownMenuItem>
             </>
           )}
+          <DropdownMenuItem onClick={() => setShowAutoRenew(true)}>
+            <Repeat className='mr-2 h-4 w-4' />
+            Автопродление / карта
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem>
             <History className='mr-2 h-4 w-4' />
@@ -274,6 +306,15 @@ function SubscriptionActions({
         <CancelSubscriptionDialog
           open={showCancel}
           onOpenChange={setShowCancel}
+          subscription={subscription}
+          onSuccess={handleSuccess}
+        />
+      )}
+
+      {showAutoRenew && (
+        <AutoRenewDialog
+          open={showAutoRenew}
+          onOpenChange={setShowAutoRenew}
           subscription={subscription}
           onSuccess={handleSuccess}
         />

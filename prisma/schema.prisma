@@ -849,7 +849,8 @@ model Subscription {
 
   // Биллинг (для будущей интеграции)
   billingEmail    String?   @map("billing_email")
-  paymentMethod   String?   @map("payment_method")
+  paymentMethod   String?   @map("payment_method") // YooKassa payment_method_id
+  autoRenewEnabled Boolean  @default(false) @map("auto_renew_enabled")
   lastPaymentDate DateTime? @map("last_payment_date")
   nextPaymentDate DateTime? @map("next_payment_date")
 
