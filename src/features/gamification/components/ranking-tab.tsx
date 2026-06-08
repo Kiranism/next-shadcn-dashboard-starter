@@ -51,7 +51,14 @@ export function RankingTab() {
     );
   }
 
-  const sorted = [...leaderboard].sort((a, b) => b.total_points - a.total_points);
+  // TEMP: offset manual de pontos históricos anteriores ao sistema
+  const HOUSE_OFFSET: Record<string, number> = { lumina: 710, voltus: 650, nexus: 105 };
+  const withOffset = leaderboard.map((entry) => ({
+    ...entry,
+    total_points: entry.total_points + (HOUSE_OFFSET[entry.house_name.toLowerCase()] ?? 0)
+  }));
+
+  const sorted = [...withOffset].sort((a, b) => b.total_points - a.total_points);
 
   return (
     <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>

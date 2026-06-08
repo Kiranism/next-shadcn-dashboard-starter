@@ -65,8 +65,8 @@ export const navGroups: NavGroup[] = [
   },
   {
     label: 'Comercial',
-    minRank: 3,
-    allowedSectors: ['comercial', 'marketing'],
+    minRank: 0,
+    allowedSectors: ['comercial'],
     items: [
       {
         title: 'Leads',
@@ -75,8 +75,8 @@ export const navGroups: NavGroup[] = [
         shortcut: ['l', 'l'],
         isActive: false,
         items: [],
-        minRank: 3,
-        allowedSectors: ['comercial', 'marketing']
+        minRank: 0,
+        allowedSectors: ['comercial']
       },
       {
         title: 'Portfólio',
@@ -85,8 +85,8 @@ export const navGroups: NavGroup[] = [
         shortcut: ['o', 'p'],
         isActive: false,
         items: [],
-        minRank: 3,
-        allowedSectors: ['comercial', 'marketing']
+        minRank: 0,
+        allowedSectors: ['comercial']
       }
     ]
   },

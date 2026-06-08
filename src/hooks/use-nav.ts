@@ -9,7 +9,8 @@ function isAccessible(
   rank: number,
   sector: string | null
 ): boolean {
-  if ((minRank ?? 0) <= rank) return true;
+  if (minRank === undefined && allowedSectors === undefined) return true;
+  if (minRank !== undefined && rank >= minRank) return true;
   if (allowedSectors && sector && allowedSectors.includes(sector)) return true;
   return false;
 }
