@@ -52,6 +52,14 @@ export const navGroups: NavGroup[] = [
         shortcut: ['g', 'g'],
         isActive: false,
         items: []
+      },
+      {
+        title: 'Processo Seletivo',
+        url: '/dashboard/psel',
+        icon: 'forms',
+        shortcut: ['p', 's'],
+        isActive: false,
+        items: []
       }
     ]
   },

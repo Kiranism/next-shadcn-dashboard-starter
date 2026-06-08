@@ -29,3 +29,4 @@ export type {
   SendNotificationPayload,
   SendNotificationResponse
 } from './notifications.repository';
+export { SelectionProcessRepository } from './selection-process.repository';
