@@ -2,6 +2,7 @@ import { db } from '@/lib/db';
 import { NormalizedOrder } from '../integration/tilda-parser.service';
 import { UserService, BonusService } from '@/lib/services/user.service';
 import { BonusLevelService } from '@/lib/services/bonus-level.service';
+import { splitFullName } from '@/lib/user-display';
 import { logger } from '@/lib/logger';
 
 export interface OrderProcessingResult {
@@ -75,28 +76,39 @@ export class OrderProcessingService {
     }
 
     if (!user) {
-      const nameParts = order.name ? order.name.trim().split(' ') : ['', ''];
+      const { firstName, lastName } = splitFullName(order.name);
       user = await UserService.createUser({
         projectId,
         email: order.email || '',
         phone: order.phone || '',
-        firstName: nameParts[0],
-        lastName: nameParts.slice(1).join(' '),
+        firstName,
+        lastName,
         utmSource: order.utmSource || '',
         utmOrg: order.utmOrg
       });
-    } else if (isSignupForm && order.utmSource) {
-      const linkResult = await UserService.linkReferralFromAttribution({
-        userId: user.id,
-        projectId,
-        utmRef: order.utmSource,
-        utmOrg: order.utmOrg
-      });
-      if (linkResult.linked) {
-        user = (await db.user.findFirst({
-          where: { id: user.id, projectId },
+    } else if (isSignupForm) {
+      if (order.name?.trim() && !user.firstName?.trim()) {
+        const { firstName, lastName } = splitFullName(order.name);
+        user = (await db.user.update({
+          where: { id: user.id },
+          data: { firstName, lastName },
           include: { project: true, bonuses: true, transactions: true }
-        })) as any;
+        })) as typeof user;
+      }
+
+      if (order.utmSource) {
+        const linkResult = await UserService.linkReferralFromAttribution({
+          userId: user.id,
+          projectId,
+          utmRef: order.utmSource,
+          utmOrg: order.utmOrg
+        });
+        if (linkResult.linked) {
+          user = (await db.user.findFirst({
+            where: { id: user.id, projectId },
+            include: { project: true, bonuses: true, transactions: true }
+          })) as typeof user;
+        }
       }
     }
 

@@ -86,6 +86,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import { formatUserDisplayName } from '@/lib/user-display';
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
 import { Loader2 } from 'lucide-react';
 import * as xlsx from 'xlsx';
@@ -583,9 +584,11 @@ export function ProjectUsersView({ projectId }: ProjectUsersViewProps) {
 
       const csvData = usersArray.map((user: any) => [
         user.id || '',
-        user.firstName && user.lastName
-          ? `${user.firstName} ${user.lastName}`.trim()
-          : user.email || '',
+        formatUserDisplayName({
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email
+        }),
         user.email || '',
         user.phone || '',
         user.telegramId || '',
@@ -653,10 +656,11 @@ export function ProjectUsersView({ projectId }: ProjectUsersViewProps) {
 
       const excelData = usersArray.map((user: any) => ({
         ID: user.id || '',
-        Имя:
-          user.firstName && user.lastName
-            ? `${user.firstName} ${user.lastName}`.trim()
-            : user.email || '',
+        Имя: formatUserDisplayName({
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email
+        }),
         Email: user.email || '',
         Телефон: user.phone || '',
         'Telegram ID': user.telegramId || '',
@@ -1194,10 +1198,12 @@ export function ProjectUsersView({ projectId }: ProjectUsersViewProps) {
             <UsersTable
               data={users.map((user) => ({
                 ...user,
-                name:
-                  user.firstName && user.lastName
-                    ? `${user.firstName} ${user.lastName}`.trim()
-                    : user.email || 'Без имени',
+                name: formatUserDisplayName({
+                  firstName: user.firstName,
+                  lastName: user.lastName,
+                  email: user.email,
+                  fallback: 'Без имени'
+                }),
                 bonusBalance: user.bonusBalance || 0,
                 activeBonuses: user.bonusBalance || 0,
                 totalEarned: user.totalEarned || 0,

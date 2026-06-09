@@ -24,7 +24,10 @@ export async function POST(
       requestId,
       reviewerUserId: auth.partner.id
     });
-    return NextResponse.json({ request: result });
+    return NextResponse.json({
+      request: result.request,
+      partnerRole: result.partnerRole
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Server error';
     return NextResponse.json({ error: msg }, { status: 403 });

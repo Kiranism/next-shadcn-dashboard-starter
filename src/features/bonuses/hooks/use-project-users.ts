@@ -10,6 +10,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { logger } from '@/lib/logger';
 import { validateWithSchema, createUserSchema } from '@/lib/validation/schemas';
+import { formatUserDisplayName } from '@/lib/user-display';
 import type { DisplayUser as User } from '../types';
 
 interface UseProjectUsersOptions {
@@ -166,10 +167,12 @@ export function useProjectUsers({
         const formattedUsers: User[] = usersArray.map(
           (user: any, index: number) => ({
             id: user.id || `user-${index}`,
-            name:
-              user.firstName && user.lastName
-                ? `${user.firstName} ${user.lastName}`.trim()
-                : user.email || `Пользователь ${index + 1}`,
+            name: formatUserDisplayName({
+              firstName: user.firstName,
+              lastName: user.lastName,
+              email: user.email,
+              fallback: `Пользователь ${index + 1}`
+            }),
             email: user.email || '',
             phone: user.phone || '',
             avatar:

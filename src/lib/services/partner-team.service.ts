@@ -467,6 +467,18 @@ export class PartnerTeamService {
     }));
   }
 
+  static resolveRoleOnJoinApproval(referrerRole: PartnerRole): PartnerRole {
+    switch (referrerRole) {
+      case 'DIRECTOR':
+        return 'MANAGER';
+      case 'MANAGER':
+        return 'TRAINER';
+      case 'TRAINER':
+      default:
+        return 'CLIENT';
+    }
+  }
+
   static async approveJoinRequest(params: {
     projectId: string;
     requestId: string;
@@ -487,10 +499,27 @@ export class PartnerTeamService {
     );
     if (!canReview) throw new Error('Нет прав одобрить эту заявку');
 
+    const [referrer, applicant] = await Promise.all([
+      db.user.findFirst({
+        where: { id: request.referrerId, projectId: params.projectId },
+        select: { partnerRole: true }
+      }),
+      db.user.findFirst({
+        where: { id: request.userId, projectId: params.projectId },
+        select: { partnerRole: true }
+      })
+    ]);
+
+    const partnerRole =
+      applicant?.partnerRole && applicant.partnerRole !== 'CLIENT'
+        ? applicant.partnerRole
+        : this.resolveRoleOnJoinApproval(referrer?.partnerRole ?? 'TRAINER');
+
     await db.user.update({
       where: { id: request.userId },
       data: {
         referredBy: request.referrerId,
+        partnerRole,
         ...(request.organizationId
           ? { organizationId: request.organizationId }
           : {})
@@ -522,7 +551,7 @@ export class PartnerTeamService {
       params.projectId
     );
 
-    return request;
+    return { request, partnerRole };
   }
 
   static async rejectJoinRequest(params: {

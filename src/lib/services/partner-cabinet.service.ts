@@ -80,13 +80,19 @@ export class PartnerCabinetService {
     try {
       if (data.startsWith('partner_join_approve:')) {
         const requestId = data.split(':')[1];
-        await PartnerTeamService.approveJoinRequest({
+        const result = await PartnerTeamService.approveJoinRequest({
           projectId,
           requestId,
           reviewerUserId: userId
         });
+        const roleLabel =
+          result.partnerRole === 'MANAGER'
+            ? 'Менеджер'
+            : result.partnerRole === 'TRAINER'
+              ? 'Тренер'
+              : 'Клиент';
         await ctx.answerCallbackQuery({ text: '✅ Заявка одобрена' });
-        await ctx.reply('✅ Клиент добавлен в вашу команду.');
+        await ctx.reply(`✅ ${roleLabel} добавлен в вашу команду.`);
         return true;
       }
 
