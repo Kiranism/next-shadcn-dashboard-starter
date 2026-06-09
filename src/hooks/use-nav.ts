@@ -9,7 +9,7 @@ function isAccessible(
   rank: number,
   sector: string | null
 ): boolean {
-  if (rank > 3) return true; // Admins have access to everything
+  if (rank >= 3) return true; // Admins have access to everything
   if (minRank !== undefined && rank < minRank) return false;
   if (allowedSectors && (!sector || !allowedSectors.includes(sector))) return false;
   return true;
