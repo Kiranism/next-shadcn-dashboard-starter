@@ -3,6 +3,7 @@ import { NavGroup } from '@/types';
 export const navGroups: NavGroup[] = [
   {
     label: 'Geral',
+    minRank: 0,
     items: [
       {
         title: 'Individual',
@@ -10,6 +11,7 @@ export const navGroups: NavGroup[] = [
         icon: 'user2',
         shortcut: ['i', 'i'],
         isActive: false,
+        minRank: 0,
         items: []
       },
       {
@@ -18,6 +20,7 @@ export const navGroups: NavGroup[] = [
         icon: 'clock',
         shortcut: ['p', 'p'],
         isActive: false,
+        minRank: 0,
         items: []
       },
       {
@@ -35,7 +38,8 @@ export const navGroups: NavGroup[] = [
         icon: 'receipt',
         shortcut: ['r', 'r'],
         isActive: false,
-        items: []
+        items: [],
+        minRank: 0
       },
       {
         title: 'Manual de Conduta',
@@ -43,7 +47,8 @@ export const navGroups: NavGroup[] = [
         icon: 'post',
         shortcut: ['m', 'c'],
         isActive: false,
-        items: []
+        items: [],
+        minRank: 0
       },
       {
         title: 'Hogwatts',
@@ -51,7 +56,8 @@ export const navGroups: NavGroup[] = [
         icon: 'trophy',
         shortcut: ['g', 'g'],
         isActive: false,
-        items: []
+        items: [],
+        minRank: 0
       },
       {
         title: 'Processo Seletivo',
@@ -59,7 +65,8 @@ export const navGroups: NavGroup[] = [
         icon: 'forms',
         shortcut: ['p', 's'],
         isActive: false,
-        items: []
+        items: [],
+        minRank: 0
       }
     ]
   },

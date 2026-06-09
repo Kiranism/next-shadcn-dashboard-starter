@@ -23,6 +23,7 @@ import { useUserProfile } from '@/components/providers/user-profile-provider';
 import { SelectionProcessRepository } from '@/repositories/selection-process.repository';
 import { toUserMessage } from '@/lib/api-client';
 import { ApplicationStatusBadge } from './application-status-badge';
+import { PhotoLightbox } from './photo-lightbox';
 import type { SelectionProcessApplication } from '@/types/selection-process';
 
 function formatDate(iso: string) {
@@ -46,6 +47,7 @@ function ApplicationSheet({
   onOpenChange: (open: boolean) => void;
   canUpdate: boolean;
 }) {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const updateMutation = SelectionProcessRepository.useUpdateApplicationStatus();
 
   function handleStatus(status: 'approved' | 'reproved') {
@@ -78,14 +80,28 @@ function ApplicationSheet({
 
         {/* Photo */}
         {application.photo_signed_url && (
-          <div className='mb-5 overflow-hidden rounded-xl'>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+          <>
+            <div
+              className='relative group/photo mb-5 overflow-hidden rounded-xl cursor-zoom-in'
+              onClick={() => setLightboxOpen(true)}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={application.photo_signed_url}
+                alt={application.name}
+                className='w-full object-cover max-h-64'
+              />
+              <div className='absolute inset-0 bg-black/0 group-hover/photo:bg-black/20 transition-colors flex items-center justify-center'>
+                <Icons.maximize className='size-6 text-white opacity-0 group-hover/photo:opacity-100 transition-opacity drop-shadow-lg' />
+              </div>
+            </div>
+            <PhotoLightbox
               src={application.photo_signed_url}
               alt={application.name}
-              className='w-full object-cover max-h-64'
+              open={lightboxOpen}
+              onOpenChange={setLightboxOpen}
             />
-          </div>
+          </>
         )}
 
         {/* Status */}
@@ -208,6 +224,7 @@ function ApplicationCard({
   canUpdate: boolean;
   onOpen: () => void;
 }) {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const updateMutation = SelectionProcessRepository.useUpdateApplicationStatus();
   const isPending = updateMutation.isPending;
 
@@ -293,16 +310,36 @@ function ApplicationCard({
 
       {/* Photo */}
       {application.photo_signed_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={application.photo_signed_url}
-          alt={application.name}
-          className='w-full aspect-[4/3] object-cover object-top'
-        />
+        <div className='relative group/photo'>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={application.photo_signed_url}
+            alt={application.name}
+            className='w-full aspect-[4/3] object-cover object-top'
+          />
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightboxOpen(true);
+            }}
+            className='absolute bottom-2 right-2 rounded-md bg-black/50 p-1.5 text-white opacity-0 group-hover/photo:opacity-100 transition-opacity hover:bg-black/70'
+            title='Ver em tela cheia'
+          >
+            <Icons.maximize className='size-3.5' />
+          </button>
+        </div>
       ) : (
         <div className='w-full aspect-[4/3] bg-muted flex items-center justify-center'>
           <Icons.user2 className='size-12 text-muted-foreground/40' />
         </div>
+      )}
+      {application.photo_signed_url && (
+        <PhotoLightbox
+          src={application.photo_signed_url}
+          alt={application.name}
+          open={lightboxOpen}
+          onOpenChange={setLightboxOpen}
+        />
       )}
     </div>
   );

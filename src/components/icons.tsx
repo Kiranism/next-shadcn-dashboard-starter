@@ -2,6 +2,7 @@ import type { IconProps } from '@tabler/icons-react';
 import {
   IconAdjustmentsHorizontal,
   IconAlertCircle,
+  IconArrowsMaximize,
   IconAlertTriangle,
   IconArrowRight,
   IconBell,
@@ -261,5 +262,6 @@ export const Icons = {
   calendar: IconCalendar,
   galleryVerticalEnd: IconStack2,
   trophy: IconTrophyFilled,
-  moreHorizontal: IconDots
+  moreHorizontal: IconDots,
+  maximize: IconArrowsMaximize
 };

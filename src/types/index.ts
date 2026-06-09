@@ -27,7 +27,7 @@ export interface NavItem {
 export interface NavGroup {
   label: string;
   items: NavItem[];
-  minRank?: number;
+  minRank: number;
   allowedSectors?: string[];
 }
 

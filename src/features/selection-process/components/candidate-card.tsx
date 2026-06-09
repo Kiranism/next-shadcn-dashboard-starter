@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,6 +14,7 @@ import { Icons } from '@/components/icons';
 import { SelectionProcessRepository } from '@/repositories/selection-process.repository';
 import { toUserMessage } from '@/lib/api-client';
 import { CandidateStatusBadge } from './candidate-status-badge';
+import { PhotoLightbox } from './photo-lightbox';
 import type { Candidate } from '@/types/selection-process';
 
 interface CandidateCardProps {
@@ -28,6 +30,7 @@ export function CandidateCard({
   canEdit,
   onOpen
 }: CandidateCardProps) {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const updateMutation = SelectionProcessRepository.useUpdateCandidate();
   const isPending = updateMutation.isPending;
   const isActive = candidate.status === 'active';
@@ -51,16 +54,36 @@ export function CandidateCard({
     >
       {/* Photo */}
       {candidate.photo_signed_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={candidate.photo_signed_url}
-          alt={candidate.name}
-          className='w-full aspect-[4/3] object-cover object-top'
-        />
+        <div className='relative group/photo'>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={candidate.photo_signed_url}
+            alt={candidate.name}
+            className='w-full aspect-[4/3] object-cover object-top'
+          />
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightboxOpen(true);
+            }}
+            className='absolute bottom-2 right-2 rounded-md bg-black/50 p-1.5 text-white opacity-0 group-hover/photo:opacity-100 transition-opacity hover:bg-black/70'
+            title='Ver em tela cheia'
+          >
+            <Icons.maximize className='size-3.5' />
+          </button>
+        </div>
       ) : (
         <div className='w-full aspect-[4/3] bg-muted flex items-center justify-center'>
           <Icons.user2 className='size-12 text-muted-foreground/40' />
         </div>
+      )}
+      {candidate.photo_signed_url && (
+        <PhotoLightbox
+          src={candidate.photo_signed_url}
+          alt={candidate.name}
+          open={lightboxOpen}
+          onOpenChange={setLightboxOpen}
+        />
       )}
 
       {/* Content */}
@@ -137,6 +160,7 @@ export function CandidateSheet({
   onOpenChange,
   canEdit
 }: CandidateSheetProps) {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const updateMutation = SelectionProcessRepository.useUpdateCandidate();
 
   function handleAction(status: 'approved' | 'reproved') {
@@ -170,14 +194,28 @@ export function CandidateSheet({
 
         {/* Photo */}
         {candidate.photo_signed_url && (
-          <div className='mb-5 overflow-hidden rounded-xl'>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+          <>
+            <div
+              className='relative group/photo mb-5 overflow-hidden rounded-xl cursor-zoom-in'
+              onClick={() => setLightboxOpen(true)}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={candidate.photo_signed_url}
+                alt={candidate.name}
+                className='w-full object-cover object-top max-h-64'
+              />
+              <div className='absolute inset-0 bg-black/0 group-hover/photo:bg-black/20 transition-colors flex items-center justify-center'>
+                <Icons.maximize className='size-6 text-white opacity-0 group-hover/photo:opacity-100 transition-opacity drop-shadow-lg' />
+              </div>
+            </div>
+            <PhotoLightbox
               src={candidate.photo_signed_url}
               alt={candidate.name}
-              className='w-full object-cover object-top max-h-64'
+              open={lightboxOpen}
+              onOpenChange={setLightboxOpen}
             />
-          </div>
+          </>
         )}
 
         <div className='mb-4 flex items-center gap-2'>

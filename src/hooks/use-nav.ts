@@ -9,10 +9,10 @@ function isAccessible(
   rank: number,
   sector: string | null
 ): boolean {
-  if (minRank === undefined && allowedSectors === undefined) return true;
-  if (minRank !== undefined && rank >= minRank) return true;
-  if (allowedSectors && sector && allowedSectors.includes(sector)) return true;
-  return false;
+  if (rank > 3) return true; // Admins have access to everything
+  if (minRank !== undefined && rank < minRank) return false;
+  if (allowedSectors && (!sector || !allowedSectors.includes(sector))) return false;
+  return true;
 }
 
 export function useFilteredNavItems(items: NavItem[]): NavItem[] {
