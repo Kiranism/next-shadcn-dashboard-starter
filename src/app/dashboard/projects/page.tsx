@@ -8,18 +8,21 @@
  */
 
 import { Metadata } from 'next';
+import { Suspense } from 'react';
 import PageContainer from '@/components/layout/page-container';
 import { ProjectsView } from '@/features/projects/components/projects-view-page';
 
 export const metadata: Metadata = {
   title: 'Проекты - SaaS Bonus System',
-  description: 'Управление проектами бонусной системы',
+  description: 'Управление проектами бонусной системы'
 };
 
 export default function ProjectsPage() {
   return (
     <PageContainer scrollable={false}>
-      <ProjectsView />
+      <Suspense>
+        <ProjectsView />
+      </Suspense>
     </PageContainer>
   );
-} 
+}

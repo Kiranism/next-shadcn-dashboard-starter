@@ -57,6 +57,10 @@ import {
 import { OperationModeConfirmDialog } from './operation-mode-confirm-dialog';
 import { BonusModeSelector } from './bonus-mode-selector';
 import { B2bHierarchySettings } from './b2b-hierarchy-settings';
+import {
+  ProjectNotFoundState,
+  type ProjectLoadError
+} from './project-not-found-state';
 
 interface ProjectSettingsViewProps {
   projectId: string;
@@ -73,6 +77,7 @@ export function ProjectSettingsView({
 
   // State
   const [project, setProject] = useState<Project | null>(null);
+  const [loadError, setLoadError] = useState<ProjectLoadError | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -136,6 +141,7 @@ export function ProjectSettingsView({
 
       if (projectResponse.ok) {
         const projectData = await projectResponse.json();
+        setLoadError(null);
         setProject(projectData);
         setFormData({
           name: projectData.name || '',
@@ -158,34 +164,15 @@ export function ProjectSettingsView({
           maxPaymentPercentage: Number(projectData.maxPaymentPercentage) || 100
         });
       } else if (projectResponse.status === 403) {
-        // Проект не принадлежит текущему админу
-        toast({
-          title: 'Доступ запрещен',
-          description:
-            'Этот проект не принадлежит вашему аккаунту. Если проект был создан до обновления, его нужно привязать через миграцию.',
-          variant: 'destructive'
-        });
+        setLoadError('forbidden');
       } else if (projectResponse.status === 404) {
-        toast({
-          title: 'Проект не найден',
-          description: 'Проект с указанным ID не существует',
-          variant: 'destructive'
-        });
+        setLoadError('not_found');
       } else {
-        const errorData = await projectResponse.json().catch(() => ({}));
-        toast({
-          title: 'Ошибка загрузки',
-          description: errorData.error || 'Не удалось загрузить данные проекта',
-          variant: 'destructive'
-        });
+        setLoadError('error');
       }
     } catch (error) {
       console.error('Ошибка загрузки проекта:', error);
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось загрузить данные проекта',
-        variant: 'destructive'
-      });
+      setLoadError('error');
     } finally {
       setLoading(false);
     }
@@ -319,33 +306,7 @@ export function ProjectSettingsView({
   }
 
   if (!project) {
-    return (
-      <div className='flex flex-1 flex-col items-center justify-center space-y-4 p-8'>
-        <div className='max-w-md space-y-4 text-center'>
-          <h3 className='text-lg font-semibold'>Проект не найден</h3>
-          <p className='text-muted-foreground text-sm'>
-            Не удалось загрузить данные проекта. Возможно, проект не принадлежит
-            вашему аккаунту.
-          </p>
-          <div className='rounded-md border border-yellow-200 bg-yellow-50 p-4 text-left'>
-            <p className='text-sm text-yellow-800'>
-              <strong>Примечание:</strong> Если проект был создан до обновления,
-              его нужно привязать к вашему аккаунту через миграцию. Запустите:{' '}
-              <code className='rounded bg-yellow-100 px-2 py-1'>
-                npm run migrate-owners migrate &lt;ваш_email&gt;
-              </code>
-            </p>
-          </div>
-          <Button
-            variant='outline'
-            onClick={() => router.push('/dashboard/projects')}
-          >
-            <ArrowLeft className='mr-2 h-4 w-4' />
-            Вернуться к проектам
-          </Button>
-        </div>
-      </div>
-    );
+    return <ProjectNotFoundState errorType={loadError ?? 'not_found'} />;
   }
 
   return (

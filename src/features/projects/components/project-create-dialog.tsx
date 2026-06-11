@@ -20,7 +20,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
+  DialogTitle
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -29,17 +29,32 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
+  FormMessage
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
+import type { Project } from '@/types/bonus';
 
 // Схема валидации
 const projectSchema = z.object({
-  name: z.string().min(1, 'Название проекта обязательно').max(100, 'Слишком длинное название'),
-  domain: z.string().min(1, 'Домен обязателен').max(255, 'Слишком длинный домен'),
-  bonusPercentage: z.number().min(0, 'Процент не может быть отрицательным').max(100, 'Максимум 100%').default(1.0),
-  bonusExpiryDays: z.number().min(1, 'Минимум 1 день').max(3650, 'Максимум 10 лет').default(365),
+  name: z
+    .string()
+    .min(1, 'Название проекта обязательно')
+    .max(100, 'Слишком длинное название'),
+  domain: z
+    .string()
+    .min(1, 'Домен обязателен')
+    .max(255, 'Слишком длинный домен'),
+  bonusPercentage: z
+    .number()
+    .min(0, 'Процент не может быть отрицательным')
+    .max(100, 'Максимум 100%')
+    .default(1.0),
+  bonusExpiryDays: z
+    .number()
+    .min(1, 'Минимум 1 день')
+    .max(3650, 'Максимум 10 лет')
+    .default(365)
 });
 
 type ProjectFormData = z.infer<typeof projectSchema>;
@@ -47,13 +62,13 @@ type ProjectFormData = z.infer<typeof projectSchema>;
 interface ProjectCreateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: () => void;
+  onSuccess: (project?: Project) => void;
 }
 
 export function ProjectCreateDialog({
   open,
   onOpenChange,
-  onSuccess,
+  onSuccess
 }: ProjectCreateDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -63,8 +78,8 @@ export function ProjectCreateDialog({
       name: '',
       domain: '',
       bonusPercentage: 1.0,
-      bonusExpiryDays: 365,
-    },
+      bonusExpiryDays: 365
+    }
   });
 
   const onSubmit = async (data: ProjectFormData) => {
@@ -74,9 +89,9 @@ export function ProjectCreateDialog({
       const response = await fetch('/api/projects', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(data)
       });
 
       if (!response.ok) {
@@ -84,14 +99,14 @@ export function ProjectCreateDialog({
         throw new Error(error.error || 'Ошибка создания проекта');
       }
 
-      // Успешное создание
+      const project = (await response.json()) as Project;
       form.reset();
-      onSuccess();
+      onSuccess(project);
     } catch (error) {
       // TODO: логгер
       // console.error('Ошибка создания проекта:', error);
       form.setError('root', {
-        message: error instanceof Error ? error.message : 'Произошла ошибка',
+        message: error instanceof Error ? error.message : 'Произошла ошибка'
       });
     } finally {
       setIsLoading(false);
@@ -109,7 +124,7 @@ export function ProjectCreateDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className='max-w-md'>
         <DialogHeader>
           <DialogTitle>Создать новый проект</DialogTitle>
           <DialogDescription>
@@ -118,15 +133,15 @@ export function ProjectCreateDialog({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
             <FormField
               control={form.control}
-              name="name"
+              name='name'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Название проекта *</FormLabel>
                   <FormControl>
-                    <Input placeholder="Мой интернет-магазин" {...field} />
+                    <Input placeholder='Мой интернет-магазин' {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -135,12 +150,12 @@ export function ProjectCreateDialog({
 
             <FormField
               control={form.control}
-              name="domain"
+              name='domain'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Домен сайта *</FormLabel>
                   <FormControl>
-                    <Input placeholder="myshop.com" {...field} />
+                    <Input placeholder='myshop.com' {...field} />
                   </FormControl>
                   <FormDescription>
                     Домен вашего сайта для интеграции
@@ -150,21 +165,23 @@ export function ProjectCreateDialog({
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className='grid grid-cols-2 gap-4'>
               <FormField
                 control={form.control}
-                name="bonusPercentage"
+                name='bonusPercentage'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Процент бонусов</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        max="100"
+                        type='number'
+                        step='0.1'
+                        min='0'
+                        max='100'
                         {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        onChange={(e) =>
+                          field.onChange(parseFloat(e.target.value) || 0)
+                        }
                       />
                     </FormControl>
                     <FormDescription>%</FormDescription>
@@ -175,17 +192,19 @@ export function ProjectCreateDialog({
 
               <FormField
                 control={form.control}
-                name="bonusExpiryDays"
+                name='bonusExpiryDays'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Срок действия</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        min="1"
-                        max="3650"
+                        type='number'
+                        min='1'
+                        max='3650'
                         {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value) || 365)}
+                        onChange={(e) =>
+                          field.onChange(parseInt(e.target.value) || 365)
+                        }
                       />
                     </FormControl>
                     <FormDescription>дней</FormDescription>
@@ -196,22 +215,22 @@ export function ProjectCreateDialog({
             </div>
 
             {form.formState.errors.root && (
-              <div className="text-sm font-medium text-destructive">
+              <div className='text-destructive text-sm font-medium'>
                 {form.formState.errors.root.message}
               </div>
             )}
 
             <DialogFooter>
               <Button
-                type="button"
-                variant="outline"
+                type='button'
+                variant='outline'
                 onClick={() => handleOpenChange(false)}
                 disabled={isLoading}
               >
                 Отмена
               </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button type='submit' disabled={isLoading}>
+                {isLoading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
                 Создать проект
               </Button>
             </DialogFooter>
@@ -220,4 +239,4 @@ export function ProjectCreateDialog({
       </DialogContent>
     </Dialog>
   );
-} 
+}

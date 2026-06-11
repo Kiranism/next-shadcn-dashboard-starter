@@ -15,7 +15,5 @@ interface ProjectPageProps {
 
 export default async function ProjectPage({ params }: ProjectPageProps) {
   const { id } = await params;
-
-  // Редирект на страницу настроек проекта
   redirect(`/dashboard/projects/${id}/settings`);
 }

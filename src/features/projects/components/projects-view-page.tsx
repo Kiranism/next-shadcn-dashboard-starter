@@ -10,6 +10,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Plus,
   Search,
@@ -18,9 +19,11 @@ import {
   BarChart3,
   Bot,
   BotOff,
+  FolderOpen,
   ShoppingCart,
   MessageSquare
 } from 'lucide-react';
+import { EmptyState } from '@/components/composite';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,15 +43,23 @@ import { ProjectCreateDialog } from './project-create-dialog';
 import type { Project } from '@/types/bonus';
 
 export function ProjectsView() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
-  // Загрузка проектов
   useEffect(() => {
     loadProjects();
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get('create') === 'true') {
+      setShowCreateDialog(true);
+      router.replace('/dashboard/projects', { scroll: false });
+    }
+  }, [searchParams, router]);
 
   const loadProjects = async () => {
     try {
@@ -82,9 +93,13 @@ export function ProjectsView() {
         project.domain.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const handleCreateProject = () => {
+  const handleCreateProject = (project?: Project) => {
     setShowCreateDialog(false);
-    loadProjects(); // Перезагружаем список после создания
+    if (project?.id) {
+      router.push(`/dashboard/projects/${project.id}/settings`);
+      return;
+    }
+    loadProjects();
   };
 
   return (
@@ -131,30 +146,28 @@ export function ProjectsView() {
           ))}
         </div>
       ) : filteredProjects.length === 0 ? (
-        <div className='py-12 text-center'>
-          <div className='mx-auto max-w-md'>
-            <div className='text-muted-foreground/50 mx-auto h-12 w-12'>
-              <BarChart3 className='h-full w-full' />
-            </div>
-            <h3 className='mt-4 text-lg font-semibold'>
-              {searchQuery ? 'Проекты не найдены' : 'Нет проектов'}
-            </h3>
-            <p className='text-muted-foreground mt-2 text-sm'>
-              {searchQuery
-                ? 'Попробуйте изменить поисковый запрос'
-                : 'Создайте первый проект для начала работы'}
-            </p>
-            {!searchQuery && (
-              <Button
-                className='mt-4'
-                onClick={() => setShowCreateDialog(true)}
-              >
-                <Plus className='mr-2 h-4 w-4' />
-                Создать проект
-              </Button>
-            )}
-          </div>
-        </div>
+        <Card className='border-dashed'>
+          <CardContent>
+            <EmptyState
+              size='lg'
+              icon={searchQuery ? Search : FolderOpen}
+              title={searchQuery ? 'Проекты не найдены' : 'Нет проектов'}
+              description={
+                searchQuery
+                  ? 'Попробуйте изменить поисковый запрос'
+                  : 'Создайте первый проект, чтобы запустить бонусную программу'
+              }
+              action={
+                !searchQuery ? (
+                  <Button onClick={() => setShowCreateDialog(true)}>
+                    <Plus className='mr-2 h-4 w-4' />
+                    Создать проект
+                  </Button>
+                ) : undefined
+              }
+            />
+          </CardContent>
+        </Card>
       ) : (
         <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
           {filteredProjects.map((project) => (
@@ -285,7 +298,7 @@ function BotStatusButton({ project }: { project: Project }) {
       // Проверяем кэш
       const cacheKey = BOT_STATUS_CACHE_KEY(project.id);
       const cached = sessionStorage.getItem(cacheKey);
-      
+
       if (cached) {
         const { data, timestamp } = JSON.parse(cached);
         if (Date.now() - timestamp < BOT_STATUS_CACHE_DURATION) {
@@ -299,12 +312,15 @@ function BotStatusButton({ project }: { project: Project }) {
       if (response.ok) {
         const data = await response.json();
         setBotSettings(data);
-        
+
         // Сохраняем в кэш
-        sessionStorage.setItem(cacheKey, JSON.stringify({
-          data,
-          timestamp: Date.now()
-        }));
+        sessionStorage.setItem(
+          cacheKey,
+          JSON.stringify({
+            data,
+            timestamp: Date.now()
+          })
+        );
       }
     } catch (error) {
       console.error('Ошибка загрузки настроек бота:', error);

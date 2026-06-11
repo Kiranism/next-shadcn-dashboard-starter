@@ -38,7 +38,8 @@ const segmentTranslations: Record<string, string> = {
   moysklad: 'МойСклад (Loyalty API)',
   'moysklad-direct': 'МойСклад (Direct API)',
   insales: 'InSales',
-  tilda: 'Tilda'
+  tilda: 'Tilda',
+  new: 'Создание проекта'
 };
 
 const routeMapping: Record<string, BreadcrumbItem[]> = {
