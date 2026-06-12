@@ -256,7 +256,7 @@ async function resolveUserVariablePath(
   return getValueByPath(flatUserVarsToNested(flat), rest.join('.'));
 }
 
-async function resolveVariablePath(
+export async function resolveVariablePath(
   path: string,
   context: ExecutionContext
 ): Promise<any> {

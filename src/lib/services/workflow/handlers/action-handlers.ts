@@ -13,6 +13,7 @@ import { QueryExecutor } from '../query-executor';
 import {
   resolveTemplateString,
   resolveTemplateValue,
+  resolveVariablePath,
   getValueByPath,
   isEmail,
   isPhone,
@@ -294,89 +295,7 @@ export class DatabaseQueryHandler extends BaseNodeHandler {
     varPath: string,
     context: ExecutionContext
   ): Promise<any> {
-    const parts = varPath.split('.');
-
-    // Если это простая переменная без точек
-    if (parts.length === 1) {
-      // ✅ КРИТИЧНО: Сначала проверяем, есть ли это свойство в контексте напрямую
-      if ((context as any)[varPath] !== undefined) {
-        console.log(
-          `✅ Resolved ${varPath} from context:`,
-          (context as any)[varPath]
-        );
-        return (context as any)[varPath];
-      }
-
-      // Если нет в контексте, ищем в session-scope переменных
-      return await context.variables.get(varPath, 'session');
-    }
-
-    // Если это вложенная переменная (например, contactReceived.phoneNumber)
-    const baseVarName = parts[0];
-    const propertyPath = parts.slice(1);
-
-    console.log(
-      `🔍 Resolving nested variable: base=${baseVarName}, path=${propertyPath.join('.')}`
-    );
-    console.log(`🔍 Context keys:`, Object.keys(context));
-    console.log(
-      `🔍 Context.contactReceived:`,
-      (context as any).contactReceived
-    );
-
-    // ✅ КРИТИЧНО: Сначала проверяем, есть ли base в контексте напрямую
-    let baseValue: any;
-    if ((context as any)[baseVarName] !== undefined) {
-      baseValue = (context as any)[baseVarName];
-      console.log(
-        `✅ Base variable ${baseVarName} from context:`,
-        baseValue,
-        'type:',
-        typeof baseValue
-      );
-    } else {
-      console.log(
-        `🔍 Base variable ${baseVarName} not in context, checking session variables...`
-      );
-      console.log(`🔍 Session ID:`, context.sessionId);
-      baseValue = await context.variables.get(baseVarName, 'session');
-      console.log(
-        `🔍 Base variable ${baseVarName} from session:`,
-        baseValue,
-        'type:',
-        typeof baseValue
-      );
-    }
-
-    if (baseValue === undefined || baseValue === null) {
-      console.log(`❌ Base variable ${baseVarName} not found`);
-      console.log(`❌ Available variables in context:`, Object.keys(context));
-
-      // Попробуем получить все переменные сессии для диагностики
-      try {
-        const allSessionVars = await context.variables.list('session');
-        console.log(`🔍 All session variables:`, Object.keys(allSessionVars));
-        console.log(`🔍 Session variables values:`, allSessionVars);
-      } catch (e) {
-        console.log(`❌ Failed to list session variables:`, e);
-      }
-
-      return undefined;
-    }
-
-    // Получаем вложенное свойство
-    let result = baseValue;
-    for (const prop of propertyPath) {
-      if (typeof result === 'object' && result !== null && prop in result) {
-        result = result[prop];
-      } else {
-        console.log(`❌ Property ${prop} not found in`, result);
-        return undefined;
-      }
-    }
-
-    console.log(`✅ Resolved nested variable ${varPath}:`, result);
-    return result;
+    return resolveVariablePath(varPath, context);
   }
 
   async validate(config: any): Promise<ValidationResult> {
