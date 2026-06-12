@@ -134,19 +134,33 @@ export async function PUT(
       );
     }
 
-    if (!body.maxBotToken) {
+    let token = body.maxBotToken;
+    let maxBotUsername = body.maxBotUsername || null;
+
+    if (!token) {
+      // Пытаемся получить существующий токен из БД
+      const existingSettings = await db.botSettings.findUnique({
+        where: { projectId: id },
+        select: { maxBotToken: true }
+      });
+      const projectData = await (db.project as any).findUnique({
+        where: { id },
+        select: { maxBotToken: true }
+      });
+      token = existingSettings?.maxBotToken || projectData?.maxBotToken;
+    }
+
+    if (!token) {
       return NextResponse.json(
         { error: 'Токен MAX бота обязателен' },
         { status: 400, headers: createCorsHeaders() }
       );
     }
 
-    let maxBotUsername = body.maxBotUsername || null;
-
     // Автоматически запрашиваем информацию о боте для получения его username
     try {
       const { Bot } = await import('@maxhub/max-bot-api');
-      const tempBot = new Bot(body.maxBotToken);
+      const tempBot = new Bot(token);
       const botInfo = await tempBot.api.getMyInfo();
       if (botInfo?.username) {
         maxBotUsername = botInfo.username;
@@ -169,7 +183,7 @@ export async function PUT(
     await (db.project as any).update({
       where: { id },
       data: {
-        maxBotToken: body.maxBotToken,
+        maxBotToken: token,
         maxBotUsername
       }
     });
@@ -183,7 +197,7 @@ export async function PUT(
       await (db.botSettings as any).update({
         where: { projectId: id },
         data: {
-          maxBotToken: body.maxBotToken,
+          maxBotToken: token,
           maxBotUsername
         }
       });
@@ -197,7 +211,7 @@ export async function PUT(
       await maxBotManager.stopBot(id);
 
       // Запускаем с новым токеном
-      await maxBotManager.createBot(id, body.maxBotToken);
+      await maxBotManager.createBot(id, token);
 
       logger.info('[MAX] Бот запущен после обновления токена', {
         projectId: id,

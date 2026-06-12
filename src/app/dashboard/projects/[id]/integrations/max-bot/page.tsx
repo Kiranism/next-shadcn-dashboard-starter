@@ -259,7 +259,12 @@ export default function MaxBotPage() {
                           ? '••••••••••••••••'
                           : 'Введите токен MAX бота'
                       }
-                      value={tokenInput}
+                      value={
+                        tokenInput ||
+                        (showToken && status?.isConfigured
+                          ? status.maxBotToken || ''
+                          : '')
+                      }
                       onChange={(e) => setTokenInput(e.target.value)}
                       required={!status?.isConfigured}
                       className='pr-10'
