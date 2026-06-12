@@ -302,8 +302,9 @@ export default function MaxBotPage() {
                     />
                   </div>
                   <p className='text-muted-foreground text-xs'>
-                    Никнейм вашего бота в системе MAX для отображения ссылок и
-                    заголовков.
+                    Никнейм вашего бота в системе MAX (например,{' '}
+                    <code>id77XXXXXXXX_bot</code>). Можно оставить пустым —
+                    определится автоматически при сохранении токена.
                   </p>
                 </div>
               </CardContent>

@@ -141,12 +141,36 @@ export async function PUT(
       );
     }
 
+    let maxBotUsername = body.maxBotUsername || null;
+
+    // Автоматически запрашиваем информацию о боте для получения его username
+    try {
+      const { Bot } = await import('@maxhub/max-bot-api');
+      const tempBot = new Bot(body.maxBotToken);
+      const botInfo = await tempBot.api.getMyInfo();
+      if (botInfo?.username) {
+        maxBotUsername = botInfo.username;
+        logger.info('[MAX] Автоматически получен username бота', {
+          projectId: id,
+          username: maxBotUsername
+        });
+      }
+    } catch (botInfoError) {
+      logger.warn('[MAX] Не удалось автоматически получить username бота', {
+        projectId: id,
+        error:
+          botInfoError instanceof Error
+            ? botInfoError.message
+            : String(botInfoError)
+      });
+    }
+
     // Сохраняем MAX токен в Project
     await (db.project as any).update({
       where: { id },
       data: {
         maxBotToken: body.maxBotToken,
-        maxBotUsername: body.maxBotUsername || null
+        maxBotUsername
       }
     });
 
@@ -160,7 +184,7 @@ export async function PUT(
         where: { projectId: id },
         data: {
           maxBotToken: body.maxBotToken,
-          maxBotUsername: body.maxBotUsername || null
+          maxBotUsername
         }
       });
     }
@@ -184,7 +208,7 @@ export async function PUT(
         {
           success: true,
           message: 'MAX бот успешно настроен и запущен',
-          maxBotUsername: body.maxBotUsername || null,
+          maxBotUsername,
           isRunning: true
         },
         { headers: createCorsHeaders() }
@@ -201,7 +225,7 @@ export async function PUT(
           success: true,
           message:
             'Токен MAX бота сохранен, но бот не удалось запустить. Попробуйте перезагрузить.',
-          maxBotUsername: body.maxBotUsername || null,
+          maxBotUsername,
           isRunning: false,
           botError:
             botError instanceof Error ? botError.message : 'Unknown error'
