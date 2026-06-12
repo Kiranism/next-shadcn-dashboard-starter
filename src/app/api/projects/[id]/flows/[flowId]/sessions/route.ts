@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { BotFlowService } from '@/lib/services/bot-flow.service';
 import { logger } from '@/lib/logger';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 // GET /api/projects/[id]/flows/[flowId]/sessions - Получение активных сессий потока
 export async function GET(
@@ -18,6 +19,9 @@ export async function GET(
 ) {
   try {
     const { id: projectId, flowId } = await context.params;
+
+    const access = await requireProjectAccess(context.params);
+    if (access instanceof NextResponse) return access;
 
     logger.info('GET /api/projects/[id]/flows/[flowId]/sessions', {
       projectId,
@@ -70,6 +74,9 @@ export async function DELETE(
 ) {
   try {
     const { id: projectId, flowId } = await context.params;
+
+    const access = await requireProjectAccess(context.params);
+    if (access instanceof NextResponse) return access;
 
     logger.info('DELETE /api/projects/[id]/flows/[flowId]/sessions', {
       projectId,

@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { BotFlowService } from '@/lib/services/bot-flow.service';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 // Схема валидации для обновления потока
 const updateFlowSchema = z.object({
@@ -30,6 +31,9 @@ export async function GET(
 ) {
   try {
     const { flowId } = await context.params;
+
+    const access = await requireProjectAccess(context.params);
+    if (access instanceof NextResponse) return access;
 
     logger.info('Получение потока бота', { flowId });
 
@@ -71,6 +75,9 @@ export async function PUT(
 ) {
   try {
     const { flowId } = await context.params;
+
+    const access = await requireProjectAccess(context.params);
+    if (access instanceof NextResponse) return access;
     const body = await request.json();
 
     // Валидация
@@ -117,6 +124,9 @@ export async function DELETE(
 ) {
   try {
     const { flowId } = await context.params;
+
+    const access = await requireProjectAccess(context.params);
+    if (access instanceof NextResponse) return access;
 
     logger.info('Удаление потока бота', { flowId });
 

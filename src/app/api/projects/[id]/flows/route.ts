@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { BotFlowService } from '@/lib/services/bot-flow.service';
 import { logger } from '@/lib/logger';
+import { requireProjectAccess } from '@/lib/with-project-access';
 import type {
   CreateFlowRequest,
   UpdateFlowRequest
@@ -22,6 +23,9 @@ export async function GET(
 ) {
   try {
     const { id: projectId } = await context.params;
+
+    const access = await requireProjectAccess(context.params);
+    if (access instanceof NextResponse) return access;
 
     logger.info('GET /api/projects/[id]/flows', { projectId });
 
@@ -69,6 +73,9 @@ export async function POST(
 ) {
   try {
     const { id: projectId } = await context.params;
+
+    const access = await requireProjectAccess(context.params);
+    if (access instanceof NextResponse) return access;
     const body = await request.json();
 
     logger.info('POST /api/projects/[id]/flows', {

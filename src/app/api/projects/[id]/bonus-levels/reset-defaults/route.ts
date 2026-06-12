@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { BonusLevelService } from '@/lib/services/bonus-level.service';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 export async function POST(
   request: NextRequest,
@@ -18,6 +19,9 @@ export async function POST(
 ) {
   try {
     const { id: projectId } = await params;
+
+    const access = await requireProjectAccess(params);
+    if (access instanceof NextResponse) return access;
 
     // Проверяем существование проекта
     const project = await db.project.findUnique({

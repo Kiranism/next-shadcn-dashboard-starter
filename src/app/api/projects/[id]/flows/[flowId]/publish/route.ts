@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FlowPublisherService } from '@/lib/services/flow-publisher.service';
 import { logger } from '@/lib/logger';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 export async function POST(
   request: NextRequest,
@@ -9,6 +10,9 @@ export async function POST(
   try {
     const { id, flowId } = await params;
     const projectId = id;
+
+    const access = await requireProjectAccess(params);
+    if (access instanceof NextResponse) return access;
 
     // Auth check should be here in a real app, skipping for internal simplicity or relying on middleware
     // const session = await getServerSession();

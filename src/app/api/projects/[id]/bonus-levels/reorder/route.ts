@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 export async function POST(
   request: NextRequest,
@@ -17,6 +18,10 @@ export async function POST(
 ) {
   try {
     const { id: projectId } = await params;
+
+    const access = await requireProjectAccess(params);
+    if (access instanceof NextResponse) return access;
+
     const body = await request.json();
     // Поддержка обоих форматов: { levels: [...] } и { levelOrders: [...] }
     const levelOrders = body?.levels || body?.levelOrders;

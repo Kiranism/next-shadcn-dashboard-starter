@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { botManager } from '@/lib/telegram/bot-manager';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 // PUT /api/projects/[id]/bot/features - Обновление функциональных настроек бота
 export async function PUT(
@@ -19,6 +20,10 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
+
+    const access = await requireProjectAccess(params);
+    if (access instanceof NextResponse) return access;
+
     const body = await request.json();
 
     // Проверяем существование проекта

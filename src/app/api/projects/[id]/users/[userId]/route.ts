@@ -13,6 +13,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { normalizePhone, isValidNormalizedPhone } from '@/lib/phone';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 /**
  * Zod-схема для PATCH-полей пользователя.
@@ -38,6 +39,9 @@ export async function GET(
   context: { params: Promise<{ id: string; userId: string }> }
 ) {
   const { id: projectId, userId } = await context.params;
+
+  const access = await requireProjectAccess(context.params);
+  if (access instanceof NextResponse) return access;
 
   try {
     const user = await db.user.findFirst({
@@ -123,6 +127,9 @@ export async function PATCH(
   context: { params: Promise<{ id: string; userId: string }> }
 ) {
   const { id: projectId, userId } = await context.params;
+
+  const access = await requireProjectAccess(context.params);
+  if (access instanceof NextResponse) return access;
 
   try {
     const user = await db.user.findFirst({ where: { id: userId, projectId } });
@@ -311,6 +318,9 @@ export async function DELETE(
   context: { params: Promise<{ id: string; userId: string }> }
 ) {
   const { id: projectId, userId } = await context.params;
+
+  const access = await requireProjectAccess(context.params);
+  if (access instanceof NextResponse) return access;
 
   try {
     const user = await db.user.findFirst({ where: { id: userId, projectId } });

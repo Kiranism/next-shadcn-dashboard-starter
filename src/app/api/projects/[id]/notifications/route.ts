@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ProjectNotificationService } from '../../../../../lib/services/project-notification.service';
 import { logger } from '../../../../../lib/logger';
 import { withApiRateLimit } from '../../../../../lib/with-rate-limit';
+import { requireProjectAccess } from '../../../../../lib/with-project-access';
 
 async function handleGET(
   request: NextRequest,
@@ -18,6 +19,9 @@ async function handleGET(
 ) {
   try {
     const { id: projectId } = await params;
+
+    const access = await requireProjectAccess(params);
+    if (access instanceof NextResponse) return access;
 
     // Получаем шаблоны уведомлений
     const templates = await ProjectNotificationService.getTemplates(projectId);
@@ -50,6 +54,9 @@ async function handlePOST(
 ) {
   try {
     const { id: projectId } = await params;
+
+    const access = await requireProjectAccess(params);
+    if (access instanceof NextResponse) return access;
     const body = await request.json();
 
     // Валидация обязательных полей

@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { BotFlowService } from '@/lib/services/bot-flow.service';
 import { logger } from '@/lib/logger';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 // POST /api/projects/[id]/flows/[flowId]/validate - Валидация и компиляция потока
 export async function POST(
@@ -18,6 +19,9 @@ export async function POST(
 ) {
   try {
     const { id: projectId, flowId } = await context.params;
+
+    const access = await requireProjectAccess(context.params);
+    if (access instanceof NextResponse) return access;
 
     logger.info('POST /api/projects/[id]/flows/[flowId]/validate', {
       projectId,

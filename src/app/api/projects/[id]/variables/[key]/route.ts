@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { ProjectVariablesService } from '@/lib/services/project-variables.service';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 // PUT /api/projects/[id]/variables/[key] - Обновить переменную
 export async function PUT(
@@ -18,6 +19,9 @@ export async function PUT(
   try {
     const resolvedParams = await params;
     const { id: projectId, key } = resolvedParams;
+
+    const access = await requireProjectAccess(params);
+    if (access instanceof NextResponse) return access;
     const body = await request.json();
 
     const { value, description } = body;
@@ -31,12 +35,9 @@ export async function PUT(
     return NextResponse.json({ variable });
   } catch (error) {
     console.error('Error updating project variable:', error);
-    
+
     if (error instanceof Error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     return NextResponse.json(
@@ -55,17 +56,17 @@ export async function DELETE(
     const resolvedParams = await params;
     const { id: projectId, key } = resolvedParams;
 
+    const access = await requireProjectAccess(params);
+    if (access instanceof NextResponse) return access;
+
     await ProjectVariablesService.deleteVariable(projectId, key);
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting project variable:', error);
-    
+
     if (error instanceof Error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     return NextResponse.json(
@@ -74,4 +75,3 @@ export async function DELETE(
     );
   }
 }
-

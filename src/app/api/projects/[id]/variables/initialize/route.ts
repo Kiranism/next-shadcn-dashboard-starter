@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { ProjectVariablesService } from '@/lib/services/project-variables.service';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 // POST /api/projects/[id]/variables/initialize - Инициализировать системные переменные
 export async function POST(
@@ -19,22 +20,23 @@ export async function POST(
     const resolvedParams = await params;
     const { id: projectId } = resolvedParams;
 
+    const access = await requireProjectAccess(params);
+    if (access instanceof NextResponse) return access;
+
     await ProjectVariablesService.initializeSystemVariables(projectId);
 
-    const variables = await ProjectVariablesService.getAvailableVariables(projectId);
+    const variables =
+      await ProjectVariablesService.getAvailableVariables(projectId);
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
-      variables 
+      variables
     });
   } catch (error) {
     console.error('Error initializing project variables:', error);
-    
+
     if (error instanceof Error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     return NextResponse.json(
@@ -43,4 +45,3 @@ export async function POST(
     );
   }
 }
-

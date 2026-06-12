@@ -460,7 +460,7 @@ export class ReferralCommissionService {
             SELECT
               id,
               referred_by,
-              1 AS depth
+              0 AS depth
             FROM users
             WHERE id = ${userId} AND project_id = ${projectId}
 

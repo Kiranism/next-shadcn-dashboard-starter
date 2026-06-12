@@ -13,6 +13,7 @@ import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { TelegramBotValidationService } from '@/lib/services/telegram-bot-validation.service';
 import { botManager } from '@/lib/telegram/bot-manager';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 export async function GET(
   request: NextRequest,
@@ -20,6 +21,9 @@ export async function GET(
 ) {
   try {
     const { id: projectId } = await context.params;
+
+    const access = await requireProjectAccess(context.params);
+    if (access instanceof NextResponse) return access;
 
     // Получаем проект с настройками бота
     const project = await db.project.findUnique({

@@ -43,8 +43,8 @@ async function getHandler(
     const url = new URL(request.url);
     const page = parseInt(url.searchParams.get('page') || '1', 10);
     const limit = Math.min(
-      parseInt(url.searchParams.get('limit') || '50', 10),
-      1000000
+      Math.max(parseInt(url.searchParams.get('limit') || '50', 10) || 50, 1),
+      1000
     );
     const search = url.searchParams.get('search') || undefined;
 
@@ -565,7 +565,17 @@ async function putHandler(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Авторизация и проверка доступа к проекту (как в GET/POST).
+    // Без этого любой авторизованный админ мог изменять бонусы и слать
+    // рассылки в ЧУЖИЕ проекты (cross-tenant IDOR).
+    const admin = await getCurrentAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id: projectId } = await context.params;
+    await ProjectService.verifyProjectAccess(projectId, admin.sub);
+
     const body = await request.json();
     const { operation, userIds, data } = body;
 
@@ -576,6 +586,21 @@ async function putHandler(
 
     if (!project) {
       return NextResponse.json({ error: 'Проект не найден' }, { status: 404 });
+    }
+
+    // Все операции работают по списку userIds — убеждаемся, что эти
+    // пользователи принадлежат текущему проекту (нельзя начислять/списывать
+    // бонусы и слать уведомления чужим пользователям).
+    if (Array.isArray(userIds) && userIds.length > 0) {
+      const validCount = await db.user.count({
+        where: { projectId, id: { in: userIds } }
+      });
+      if (validCount !== userIds.length) {
+        return NextResponse.json(
+          { error: 'Некоторые пользователи не принадлежат проекту' },
+          { status: 400 }
+        );
+      }
     }
 
     let results = [];
@@ -626,48 +651,69 @@ async function putHandler(
         // Массовое списание бонусов
         for (const userId of userIds) {
           try {
-            // Получаем активные бонусы пользователя
-            const activeBonus = await db.bonus.findFirst({
-              where: {
-                userId,
-                isUsed: false,
-                OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }]
-              },
-              orderBy: { createdAt: 'asc' }
-            });
-
-            if (!activeBonus || Number(activeBonus.amount) < data.amount) {
+            const deductAmount = Number(data.amount);
+            if (!Number.isFinite(deductAmount) || deductAmount <= 0) {
               results.push({
                 userId,
                 success: false,
-                error: 'Недостаточно бонусов для списания'
+                error: 'Некорректная сумма списания'
               });
               continue;
             }
 
-            // Списываем бонусы
-            const newAmount = Number(activeBonus.amount) - data.amount;
-            if (newAmount <= 0) {
-              await db.bonus.update({
-                where: { id: activeBonus.id },
-                data: { isUsed: true }
+            // Списываем по нескольким записям бонусов (FIFO): баланс
+            // пользователя может складываться из нескольких начислений.
+            await db.$transaction(async (tx) => {
+              const activeBonuses = await tx.bonus.findMany({
+                where: {
+                  userId,
+                  isUsed: false,
+                  OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }]
+                },
+                orderBy: { createdAt: 'asc' }
               });
-            } else {
-              await db.bonus.update({
-                where: { id: activeBonus.id },
-                data: { amount: newAmount }
-              });
-            }
 
-            // Создаем запись в истории транзакций
-            await db.transaction.create({
-              data: {
-                userId,
-                bonusId: activeBonus.id,
-                amount: data.amount,
-                type: 'SPEND',
-                description: data.description || 'Массовое списание бонусов'
+              const totalAvailable = activeBonuses.reduce(
+                (sum, b) => sum + Number(b.amount),
+                0
+              );
+
+              if (totalAvailable < deductAmount) {
+                throw new Error('Недостаточно бонусов для списания');
               }
+
+              let remaining = deductAmount;
+              let firstBonusId: string | null = null;
+              for (const b of activeBonuses) {
+                if (remaining <= 0) break;
+                const available = Number(b.amount);
+                const take = Math.min(remaining, available);
+                if (firstBonusId === null) firstBonusId = b.id;
+
+                if (take >= available) {
+                  await tx.bonus.update({
+                    where: { id: b.id },
+                    data: { isUsed: true }
+                  });
+                } else {
+                  await tx.bonus.update({
+                    where: { id: b.id },
+                    data: { amount: available - take }
+                  });
+                }
+                remaining -= take;
+              }
+
+              // Одна суммарная запись в истории транзакций.
+              await tx.transaction.create({
+                data: {
+                  userId,
+                  bonusId: firstBonusId,
+                  amount: deductAmount,
+                  type: 'SPEND',
+                  description: data.description || 'Массовое списание бонусов'
+                }
+              });
             });
 
             results.push({
@@ -713,17 +759,14 @@ async function putHandler(
             userIds
           );
 
-          // Формируем результаты для каждого пользователя
+          // sendRichBroadcastMessage возвращает только агрегатные счётчики
+          // (sent/failed), без привязки к конкретным userId. Поэтому не
+          // выдумываем сопоставление с userIds[i] — фиксируем агрегат честно.
           for (let i = 0; i < result.sent; i++) {
-            results.push({
-              userId: userIds[i] || `user_${i}`,
-              success: true
-            });
+            results.push({ success: true });
           }
-
-          for (let i = result.sent; i < result.sent + result.failed; i++) {
+          for (let i = 0; i < result.failed; i++) {
             results.push({
-              userId: userIds[i] || `user_${i}`,
               success: false,
               error: 'Ошибка отправки уведомления'
             });
@@ -758,6 +801,11 @@ async function putHandler(
     });
   } catch (error: any) {
     const { id: projectId } = await context.params;
+
+    if (error instanceof Error && error.message === 'FORBIDDEN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     logger.error('Error in bulk user operations', {
       projectId,
       error: error.message

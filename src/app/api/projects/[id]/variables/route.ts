@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { ProjectVariablesService } from '@/lib/services/project-variables.service';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 // GET /api/projects/[id]/variables - Получить все переменные проекта
 export async function GET(
@@ -19,7 +20,11 @@ export async function GET(
     const resolvedParams = await params;
     const { id: projectId } = resolvedParams;
 
-    const variables = await ProjectVariablesService.getAvailableVariables(projectId);
+    const access = await requireProjectAccess(params);
+    if (access instanceof NextResponse) return access;
+
+    const variables =
+      await ProjectVariablesService.getAvailableVariables(projectId);
 
     return NextResponse.json({ variables });
   } catch (error) {
@@ -39,6 +44,9 @@ export async function POST(
   try {
     const resolvedParams = await params;
     const { id: projectId } = resolvedParams;
+
+    const access = await requireProjectAccess(params);
+    if (access instanceof NextResponse) return access;
     const body = await request.json();
 
     const { key, value, description } = body;
@@ -60,12 +68,9 @@ export async function POST(
     return NextResponse.json({ variable }, { status: 201 });
   } catch (error) {
     console.error('Error creating project variable:', error);
-    
+
     if (error instanceof Error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     return NextResponse.json(
@@ -74,4 +79,3 @@ export async function POST(
     );
   }
 }
-

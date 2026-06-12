@@ -13,6 +13,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { ReferralService } from '@/lib/services/referral.service';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 const ReferralLevelSchema = z.object({
   level: z
@@ -56,6 +57,9 @@ export async function GET(
   try {
     const { id: projectId } = await context.params;
 
+    const access = await requireProjectAccess(context.params);
+    if (access instanceof NextResponse) return access;
+
     // Проверяем существование проекта
     const project = await db.project.findUnique({
       where: { id: projectId },
@@ -69,10 +73,11 @@ export async function GET(
     // Проверяем режим работы проекта
     if (project.operationMode === 'WITHOUT_BOT') {
       return NextResponse.json(
-        { 
-          error: 'Реферальная программа недоступна в режиме "Без Telegram бота"',
+        {
+          error:
+            'Реферальная программа недоступна в режиме "Без Telegram бота"',
           code: 'REFERRAL_DISABLED_WITHOUT_BOT'
-        }, 
+        },
         { status: 403 }
       );
     }
@@ -109,6 +114,9 @@ export async function PUT(
 ) {
   try {
     const { id: projectId } = await context.params;
+
+    const access = await requireProjectAccess(context.params);
+    if (access instanceof NextResponse) return access;
     const payload: ReferralProgramPayload = ReferralProgramPayloadSchema.parse(
       await request.json()
     );
@@ -125,10 +133,11 @@ export async function PUT(
     // Проверяем режим работы проекта
     if (project.operationMode === 'WITHOUT_BOT') {
       return NextResponse.json(
-        { 
-          error: 'Реферальная программа недоступна в режиме "Без Telegram бота"',
+        {
+          error:
+            'Реферальная программа недоступна в режиме "Без Telegram бота"',
           code: 'REFERRAL_DISABLED_WITHOUT_BOT'
-        }, 
+        },
         { status: 403 }
       );
     }

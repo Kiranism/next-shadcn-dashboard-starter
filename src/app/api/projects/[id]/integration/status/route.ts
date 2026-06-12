@@ -10,12 +10,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { ProjectService } from '@/lib/services/project.service';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 export async function GET(
   _request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params;
+
+  const access = await requireProjectAccess(context.params);
+  if (access instanceof NextResponse) return access;
 
   const project = await ProjectService.getProjectById(id);
   if (!project) {

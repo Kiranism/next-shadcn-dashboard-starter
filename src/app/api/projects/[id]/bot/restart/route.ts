@@ -12,6 +12,7 @@ import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { botManager } from '@/lib/telegram/bot-manager';
 import { WorkflowRuntimeService } from '@/lib/services/workflow-runtime.service';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 // POST /api/projects/[id]/bot/restart - Принудительный перезапуск или остановка бота
 export async function POST(
@@ -20,6 +21,10 @@ export async function POST(
 ) {
   try {
     const { id: projectId } = await context.params;
+
+    const access = await requireProjectAccess(context.params);
+    if (access instanceof NextResponse) return access;
+
     const body = await request.json().catch(() => ({}));
     const shouldStop = body.stop === true;
 
@@ -45,7 +50,9 @@ export async function POST(
     logger.info('🔄 RESTART API ВЫЗВАН', {
       projectId,
       shouldStop,
-      botToken: project.botSettings.botToken ? '***' + project.botSettings.botToken.slice(-4) : 'none',
+      botToken: project.botSettings.botToken
+        ? '***' + project.botSettings.botToken.slice(-4)
+        : 'none',
       allBotsInManager: botManager.getAllBotsStatus(),
       component: 'bot-restart'
     });
@@ -55,22 +62,30 @@ export async function POST(
       // ✅ КРИТИЧНО: Сначала останавливаем конкретного бота
       try {
         await botManager.stopBot(projectId);
-        logger.info(`✅ Бот ${projectId} остановлен`, { projectId }, 'bot-restart');
+        logger.info(
+          `✅ Бот ${projectId} остановлен`,
+          { projectId },
+          'bot-restart'
+        );
       } catch (error) {
-        logger.warn(`⚠️ Ошибка остановки конкретного бота, пробуем emergencyStopAll`, {
-          projectId,
-          error: error instanceof Error ? error.message : 'Unknown error'
-        }, 'bot-restart');
-        
+        logger.warn(
+          `⚠️ Ошибка остановки конкретного бота, пробуем emergencyStopAll`,
+          {
+            projectId,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          },
+          'bot-restart'
+        );
+
         // Fallback: экстренная остановка всех ботов
         await botManager.emergencyStopAll();
       }
-      
+
       // Дополнительная задержка для полной очистки
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       logger.info('🛑 БОТ ОСТАНОВЛЕН', { projectId }, 'bot-restart');
-      
+
       return NextResponse.json({
         success: true,
         message: 'Бот успешно остановлен'
@@ -80,17 +95,29 @@ export async function POST(
     // Иначе перезапускаем
     // ЭКСТРЕННО ОСТАНАВЛИВАЕМ ВСЕ БОТЫ для предотвращения 409 конфликтов
     await botManager.emergencyStopAll();
-    logger.info('🚨 ВСЕ БОТЫ ЭКСТРЕННО ОСТАНОВЛЕНЫ', { projectId }, 'bot-restart');
+    logger.info(
+      '🚨 ВСЕ БОТЫ ЭКСТРЕННО ОСТАНОВЛЕНЫ',
+      { projectId },
+      'bot-restart'
+    );
 
     // ✅ КРИТИЧНО: Инвалидируем кэш workflow для этого проекта
     // Это гарантирует, что бот загрузит актуальную версию workflow из БД
     await WorkflowRuntimeService.invalidateCache(projectId);
-    logger.info('🔄 Кэш workflow инвалидирован для проекта', { projectId }, 'bot-restart');
+    logger.info(
+      '🔄 Кэш workflow инвалидирован для проекта',
+      { projectId },
+      'bot-restart'
+    );
 
     // ✅ ДОПОЛНИТЕЛЬНАЯ ЗАДЕРЖКА: ждем полной остановки всех ботов перед запуском нового
     // Это гарантирует, что Telegram API успеет освободить соединения
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    logger.info('⏳ Ожидание завершения остановки ботов...', { projectId }, 'bot-restart');
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    logger.info(
+      '⏳ Ожидание завершения остановки ботов...',
+      { projectId },
+      'bot-restart'
+    );
 
     // Создаем новый экземпляр бота
     const botInstance = await botManager.createBot(

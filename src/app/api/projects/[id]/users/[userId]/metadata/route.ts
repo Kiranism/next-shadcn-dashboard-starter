@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { UserService } from '@/lib/services/user.service';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 interface RouteParams {
   params: Promise<{
@@ -26,6 +27,9 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: projectId, userId } = await params;
+
+    const access = await requireProjectAccess(params);
+    if (access instanceof NextResponse) return access;
 
     // Проверяем существование пользователя в проекте
     const user = await db.user.findFirst({
@@ -67,6 +71,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: projectId, userId } = await params;
+
+    const access = await requireProjectAccess(params);
+    if (access instanceof NextResponse) return access;
     const body = await request.json();
 
     // Проверяем существование пользователя в проекте
@@ -118,6 +125,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: projectId, userId } = await params;
+
+    const access = await requireProjectAccess(params);
+    if (access instanceof NextResponse) return access;
     const body = await request.json();
 
     // Проверяем существование пользователя в проекте

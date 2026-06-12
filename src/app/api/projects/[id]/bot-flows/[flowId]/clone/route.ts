@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { BotFlowService } from '@/lib/services/bot-flow.service';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 const cloneFlowSchema = z.object({
   name: z.string().min(1).max(255)
@@ -23,6 +24,9 @@ export async function POST(
 ) {
   try {
     const { flowId } = await context.params;
+
+    const access = await requireProjectAccess(context.params);
+    if (access instanceof NextResponse) return access;
     const body = await request.json();
 
     // Валидация

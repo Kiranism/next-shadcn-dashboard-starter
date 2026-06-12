@@ -13,6 +13,7 @@ import { ProjectService } from '@/lib/services/project.service';
 import { botManager } from '@/lib/telegram/bot-manager';
 import { logger } from '@/lib/logger';
 import { TelegramBotValidationService } from '@/lib/services/telegram-bot-validation.service';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 // Функция для создания CORS заголовков - разрешаем все origins для виджета
 function createCorsHeaders(request: NextRequest) {
@@ -41,6 +42,9 @@ export async function GET(
 ) {
   try {
     const { id } = await context.params;
+
+    const access = await requireProjectAccess(context.params);
+    if (access instanceof NextResponse) return access;
 
     logger.info('GET /api/projects/[id]/bot запрос', {
       projectId: id,
@@ -190,6 +194,9 @@ export async function POST(
 ) {
   try {
     const { id } = await context.params;
+
+    const access = await requireProjectAccess(context.params);
+    if (access instanceof NextResponse) return access;
     const body = await request.json();
 
     logger.info('🚀 POST /api/projects/[id]/bot - СОЗДАНИЕ НАСТРОЕК БОТА', {
@@ -360,6 +367,9 @@ export async function PUT(
 ) {
   try {
     const { id } = await context.params;
+
+    const access = await requireProjectAccess(context.params);
+    if (access instanceof NextResponse) return access;
     const body = await request.json();
 
     logger.info('🔄 PUT /api/projects/[id]/bot - ОБНОВЛЕНИЕ НАСТРОЕК БОТА', {
@@ -690,6 +700,9 @@ export async function DELETE(
 ) {
   try {
     const { id } = await context.params;
+
+    const access = await requireProjectAccess(context.params);
+    if (access instanceof NextResponse) return access;
 
     // Проверяем существование проекта
     const project = await ProjectService.getProjectById(id);

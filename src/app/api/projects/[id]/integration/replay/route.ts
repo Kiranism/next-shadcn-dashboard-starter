@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { NextRequest as NextRequestType } from 'next/server';
 import { db } from '@/lib/db';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 interface ReplayRequestBody {
   logId: string;
@@ -38,6 +39,9 @@ export async function POST(
 ) {
   const resolvedParams = await params;
   const projectId = resolvedParams.id;
+
+  const access = await requireProjectAccess(params);
+  if (access instanceof NextResponse) return access;
 
   try {
     // Добавляем базовую проверку на валидность запроса

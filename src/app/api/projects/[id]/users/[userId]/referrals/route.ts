@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 /**
  * Интерфейс реферала для ответа API
@@ -49,6 +50,9 @@ export async function GET(
   context: { params: Promise<{ id: string; userId: string }> }
 ) {
   const { id: projectId, userId } = await context.params;
+
+  const access = await requireProjectAccess(context.params);
+  if (access instanceof NextResponse) return access;
 
   try {
     // Проверяем существование пользователя

@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { ProjectService } from '@/lib/services/project.service';
 import { logger } from '@/lib/logger';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 function createCorsHeaders() {
   return {
@@ -38,6 +39,9 @@ export async function GET(
 ) {
   try {
     const { id } = await context.params;
+
+    const access = await requireProjectAccess(context.params);
+    if (access instanceof NextResponse) return access;
 
     const project = await ProjectService.getProjectById(id);
     if (!project) {
@@ -111,6 +115,9 @@ export async function PUT(
 ) {
   try {
     const { id } = await context.params;
+
+    const access = await requireProjectAccess(context.params);
+    if (access instanceof NextResponse) return access;
     const body = await request.json();
 
     logger.info('[MAX] PUT /api/projects/[id]/max-bot', {
@@ -222,6 +229,9 @@ export async function DELETE(
 ) {
   try {
     const { id } = await context.params;
+
+    const access = await requireProjectAccess(context.params);
+    if (access instanceof NextResponse) return access;
 
     // Останавливаем бота
     try {

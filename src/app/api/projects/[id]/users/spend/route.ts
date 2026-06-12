@@ -15,6 +15,7 @@ import {
   SpendBonusesSchema,
   validateRequest
 } from '@/lib/validation/api-schemas';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 // Обернем POST в rate limiter
 const rateLimitedPOST = withRateLimit(
@@ -24,6 +25,9 @@ const rateLimitedPOST = withRateLimit(
   ) {
     try {
       const { id: projectId } = await context.params;
+
+      const access = await requireProjectAccess(context.params);
+      if (access instanceof NextResponse) return access;
 
       // Валидация входных данных
       const body = await request.json();

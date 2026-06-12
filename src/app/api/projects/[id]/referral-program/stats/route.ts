@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { ReferralService } from '@/lib/services/referral.service';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 export async function GET(
   request: NextRequest,
@@ -18,6 +19,10 @@ export async function GET(
 ) {
   try {
     const { id: projectId } = await context.params;
+
+    const access = await requireProjectAccess(context.params);
+    if (access instanceof NextResponse) return access;
+
     const { searchParams } = new URL(request.url);
 
     // Получаем параметры фильтрации
@@ -37,10 +42,11 @@ export async function GET(
     // Проверяем режим работы проекта
     if (project.operationMode === 'WITHOUT_BOT') {
       return NextResponse.json(
-        { 
-          error: 'Статистика реферальной программы недоступна в режиме "Без Telegram бота"',
+        {
+          error:
+            'Статистика реферальной программы недоступна в режиме "Без Telegram бота"',
           code: 'REFERRAL_DISABLED_WITHOUT_BOT'
-        }, 
+        },
         { status: 403 }
       );
     }

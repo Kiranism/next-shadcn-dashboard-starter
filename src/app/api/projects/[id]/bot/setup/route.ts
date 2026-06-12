@@ -14,6 +14,7 @@ import { logger } from '@/lib/logger';
 import { BotSettings } from '@/types/bonus';
 import { TelegramBotValidationService } from '@/lib/services/telegram-bot-validation.service';
 import { withApiRateLimit } from '@/lib';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 async function handlePOST(
   request: NextRequest,
@@ -21,6 +22,9 @@ async function handlePOST(
 ) {
   try {
     const { id } = await params;
+
+    const access = await requireProjectAccess(params);
+    if (access instanceof NextResponse) return access;
 
     // Получаем настройки бота из базы данных
     const project = await db.project.findUnique({

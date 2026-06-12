@@ -4,6 +4,7 @@ import { ReferralService } from '@/lib/services/referral.service';
 import { AnalyticsService } from '@/lib/services/analytics.service';
 import { logger } from '@/lib/logger';
 import { CacheService } from '@/lib/redis';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 export async function GET(
   request: NextRequest,
@@ -11,6 +12,9 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+
+    const access = await requireProjectAccess(params);
+    if (access instanceof NextResponse) return access;
 
     // Проверяем существование проекта
     const project = await db.project.findUnique({

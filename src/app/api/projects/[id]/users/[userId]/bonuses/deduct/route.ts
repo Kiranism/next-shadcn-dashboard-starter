@@ -12,6 +12,7 @@ import { UserService, BonusService } from '@/lib/services/user.service';
 import { logger } from '@/lib/logger';
 import { db } from '@/lib/db';
 import { withApiRateLimit } from '@/lib';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 async function postHandler(
   request: NextRequest,
@@ -19,6 +20,10 @@ async function postHandler(
 ) {
   try {
     const { id: projectId, userId } = await params;
+
+    const access = await requireProjectAccess(params);
+    if (access instanceof NextResponse) return access;
+
     const body = await request.json();
 
     const { amount, description } = body;

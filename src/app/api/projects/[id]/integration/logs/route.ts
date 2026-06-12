@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 // Безопасное усечение больших тел
 const safeJson = (obj: any, limit = 10000) => {
@@ -28,6 +29,10 @@ export async function GET(
   context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params;
+
+  const access = await requireProjectAccess(context.params);
+  if (access instanceof NextResponse) return access;
+
   const url = new URL(request.url);
   const limit = Math.min(parseInt(url.searchParams.get('limit') || '20'), 100);
 

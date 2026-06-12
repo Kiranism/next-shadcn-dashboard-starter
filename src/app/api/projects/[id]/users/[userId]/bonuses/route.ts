@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { UserService, BonusService } from '@/lib/services/user.service';
 import { db } from '@/lib/db';
 import { withApiRateLimit } from '@/lib';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 async function postHandler(
   request: NextRequest,
@@ -18,6 +19,9 @@ async function postHandler(
 ) {
   try {
     const { id: projectId, userId } = await params;
+
+    const access = await requireProjectAccess(params);
+    if (access instanceof NextResponse) return access;
     const body = await request.json();
 
     const { amount, type, description } = body;
@@ -138,6 +142,9 @@ async function getHandler(
 ) {
   try {
     const { id: projectId, userId } = await params;
+
+    const access = await requireProjectAccess(params);
+    if (access instanceof NextResponse) return access;
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');

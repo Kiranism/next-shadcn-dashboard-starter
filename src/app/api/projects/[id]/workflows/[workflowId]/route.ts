@@ -15,6 +15,7 @@ import type { UpdateWorkflowRequest } from '@/types/workflow';
 import { WorkflowRuntimeService } from '@/lib/services/workflow-runtime.service';
 import { validateWorkflowServer } from '@/lib/services/workflow/server-workflow-validator';
 import { normalizeNodes } from '@/lib/services/workflow/utils/node-utils';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 // GET /api/projects/[id]/workflows/[workflowId] - Получить workflow
 export async function GET(
@@ -24,6 +25,9 @@ export async function GET(
   try {
     const resolvedParams = await params;
     const { id: projectId, workflowId } = resolvedParams;
+
+    const access = await requireProjectAccess(params);
+    if (access instanceof NextResponse) return access;
 
     const workflow = await db.workflow.findFirst({
       where: {
@@ -57,6 +61,9 @@ export async function PUT(
   try {
     const resolvedParams = await params;
     const { id: projectId, workflowId } = resolvedParams;
+
+    const access = await requireProjectAccess(params);
+    if (access instanceof NextResponse) return access;
     const data: UpdateWorkflowRequest = await request.json();
 
     // Проверяем существование workflow
@@ -318,6 +325,9 @@ export async function DELETE(
   try {
     const resolvedParams = await params;
     const { id: projectId, workflowId } = resolvedParams;
+
+    const access = await requireProjectAccess(params);
+    if (access instanceof NextResponse) return access;
 
     // Проверяем существование workflow
     const existingWorkflow = await db.workflow.findFirst({

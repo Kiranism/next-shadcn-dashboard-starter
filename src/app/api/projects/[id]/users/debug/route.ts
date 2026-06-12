@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 // GET /api/projects/[id]/users/debug - Отладочная информация о пользователях
 export async function GET(
@@ -17,6 +18,9 @@ export async function GET(
   context: { params: Promise<{ id: string }> }
 ) {
   const { id: projectId } = await context.params;
+
+  const access = await requireProjectAccess(context.params);
+  if (access instanceof NextResponse) return access;
 
   try {
     console.log('🔍 Отладочный запрос для проекта:', projectId);

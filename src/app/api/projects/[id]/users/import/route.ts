@@ -12,6 +12,7 @@ import { db } from '@/lib/db';
 import { BonusType } from '@prisma/client';
 import { logger } from '@/lib/logger';
 import { parse } from 'csv-parse/sync';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 interface CsvUser {
   Email?: string;
@@ -48,6 +49,11 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse<ImportResult>> {
   const { id: projectId } = await params;
+
+  const access = await requireProjectAccess(params);
+  if (access instanceof NextResponse) {
+    return access as NextResponse<ImportResult>;
+  }
 
   try {
     // Проверка проекта

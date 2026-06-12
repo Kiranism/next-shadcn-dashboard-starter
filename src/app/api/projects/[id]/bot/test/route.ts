@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { TelegramBotValidationService } from '@/lib/services/telegram-bot-validation.service';
+import { requireProjectAccess } from '@/lib/with-project-access';
 // Импорт enum статуса через литералы для избежания жёсткой зависимости типов
 const BotStatus = {
   ACTIVE: 'ACTIVE',
@@ -25,6 +26,10 @@ export async function POST(
 ) {
   try {
     const { id: projectId } = await context.params;
+
+    const access = await requireProjectAccess(context.params);
+    if (access instanceof NextResponse) return access;
+
     const body = await request.json();
     const { testChatId } = body;
 

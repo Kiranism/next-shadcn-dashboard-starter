@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { requireProjectAccess } from '@/lib/with-project-access';
 
 type LegacyWidgetSettings = Record<
   string,
@@ -411,6 +412,12 @@ export async function PUT(
 ) {
   try {
     const { id: projectId } = await context.params;
+
+    // PUT изменяет настройки — требуется владелец проекта (GET остаётся
+    // публичным для виджета на сайте клиента).
+    const access = await requireProjectAccess(context.params);
+    if (access instanceof NextResponse) return access;
+
     const body = await request.json();
 
     logger.info('PUT /api/projects/[id]/widget запрос', {
