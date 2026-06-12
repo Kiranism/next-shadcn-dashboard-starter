@@ -277,10 +277,64 @@ async function resolveVariablePath(
   }
 
   if (root === 'project') {
-    const projectContext = {
-      id: context.projectId
-    };
-    return rest.reduce((acc: any, key) => acc?.[key], projectContext as any);
+    try {
+      let project = (context as any)._projectCache;
+      if (!project) {
+        project = await context.services.db.project.findUnique({
+          where: { id: context.projectId },
+          include: { referralProgram: true }
+        });
+        if (project) {
+          (context as any)._projectCache = project;
+        }
+      }
+      if (!project) {
+        return undefined;
+      }
+      const enrichedProject = {
+        ...project,
+        welcomeBonusAmount: project.welcomeBonus
+          ? Number(project.welcomeBonus)
+          : 0,
+        referralProgram: project.referralProgram
+          ? {
+              ...project.referralProgram,
+              welcomeBonus:
+                project.referralProgram.welcomeBonus !== null &&
+                project.referralProgram.welcomeBonus !== undefined
+                  ? Number(project.referralProgram.welcomeBonus)
+                  : project.welcomeBonus
+                    ? Number(project.welcomeBonus)
+                    : 0
+            }
+          : {
+              welcomeBonus: project.welcomeBonus
+                ? Number(project.welcomeBonus)
+                : 0,
+              isActive: false,
+              bonusPercent: 0,
+              referrerBonus: 0
+            }
+      };
+      return rest.reduce((acc: any, key) => {
+        if (acc && typeof acc === 'object') {
+          const val = acc[key];
+          if (
+            val &&
+            typeof val === 'object' &&
+            val.constructor &&
+            val.constructor.name === 'Decimal'
+          ) {
+            return Number(val);
+          }
+          return val;
+        }
+        return undefined;
+      }, enrichedProject as any);
+    } catch (error) {
+      console.error('Failed to resolve project variables:', error);
+      return undefined;
+    }
   }
 
   if (root === 'context') {

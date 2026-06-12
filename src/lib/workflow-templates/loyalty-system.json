@@ -243,7 +243,7 @@
             "query": "add_bonus",
             "parameters": {
               "userId": "{{newUser.id}}",
-              "amount": "{{welcome_bonus}}",
+              "amount": "{{project.welcomeBonus}}",
               "type": "WELCOME",
               "description": "Приветственные бонусы за регистрацию в боте",
               "expiresAt": ""
@@ -433,12 +433,6 @@
       "name": "newUser",
       "type": "object",
       "description": "Созданный пользователь (create_user)"
-    },
-    {
-      "name": "welcome_bonus",
-      "type": "number",
-      "value": 100,
-      "description": "Размер приветственного бонуса для новой регистрации в боте"
     }
   ],
   "settings": {
