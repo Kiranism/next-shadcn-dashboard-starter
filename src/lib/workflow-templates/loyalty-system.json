@@ -206,7 +206,10 @@
         "config": {
           "message": {
             "text": "🌐 Аккаунт с вашим номером телефона не найден.\n\n📝 Пожалуйста, сначала зарегистрируйтесь на нашем сайте:\nhttps://{project.domain}\n\n✨ После регистрации вернитесь в бот и поделитесь контактом снова для активации аккаунта и получения бонусов!",
-            "parseMode": "HTML"
+            "parseMode": "HTML",
+            "keyboard": {
+              "type": "remove"
+            }
           }
         }
       }
@@ -258,7 +261,10 @@
         "config": {
           "message": {
             "text": "ℹ️ К этому аккаунту уже привязан другой Telegram.\n\nЕсли это ошибка, напишите в поддержку магазина.",
-            "parseMode": "HTML"
+            "parseMode": "HTML",
+            "keyboard": {
+              "type": "remove"
+            }
           }
         }
       }
@@ -358,7 +364,10 @@
         "config": {
           "message": {
             "text": "🎉 Аккаунт активирован, Telegram привязан!\n\n💰 Приветственные бонусы (если включены в проекте) начислены автоматически.\n\nПриятных покупок!",
-            "parseMode": "HTML"
+            "parseMode": "HTML",
+            "keyboard": {
+              "type": "remove"
+            }
           }
         }
       }
@@ -876,7 +885,7 @@
       "id": "e-success-act-end",
       "type": "default",
       "source": "msg-success-activated",
-      "target": "flow-end"
+      "target": "msg-active-user"
     },
     {
       "id": "e-menu-balance",
