@@ -71,6 +71,23 @@ export class DatabaseQueryHandler extends BaseNodeHandler {
         context
       );
 
+      if (
+        ['check_user_by_contact', 'create_user'].includes(config.query) &&
+        !this.hasValidContactParams(resolvedParams)
+      ) {
+        this.logStep(
+          context,
+          node,
+          'Contact is required before this database query',
+          'warn',
+          { query: config.query }
+        );
+        const { WAITING_FOR_USER_INPUT } = await import(
+          './wait-for-input-handler'
+        );
+        return WAITING_FOR_USER_INPUT;
+      }
+
       this.logStep(context, node, 'Executing safe database query', 'info', {
         queryType: config.query,
         params: Object.keys(resolvedParams)
@@ -148,6 +165,29 @@ export class DatabaseQueryHandler extends BaseNodeHandler {
       isValid: errors.length === 0,
       errors
     };
+  }
+
+  private hasValidContactParams(params: Record<string, unknown>): boolean {
+    const phone = params.phone;
+    if (phone && typeof phone === 'object' && phone !== null) {
+      const phoneNumber = (
+        phone as { phoneNumber?: string }
+      ).phoneNumber?.trim();
+      if (phoneNumber && !phoneNumber.includes('{{')) {
+        return true;
+      }
+    }
+
+    if (typeof phone === 'string') {
+      const normalized = phone.trim();
+      if (normalized && !normalized.includes('{{')) {
+        return true;
+      }
+    }
+
+    const email =
+      typeof params.email === 'string' ? params.email.trim().toLowerCase() : '';
+    return email.length > 0 && !email.includes('{{');
   }
 
   /**

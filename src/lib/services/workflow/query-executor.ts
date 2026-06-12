@@ -293,12 +293,24 @@ export const SAFE_QUERIES = {
   create_user: async (db: PrismaClient, params: CreateUserParams) => {
     logger.debug('Executing create_user', { params });
 
+    const phone =
+      typeof params.phone === 'string' ? params.phone.trim() : params.phone;
+    const email =
+      typeof params.email === 'string' ? params.email.trim() : params.email;
+
+    if (!phone && !email) {
+      throw new Error(
+        'Cannot create user without phone or email. Share contact first.'
+      );
+    }
+
     const data: any = {
       projectId: params.projectId,
       firstName: params.firstName,
       lastName: params.lastName,
-      phone: params.phone,
-      email: params.email
+      phone: phone || undefined,
+      email: email || undefined,
+      isActive: true
     };
 
     if (params.telegramId) {
@@ -1071,17 +1083,56 @@ export const SAFE_QUERIES = {
    */
   activate_user: async (
     db: PrismaClient,
-    params: { userId: string; telegramId: string; telegramUsername?: string }
+    params: {
+      userId: string;
+      telegramId: string;
+      telegramUsername?: string;
+      phone?: string | { phoneNumber?: string };
+    }
   ) => {
     logger.debug('Executing activate_user', { params });
+
+    const targetUser = await db.user.findUnique({
+      where: { id: params.userId },
+      select: { id: true, projectId: true }
+    });
+
+    if (!targetUser) {
+      throw new Error(`User not found: ${params.userId}`);
+    }
+
+    const telegramId = BigInt(params.telegramId);
+
+    // Снимаем привязку Telegram с других записей проекта (например, ошибочно созданных без телефона)
+    await db.user.updateMany({
+      where: {
+        projectId: targetUser.projectId,
+        telegramId,
+        id: { not: params.userId }
+      },
+      data: {
+        telegramId: null,
+        isActive: false
+      }
+    });
+
+    let phoneValue: string | undefined;
+    if (typeof params.phone === 'object' && params.phone !== null) {
+      phoneValue = params.phone.phoneNumber?.trim();
+    } else if (typeof params.phone === 'string') {
+      phoneValue = params.phone.trim();
+    }
 
     const user = await db.user.update({
       where: { id: params.userId },
       data: {
-        telegramId: BigInt(params.telegramId),
+        telegramId,
         telegramUsername: params.telegramUsername,
         isActive: true,
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        ...(phoneValue && !phoneValue.includes('{{')
+          ? { phone: phoneValue }
+          : {})
       },
       include: {
         project: true

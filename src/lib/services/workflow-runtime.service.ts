@@ -485,6 +485,14 @@ export class WorkflowRuntimeService {
           }
         }
 
+        if (!waitingExecution && waitType === 'contact') {
+          logger.warn(
+            'Contact received without waiting workflow — ignoring to avoid restart loop',
+            { projectId, chatId }
+          );
+          return true;
+        }
+
         console.log('🔧 Waiting execution search result', {
           found: !!waitingExecution,
           executionId: waitingExecution?.id,

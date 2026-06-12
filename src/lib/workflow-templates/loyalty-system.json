@@ -85,6 +85,7 @@
         "config": {
           "message": {
             "text": "🎁 Добро пожаловать в программу лояльности!\n\n📱 Чтобы создать аккаунт или привязать существующий, поделитесь номером телефона кнопкой ниже.",
+            "waitForInput": true,
             "keyboard": {
               "type": "reply",
               "buttons": [
@@ -113,7 +114,8 @@
             "parameters": {
               "projectId": "{{projectId}}",
               "phone": "{{contactReceived.phoneNumber}}",
-              "email": "{{telegram.message.text}}"
+              "email": "{{telegram.message.text}}",
+              "telegramId": "{{telegram.userId}}"
             }
           }
         }
@@ -134,15 +136,30 @@
       }
     },
     {
-      "id": "cond-telegram-linked",
+      "id": "cond-has-telegram-id",
       "type": "condition",
       "position": { "x": 2280, "y": 360 },
       "data": {
-        "label": "Telegram уже привязан?",
+        "label": "У аккаунта есть Telegram?",
         "config": {
           "condition": {
             "operator": "is_not_empty",
             "variable": "contactUser.telegramId"
+          }
+        }
+      }
+    },
+    {
+      "id": "cond-other-telegram",
+      "type": "condition",
+      "position": { "x": 2660, "y": 280 },
+      "data": {
+        "label": "Привязан другой Telegram?",
+        "config": {
+          "condition": {
+            "operator": "not_equals",
+            "variable": "contactUser.telegramId",
+            "value": "{{telegram.userId}}"
           }
         }
       }
@@ -173,7 +190,8 @@
             "parameters": {
               "userId": "{{contactUser.id}}",
               "telegramId": "{{telegram.userId}}",
-              "telegramUsername": "{{telegram.username}}"
+              "telegramUsername": "{{telegram.username}}",
+              "phone": "{{contactReceived.phoneNumber}}"
             }
           }
         }
@@ -322,11 +340,25 @@
       "target": "cond-contact-found"
     },
     {
-      "id": "e-contact-found-linked",
+      "id": "e-contact-found-has-tg",
       "type": "default",
       "source": "cond-contact-found",
-      "target": "cond-telegram-linked",
+      "target": "cond-has-telegram-id",
       "sourceHandle": "true"
+    },
+    {
+      "id": "e-has-tg-other",
+      "type": "default",
+      "source": "cond-has-telegram-id",
+      "target": "cond-other-telegram",
+      "sourceHandle": "true"
+    },
+    {
+      "id": "e-has-tg-activate",
+      "type": "default",
+      "source": "cond-has-telegram-id",
+      "target": "db-activate-user",
+      "sourceHandle": "false"
     },
     {
       "id": "e-contact-notfound-create",
@@ -336,16 +368,16 @@
       "sourceHandle": "false"
     },
     {
-      "id": "e-linked-already",
+      "id": "e-other-tg-already",
       "type": "default",
-      "source": "cond-telegram-linked",
+      "source": "cond-other-telegram",
       "target": "msg-already-linked",
       "sourceHandle": "true"
     },
     {
-      "id": "e-linked-activate",
+      "id": "e-other-tg-activate",
       "type": "default",
-      "source": "cond-telegram-linked",
+      "source": "cond-other-telegram",
       "target": "db-activate-user",
       "sourceHandle": "false"
     },

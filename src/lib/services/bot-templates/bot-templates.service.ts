@@ -53,7 +53,7 @@ const loyaltySystemTemplate: BotTemplate = {
   rating: 4.9,
   reviews: 42,
   author: 'Gupil Team',
-  version: '1.2.0',
+  version: '1.3.0',
   createdAt: new Date(),
   updatedAt: new Date(),
   isPublic: true

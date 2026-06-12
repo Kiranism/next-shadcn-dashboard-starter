@@ -367,17 +367,15 @@ export class WaitForInputHandler {
       return WAITING_FOR_USER_INPUT;
     }
 
-    // Если не удалось установить состояние ожидания, логируем ошибку
-    // но не прерываем выполнение - продолжаем без ожидания
-    console.warn(
-      `[WaitForInputHandler] Failed to set waiting state, continuing without wait:`,
+    console.error(
+      `[WaitForInputHandler] Failed to set waiting state, pausing workflow anyway:`,
       {
         nodeId: node.id,
         error: result.error
       }
     );
 
-    return null;
+    return WAITING_FOR_USER_INPUT;
   }
 
   /**
