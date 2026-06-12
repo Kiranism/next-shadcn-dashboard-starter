@@ -191,7 +191,7 @@ async function resolveWorkflowUserId(
 async function loadUserVariablesFlat(
   context: ExecutionContext
 ): Promise<Record<string, unknown>> {
-  const cached = (context as Record<string, unknown>)[USER_VARS_CACHE_KEY];
+  const cached = (context as any)[USER_VARS_CACHE_KEY];
   if (cached && typeof cached === 'object') {
     return cached as Record<string, unknown>;
   }
@@ -207,7 +207,7 @@ async function loadUserVariablesFlat(
     context.projectId
   );
 
-  (context as Record<string, unknown>)[USER_VARS_CACHE_KEY] = variables;
+  (context as any)[USER_VARS_CACHE_KEY] = variables;
   return variables;
 }
 

@@ -145,29 +145,6 @@ export class DatabaseQueryHandler extends BaseNodeHandler {
     }
   }
 
-  async validate(config: any): Promise<ValidationResult> {
-    const errors: string[] = [];
-
-    if (!config?.query) {
-      errors.push('Query type is required');
-    } else if (!QueryExecutor.isQueryAvailable(config.query)) {
-      const available = QueryExecutor.getAvailableQueries();
-      const errorMsg = `Invalid query type: ${config.query}. Available: ${available.join(', ')}`;
-
-      logger.error('Workflow validation error: unauthorized query', {
-        query: config.query,
-        availableQueries: available
-      });
-
-      errors.push(errorMsg);
-    }
-
-    return {
-      isValid: errors.length === 0,
-      errors
-    };
-  }
-
   private hasValidContactParams(params: Record<string, unknown>): boolean {
     const phone = params.phone;
     if (phone && typeof phone === 'object' && phone !== null) {
@@ -310,10 +287,12 @@ export class DatabaseQueryHandler extends BaseNodeHandler {
       errors.push('Query type is required and must be a string');
     } else if (!QueryExecutor.isQueryAvailable(config.query)) {
       const availableQueries = QueryExecutor.getAvailableQueries();
-      errors.push(
-        `Invalid query type: ${config.query}. ` +
-          `Available: ${availableQueries.join(', ')}`
-      );
+      const errorMsg = `Invalid query type: ${config.query}. Available: ${availableQueries.join(', ')}`;
+      logger.error('Workflow validation error: unauthorized query', {
+        query: config.query,
+        availableQueries: availableQueries
+      });
+      errors.push(errorMsg);
     }
 
     if (config.parameters && typeof config.parameters !== 'object') {
