@@ -394,11 +394,36 @@ export class WorkflowRuntimeService {
         let waitingExecution = null;
 
         // 1. Сначала проверяем Redis кеш
-        const cachedExecution = await this.getCachedWaitingExecution(
-          projectId,
-          chatId,
-          waitType === 'input' ? 'contact' : waitType // Для input используем contact
-        );
+        let cachedExecution = null;
+        if (waitType === 'input') {
+          cachedExecution = await this.getCachedWaitingExecution(
+            projectId,
+            chatId,
+            'input'
+          );
+          if (!cachedExecution) {
+            cachedExecution = await this.getCachedWaitingExecution(
+              projectId,
+              chatId,
+              'contact'
+            );
+          }
+        } else {
+          cachedExecution = await this.getCachedWaitingExecution(
+            projectId,
+            chatId,
+            waitType
+          );
+        }
+
+        // Для callback на Max Bot, если не нашли в кеше 'callback', пробуем найти в кеше 'contact'
+        if (!cachedExecution && waitType === 'callback') {
+          cachedExecution = await this.getCachedWaitingExecution(
+            projectId,
+            chatId,
+            'contact'
+          );
+        }
 
         if (cachedExecution) {
           cacheHits++;
@@ -434,7 +459,7 @@ export class WorkflowRuntimeService {
             await this.invalidateWaitingExecutionCache(
               projectId,
               chatId,
-              waitType === 'input' ? 'contact' : waitType
+              cachedExecution.waitType
             );
             waitingExecution = null;
           }
@@ -454,15 +479,17 @@ export class WorkflowRuntimeService {
               projectId,
               status: 'waiting',
               telegramChatId: chatId,
-              // ✅ КРИТИЧНО: Для contact и input ищем оба типа, т.к. они взаимозаменяемы
-              // (пользователь может отправить контакт когда ожидается input и наоборот)
+              // ✅ КРИТИЧНО: Для contact и input ищем оба типа, т.к. они взаимозаменяемы.
+              // Для callback также разрешаем поиск 'contact' (для кнопок ввода email на Max Bot).
               waitType:
                 waitType === 'input' || waitType === 'contact'
                   ? ({ in: ['input', 'contact'] } as any)
-                  : waitType ||
-                    (trigger === 'start'
-                      ? ({ in: ['contact', 'input', 'callback'] } as any)
-                      : null)
+                  : waitType === 'callback'
+                    ? ({ in: ['callback', 'contact'] } as any)
+                    : waitType ||
+                      (trigger === 'start'
+                        ? ({ in: ['contact', 'input', 'callback'] } as any)
+                        : null)
             },
             orderBy: {
               startedAt: 'desc' // Берем самый последний waiting execution
@@ -895,6 +922,134 @@ export class WorkflowRuntimeService {
               context // Передаём сырой контекст платформы
             );
 
+            let isReplyKeyboardButtonClick = false;
+
+            // ✅ ПЕРЕХВАТ CALLBACK НА ВВОД EMAIL ДЛЯ MAX BOT
+            if (trigger === 'callback' && context.callbackQuery) {
+              const callbackData = context.callbackQuery.data;
+              const text = callbackData || '';
+
+              const enterEmailPatterns = [
+                'ввести email',
+                'ввести e-mail',
+                'ввести емейл',
+                'ввести почту',
+                '✉️ ввести email',
+                '📧 ввести email',
+                'enter_email'
+              ];
+              const lowerText = text.toLowerCase();
+              const isEnterEmailButton = enterEmailPatterns.some((pattern) =>
+                lowerText.includes(pattern.toLowerCase())
+              );
+
+              if (isEnterEmailButton) {
+                logger.info(
+                  '📧 User clicked "Enter email" button via callback (Max Bot), switching to email input',
+                  {
+                    text,
+                    executionId: waitingExecution.id
+                  }
+                );
+
+                // Отправляем запрос на ввод email
+                try {
+                  const replyText =
+                    '📧 Введите ваш email адрес:\n\nНапример: example@mail.ru';
+                  const { sendPlatformMessage } = await import(
+                    './workflow/platform-messaging'
+                  );
+                  await sendPlatformMessage(resumedContext, replyText);
+                } catch (replyError) {
+                  logger.error(
+                    'Failed to send email prompt via callback (Max Bot)',
+                    {
+                      error:
+                        replyError instanceof Error
+                          ? replyError.message
+                          : String(replyError)
+                    }
+                  );
+                }
+
+                // Переводим waitType в 'input', чтобы ждать текстового ввода email
+                await db.workflowExecution.update({
+                  where: { id: waitingExecution.id },
+                  data: {
+                    waitType: 'input',
+                    waitPayload: {
+                      ...((waitingExecution.waitPayload as any) || {}),
+                      subType: 'email',
+                      updatedAt: new Date().toISOString()
+                    }
+                  }
+                });
+
+                // Инвалидируем старый кеш и кешируем с новым waitType
+                await this.invalidateWaitingExecutionCache(
+                  projectId,
+                  chatId!,
+                  'contact'
+                );
+                await this.invalidateWaitingExecutionCache(
+                  projectId,
+                  chatId!,
+                  'callback'
+                );
+                await this.cacheWaitingExecution(
+                  waitingExecution.id,
+                  projectId,
+                  chatId!,
+                  'input'
+                );
+
+                return true;
+              }
+
+              // Проверяем, есть ли триггер-нода под этот callback
+              if (waitingExecution.waitType === 'contact') {
+                const { findCallbackTriggerNode } = await import(
+                  './workflow/callback-trigger-match'
+                );
+                const callbackTriggerNode = findCallbackTriggerNode(
+                  Object.values(versionToUse.nodes) as WorkflowNode[],
+                  callbackData
+                );
+
+                if (!callbackTriggerNode) {
+                  // Если триггер-ноды нет, это клик по reply-кнопке (например, "Пропустить")
+                  isReplyKeyboardButtonClick = true;
+                  logger.info(
+                    '🔄 Callback without trigger node in contact-waiting state - treating as reply keyboard click',
+                    { callbackData, executionId: waitingExecution.id }
+                  );
+
+                  // Имитируем текстовое сообщение
+                  let simulatedText = callbackData;
+                  const skipPatterns = [
+                    'пропустить',
+                    'skip',
+                    '⏭️ пропустить',
+                    '⏭️ skip'
+                  ];
+                  const isSkipButton = skipPatterns.some((pattern) =>
+                    simulatedText.toLowerCase().includes(pattern.toLowerCase())
+                  );
+                  if (isSkipButton) {
+                    simulatedText = '__SKIP__';
+                  }
+
+                  resumedContext.telegram.message.text = simulatedText;
+                  // Также сохраняем в переменную
+                  await resumedContext.variables.set(
+                    'telegram.message.text',
+                    simulatedText,
+                    'session'
+                  );
+                }
+              }
+            }
+
             // ✅ КРИТИЧНО: Сохраняем контакт/email в переменные для использования в workflow
             // ВАЖНО: Сохраняем объект contactReceived, а не отдельные переменные с точкой в ключе
             if (contactPhone) {
@@ -934,7 +1089,7 @@ export class WorkflowRuntimeService {
             // For callback triggers, find the appropriate callback trigger node
             // instead of resuming from currentNodeId
             const callbackData = context.callbackQuery?.data;
-            if (callbackData) {
+            if (callbackData && !isReplyKeyboardButtonClick) {
               console.log('🔧 Processing callback trigger', { callbackData });
               console.log(
                 '🔧 Available nodes in versionToUse:',

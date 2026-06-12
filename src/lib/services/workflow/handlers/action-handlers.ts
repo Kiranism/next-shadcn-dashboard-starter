@@ -190,6 +190,11 @@ export class DatabaseQueryHandler extends BaseNodeHandler {
       resolved.projectId = context.projectId;
     }
 
+    // ✅ Всегда добавляем platform из контекста для совместимости (Telegram/Max)
+    if (!resolved.platform && context.platform) {
+      resolved.platform = context.platform;
+    }
+
     return resolved;
   }
 

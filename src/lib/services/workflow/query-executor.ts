@@ -19,6 +19,7 @@ export interface CheckUserParams {
   projectId: string;
   phone?: string;
   email?: string;
+  platform?: string;
 }
 
 export interface CreateUserParams {
@@ -30,6 +31,7 @@ export interface CreateUserParams {
   lastName?: string;
   phone?: string;
   email?: string;
+  platform?: string;
 }
 
 export interface AddBonusParams {
@@ -70,13 +72,21 @@ export const SAFE_QUERIES = {
    */
   check_user_by_platform: async (db: PrismaClient, params: CheckUserParams) => {
     logger.debug('Executing check_user_by_platform', { params });
-    // Сначала ищем по Telegram ID
+    const isMax = params.platform === 'max';
+
+    // Сначала ищем по Telegram ID (или по MAX ID, если платформа MAX)
     if (params.telegramId) {
+      const idVal = BigInt(params.telegramId);
       let user = await db.user.findFirst({
-        where: {
-          telegramId: BigInt(params.telegramId),
-          projectId: params.projectId
-        },
+        where: isMax
+          ? {
+              maxId: idVal,
+              projectId: params.projectId
+            }
+          : {
+              telegramId: idVal,
+              projectId: params.projectId
+            },
         include: {
           bonuses: {
             where: {
@@ -313,9 +323,17 @@ export const SAFE_QUERIES = {
       isActive: true
     };
 
+    const isMax = params.platform === 'max';
+
     if (params.telegramId) {
-      data.telegramId = BigInt(params.telegramId);
-      data.telegramUsername = params.username;
+      const idVal = BigInt(params.telegramId);
+      if (isMax) {
+        data.maxId = idVal;
+        data.maxUsername = params.username;
+      } else {
+        data.telegramId = idVal;
+        data.telegramUsername = params.username;
+      }
     }
 
     if (params.maxId) {
@@ -941,6 +959,7 @@ export const SAFE_QUERIES = {
       email?: string;
       projectId: string;
       telegramId?: string;
+      platform?: string;
     }
   ) => {
     console.log('🔍 check_user_by_contact called with params', {
@@ -948,26 +967,39 @@ export const SAFE_QUERIES = {
       phoneType: typeof params.phone,
       email: params.email,
       telegramId: params.telegramId,
-      projectId: params.projectId
+      projectId: params.projectId,
+      platform: params.platform
     });
 
     let user = null;
+    const isMax = params.platform === 'max';
 
-    // Сначала пробуем найти по Telegram ID (если передан)
+    // Сначала пробуем найти по Telegram ID (или по MAX ID, если платформа MAX)
     if (params.telegramId && !params.telegramId.includes('{{')) {
-      console.log('🔍 Ищем по Telegram ID:', params.telegramId);
+      console.log(
+        `🔍 Ищем по ${isMax ? 'MAX' : 'Telegram'} ID:`,
+        params.telegramId
+      );
       try {
         user = await db.user.findFirst({
-          where: {
-            telegramId: BigInt(params.telegramId),
-            projectId: params.projectId
-          }
+          where: isMax
+            ? {
+                maxId: BigInt(params.telegramId),
+                projectId: params.projectId
+              }
+            : {
+                telegramId: BigInt(params.telegramId),
+                projectId: params.projectId
+              }
         });
         if (user) {
-          console.log('✅ Пользователь найден по Telegram ID:', user.id);
+          console.log(
+            `✅ Пользователь найден по ${isMax ? 'MAX' : 'Telegram'} ID:`,
+            user.id
+          );
         }
       } catch (e) {
-        console.log('⚠️ Ошибка поиска по Telegram ID:', e);
+        console.log(`⚠️ Ошибка поиска по ${isMax ? 'MAX' : 'Telegram'} ID:`, e);
       }
     }
 
@@ -1058,6 +1090,8 @@ export const SAFE_QUERIES = {
         birthDate: user.birthDate,
         telegramId: user.telegramId?.toString(),
         telegramUsername: user.telegramUsername,
+        maxId: user.maxId?.toString(),
+        maxUsername: user.maxUsername,
         isActive: user.isActive,
         registeredAt: user.registeredAt,
         updatedAt: user.updatedAt,
@@ -1088,6 +1122,7 @@ export const SAFE_QUERIES = {
       telegramId: string;
       telegramUsername?: string;
       phone?: string | { phoneNumber?: string };
+      platform?: string;
     }
   ) => {
     logger.debug('Executing activate_user', { params });
@@ -1101,19 +1136,25 @@ export const SAFE_QUERIES = {
       throw new Error(`User not found: ${params.userId}`);
     }
 
-    const telegramId = BigInt(params.telegramId);
+    const isMax = params.platform === 'max';
+    const idVal = BigInt(params.telegramId);
 
-    // Снимаем привязку Telegram с других записей проекта (например, ошибочно созданных без телефона)
+    // Снимаем привязку с других записей проекта (например, ошибочно созданных без телефона)
     await db.user.updateMany({
       where: {
         projectId: targetUser.projectId,
-        telegramId,
+        ...(isMax ? { maxId: idVal } : { telegramId: idVal }),
         id: { not: params.userId }
       },
-      data: {
-        telegramId: null,
-        isActive: false
-      }
+      data: isMax
+        ? {
+            maxId: null,
+            isActive: false
+          }
+        : {
+            telegramId: null,
+            isActive: false
+          }
     });
 
     let phoneValue: string | undefined;
@@ -1126,8 +1167,15 @@ export const SAFE_QUERIES = {
     const user = await db.user.update({
       where: { id: params.userId },
       data: {
-        telegramId,
-        telegramUsername: params.telegramUsername,
+        ...(isMax
+          ? {
+              maxId: idVal,
+              maxUsername: params.telegramUsername
+            }
+          : {
+              telegramId: idVal,
+              telegramUsername: params.telegramUsername
+            }),
         isActive: true,
         updatedAt: new Date(),
         ...(phoneValue && !phoneValue.includes('{{')
@@ -1229,21 +1277,25 @@ export const SAFE_QUERIES = {
       projectId: string;
       phone?: string;
       email?: string;
+      platform?: string;
     }
   ) => {
     logger.debug('Executing update_user_contact', { params });
 
-    // Находим пользователя по Telegram ID
+    const isMax = params.platform === 'max';
+    const idVal = BigInt(params.telegramId);
+
+    // Находим пользователя по platform ID
     const user = await db.user.findFirst({
       where: {
-        telegramId: BigInt(params.telegramId),
+        ...(isMax ? { maxId: idVal } : { telegramId: idVal }),
         projectId: params.projectId
       }
     });
 
     if (!user) {
       console.log(
-        '❌ update_user_contact: Пользователь не найден по Telegram ID'
+        '❌ update_user_contact: Пользователь не найден по platform ID'
       );
       return null;
     }
@@ -1290,6 +1342,8 @@ export const SAFE_QUERIES = {
         lastName: user.lastName,
         telegramId: user.telegramId?.toString(),
         telegramUsername: user.telegramUsername,
+        maxId: user.maxId?.toString(),
+        maxUsername: user.maxUsername,
         isActive: user.isActive
       };
     }
@@ -1315,6 +1369,8 @@ export const SAFE_QUERIES = {
       lastName: updatedUser.lastName,
       telegramId: updatedUser.telegramId?.toString(),
       telegramUsername: updatedUser.telegramUsername,
+      maxId: updatedUser.maxId?.toString(),
+      maxUsername: updatedUser.maxUsername,
       isActive: updatedUser.isActive
     };
   },
