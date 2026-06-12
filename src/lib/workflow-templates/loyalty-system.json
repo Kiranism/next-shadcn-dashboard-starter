@@ -1,6 +1,6 @@
 {
   "name": "Система лояльности",
-  "description": "Программа лояльности: проверка по Telegram, регистрация по контакту, приветственные бонусы. Формат нод совместим с конструктором workflow (как шаблон с подпиской).",
+  "description": "Программа лояльности: проверка по Telegram, активация существующего аккаунта сайта по контакту, начисление приветственных бонусов из настроек проекта при активации.",
   "nodes": [
     {
       "id": "start-trigger",
@@ -136,6 +136,20 @@
       }
     },
     {
+      "id": "msg-register-on-site",
+      "type": "message",
+      "position": { "x": 2280, "y": 640 },
+      "data": {
+        "label": "Требуется регистрация",
+        "config": {
+          "message": {
+            "text": "🌐 Аккаунт с вашим номером телефона не найден.\n\n📝 Пожалуйста, сначала зарегистрируйтесь на нашем сайте:\nhttps://{project.domain}\n\n✨ После регистрации вернитесь в бот и поделитесь контактом снова для активации аккаунта и получения бонусов!",
+            "parseMode": "HTML"
+          }
+        }
+      }
+    },
+    {
       "id": "cond-has-telegram-id",
       "type": "condition",
       "position": { "x": 2280, "y": 360 },
@@ -198,9 +212,61 @@
       }
     },
     {
+      "id": "db-check-welcome-bonus",
+      "type": "action.database_query",
+      "position": { "x": 3040, "y": 480 },
+      "data": {
+        "label": "Проверить приветственные бонусы",
+        "config": {
+          "action.database_query": {
+            "query": "check_welcome_bonus",
+            "assignTo": "hasWelcomeBonus",
+            "parameters": {
+              "userId": "{{contactUser.id}}"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "cond-welcome-bonus-exists",
+      "type": "condition",
+      "position": { "x": 3420, "y": 480 },
+      "data": {
+        "label": "Есть приветственные бонусы?",
+        "config": {
+          "condition": {
+            "operator": "equals",
+            "variable": "hasWelcomeBonus",
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "id": "db-add-welcome-new",
+      "type": "action.database_query",
+      "position": { "x": 3800, "y": 380 },
+      "data": {
+        "label": "Начислить приветственные бонусы",
+        "config": {
+          "action.database_query": {
+            "query": "add_bonus",
+            "parameters": {
+              "userId": "{{contactUser.id}}",
+              "amount": "{{project.welcomeBonus}}",
+              "type": "WELCOME",
+              "description": "Приветственные бонусы за регистрацию в боте",
+              "expiresAt": ""
+            }
+          }
+        }
+      }
+    },
+    {
       "id": "msg-success-activated",
       "type": "message",
-      "position": { "x": 3040, "y": 480 },
+      "position": { "x": 4180, "y": 480 },
       "data": {
         "label": "Успешная активация",
         "config": {
@@ -212,64 +278,9 @@
       }
     },
     {
-      "id": "db-create-user",
-      "type": "action.database_query",
-      "position": { "x": 2280, "y": 640 },
-      "data": {
-        "label": "Создать пользователя",
-        "config": {
-          "action.database_query": {
-            "query": "create_user",
-            "assignTo": "newUser",
-            "parameters": {
-              "projectId": "{{projectId}}",
-              "telegramId": "{{telegram.userId}}",
-              "username": "{{telegram.username}}",
-              "firstName": "{{telegram.firstName}}",
-              "phone": "{{contactReceived.phoneNumber}}"
-            }
-          }
-        }
-      }
-    },
-    {
-      "id": "db-add-welcome-new",
-      "type": "action.database_query",
-      "position": { "x": 2660, "y": 640 },
-      "data": {
-        "label": "Начислить приветственные бонусы",
-        "config": {
-          "action.database_query": {
-            "query": "add_bonus",
-            "parameters": {
-              "userId": "{{newUser.id}}",
-              "amount": "{{project.welcomeBonus}}",
-              "type": "WELCOME",
-              "description": "Приветственные бонусы за регистрацию в боте",
-              "expiresAt": ""
-            }
-          }
-        }
-      }
-    },
-    {
-      "id": "msg-success-new",
-      "type": "message",
-      "position": { "x": 3040, "y": 640 },
-      "data": {
-        "label": "Успешная регистрация",
-        "config": {
-          "message": {
-            "text": "🎉 Регистрация завершена!\n\n💰 Приветственные бонусы начислены на ваш счёт.\n\n✨ Используйте их при покупках!",
-            "parseMode": "HTML"
-          }
-        }
-      }
-    },
-    {
       "id": "flow-end",
       "type": "flow.end",
-      "position": { "x": 3420, "y": 360 },
+      "position": { "x": 4560, "y": 300 },
       "data": {
         "label": "Завершение",
         "config": {
@@ -347,6 +358,19 @@
       "sourceHandle": "true"
     },
     {
+      "id": "e-contact-notfound-register",
+      "type": "default",
+      "source": "cond-contact-found",
+      "target": "msg-register-on-site",
+      "sourceHandle": "false"
+    },
+    {
+      "id": "e-register-end",
+      "type": "default",
+      "source": "msg-register-on-site",
+      "target": "flow-end"
+    },
+    {
       "id": "e-has-tg-other",
       "type": "default",
       "source": "cond-has-telegram-id",
@@ -358,13 +382,6 @@
       "type": "default",
       "source": "cond-has-telegram-id",
       "target": "db-activate-user",
-      "sourceHandle": "false"
-    },
-    {
-      "id": "e-contact-notfound-create",
-      "type": "default",
-      "source": "cond-contact-found",
-      "target": "db-create-user",
       "sourceHandle": "false"
     },
     {
@@ -388,33 +405,41 @@
       "target": "flow-end"
     },
     {
-      "id": "e-activate-successmsg",
+      "id": "e-activate-checkbonus",
       "type": "default",
       "source": "db-activate-user",
+      "target": "db-check-welcome-bonus"
+    },
+    {
+      "id": "e-checkbonus-cond",
+      "type": "default",
+      "source": "db-check-welcome-bonus",
+      "target": "cond-welcome-bonus-exists"
+    },
+    {
+      "id": "e-cond-addbonus",
+      "type": "default",
+      "source": "cond-welcome-bonus-exists",
+      "target": "db-add-welcome-new",
+      "sourceHandle": "true"
+    },
+    {
+      "id": "e-cond-success",
+      "type": "default",
+      "source": "cond-welcome-bonus-exists",
+      "target": "msg-success-activated",
+      "sourceHandle": "false"
+    },
+    {
+      "id": "e-addbonus-success",
+      "type": "default",
+      "source": "db-add-welcome-new",
       "target": "msg-success-activated"
     },
     {
       "id": "e-success-act-end",
       "type": "default",
       "source": "msg-success-activated",
-      "target": "flow-end"
-    },
-    {
-      "id": "e-create-add",
-      "type": "default",
-      "source": "db-create-user",
-      "target": "db-add-welcome-new"
-    },
-    {
-      "id": "e-add-success",
-      "type": "default",
-      "source": "db-add-welcome-new",
-      "target": "msg-success-new"
-    },
-    {
-      "id": "e-success-new-end",
-      "type": "default",
-      "source": "msg-success-new",
       "target": "flow-end"
     }
   ],
@@ -430,9 +455,10 @@
       "description": "Результат check_user_by_contact"
     },
     {
-      "name": "newUser",
-      "type": "object",
-      "description": "Созданный пользователь (create_user)"
+      "name": "hasWelcomeBonus",
+      "type": "boolean",
+      "description": "Есть ли приветственные бонусы",
+      "defaultValue": false
     }
   ],
   "settings": {
