@@ -18,6 +18,7 @@ import { normalizeNodes } from './workflow/utils/node-utils';
 import { CacheService } from '@/lib/redis';
 import { validateEmail, looksLikeEmail } from '@/lib/utils/email-validator';
 import { parseBirthday } from '@/lib/services/date-parser';
+import { isPhone, normalizePhone } from './workflow/handlers/utils';
 import type {
   WorkflowVersion,
   WorkflowNode,
@@ -796,6 +797,14 @@ export class WorkflowRuntimeService {
                 const text = context.message.text.trim();
                 messageText = text;
 
+                if (waitingExecution.waitType === 'contact' && isPhone(text)) {
+                  contactPhone = normalizePhone(text);
+                  logger.info('📞 Phone number parsed from manual text input', {
+                    phoneNumber: contactPhone,
+                    executionId: waitingExecution.id
+                  });
+                }
+
                 // ✅ КРИТИЧНО: Проверяем, нажал ли пользователь кнопку "Ввести email"
                 const enterEmailPatterns = [
                   'ввести email',
@@ -903,9 +912,15 @@ export class WorkflowRuntimeService {
             const contactData = contactPhone
               ? {
                   phoneNumber: contactPhone,
-                  firstName: context.message?.contact?.first_name,
-                  lastName: context.message?.contact?.last_name,
-                  telegramUserId: context.message?.contact?.user_id?.toString()
+                  firstName:
+                    context.message?.contact?.first_name ||
+                    context.telegram?.firstName ||
+                    '',
+                  lastName: context.message?.contact?.last_name || '',
+                  telegramUserId:
+                    context.message?.contact?.user_id?.toString() ||
+                    context.telegram?.userId ||
+                    ''
                 }
               : undefined;
 

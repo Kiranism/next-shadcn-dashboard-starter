@@ -9,6 +9,42 @@ import { db } from '@/lib/db';
 jest.mock('@/lib/db');
 jest.mock('@/lib/logger');
 
+const mockMiddlewares: any[] = [];
+jest.mock('@maxhub/max-bot-api', () => {
+  return {
+    Bot: class {
+      use(fn: any) {
+        mockMiddlewares.push(fn);
+      }
+      on() {}
+    },
+    Keyboard: {
+      button: {
+        requestContact: (text: string) => ({ type: 'request_contact', text }),
+        callback: (text: string, payload: string) => ({
+          type: 'callback',
+          text,
+          payload
+        })
+      },
+      inlineKeyboard: (buttons: any) => ({
+        type: 'inline_keyboard',
+        payload: { buttons }
+      })
+    }
+  };
+});
+
+jest.mock('@/lib/services/workflow-runtime.service', () => ({
+  WorkflowRuntimeService: {
+    hasActiveWorkflow: jest.fn(),
+    executeWorkflow: jest.fn(),
+    cacheWaitingExecution: jest.fn(),
+    getCachedWaitingExecution: jest.fn(),
+    invalidateWaitingExecutionCache: jest.fn()
+  }
+}));
+
 describe('Max Bot Platform Compatibility', () => {
   const mockDb = db as jest.Mocked<typeof db>;
 
@@ -222,5 +258,62 @@ describe('Max Bot Platform Compatibility', () => {
         email: 'test@test.com'
       })
     });
+  });
+});
+
+describe('Max Bot Middleware and Fallbacks', () => {
+  const { createMaxBot } = require('@/lib/max-bot/bot');
+  const {
+    WorkflowRuntimeService
+  } = require('@/lib/services/workflow-runtime.service');
+  const {
+    isPhone,
+    normalizePhone
+  } = require('@/lib/services/workflow/handlers/utils');
+
+  beforeEach(() => {
+    mockMiddlewares.length = 0;
+    jest.clearAllMocks();
+  });
+
+  it('detects /start message as start trigger in MAX bot middleware', async () => {
+    createMaxBot('dummy-token', 'project-1');
+
+    // Находим middleware обработки workflow (второй middleware)
+    const workflowMiddleware = mockMiddlewares[1];
+    expect(workflowMiddleware).toBeDefined();
+
+    WorkflowRuntimeService.hasActiveWorkflow.mockResolvedValue(true);
+    WorkflowRuntimeService.executeWorkflow.mockResolvedValue(true);
+
+    const mockCtx = {
+      updateType: 'message_created',
+      chatId: '123',
+      user: { user_id: '456', username: 'testuser', name: 'Test' },
+      message: {
+        body: { text: '/start' }
+      }
+    };
+    const next = jest.fn();
+
+    await workflowMiddleware(mockCtx, next);
+
+    expect(WorkflowRuntimeService.executeWorkflow).toHaveBeenCalledWith(
+      'project-1',
+      'start', // Триггер должен быть 'start' благодаря проверке текста сообщения
+      expect.objectContaining({
+        _platform: 'max',
+        _projectId: 'project-1'
+      })
+    );
+  });
+
+  it('isPhone and normalizePhone work as expected', () => {
+    expect(isPhone('+79991234567')).toBe(true);
+    expect(isPhone('89991234567')).toBe(true);
+    expect(isPhone('12345')).toBe(false);
+
+    expect(normalizePhone(' +7 (999) 123-45-67 ')).toBe('+79991234567');
+    expect(normalizePhone('8-999-123-45-67')).toBe('89991234567');
   });
 });

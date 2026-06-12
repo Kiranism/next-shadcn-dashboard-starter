@@ -56,7 +56,10 @@ export function createMaxBot(token: string, projectId: string) {
       // Определяем тип триггера
       let trigger: 'start' | 'message' | 'callback' = 'message';
 
-      if (ctx.updateType === 'bot_started') {
+      if (
+        ctx.updateType === 'bot_started' ||
+        ctx.message?.body?.text?.startsWith('/start')
+      ) {
         trigger = 'start';
       } else if (ctx.updateType === 'message_callback') {
         trigger = 'callback';
