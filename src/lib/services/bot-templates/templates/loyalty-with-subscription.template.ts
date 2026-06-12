@@ -37,8 +37,8 @@ export const loyaltyWithSubscriptionTemplate: BotTemplate = {
     description: loyaltyWithSubscriptionWorkflow.description,
     nodes: loyaltyWithSubscriptionWorkflow.nodes,
     connections: loyaltyWithSubscriptionWorkflow.connections,
-    variables: [],
-    settings: {}
+    variables: loyaltyWithSubscriptionWorkflow.variables,
+    settings: (loyaltyWithSubscriptionWorkflow as any).settings || {}
   },
 
   features: [
