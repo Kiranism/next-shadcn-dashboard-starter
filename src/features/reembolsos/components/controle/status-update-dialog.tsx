@@ -73,6 +73,12 @@ export function StatusUpdateDialog({ reimbursement, action, onClose }: StatusUpd
                 <p className='font-medium text-foreground'>{reimbursement.title}</p>
                 <p className='text-muted-foreground'>{formatBRL(reimbursement.amount_cents)}</p>
               </div>
+              {isApprove && reimbursement.pix_key && (
+                <div className='rounded-md border bg-muted/40 px-3 py-2'>
+                  <p className='text-xs text-muted-foreground'>Chave PIX para pagamento</p>
+                  <p className='font-medium text-foreground'>{reimbursement.pix_key}</p>
+                </div>
+              )}
               <p className='text-muted-foreground'>Esta ação não pode ser desfeita.</p>
             </div>
           </AlertDialogDescription>
