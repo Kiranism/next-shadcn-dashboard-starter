@@ -12,24 +12,50 @@ import { createMaxBot } from './bot';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
+function resolvePublicBaseUrl(): { url: string; source: string } {
+  const entries: ReadonlyArray<readonly [string, string | undefined]> = [
+    ['WEBHOOK_BASE_URL', process.env.WEBHOOK_BASE_URL],
+    ['NEXT_PUBLIC_APP_URL', process.env.NEXT_PUBLIC_APP_URL],
+    ['APP_URL', process.env.APP_URL]
+  ];
+  const normalized = entries.map(
+    ([key, val]) => [key, (val ?? '').trim()] as readonly [string, string]
+  );
+  const https = normalized.find(([, v]) => v.startsWith('https://'));
+  if (https?.[1]) {
+    return { url: https[1], source: https[0] };
+  }
+  const any = normalized.find(([, v]) => v.length > 0);
+  if (any?.[1]) {
+    return { url: any[1], source: any[0] };
+  }
+  return { url: 'http://localhost:5006', source: 'default' };
+}
+
 interface MaxBotInstance {
   bot: Bot;
   isActive: boolean;
   projectId: string;
   lastUpdated: Date;
+  isPolling?: boolean;
 }
 
 /**
  * Менеджер для управления экземплярами MAX ботов.
  * Аналог BotManager из @/lib/telegram/bot-manager, но для платформы MAX.
- * MAX боты работают через long polling (встроенный в @maxhub/max-bot-api).
+ * MAX боты могут работать через Webhook в продакшене или long polling в локальной разработке.
  */
 class MaxBotManager {
   private bots: Map<string, MaxBotInstance> = new Map();
   private readonly operationLocks: Map<string, Promise<any>> = new Map();
 
+  get webhookBaseUrl(): string {
+    return resolvePublicBaseUrl().url;
+  }
+
   constructor() {
     logger.info('[MAX] MaxBotManager инициализирован', {
+      webhookBaseUrl: this.webhookBaseUrl,
       component: 'max-bot-manager'
     });
   }
@@ -121,26 +147,109 @@ class MaxBotManager {
       // Создаём бота через фабрику
       const bot = createMaxBot(maxBotToken, projectId);
 
-      // Запускаем polling (встроенный в @maxhub/max-bot-api)
-      try {
-        bot.start();
-        logger.info(`✅ [MAX] Бот запущен (polling)`, {
+      // Определение режима: Webhook или Polling
+      const isWebhookCapable = this.webhookBaseUrl.startsWith('https://');
+      const isLocalDevelopment = process.env.NODE_ENV === 'development';
+      
+      let useWebhook = !isLocalDevelopment && isWebhookCapable;
+      if (process.env.MAX_BOT_USE_WEBHOOK !== undefined) {
+        useWebhook = process.env.MAX_BOT_USE_WEBHOOK === 'true';
+      }
+
+      const webhookUrl = `${this.webhookBaseUrl}/api/webhook/max-bot/${projectId}`;
+      let isPolling = false;
+
+      if (useWebhook) {
+        logger.info(`🌐 [MAX] Настройка Webhook для бота ${projectId}`, {
+          projectId,
+          webhookUrl,
+          component: 'max-bot-manager'
+        });
+
+        try {
+          // Инициализируем botInfo для бота, чтобы handleUpdate мог создавать Context корректно
+          bot.botInfo = await bot.api.getMyInfo();
+          logger.info(`✅ [MAX] Информация о боте получена: @${bot.botInfo.username}`, {
+            projectId,
+            component: 'max-bot-manager'
+          });
+
+          // Подписываемся на события вебхука
+          const response = await (bot.api.raw as any).client.call({
+            method: 'subscriptions',
+            options: {
+              method: 'POST',
+              body: {
+                url: webhookUrl,
+                update_types: ['message_created', 'message_callback', 'bot_started']
+              }
+            }
+          });
+
+          logger.info(`✅ [MAX] Webhook успешно зарегистрирован на MAX платформе`, {
+            projectId,
+            webhookUrl,
+            status: response.status,
+            data: response.data,
+            component: 'max-bot-manager'
+          });
+        } catch (error) {
+          logger.error(`❌ [MAX] Ошибка регистрации Webhook`, {
+            projectId,
+            error: error instanceof Error ? error.message : 'Unknown error',
+            component: 'max-bot-manager'
+          });
+          throw error;
+        }
+      } else {
+        // Режим Polling
+        logger.info(`🔌 [MAX] Режим Polling для бота ${projectId}`, {
           projectId,
           component: 'max-bot-manager'
         });
-      } catch (error) {
-        logger.error(`❌ [MAX] Ошибка запуска polling`, {
-          projectId,
-          error: error instanceof Error ? error.message : 'Unknown',
-          component: 'max-bot-manager'
-        });
+
+        // Пытаемся удалить активный webhook перед запуском polling, чтобы события шли в getUpdates
+        try {
+          await (bot.api.raw as any).client.call({
+            method: 'subscriptions',
+            options: {
+              method: 'DELETE',
+              query: { url: webhookUrl }
+            }
+          });
+          logger.info(`✅ [MAX] Предыдущий Webhook удален (если был) перед запуском Polling`, {
+            projectId,
+            component: 'max-bot-manager'
+          });
+        } catch (error) {
+          logger.debug(`[MAX] Ошибка удаления Webhook перед Polling (возможно, подписка отсутствовала)`, {
+            projectId,
+            error: error instanceof Error ? error.message : 'Unknown'
+          });
+        }
+
+        try {
+          await bot.start();
+          isPolling = true;
+          logger.info(`✅ [MAX] Бот запущен (polling)`, {
+            projectId,
+            component: 'max-bot-manager'
+          });
+        } catch (error) {
+          logger.error(`❌ [MAX] Ошибка запуска polling`, {
+            projectId,
+            error: error instanceof Error ? error.message : 'Unknown',
+            component: 'max-bot-manager'
+          });
+        }
       }
 
       const instance: MaxBotInstance = {
         bot,
         isActive: true,
         projectId,
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
+        isPolling
       };
 
       this.bots.set(projectId, instance);
@@ -148,6 +257,7 @@ class MaxBotManager {
       logger.info(`✅ [MAX] Бот создан и зарегистрирован`, {
         projectId,
         totalBots: this.bots.size,
+        mode: useWebhook ? 'webhook' : 'polling',
         component: 'max-bot-manager'
       });
 
@@ -160,6 +270,39 @@ class MaxBotManager {
       });
       throw error;
     }
+  }
+
+  /**
+   * Получение или ленивая инициализация бота для обработки вебхука
+   */
+  async getBotForWebhook(projectId: string): Promise<Bot | null> {
+    let instance = this.bots.get(projectId);
+
+    if (!instance || !instance.isActive) {
+      logger.info(`🔍 [MAX] Бот не найден в памяти, пробуем инициализировать (lazy-loading)`, {
+        projectId,
+        component: 'max-bot-manager'
+      });
+
+      try {
+        const project = await db.project.findUnique({
+          where: { id: projectId },
+          select: { maxBotToken: true }
+        });
+
+        if (project?.maxBotToken) {
+          instance = await this.createBot(projectId, project.maxBotToken);
+        }
+      } catch (error) {
+        logger.error(`❌ [MAX] Ошибка lazy-loading бота`, {
+          projectId,
+          error: error instanceof Error ? error.message : String(error),
+          component: 'max-bot-manager'
+        });
+      }
+    }
+
+    return instance?.isActive ? instance.bot : null;
   }
 
   /**
@@ -180,14 +323,39 @@ class MaxBotManager {
 
       instance.isActive = false;
 
-      try {
-        instance.bot.stop();
-      } catch (stopError) {
-        logger.warn(`[MAX] Ошибка stop()`, {
-          projectId,
-          error: stopError instanceof Error ? stopError.message : 'Unknown',
-          component: 'max-bot-manager'
-        });
+      if (instance.isPolling) {
+        try {
+          instance.bot.stop();
+        } catch (stopError) {
+          logger.warn(`[MAX] Ошибка stop()`, {
+            projectId,
+            error: stopError instanceof Error ? stopError.message : 'Unknown',
+            component: 'max-bot-manager'
+          });
+        }
+      } else {
+        // Удаляем Webhook подписку на стороне MAX
+        const webhookUrl = `${this.webhookBaseUrl}/api/webhook/max-bot/${projectId}`;
+        try {
+          await (instance.bot.api.raw as any).client.call({
+            method: 'subscriptions',
+            options: {
+              method: 'DELETE',
+              query: { url: webhookUrl }
+            }
+          });
+          logger.info(`✅ [MAX] Webhook успешно удален при остановке бота`, {
+            projectId,
+            webhookUrl,
+            component: 'max-bot-manager'
+          });
+        } catch (error) {
+          logger.warn(`[MAX] Ошибка удаления Webhook при остановке бота`, {
+            projectId,
+            error: error instanceof Error ? error.message : 'Unknown error',
+            component: 'max-bot-manager'
+          });
+        }
       }
 
       this.bots.delete(projectId);
