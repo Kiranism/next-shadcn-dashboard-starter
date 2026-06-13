@@ -136,8 +136,13 @@ function adaptMaxContextForWorkflow(ctx: Context, projectId: string) {
   const userId = ctx.user?.user_id;
   const username = ctx.user?.username;
   const firstName = ctx.user?.name; // MAX: user.name, не first_name
-  const messageText = ctx.message?.body?.text;
   const callbackPayload = ctx.callback?.payload;
+
+  let messageText = ctx.message?.body?.text;
+  if (ctx.updateType === 'bot_started') {
+    const payload = ctx.startPayload || (ctx.update as any)?.payload;
+    messageText = payload ? `/start ${payload}` : '/start';
+  }
 
   // MAX contactInfo: { tel?: string, fullName?: string }
   // Telegram contact: { phone_number, first_name, last_name, user_id, vcard }

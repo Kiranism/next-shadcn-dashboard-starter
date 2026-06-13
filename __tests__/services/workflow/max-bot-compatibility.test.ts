@@ -308,6 +308,39 @@ describe('Max Bot Middleware and Fallbacks', () => {
     );
   });
 
+  it('extracts startPayload parameter when bot_started update occurs', async () => {
+    createMaxBot('dummy-token', 'project-1');
+
+    const workflowMiddleware = mockMiddlewares[1];
+    expect(workflowMiddleware).toBeDefined();
+
+    WorkflowRuntimeService.hasActiveWorkflow.mockResolvedValue(true);
+    WorkflowRuntimeService.executeWorkflow.mockResolvedValue(true);
+
+    const mockCtx = {
+      updateType: 'bot_started',
+      chatId: '123',
+      user: { user_id: '456', username: 'testuser', name: 'Test' },
+      startPayload: 'REF_CODE_123',
+      update: { payload: 'REF_CODE_123' }
+    };
+    const next = jest.fn();
+
+    await workflowMiddleware(mockCtx, next);
+
+    expect(WorkflowRuntimeService.executeWorkflow).toHaveBeenCalledWith(
+      'project-1',
+      'start',
+      expect.objectContaining({
+        message: expect.objectContaining({
+          text: '/start REF_CODE_123'
+        }),
+        _platform: 'max',
+        _projectId: 'project-1'
+      })
+    );
+  });
+
   it('isPhone and normalizePhone work as expected', () => {
     expect(isPhone('+79991234567')).toBe(true);
     expect(isPhone('89991234567')).toBe(true);
