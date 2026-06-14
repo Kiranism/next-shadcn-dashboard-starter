@@ -1,7 +1,7 @@
 # 🎯 Gupil
 
-[![Next.js](https://img.shields.io/badge/Next.js-15.x-black)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16.x-black)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)](https://www.typescriptlang.org/)
 [![Prisma](https://img.shields.io/badge/Prisma-6.x-green)](https://www.prisma.io/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -55,7 +55,7 @@ yarn install
 
 ### 3. Настройка окружения
 
-Создайте файл `.env` (можно взять за основу `env.example.txt`):
+Создайте файл `.env` в корне проекта:
 
 ```env
 # Database (локальные Postgres из Docker слушают на 5434)
@@ -333,7 +333,7 @@ vercel --prod
 
 ### VPS/Dedicated Server
 
-Смотрите подробную инструкцию в [VPS_DEPLOYMENT_GUIDE.md](VPS_DEPLOYMENT_GUIDE.md)
+Смотрите подробную инструкцию в [docs/VPS_DEPLOYMENT_GUIDE.md](docs/VPS_DEPLOYMENT_GUIDE.md)
 
 ## 📊 Мониторинг
 

@@ -173,7 +173,7 @@ export function InSalesIntegrationForm({
           <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
             {/* API Credentials */}
             <div className='space-y-4'>
-              <h3 className='text-sm font-medium'>API Credentials</h3>
+              <h3 className='text-sm font-medium'>Учётные данные API</h3>
 
               <FormField
                 control={form.control}
@@ -225,7 +225,7 @@ export function InSalesIntegrationForm({
                 name='shopDomain'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Shop Domain</FormLabel>
+                    <FormLabel>Домен магазина</FormLabel>
                     <FormControl>
                       <Input placeholder='yourshop.myinsales.ru' {...field} />
                     </FormControl>
@@ -242,7 +242,7 @@ export function InSalesIntegrationForm({
 
             {/* Settings Inheritance */}
             <div className='space-y-4'>
-              <h1 className='text-sm font-medium'>Управление настройками</h1>
+              <h3 className='text-sm font-medium'>Управление настройками</h3>
 
               <FormField
                 control={form.control}

@@ -20,8 +20,8 @@ import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 
 export const metadata = {
-  title: 'InSales Integration | Gupil',
-  description: 'Configure InSales integration for bonus system'
+  title: 'Интеграция с InSales | Gupil',
+  description: 'Настройка интеграции InSales для бонусной системы'
 };
 
 async function getIntegrationData(projectId: string) {
@@ -132,7 +132,7 @@ export default async function InSalesIntegrationPage({
       {/* Header */}
       <div className='flex items-center justify-between'>
         <Heading
-          title='InSales Integration'
+          title='Интеграция с InSales'
           description='Интеграция с InSales магазином через REST API и JavaScript виджет'
         />
       </div>
@@ -141,7 +141,7 @@ export default async function InSalesIntegrationPage({
 
       {/* Stats Cards */}
       {integration && (
-        <Suspense fallback={<div>Loading stats...</div>}>
+        <Suspense fallback={<div>Загрузка статистики...</div>}>
           <InSalesStatsCards stats={stats} integration={integration} />
         </Suspense>
       )}
@@ -165,7 +165,7 @@ export default async function InSalesIntegrationPage({
 
       {/* Webhook Logs */}
       {integration && (
-        <Suspense fallback={<div>Loading logs...</div>}>
+        <Suspense fallback={<div>Загрузка логов...</div>}>
           <InSalesWebhookLogs projectId={project.id} />
         </Suspense>
       )}

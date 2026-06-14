@@ -76,9 +76,15 @@ export function InSalesCredentials({
         <CardContent className='space-y-4'>
           {/* Webhook URL */}
           <div className='space-y-2'>
-            <label className='text-sm font-medium'>Webhook URL</label>
+            <label
+              htmlFor='insales-webhook-url'
+              className='text-sm font-medium'
+            >
+              Webhook URL
+            </label>
             <div className='flex gap-2'>
               <input
+                id='insales-webhook-url'
                 type='text'
                 value={webhookUrl}
                 readOnly
@@ -87,6 +93,7 @@ export function InSalesCredentials({
               <Button
                 size='sm'
                 variant='outline'
+                aria-label='Скопировать Webhook URL'
                 onClick={() => copyToClipboard(webhookUrl, 'webhook')}
               >
                 {copiedField === 'webhook' ? (
@@ -103,9 +110,15 @@ export function InSalesCredentials({
 
           {/* Webhook Secret */}
           <div className='space-y-2'>
-            <label className='text-sm font-medium'>Webhook Secret</label>
+            <label
+              htmlFor='insales-webhook-secret'
+              className='text-sm font-medium'
+            >
+              Webhook Secret
+            </label>
             <div className='flex gap-2'>
               <input
+                id='insales-webhook-secret'
                 type={showSecret ? 'text' : 'password'}
                 value={webhookSecret}
                 readOnly
@@ -114,6 +127,7 @@ export function InSalesCredentials({
               <Button
                 size='sm'
                 variant='outline'
+                aria-label={showSecret ? 'Скрыть секрет' : 'Показать секрет'}
                 onClick={() => setShowSecret(!showSecret)}
               >
                 {showSecret ? (
@@ -125,6 +139,7 @@ export function InSalesCredentials({
               <Button
                 size='sm'
                 variant='outline'
+                aria-label='Скопировать Webhook Secret'
                 onClick={() => copyToClipboard(webhookSecret, 'secret')}
               >
                 {copiedField === 'secret' ? (
@@ -141,9 +156,15 @@ export function InSalesCredentials({
 
           {/* Shop Domain */}
           <div className='space-y-2'>
-            <label className='text-sm font-medium'>Shop Domain</label>
+            <label
+              htmlFor='insales-shop-domain'
+              className='text-sm font-medium'
+            >
+              Домен магазина
+            </label>
             <div className='flex gap-2'>
               <input
+                id='insales-shop-domain'
                 type='text'
                 value={shopDomain}
                 readOnly
@@ -152,6 +173,7 @@ export function InSalesCredentials({
               <Button
                 size='sm'
                 variant='outline'
+                aria-label='Скопировать домен магазина'
                 onClick={() => copyToClipboard(shopDomain, 'domain')}
               >
                 {copiedField === 'domain' ? (

@@ -28,7 +28,7 @@ export default async function DashboardPage() {
 
   return (
     <div className='flex flex-1 flex-col space-y-6 px-6 py-6'>
-      <Suspense fallback={<div>Loading stats...</div>}>
+      <Suspense fallback={<div>Загрузка статистики...</div>}>
         <DashboardStats
           totalProjects={stats.totalProjects}
           totalUsers={stats.totalUsers}

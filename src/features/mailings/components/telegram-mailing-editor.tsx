@@ -24,6 +24,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Plus, Trash2, ExternalLink, MessageSquare } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 
 interface TelegramButton {
   text: string;
@@ -66,7 +67,7 @@ export function TelegramMailingEditor({
     };
 
     if (!newButton.url && !newButton.callback_data) {
-      alert('Укажите URL или callback_data для кнопки');
+      toast.error('Укажите URL или callback_data для кнопки');
       return;
     }
 
@@ -136,7 +137,7 @@ export function TelegramMailingEditor({
               onChange={(e) => {
                 const text = e.target.value;
                 if (parseMode === 'HTML' && !validateHtml(text)) {
-                  alert(
+                  toast.error(
                     'Используйте только разрешенные HTML теги: b, i, u, s, a, code, pre'
                   );
                   return;

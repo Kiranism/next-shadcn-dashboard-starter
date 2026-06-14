@@ -69,14 +69,15 @@ export function RecentProjects({ projects }: { projects: RecentProject[] }) {
                 </div>
 
                 <div className='space-y-1'>
-                  <p
-                    className='cursor-pointer text-sm leading-none font-medium text-zinc-900 transition-colors group-hover:text-indigo-600 dark:text-zinc-100 dark:group-hover:text-indigo-400'
+                  <button
+                    type='button'
+                    className='cursor-pointer rounded text-left text-sm leading-none font-medium text-zinc-900 transition-colors group-hover:text-indigo-600 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none dark:text-zinc-100 dark:group-hover:text-indigo-400'
                     onClick={() =>
                       router.push(`/dashboard/projects/${project.id}`)
                     }
                   >
                     {project.name}
-                  </p>
+                  </button>
                   <div className='flex items-center text-xs text-zinc-500 dark:text-zinc-400'>
                     <span>{project.userCount} участников</span>
                     <span className='mx-1.5 h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-700' />
@@ -90,7 +91,7 @@ export function RecentProjects({ projects }: { projects: RecentProject[] }) {
                 </div>
               </div>
 
-              <div className='flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100'>
+              <div className='flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100'>
                 <Badge
                   variant={
                     project.botStatus === 'ACTIVE' ? 'default' : 'secondary'
@@ -100,10 +101,12 @@ export function RecentProjects({ projects }: { projects: RecentProject[] }) {
                   {project.botStatus === 'ACTIVE' ? 'Активен' : 'Остановлен'}
                 </Badge>
                 <button
+                  type='button'
+                  aria-label={`Открыть проект ${project.name}`}
                   onClick={() =>
                     router.push(`/dashboard/projects/${project.id}`)
                   }
-                  className='rounded-full p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-50'
+                  className='rounded-full p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none dark:hover:bg-zinc-800 dark:hover:text-zinc-50'
                 >
                   <ExternalLink className='h-4 w-4' />
                 </button>

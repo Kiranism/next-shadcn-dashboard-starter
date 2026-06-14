@@ -29,11 +29,20 @@ export default {
   'tilda-integration': {
     title: 'Интеграция с Tilda'
   },
+  'insales-integration': {
+    title: 'Интеграция с InSales'
+  },
+  'moysklad-integration': {
+    title: 'Интеграция с МойСклад'
+  },
   'custom-integration': {
     title: 'Custom интеграция'
   },
   'bonus-system': {
     title: 'Бонусная система'
+  },
+  'partner-program': {
+    title: 'Партнёрская программа (B2B)'
   },
   'api-reference': {
     title: 'API справочник'

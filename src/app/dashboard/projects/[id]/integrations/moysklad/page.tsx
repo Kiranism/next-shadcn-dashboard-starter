@@ -18,6 +18,8 @@ import { MoySkladIntegrationForm } from './components/integration-form';
 import { MoySkladStatsCards } from './components/stats-cards';
 import { MoySkladApiLogs } from './components/api-logs';
 import { MoySkladCredentials } from './components/credentials';
+import Link from 'next/link';
+import { ChevronLeft } from 'lucide-react';
 
 export const metadata = {
   title: 'МойСклад (Loyalty API) | Gupil',
@@ -114,6 +116,15 @@ export default async function MoySkladIntegrationPage({
 
   return (
     <div className='flex flex-1 flex-col space-y-6 px-6 py-6'>
+      {/* Breadcrumb */}
+      <Link
+        href={`/dashboard/projects/${params.id}/integrations`}
+        className='text-muted-foreground hover:text-foreground flex items-center gap-1 text-sm transition-colors'
+      >
+        <ChevronLeft className='h-4 w-4' />
+        Назад к интеграциям
+      </Link>
+
       {/* Header */}
       <div className='flex items-center justify-between'>
         <Heading
@@ -126,7 +137,7 @@ export default async function MoySkladIntegrationPage({
 
       {/* Stats Cards */}
       {integration && (
-        <Suspense fallback={<div>Loading stats...</div>}>
+        <Suspense fallback={<div>Загрузка статистики...</div>}>
           <MoySkladStatsCards
             stats={stats}
             isActive={integration.isActive}
@@ -153,7 +164,7 @@ export default async function MoySkladIntegrationPage({
 
       {/* API Logs */}
       {integration && (
-        <Suspense fallback={<div>Loading logs...</div>}>
+        <Suspense fallback={<div>Загрузка логов...</div>}>
           <MoySkladApiLogs integrationId={integration.id} />
         </Suspense>
       )}

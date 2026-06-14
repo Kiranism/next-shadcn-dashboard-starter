@@ -19,7 +19,7 @@ export default async function BonusesPage() {
   const data = await getBonusesData();
 
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div>Загрузка...</div>}>
       <BonusManagementClient initialData={data} />
     </Suspense>
   );

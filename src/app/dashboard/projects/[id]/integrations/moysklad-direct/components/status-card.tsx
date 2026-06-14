@@ -30,6 +30,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 interface IntegrationStatusCardProps {
   integration: {
@@ -63,12 +64,14 @@ export function IntegrationStatusCard({
       const data = await response.json();
 
       if (data.success) {
-        alert('✅ Подключение успешно!');
+        toast.success('Подключение успешно');
       } else {
-        alert(`❌ Ошибка подключения: ${data.error || data.message}`);
+        toast.error('Ошибка подключения', {
+          description: data.error || data.message
+        });
       }
     } catch (error) {
-      alert(`❌ Ошибка: ${(error as Error).message}`);
+      toast.error('Ошибка', { description: (error as Error).message });
     } finally {
       setIsTestingConnection(false);
     }
@@ -91,15 +94,17 @@ export function IntegrationStatusCard({
       const data = await response.json();
 
       if (data.success) {
-        alert(
-          `✅ Синхронизация завершена!\n\nУспешно: ${data.syncedCount}\nОшибок: ${data.errorsCount}`
-        );
+        toast.success('Синхронизация завершена', {
+          description: `Успешно: ${data.syncedCount} · Ошибок: ${data.errorsCount}`
+        });
         router.refresh();
       } else {
-        alert(`❌ Ошибка синхронизации: ${data.error || data.message}`);
+        toast.error('Ошибка синхронизации', {
+          description: data.error || data.message
+        });
       }
     } catch (error) {
-      alert(`❌ Ошибка: ${(error as Error).message}`);
+      toast.error('Ошибка', { description: (error as Error).message });
     } finally {
       setIsSyncing(false);
     }

@@ -30,14 +30,19 @@ graph TB
 - [🔧 Troubleshooting](./TROUBLESHOOTING.md) - решение частых проблем
 - [🤖 Telegram Bots](./telegram-bots.md) - настройка и работа с ботами
 - [📧 Resend Setup](./RESEND_SETUP.md) - настройка email через Resend
-- [🚀 Deploy Instructions](./DEPLOY_INSTRUCTIONS.md) - инструкция по деплою на сервер
+- [🚀 VPS Deployment Guide](./VPS_DEPLOYMENT_GUIDE.md) - инструкция по деплою на сервер
+
+### 🔌 Интеграции:
+- [🏪 МойСклад (Loyalty API)](./moysklad-integration.md) - интеграция через Loyalty API Provider
+- [🏪 МойСклад Direct API](./moysklad-direct-api-integration.md) - прямая двусторонняя синхронизация бонусов
+- [🛒 InSales](./insales-integration-testing.md) - интеграция с InSales (тестирование и настройка)
+- [🎁 Приветственные бонусы](./welcome-bonus-guide.md) - автоматическое начисление при регистрации
+- [⏰ Scheduled Triggers](./scheduled-triggers-guide.md) - сценарии по расписанию (день рождения и др.)
+- [🧩 Universal Widget](./universal-widget-guide.md) - универсальный виджет с адаптерами
 
 ### 📋 Управление проектом:
 - [📝 Changelog](./changelog.md) - история изменений
 - [📌 Task Tracker](./tasktracker.md) - трекер задач
-
-### 🧪 Alpha Testing:
-- [🚀 Alpha Testing Setup](./ALPHA_TESTING_SETUP.md) - руководство для alpha тестеров
 
 ## 🚀 Быстрый старт
 
@@ -150,13 +155,13 @@ yarn exec ts-node scripts/system-check.ts
 
 | Компонент | Технология |
 |-----------|------------|
-| Framework | Next.js 15 + React 19 |
+| Framework | Next.js 16 + React 19 |
 | Database | PostgreSQL + Prisma |
 | UI | Shadcn/ui + Tailwind CSS v4 |
 | Auth | JWT |
 | Telegram | Grammy |
 | Language | TypeScript |
-| Styling | HeroUI + Tailwind |
+| Очереди | BullMQ + Redis |
 
 ## 📦 Структура проекта
 
@@ -232,6 +237,6 @@ yarn lint
 
 ---
 
-**Версия документации**: 1.0  
-**Последнее обновление**: 2024-12-31  
-**Статус проекта**: 🚧 В разработке 
+**Версия документации**: 1.1  
+**Последнее обновление**: 2026-06-14  
+**Статус проекта**: 🟢 Активная разработка

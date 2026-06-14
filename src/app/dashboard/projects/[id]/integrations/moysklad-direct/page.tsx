@@ -67,7 +67,7 @@ export default async function MoySkladDirectIntegrationPage({
 
       {/* Status Card */}
       {data.integration && (
-        <Suspense fallback={<div>Loading status...</div>}>
+        <Suspense fallback={<div>Загрузка статуса...</div>}>
           <IntegrationStatusCard
             integration={data.integration}
             projectId={id}
@@ -77,7 +77,7 @@ export default async function MoySkladDirectIntegrationPage({
 
       {/* Stats Cards */}
       {data.integration && (
-        <Suspense fallback={<div>Loading stats...</div>}>
+        <Suspense fallback={<div>Загрузка статистики...</div>}>
           <SyncStatsCards stats={data.stats as any} />
         </Suspense>
       )}
