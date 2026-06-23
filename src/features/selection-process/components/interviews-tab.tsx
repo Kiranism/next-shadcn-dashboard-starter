@@ -105,20 +105,36 @@ function SlotsCalendar({
     const firstDayOfMonth = new Date(year, month, 1);
     const lastDayOfMonth = new Date(year, month + 1, 0);
     const startPad = firstDayOfMonth.getDay();
-    const days: Array<{ key: string; dayNum: number; isCurrentMonth: boolean }> = [];
+    const days: Array<{
+      key: string;
+      dayNum: number;
+      isCurrentMonth: boolean;
+    }> = [];
 
     for (let i = startPad - 1; i >= 0; i--) {
       const d = new Date(year, month, -i);
-      days.push({ key: d.toLocaleDateString('en-CA'), dayNum: d.getDate(), isCurrentMonth: false });
+      days.push({
+        key: d.toLocaleDateString('en-CA'),
+        dayNum: d.getDate(),
+        isCurrentMonth: false
+      });
     }
     for (let d = 1; d <= lastDayOfMonth.getDate(); d++) {
       const date = new Date(year, month, d);
-      days.push({ key: date.toLocaleDateString('en-CA'), dayNum: d, isCurrentMonth: true });
+      days.push({
+        key: date.toLocaleDateString('en-CA'),
+        dayNum: d,
+        isCurrentMonth: true
+      });
     }
     const remaining = (7 - (days.length % 7)) % 7;
     for (let d = 1; d <= remaining; d++) {
       const date = new Date(year, month + 1, d);
-      days.push({ key: date.toLocaleDateString('en-CA'), dayNum: d, isCurrentMonth: false });
+      days.push({
+        key: date.toLocaleDateString('en-CA'),
+        dayNum: d,
+        isCurrentMonth: false
+      });
     }
 
     return days;
@@ -296,7 +312,8 @@ function AddSlotsSheet({
             Horários (BRT){' '}
             {selectedHours.size > 0 && (
               <span className='text-muted-foreground font-normal ml-1'>
-                — {selectedHours.size} selecionado{selectedHours.size !== 1 ? 's' : ''}
+                — {selectedHours.size} selecionado
+                {selectedHours.size !== 1 ? 's' : ''}
               </span>
             )}
           </label>
@@ -334,7 +351,8 @@ function AddSlotsSheet({
           ) : (
             <>
               <Icons.add className='mr-2 size-4' />
-              Adicionar {selectedHours.size > 0 ? `${selectedHours.size} ` : ''}horário
+              Adicionar {selectedHours.size > 0 ? `${selectedHours.size} ` : ''}
+              horário
               {selectedHours.size !== 1 ? 's' : ''}
             </>
           )}
@@ -545,7 +563,8 @@ function SendLinksDialog({
             ) : (
               <>
                 <Icons.send className='mr-2 size-4' />
-                Enviar para {selected.size > 0 ? `${selected.size} ` : ''}candidato
+                Enviar para {selected.size > 0 ? `${selected.size} ` : ''}
+                candidato
                 {selected.size !== 1 ? 's' : ''}
               </>
             )}
@@ -682,9 +701,7 @@ export function InterviewsTab() {
           <div>
             <p className='font-medium'>Nenhum horário cadastrado</p>
             <p className='text-muted-foreground mt-0.5 text-sm'>
-              {isAdmin
-                ? 'Nenhum consultor cadastrou horários ainda.'
-                : 'Adicione horários em que você estará disponível para entrevistas.'}
+              Adicione horários em que você estará disponível para entrevistas
             </p>
           </div>
           <Button size='sm' variant='outline' onClick={() => setAddSheetOpen(true)}>
@@ -709,7 +726,8 @@ export function InterviewsTab() {
                   {formatDateFull(`${selectedDateKey}T12:00:00`)}
                   {selectedDaySlots.length > 0 && (
                     <span className='ml-1 font-normal normal-case'>
-                      · {selectedDaySlots.length} horário{selectedDaySlots.length !== 1 ? 's' : ''}
+                      · {selectedDaySlots.length} horário
+                      {selectedDaySlots.length !== 1 ? 's' : ''}
                     </span>
                   )}
                 </>
