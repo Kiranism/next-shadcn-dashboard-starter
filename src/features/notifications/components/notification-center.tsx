@@ -3,8 +3,11 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Icons } from '@/components/icons';
 import { NotificationsRepository } from '@/repositories/notifications.repository';
+import { usePushNotifications } from '@/features/push-notifications/hooks/use-push-notifications';
 import { NotificationItem } from './notification-item';
 import { toast } from 'sonner';
 import { toUserMessage } from '@/lib/api-client';
@@ -17,6 +20,7 @@ interface NotificationCenterProps {
 export function NotificationCenter({ open, onOpenChange }: NotificationCenterProps) {
   const { data: notifications, isLoading } = NotificationsRepository.useNotifications();
   const deleteMutation = NotificationsRepository.useDeleteNotification();
+  const { permission, registerPush } = usePushNotifications();
 
   function handleDelete(id: string) {
     deleteMutation.mutate(id, {
@@ -24,16 +28,40 @@ export function NotificationCenter({ open, onOpenChange }: NotificationCenterPro
     });
   }
 
+  async function handleEnablePush() {
+    try {
+      await registerPush();
+    } catch {
+      toast.error('Não foi possível ativar as notificações push.');
+    }
+  }
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side='right' className='flex w-[min(85vw,400px)] flex-col p-0 sm:w-[400px]'>
         <SheetHeader className='border-b px-4 py-3'>
-          <div className='flex items-center justify-between'>
+          <div className='flex items-center gap-2 pr-8'>
             <SheetTitle className='text-base'>Notificações</SheetTitle>
             {notifications && notifications.length > 0 && (
               <span className='bg-primary/10 text-primary rounded-full px-2 py-0.5 text-xs font-semibold'>
                 {notifications.length}
               </span>
+            )}
+            {permission !== 'granted' && permission !== 'denied' && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    className='size-7 text-muted-foreground hover:text-foreground'
+                    onClick={handleEnablePush}
+                  >
+                    <Icons.notificationOff className='size-4' />
+                    <span className='sr-only'>Ativar notificações push</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side='bottom'>Ativar notificações push</TooltipContent>
+              </Tooltip>
             )}
           </div>
         </SheetHeader>

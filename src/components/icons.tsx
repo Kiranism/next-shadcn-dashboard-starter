@@ -6,6 +6,7 @@ import {
   IconAlertTriangle,
   IconArrowRight,
   IconBell,
+  IconBellOff,
   IconBriefcase,
   IconBuilding,
   IconMapPin,
@@ -178,6 +179,7 @@ export const Icons = {
   // Communication
   chat: IconMessage,
   notification: IconBell,
+  notificationOff: IconBellOff,
   phone: IconPhone,
   video: IconVideo,
   send: IconSend,
