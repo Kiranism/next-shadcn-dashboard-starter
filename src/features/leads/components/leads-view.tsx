@@ -9,6 +9,7 @@ import { LeadsFilters } from './leads-filters';
 import { LeadsEmptyState } from './leads-empty-state';
 import { LeadDetailSheet } from './lead-detail-sheet';
 import { LeadFormSheet } from './lead-form-sheet';
+import { CnpjSearchDialog } from './cnpj-search-dialog';
 import { LeadsRepository } from '@/repositories/leads.repository';
 import type { LeadStatus } from '@/types/api';
 
@@ -19,6 +20,7 @@ export function LeadsView() {
   const [activeStatus, setActiveStatus] = useState<LeadStatus | 'all'>('all');
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [cnpjSearchOpen, setCnpjSearchOpen] = useState(false);
 
   const filtered = useMemo(() => {
     let result = leads;
@@ -97,10 +99,16 @@ export function LeadsView() {
             counts={counts}
           />
         </div>
-        <Button size='sm' className='shrink-0' onClick={() => setFormOpen(true)}>
-          <Icons.add className='mr-1.5 size-4' />
-          Novo Lead
-        </Button>
+        <div className='flex shrink-0 gap-2'>
+          <Button variant='outline' size='sm' onClick={() => setCnpjSearchOpen(true)}>
+            <Icons.search className='size-4 sm:mr-1.5' />
+            <span className='hidden sm:inline'>Consultar CNPJ</span>
+          </Button>
+          <Button size='sm' onClick={() => setFormOpen(true)}>
+            <Icons.add className='size-4 sm:mr-1.5' />
+            <span className='hidden sm:inline'>Novo Lead</span>
+          </Button>
+        </div>
       </div>
 
       {filtered.length === 0 ? (
@@ -120,6 +128,8 @@ export function LeadsView() {
       <LeadDetailSheet leadId={selectedLeadId} onClose={() => setSelectedLeadId(null)} />
 
       <LeadFormSheet open={formOpen} onOpenChange={setFormOpen} />
+
+      <CnpjSearchDialog open={cnpjSearchOpen} onOpenChange={setCnpjSearchOpen} />
     </div>
   );
 }

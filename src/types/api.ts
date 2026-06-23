@@ -239,3 +239,25 @@ export interface UpdateContactPayload {
   email?: string | null;
   phone?: string | null;
 }
+
+export interface ReceitaWSData {
+  cnpj: string;
+  tipo: string;
+  nome: string;
+  fantasia: string;
+  abertura: string;
+  situacao: string;
+  logradouro: string;
+  numero: string;
+  complemento?: string;
+  bairro?: string;
+  municipio: string;
+  uf: string;
+  cep: string;
+  email: string;
+  telefone: string;
+  atividade_principal?: { code: string; text: string }[];
+  natureza_juridica?: string;
+  capital_social?: string;
+  qsa?: { nome: string; qual: string }[];
+}

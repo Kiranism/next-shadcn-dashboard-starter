@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { toast } from 'sonner';
 import {
   Select,
@@ -8,8 +9,10 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
 import { LeadStatusBadge } from './lead-status-badge';
+import { CnpjLookupDialog } from './cnpj-lookup-dialog';
 import { LeadsRepository } from '@/repositories/leads.repository';
 import { toUserMessage } from '@/lib/api-client';
 import type { Lead, LeadStatus } from '@/types/api';
@@ -25,6 +28,7 @@ interface LeadInfoSectionProps {
 }
 
 export function LeadInfoSection({ lead }: LeadInfoSectionProps) {
+  const [cnpjDialogOpen, setCnpjDialogOpen] = useState(false);
   const updateMutation = LeadsRepository.useUpdate();
 
   function handleStatusChange(value: LeadStatus) {
@@ -71,7 +75,18 @@ export function LeadInfoSection({ lead }: LeadInfoSectionProps) {
       <div className='flex items-center gap-2 text-sm'>
         <Icons.building className='size-4 shrink-0 text-muted-foreground' />
         <span className='font-mono text-muted-foreground'>{lead.cnpj}</span>
+        <Button
+          variant='ghost'
+          size='icon'
+          className='size-6 text-muted-foreground hover:text-foreground'
+          onClick={() => setCnpjDialogOpen(true)}
+          title='Consultar CNPJ na Receita Federal'
+        >
+          <Icons.search className='size-3.5' />
+        </Button>
       </div>
+
+      <CnpjLookupDialog cnpj={lead.cnpj} open={cnpjDialogOpen} onOpenChange={setCnpjDialogOpen} />
 
       {/* Interest items */}
       {lead.interest_items.length > 0 && (

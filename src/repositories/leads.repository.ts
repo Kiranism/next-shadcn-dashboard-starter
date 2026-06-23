@@ -9,7 +9,8 @@ import type {
   CreateLeadPayload,
   UpdateLeadPayload,
   CreateContactPayload,
-  UpdateContactPayload
+  UpdateContactPayload,
+  ReceitaWSData
 } from '@/types/api';
 
 export const leadKeys = {
@@ -74,6 +75,11 @@ async function updateComment(
 
 async function deleteComment(token: string, leadId: string, commentId: string): Promise<void> {
   return apiDelete<void>(`/leads/${leadId}/comments/${commentId}`, token);
+}
+
+async function getCnpjData(token: string, cnpj: string): Promise<ReceitaWSData> {
+  const digits = cnpj.replace(/\D/g, '');
+  return apiGet<ReceitaWSData>(`/leads/cnpj/${digits}`, token);
 }
 
 function useList() {
@@ -220,6 +226,17 @@ function useDeleteComment() {
   });
 }
 
+function useCnpjLookup(cnpj: string, enabled: boolean) {
+  const token = useAccessToken();
+  return useQuery({
+    queryKey: ['leads', 'cnpj', cnpj.replace(/\D/g, '')] as const,
+    queryFn: () => getCnpjData(token, cnpj),
+    enabled: !!token && enabled,
+    staleTime: 5 * 60_000,
+    retry: false
+  });
+}
+
 export const LeadsRepository = {
   keys: leadKeys,
   useList,
@@ -232,5 +249,6 @@ export const LeadsRepository = {
   useDeleteContact,
   useCreateComment,
   useUpdateComment,
-  useDeleteComment
+  useDeleteComment,
+  useCnpjLookup
 };
