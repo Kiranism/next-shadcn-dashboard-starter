@@ -11,7 +11,17 @@ import type {
   UpdateApplicationStatusPayload,
   CreateStagePayload,
   UpdateStagePayload,
-  UpdateCandidatePayload
+  UpdateCandidatePayload,
+  InterviewSlot,
+  InterviewBookingDetail,
+  MyInterviewSlot,
+  AddInterviewSlotsPayload,
+  SendInterviewLinksPayload,
+  SendInterviewLinksResult,
+  SendMeetLinkPayload,
+  CreateEvaluationPayload,
+  InterviewEvaluationResponse,
+  InterviewEvaluationWithCandidate
 } from '@/types/selection-process';
 
 export const selectionProcessKeys = {
@@ -30,7 +40,12 @@ export const selectionProcessKeys = {
       ? (['selection-process', 'candidates', processId, stageId] as const)
       : processId
         ? (['selection-process', 'candidates', processId] as const)
-        : (['selection-process', 'candidates'] as const)
+        : (['selection-process', 'candidates'] as const),
+  interviewSlots: () => ['selection-process', 'interviews', 'slots'] as const,
+  evaluations: (processId?: string) =>
+    processId
+      ? (['selection-process', 'interviews', 'evaluations', processId] as const)
+      : (['selection-process', 'interviews', 'evaluations'] as const)
 };
 
 // ─── Processes ───────────────────────────────────────────────────────────────
@@ -257,6 +272,119 @@ function useUpdateCandidate() {
   });
 }
 
+// ─── Interviews ───────────────────────────────────────────────────────────────
+
+async function getMyInterviewSlots(token: string): Promise<MyInterviewSlot[]> {
+  return apiGet<MyInterviewSlot[]>('/selection-process/interviews/slots', token);
+}
+
+async function addInterviewSlots(
+  token: string,
+  payload: AddInterviewSlotsPayload
+): Promise<InterviewSlot[]> {
+  return apiPost<InterviewSlot[]>('/selection-process/interviews', token, payload);
+}
+
+async function sendInterviewLinks(
+  token: string,
+  payload: SendInterviewLinksPayload
+): Promise<SendInterviewLinksResult[]> {
+  return apiPost<SendInterviewLinksResult[]>(
+    '/selection-process/interviews/send-link',
+    token,
+    payload
+  );
+}
+
+async function sendMeetLink(
+  token: string,
+  payload: SendMeetLinkPayload
+): Promise<InterviewBookingDetail> {
+  return apiPost<InterviewBookingDetail>('/selection-process/interviews/meet-link', token, payload);
+}
+
+async function submitEvaluation(
+  token: string,
+  bookingId: string,
+  payload: CreateEvaluationPayload
+): Promise<InterviewEvaluationResponse> {
+  return apiPost<InterviewEvaluationResponse>(
+    `/selection-process/interviews/${bookingId}/evaluation`,
+    token,
+    payload
+  );
+}
+
+async function getEvaluations(
+  token: string,
+  processId?: string
+): Promise<InterviewEvaluationWithCandidate[]> {
+  const url = processId
+    ? `/selection-process/interviews/evaluations?selection_process_id=${processId}`
+    : '/selection-process/interviews/evaluations';
+  return apiGet<InterviewEvaluationWithCandidate[]>(url, token);
+}
+
+function useMyInterviewSlots() {
+  const token = useAccessToken();
+  return useQuery({
+    queryKey: selectionProcessKeys.interviewSlots(),
+    queryFn: () => getMyInterviewSlots(token),
+    enabled: !!token
+  });
+}
+
+function useAddInterviewSlots() {
+  const token = useAccessToken();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: AddInterviewSlotsPayload) => addInterviewSlots(token, payload),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: selectionProcessKeys.interviewSlots() });
+    }
+  });
+}
+
+function useSendInterviewLinks() {
+  const token = useAccessToken();
+  return useMutation({
+    mutationFn: (payload: SendInterviewLinksPayload) => sendInterviewLinks(token, payload)
+  });
+}
+
+function useSendMeetLink() {
+  const token = useAccessToken();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: SendMeetLinkPayload) => sendMeetLink(token, payload),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: selectionProcessKeys.interviewSlots() });
+    }
+  });
+}
+
+function useSubmitEvaluation() {
+  const token = useAccessToken();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ bookingId, payload }: { bookingId: string; payload: CreateEvaluationPayload }) =>
+      submitEvaluation(token, bookingId, payload),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: selectionProcessKeys.interviewSlots() });
+      void qc.invalidateQueries({ queryKey: selectionProcessKeys.evaluations() });
+    }
+  });
+}
+
+function useEvaluations(processId?: string) {
+  const token = useAccessToken();
+  return useQuery({
+    queryKey: selectionProcessKeys.evaluations(processId),
+    queryFn: () => getEvaluations(token, processId),
+    enabled: !!token
+  });
+}
+
 export const SelectionProcessRepository = {
   keys: selectionProcessKeys,
   useProcesses,
@@ -269,5 +397,11 @@ export const SelectionProcessRepository = {
   useCreateStage,
   useUpdateStage,
   useCandidates,
-  useUpdateCandidate
+  useUpdateCandidate,
+  useMyInterviewSlots,
+  useAddInterviewSlots,
+  useSendInterviewLinks,
+  useSendMeetLink,
+  useSubmitEvaluation,
+  useEvaluations
 };

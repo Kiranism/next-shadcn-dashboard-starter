@@ -4,6 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProcessesTab } from './processes-tab';
 import { ApplicationsTab } from './applications-tab';
 import { CandidatesTab } from './candidates-tab';
+import { InterviewsTab } from './interviews-tab';
+import { EvaluationsView } from './evaluations-view';
 
 export function PselView() {
   return (
@@ -13,6 +15,8 @@ export function PselView() {
           <TabsTrigger value='processes'>Processos</TabsTrigger>
           <TabsTrigger value='applications'>Candidaturas</TabsTrigger>
           <TabsTrigger value='candidates'>Candidatos</TabsTrigger>
+          <TabsTrigger value='interviews'>Entrevistas</TabsTrigger>
+          <TabsTrigger value='evaluations'>Avaliações</TabsTrigger>
         </TabsList>
       </div>
 
@@ -26,6 +30,14 @@ export function PselView() {
 
       <TabsContent value='candidates'>
         <CandidatesTab />
+      </TabsContent>
+
+      <TabsContent value='interviews'>
+        <InterviewsTab />
+      </TabsContent>
+
+      <TabsContent value='evaluations'>
+        <EvaluationsView />
       </TabsContent>
     </Tabs>
   );
