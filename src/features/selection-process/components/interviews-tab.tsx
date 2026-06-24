@@ -366,10 +366,14 @@ function AddSlotsSheet({
 
 function SlotItem({
   slot,
+  pairNames,
+  showPair,
   onSendMeetLink,
   onEvaluate
 }: {
   slot: MyInterviewSlot;
+  pairNames?: string[];
+  showPair?: boolean;
   onSendMeetLink?: (slot: MyInterviewSlot) => void;
   onEvaluate?: (slot: MyInterviewSlot) => void;
 }) {
@@ -377,6 +381,7 @@ function SlotItem({
   const isPast = new Date(slot.starts_at) < new Date();
   const canSendMeet = isBooked && !slot.meet_link && !isPast;
   const canEvaluate = isBooked && isPast && !slot.has_evaluation;
+  const hasPair = showPair && isBooked && pairNames && pairNames.length > 0;
 
   return (
     <div className='rounded-xl border bg-card overflow-hidden'>
@@ -398,8 +403,11 @@ function SlotItem({
           <p className='text-sm font-medium tabular-nums'>
             {formatTime(slot.starts_at)} – {formatTime(slot.ends_at)}
           </p>
-          {slot.consultant_name && (
-            <p className='text-xs text-muted-foreground mt-0.5'>{slot.consultant_name}</p>
+          {hasPair && (
+            <p className='text-xs text-muted-foreground mt-0.5 flex items-center gap-1'>
+              <Icons.user className='size-3 shrink-0' />
+              Dupla: {pairNames!.join(', ')}
+            </p>
           )}
         </div>
         <div className='shrink-0 text-right'>
@@ -620,6 +628,30 @@ export function InterviewsTab() {
   const bookedCount = myUpcoming.filter((s) => s.booking_id !== null).length;
   const freeCount = myUpcoming.filter((s) => s.booking_id === null).length;
 
+  // For each personal booked slot, derive co-interviewers from the full slots list (admin only)
+  const pairBySlotId = useMemo(() => {
+    if (!slots) return new Map<string, string[]>();
+    // For admins: derive pairs from sibling slots sharing the same booking_id
+    const byBookingId = new Map<string, typeof slots>();
+    for (const s of slots) {
+      if (!s.booking_id) continue;
+      if (!byBookingId.has(s.booking_id)) byBookingId.set(s.booking_id, []);
+      byBookingId.get(s.booking_id)!.push(s);
+    }
+    const map = new Map<string, string[]>();
+    for (const slot of mySlots) {
+      if (!slot.booking_id) continue;
+      const siblings = byBookingId.get(slot.booking_id) ?? [];
+      let pairs = siblings
+        .filter((s) => s.consultant_id !== slot.consultant_id && s.consultant_name)
+        .map((s) => s.consultant_name as string);
+      // Fallback to pair_name from API (rank=0 consultants only receive their own slot)
+      if (pairs.length === 0 && slot.pair_name) pairs = [slot.pair_name];
+      if (pairs.length > 0) map.set(slot.id, pairs);
+    }
+    return map;
+  }, [slots, mySlots]);
+
   const selectedDaySlots = useMemo(
     () => (selectedDateKey ? (slotsByDate.get(selectedDateKey) ?? []) : []),
     [slotsByDate, selectedDateKey]
@@ -750,6 +782,8 @@ export function InterviewsTab() {
                   <SlotItem
                     key={slot.id}
                     slot={slot}
+                    pairNames={pairBySlotId.get(slot.id)}
+                    showPair={true}
                     onSendMeetLink={setMeetLinkSlot}
                     onEvaluate={setEvaluateSlot}
                   />

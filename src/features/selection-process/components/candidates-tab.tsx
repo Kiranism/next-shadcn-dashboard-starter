@@ -13,6 +13,7 @@ import { Icons } from '@/components/icons';
 import { useUserProfile } from '@/components/providers/user-profile-provider';
 import { SelectionProcessRepository } from '@/repositories/selection-process.repository';
 import { CandidateCard, CandidateSheet } from './candidate-card';
+import type { CandidateInterviewInfo } from './candidate-card';
 import type { Candidate } from '@/types/selection-process';
 
 export function CandidatesTab() {
@@ -32,8 +33,44 @@ export function CandidatesTab() {
     selectedProcessId,
     selectedStageId
   );
+  // Slots are cached from the interviews tab — just a cache hit for admins
+  const { data: slots } = SelectionProcessRepository.useMyInterviewSlots();
 
   const stageMap = useMemo(() => new Map((allStages ?? []).map((s) => [s.id, s])), [allStages]);
+
+  // Build interview info for all users from their own slots.
+  // Admins see all slots so they get complete interviewer lists;
+  // rank=0 consultants see only their own slot + pair_name from the API.
+  const { bookedEmails, interviewInfoByEmail } = useMemo(() => {
+    if (!slots) {
+      return {
+        bookedEmails: new Set<string>(),
+        interviewInfoByEmail: new Map<string, CandidateInterviewInfo>()
+      };
+    }
+    const byBookingId = new Map<string, typeof slots>();
+    for (const s of slots) {
+      if (!s.booking_id || !s.candidate_email) continue;
+      if (!byBookingId.has(s.booking_id)) byBookingId.set(s.booking_id, []);
+      byBookingId.get(s.booking_id)!.push(s);
+    }
+    const interviewInfoByEmail = new Map<string, CandidateInterviewInfo>();
+    for (const slotGroup of byBookingId.values()) {
+      const first = slotGroup[0];
+      if (!first.candidate_email) continue;
+      const interviewerSet = new Set<string>();
+      for (const s of slotGroup) {
+        if (s.consultant_name) interviewerSet.add(s.consultant_name);
+        if (s.pair_name) interviewerSet.add(s.pair_name);
+      }
+      interviewInfoByEmail.set(first.candidate_email, {
+        startsAt: first.starts_at,
+        endsAt: first.ends_at,
+        interviewers: [...interviewerSet]
+      });
+    }
+    return { bookedEmails: new Set(interviewInfoByEmail.keys()), interviewInfoByEmail };
+  }, [slots]);
 
   const sortedFilterStages = [...(filterStages ?? [])].sort((a, b) => a.position - b.position);
 
@@ -133,6 +170,8 @@ export function CandidatesTab() {
                 candidate={c}
                 currentStageName={getStageLabel(c.current_stage_id)}
                 canEdit={canEdit}
+                hasInterview={bookedEmails.has(c.email)}
+                canShowInterviewStatus={canEdit || bookedEmails.has(c.email)}
                 onOpen={() => setSheetCandidate(c)}
               />
             ))}
@@ -143,6 +182,7 @@ export function CandidatesTab() {
       <CandidateSheet
         candidate={sheetCandidate}
         currentStageName={sheetStageName}
+        interviewInfo={sheetCandidate ? interviewInfoByEmail.get(sheetCandidate.email) : undefined}
         open={!!sheetCandidate}
         onOpenChange={(open) => {
           if (!open) setSheetCandidate(null);

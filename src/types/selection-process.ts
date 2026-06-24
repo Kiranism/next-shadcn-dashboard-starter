@@ -124,6 +124,7 @@ export interface MyInterviewSlot {
   selection_process_id: string;
   consultant_id: string;
   consultant_name?: string;
+  pair_name?: string | null;
   starts_at: string;
   ends_at: string;
   booking_id: string | null;

@@ -39,13 +39,21 @@ function getSlotDayHour(iso: string): { dow: number; hour: number } {
   return { dow, hour };
 }
 
-// ─── Component ─────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface CellData {
+  free: Map<string, string>; // consultantId → name (only-free consultants)
+  booked: Map<string, { name: string; candidateName?: string }>; // consultantId → info
+}
 
 interface SelectedCell {
   dow: number;
   hour: number;
-  consultants: string[];
+  freeConsultants: string[];
+  bookedConsultants: Array<{ name: string; candidateName?: string }>;
 }
+
+// ─── Component ─────────────────────────────────────────────────────────────────
 
 export function TeamAvailabilityHeatmap() {
   const { data: slots, isLoading } = SelectionProcessRepository.useMyInterviewSlots();
@@ -56,17 +64,54 @@ export function TeamAvailabilityHeatmap() {
     return (slots ?? []).filter((s) => new Date(s.starts_at) >= now);
   }, [slots]);
 
-  // Map<"DOW-HOUR", {ids, names}>
+  // Build grid: per cell (dow-hour), track free vs. booked consultants separately.
+  // If a consultant has any booked slot in a cell, they count as "booked" for that cell.
   const grid = useMemo(() => {
-    const map = new Map<string, { ids: Set<string>; names: Map<string, string> }>();
+    // First pass: collect per-consultant state per cell
+    const consultantState = new Map<
+      string, // "DOW-HOUR"
+      Map<string, { hasBooked: boolean; name: string; candidateName?: string }> // consultantId → state
+    >();
+
     for (const slot of futureSlots) {
       const { dow, hour } = getSlotDayHour(slot.starts_at);
-      const key = `${dow}-${hour}`;
-      if (!map.has(key)) map.set(key, { ids: new Set(), names: new Map() });
-      const cell = map.get(key)!;
-      cell.ids.add(slot.consultant_id);
-      if (slot.consultant_name) cell.names.set(slot.consultant_id, slot.consultant_name);
+      const cellKey = `${dow}-${hour}`;
+      if (!consultantState.has(cellKey)) consultantState.set(cellKey, new Map());
+      const cell = consultantState.get(cellKey)!;
+
+      const isBooked = slot.booking_id !== null;
+      const existing = cell.get(slot.consultant_id);
+
+      if (!existing) {
+        cell.set(slot.consultant_id, {
+          hasBooked: isBooked,
+          name: slot.consultant_name ?? slot.consultant_id,
+          candidateName: isBooked ? (slot.candidate_name ?? undefined) : undefined
+        });
+      } else if (isBooked && !existing.hasBooked) {
+        // Upgrade to booked if a newer booked slot is found in the same cell
+        cell.set(slot.consultant_id, {
+          hasBooked: true,
+          name: existing.name,
+          candidateName: slot.candidate_name ?? existing.candidateName
+        });
+      }
     }
+
+    // Second pass: build CellData (free vs. booked groups)
+    const map = new Map<string, CellData>();
+    for (const [cellKey, consultants] of consultantState) {
+      const cellData: CellData = { free: new Map(), booked: new Map() };
+      for (const [consultantId, info] of consultants) {
+        if (info.hasBooked) {
+          cellData.booked.set(consultantId, { name: info.name, candidateName: info.candidateName });
+        } else {
+          cellData.free.set(consultantId, info.name);
+        }
+      }
+      map.set(cellKey, cellData);
+    }
+
     return map;
   }, [futureSlots]);
 
@@ -112,7 +157,7 @@ export function TeamAvailabilityHeatmap() {
         </p>
       </div>
 
-      {/* Grid */}
+      {/* Grid — overflow-x-auto ensures horizontal scroll on mobile without clipping parent */}
       <div className='overflow-x-auto rounded-xl border bg-card p-4'>
         <div className='min-w-[580px]'>
           {/* Hour headers */}
@@ -137,27 +182,47 @@ export function TeamAvailabilityHeatmap() {
                 {HOURS.map((h) => {
                   const key = `${dow}-${h}`;
                   const cell = grid.get(key);
-                  const count = cell?.ids.size ?? 0;
-                  const hasSlots = count > 0;
+                  const freeCount = cell?.free.size ?? 0;
+                  const bookedCount = cell?.booked.size ?? 0;
+                  const total = freeCount + bookedCount;
+                  const hasSlots = total > 0;
+
+                  // Visual state: empty=muted, only-free=primary, mixed=amber, only-booked=emerald
+                  const cellClass = cn(
+                    'flex-1 h-9 rounded-lg text-[0.6rem] font-bold tabular-nums transition-opacity leading-tight',
+                    !hasSlots
+                      ? 'bg-muted cursor-default'
+                      : freeCount > 0 && bookedCount === 0
+                        ? 'bg-primary/80 text-primary-foreground hover:opacity-80 cursor-pointer'
+                        : freeCount > 0 && bookedCount > 0
+                          ? 'bg-amber-500 text-white hover:opacity-80 cursor-pointer'
+                          : 'bg-emerald-600 text-white hover:opacity-80 cursor-pointer'
+                  );
+
+                  // Show "free+booked" when mixed, otherwise just total
+                  const displayText = !hasSlots
+                    ? ''
+                    : freeCount > 0 && bookedCount > 0
+                      ? `${freeCount}+${bookedCount}`
+                      : String(total);
 
                   return (
                     <button
                       key={h}
                       disabled={!hasSlots}
                       onClick={() => {
-                        const names = [...(cell?.names.values() ?? [])].sort((a, b) =>
+                        if (!cell) return;
+                        const freeConsultants = [...cell.free.values()].sort((a, b) =>
                           a.localeCompare(b, 'pt-BR')
                         );
-                        setSelectedCell({ dow, hour: h, consultants: names });
+                        const bookedConsultants = [...cell.booked.values()].sort((a, b) =>
+                          a.name.localeCompare(b.name, 'pt-BR')
+                        );
+                        setSelectedCell({ dow, hour: h, freeConsultants, bookedConsultants });
                       }}
-                      className={cn(
-                        'flex-1 h-9 rounded-lg text-xs font-bold tabular-nums transition-opacity',
-                        hasSlots
-                          ? 'bg-emerald-700 dark:bg-emerald-800 text-white hover:opacity-80 cursor-pointer'
-                          : 'bg-muted cursor-default'
-                      )}
+                      className={cellClass}
                     >
-                      {hasSlots ? count : ''}
+                      {displayText}
                     </button>
                   );
                 })}
@@ -165,6 +230,23 @@ export function TeamAvailabilityHeatmap() {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Legend */}
+      <div className='flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground'>
+        <div className='flex items-center gap-1.5'>
+          <span className='size-3 rounded bg-primary/80 shrink-0' />
+          Disponível
+        </div>
+        <div className='flex items-center gap-1.5'>
+          <span className='size-3 rounded bg-amber-500 shrink-0' />
+          Parcialmente ocupado
+        </div>
+        <div className='flex items-center gap-1.5'>
+          <span className='size-3 rounded bg-emerald-600 shrink-0' />
+          Totalmente reservado
+        </div>
+        <span className='text-muted-foreground/50 hidden sm:block'>· livre+reservado</span>
       </div>
 
       {/* Detail dialog */}
@@ -177,21 +259,61 @@ export function TeamAvailabilityHeatmap() {
               {selectedCell && String(selectedCell.hour + 1).padStart(2, '0')}h
             </DialogTitle>
             <DialogDescription>
-              {selectedCell?.consultants.length ?? 0} consultor
-              {(selectedCell?.consultants.length ?? 0) !== 1 ? 'es' : ''} disponíve
-              {(selectedCell?.consultants.length ?? 0) !== 1 ? 'is' : 'l'}
+              {selectedCell
+                ? `${selectedCell.freeConsultants.length + selectedCell.bookedConsultants.length} consultor${selectedCell.freeConsultants.length + selectedCell.bookedConsultants.length !== 1 ? 'es' : ''} com disponibilidade`
+                : ''}
             </DialogDescription>
           </DialogHeader>
-          <div className='space-y-1 max-h-72 overflow-y-auto'>
-            {selectedCell?.consultants.map((name) => (
-              <div
-                key={name}
-                className='flex items-center gap-2.5 rounded-lg px-3 py-2 bg-muted/50'
-              >
-                <Icons.user className='size-3.5 text-muted-foreground shrink-0' />
-                <span className='text-sm'>{name}</span>
+
+          <div className='space-y-4 max-h-72 overflow-y-auto'>
+            {/* Booked consultants group */}
+            {selectedCell && selectedCell.bookedConsultants.length > 0 && (
+              <div>
+                <p className='text-xs font-semibold text-emerald-600 dark:text-emerald-400 mb-2 flex items-center gap-1.5'>
+                  <span className='size-2 rounded-full bg-emerald-600 dark:bg-emerald-400 shrink-0' />
+                  Com entrevista marcada ({selectedCell.bookedConsultants.length})
+                </p>
+                <div className='space-y-1'>
+                  {selectedCell.bookedConsultants.map(({ name, candidateName }) => (
+                    <div
+                      key={name}
+                      className='flex items-start gap-2.5 rounded-lg px-3 py-2 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40'
+                    >
+                      <Icons.user className='size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5' />
+                      <div className='min-w-0'>
+                        <span className='text-sm block'>{name}</span>
+                        {candidateName && (
+                          <span className='text-xs text-muted-foreground truncate block'>
+                            Candidato: {candidateName}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            )}
+
+            {/* Free consultants group */}
+            {selectedCell && selectedCell.freeConsultants.length > 0 && (
+              <div>
+                <p className='text-xs font-semibold text-primary mb-2 flex items-center gap-1.5'>
+                  <span className='size-2 rounded-full bg-primary shrink-0' />
+                  Disponíveis ({selectedCell.freeConsultants.length})
+                </p>
+                <div className='space-y-1'>
+                  {selectedCell.freeConsultants.map((name) => (
+                    <div
+                      key={name}
+                      className='flex items-center gap-2.5 rounded-lg px-3 py-2 bg-muted/50'
+                    >
+                      <Icons.user className='size-3.5 text-muted-foreground shrink-0' />
+                      <span className='text-sm'>{name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

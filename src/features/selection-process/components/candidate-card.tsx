@@ -10,6 +10,7 @@ import {
   SheetTitle,
   SheetDescription
 } from '@/components/ui/sheet';
+import { Badge } from '@/components/ui/badge';
 import { Icons } from '@/components/icons';
 import { SelectionProcessRepository } from '@/repositories/selection-process.repository';
 import { toUserMessage } from '@/lib/api-client';
@@ -17,10 +18,38 @@ import { CandidateStatusBadge } from './candidate-status-badge';
 import { PhotoLightbox } from './photo-lightbox';
 import type { Candidate } from '@/types/selection-process';
 
+export interface CandidateInterviewInfo {
+  startsAt: string;
+  endsAt: string;
+  interviewers: string[];
+}
+
+const TZ = 'America/Sao_Paulo';
+
+function fmtDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('pt-BR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: TZ
+  });
+}
+
+function fmtTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: TZ
+  });
+}
+
 interface CandidateCardProps {
   candidate: Candidate;
   currentStageName?: string;
   canEdit: boolean;
+  hasInterview?: boolean;
+  canShowInterviewStatus?: boolean;
   onOpen: () => void;
 }
 
@@ -28,6 +57,8 @@ export function CandidateCard({
   candidate,
   currentStageName,
   canEdit,
+  hasInterview,
+  canShowInterviewStatus,
   onOpen
 }: CandidateCardProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -103,7 +134,27 @@ export function CandidateCard({
           )}
         </div>
 
-        <CandidateStatusBadge status={candidate.status} />
+        <div className='flex flex-wrap gap-1.5 items-center'>
+          <CandidateStatusBadge status={candidate.status} />
+          {canShowInterviewStatus &&
+            isActive &&
+            (hasInterview ? (
+              <Badge
+                variant='outline'
+                className='border-emerald-300 text-emerald-700 dark:border-emerald-700 dark:text-emerald-400 text-[0.65rem] px-1.5 py-0 h-5 gap-1'
+              >
+                <Icons.calendar className='size-2.5' />
+                Entrevista marcada
+              </Badge>
+            ) : (
+              <Badge
+                variant='outline'
+                className='text-[0.65rem] px-1.5 py-0 h-5 text-muted-foreground'
+              >
+                Sem entrevista
+              </Badge>
+            ))}
+        </div>
 
         {/* Actions */}
         {canEdit && isActive && (
@@ -148,6 +199,7 @@ export function CandidateCard({
 interface CandidateSheetProps {
   candidate: Candidate | null;
   currentStageName?: string;
+  interviewInfo?: CandidateInterviewInfo;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   canEdit: boolean;
@@ -156,6 +208,7 @@ interface CandidateSheetProps {
 export function CandidateSheet({
   candidate,
   currentStageName,
+  interviewInfo,
   open,
   onOpenChange,
   canEdit
@@ -253,6 +306,46 @@ export function CandidateSheet({
               )}
               Eliminar
             </Button>
+          </div>
+        )}
+
+        {/* Interview info — shown only when a booking exists */}
+        {interviewInfo && (
+          <div className='mb-5 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20 p-4 space-y-3'>
+            <p className='text-sm font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-2'>
+              <Icons.calendar className='size-4 shrink-0' />
+              Entrevista agendada
+            </p>
+            <div className='space-y-2 text-sm'>
+              <div className='flex items-start gap-2.5'>
+                <Icons.clock className='size-3.5 text-muted-foreground shrink-0 mt-0.5' />
+                <div>
+                  <p className='capitalize'>{fmtDate(interviewInfo.startsAt)}</p>
+                  <p className='text-muted-foreground text-xs'>
+                    {fmtTime(interviewInfo.startsAt)} – {fmtTime(interviewInfo.endsAt)} (BRT)
+                  </p>
+                </div>
+              </div>
+              {interviewInfo.interviewers.length > 0 && (
+                <div className='flex items-start gap-2.5'>
+                  <Icons.usersGroup className='size-3.5 text-muted-foreground shrink-0 mt-0.5' />
+                  <div>
+                    <p className='text-xs text-muted-foreground mb-1'>Entrevistadores</p>
+                    <div className='flex flex-wrap gap-1.5'>
+                      {interviewInfo.interviewers.map((name) => (
+                        <span
+                          key={name}
+                          className='inline-flex items-center gap-1 rounded-md bg-background border px-2 py-0.5 text-xs'
+                        >
+                          <Icons.user className='size-3 text-muted-foreground' />
+                          {name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
