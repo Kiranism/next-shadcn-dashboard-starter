@@ -78,7 +78,7 @@ export function NotificationItem({ notification, onDelete, isDeleting }: Notific
               {isAutomatic ? 'Automática' : 'Dirigida'}
             </span>
             <span className='text-muted-foreground text-[11px]'>·</span>
-            <span className='text-muted-foreground text-[11px]'>
+            <span className='text-muted-foreground text-[11px]' suppressHydrationWarning>
               {formatRelativeTime(notification.sent_at)}
             </span>
           </div>

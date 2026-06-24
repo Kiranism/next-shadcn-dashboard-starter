@@ -1,4 +1,4 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Service Worker registrado e escutando push
 O app SHALL registrar `public/sw.js` como Service Worker com escopo `/` na inicialização do layout autenticado, somente se `'serviceWorker' in navigator`, `'PushManager' in window` E `'Notification' in window`. O SW SHALL escutar o evento `push` e exibir uma notificação nativa com `title` e `body` extraídos do payload JSON.
@@ -49,32 +49,3 @@ Após o login, o hook `usePushNotifications` SHALL verificar suporte das APIs an
 #### Scenario: Backend retorna 409 — subscrição já registrada
 - **WHEN** `POST /push-subscriptions` retorna HTTP 409
 - **THEN** o hook SHALL ignorar o erro silenciosamente (subscrição já ativa)
-
-### Requirement: Persistência do ID de subscrição para cancelamento
-Após `POST /push-subscriptions` retornar `{ "id": "uuid" }` com status 201, o hook SHALL salvar o `id` em `localStorage` sob a chave `push_subscription_id`.
-
-#### Scenario: ID salvo após registro bem-sucedido
-- **WHEN** `POST /push-subscriptions` retorna `{ "id": "abc-123" }` com status 201
-- **THEN** `localStorage.getItem('push_subscription_id')` SHALL retornar `'abc-123'`
-
-#### Scenario: ID ausente — cancelamento sem chamada ao backend
-- **WHEN** `localStorage.getItem('push_subscription_id')` retorna `null` e `unregisterPush` é chamado
-- **THEN** o browser SHALL cancelar a subscrição local (`subscription.unsubscribe()`) mas nenhuma chamada a `DELETE /push-subscriptions/:id` SHALL ocorrer
-
-### Requirement: Cancelamento de subscrição push
-O hook SHALL expor uma função `unregisterPush` que cancela a subscrição no browser e envia `DELETE /push-subscriptions/:id` ao backend, usando o ID salvo em `localStorage`.
-
-#### Scenario: Cancelamento bem-sucedido
-- **WHEN** `unregisterPush` é chamado com `push_subscription_id` presente no `localStorage`
-- **THEN** `subscription.unsubscribe()` SHALL ser chamado e `DELETE /push-subscriptions/:id` SHALL retornar 204, removendo o ID do `localStorage`
-
-#### Scenario: Backend retorna 404 ao cancelar — tratar como sucesso
-- **WHEN** `DELETE /push-subscriptions/:id` retorna 404
-- **THEN** o hook SHALL remover o ID do `localStorage` sem exibir erro (subscrição já removida)
-
-### Requirement: Renovação automática de subscrição (pushsubscriptionchange)
-O Service Worker SHALL escutar o evento `pushsubscriptionchange` e reenviar a nova subscrição ao backend via `fetch POST /push-subscriptions` usando o token de autenticação disponível em `localStorage`.
-
-#### Scenario: Browser renova subscrição automaticamente
-- **WHEN** o browser dispara `pushsubscriptionchange` com uma nova subscrição
-- **THEN** o SW SHALL chamar `self.registration.pushManager.subscribe(event.oldSubscription.options)` e enviar os novos dados ao backend via `POST /push-subscriptions`

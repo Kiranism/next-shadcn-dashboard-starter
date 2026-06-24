@@ -57,7 +57,12 @@ export function usePushNotifications() {
   }, [token]);
 
   const registerPush = useCallback(async () => {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    if (
+      !('serviceWorker' in navigator) ||
+      !('PushManager' in window) ||
+      !('Notification' in window)
+    )
+      return;
     if (!token) return;
 
     let perm = Notification.permission;
@@ -68,7 +73,13 @@ export function usePushNotifications() {
     }
     if (perm !== 'granted') return;
 
-    await navigator.serviceWorker.register('/sw.js');
+    try {
+      await navigator.serviceWorker.register('/sw.js');
+    } catch (err) {
+      if (process.env.NODE_ENV !== 'production')
+        console.warn('[push] SW registration failed:', err);
+      return;
+    }
     const swReg = await navigator.serviceWorker.ready;
 
     let subscription = await swReg.pushManager.getSubscription();
@@ -120,7 +131,7 @@ export function usePushNotifications() {
     }
     localStorage.removeItem(STORAGE_KEY);
     setIsSubscribed(false);
-    setPermission(Notification.permission);
+    if ('Notification' in window) setPermission(Notification.permission);
   }, [token]);
 
   return { registerPush, unregisterPush, permission, isSubscribed };
