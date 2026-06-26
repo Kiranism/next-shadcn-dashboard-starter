@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from '@/components/ui/sheet';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,7 +57,11 @@ export function LeadDetailSheet({ leadId, onClose }: LeadDetailSheetProps) {
   return (
     <>
       <Sheet open={!!leadId} onOpenChange={(v) => !v && onClose()}>
-        <SheetContent side='right' className='flex w-full flex-col sm:max-w-xl overflow-hidden p-0'>
+        <SheetContent
+          side='right'
+          className='flex w-full flex-col sm:max-w-xl overflow-hidden p-0'
+          hideClose
+        >
           {isLoading || !lead ? (
             <>
               <SheetHeader className='sr-only'>
@@ -97,6 +101,11 @@ export function LeadDetailSheet({ leadId, onClose }: LeadDetailSheetProps) {
                       <Icons.trash className='size-4' />
                     </Button>
                   )}
+                  <SheetClose asChild>
+                    <Button variant='ghost' size='icon' className='size-8' aria-label='Fechar'>
+                      <Icons.close className='size-4' />
+                    </Button>
+                  </SheetClose>
                 </div>
               </SheetHeader>
 

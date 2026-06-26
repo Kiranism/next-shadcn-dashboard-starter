@@ -8,7 +8,8 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetDescription
+  SheetDescription,
+  SheetClose
 } from '@/components/ui/sheet';
 import { Icons } from '@/components/icons';
 import { SelectionProcessRepository } from '@/repositories/selection-process.repository';
@@ -249,18 +250,29 @@ export function EvaluationSheet({ slot, onOpenChange }: Props) {
 
   return (
     <Sheet open={open} onOpenChange={handleClose}>
-      <SheetContent side='right' className='w-full sm:max-w-xl flex flex-col p-0 gap-0'>
+      <SheetContent side='right' className='w-full sm:max-w-xl flex flex-col p-0 gap-0' hideClose>
         {/* Fixed header */}
-        <SheetHeader className='px-6 pt-6 pb-4 border-b shrink-0'>
-          <SheetTitle>Avaliação de Entrevista</SheetTitle>
-          <SheetDescription className='space-y-0'>
-            {slot?.candidate_name && (
-              <span className='block font-medium text-foreground text-sm'>
-                {slot.candidate_name}
-              </span>
-            )}
-            {slot && <span className='block capitalize text-xs'>{fmtDate(slot.starts_at)}</span>}
-          </SheetDescription>
+        <SheetHeader className='px-6 pt-4 pb-4 border-b shrink-0'>
+          <div className='flex items-start justify-between gap-3'>
+            <div className='min-w-0'>
+              <SheetTitle>Avaliação de Entrevista</SheetTitle>
+              <SheetDescription className='space-y-0 mt-1'>
+                {slot?.candidate_name && (
+                  <span className='block font-medium text-foreground text-sm'>
+                    {slot.candidate_name}
+                  </span>
+                )}
+                {slot && (
+                  <span className='block capitalize text-xs'>{fmtDate(slot.starts_at)}</span>
+                )}
+              </SheetDescription>
+            </div>
+            <SheetClose asChild>
+              <Button variant='ghost' size='icon' className='size-8 shrink-0' aria-label='Fechar'>
+                <Icons.close className='size-4' />
+              </Button>
+            </SheetClose>
+          </div>
         </SheetHeader>
 
         {/* Scrollable body */}

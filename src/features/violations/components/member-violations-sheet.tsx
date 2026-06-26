@@ -6,7 +6,8 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetDescription
+  SheetDescription,
+  SheetClose
 } from '@/components/ui/sheet';
 import {
   AlertDialog,
@@ -72,13 +73,13 @@ export function MemberViolationsSheet({
 
   return (
     <Sheet open={!!entry} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent className='flex w-full flex-col gap-0 p-0 sm:max-w-md'>
+      <SheetContent className='flex w-full flex-col gap-0 p-0 sm:max-w-md' hideClose>
         <SheetHeader className='border-b px-6 py-5'>
           <div className='flex items-start gap-3'>
             <div className='flex size-10 shrink-0 items-center justify-center rounded-full bg-muted'>
               <Icons.user2 className='size-5 text-muted-foreground' />
             </div>
-            <div className='min-w-0'>
+            <div className='min-w-0 flex-1'>
               <div className='flex flex-wrap items-center gap-2'>
                 <SheetTitle className='text-base'>{memberName}</SheetTitle>
                 {summary &&
@@ -96,6 +97,11 @@ export function MemberViolationsSheet({
                 <SheetDescription className='capitalize'>{memberRole}</SheetDescription>
               )}
             </div>
+            <SheetClose asChild>
+              <Button variant='ghost' size='icon' className='size-8 shrink-0' aria-label='Fechar'>
+                <Icons.close className='size-4' />
+              </Button>
+            </SheetClose>
           </div>
 
           {summary && (
