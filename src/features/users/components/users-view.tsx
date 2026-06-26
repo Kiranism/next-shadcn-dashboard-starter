@@ -32,28 +32,20 @@ function getInitials(name: string) {
 }
 
 export function UsersView() {
-  const { rank, isLoading: profileLoading } = useUserProfile();
-  const router = useRouter();
-  const isSuperuser = rank >= 3;
+  const { isLoading: profileLoading, profile } = useUserProfile();
 
   const [search, setSearch] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserResponse | null>(null);
   const [notifOpen, setNotifOpen] = useState(false);
 
-  useEffect(() => {
-    if (!profileLoading && !isSuperuser) {
-      router.replace('/dashboard/ponto');
-    }
-  }, [profileLoading, isSuperuser, router]);
-
   const { data: users = [], isLoading } = UserRepository.useAll();
 
   const filtered = useMemo(() => {
-    if (!search) return users;
+    if (!search) return users.filter((u) => u.id !== profile?.id);
     const term = search.toLowerCase();
     return users.filter(
       (u) =>
-        u.name.toLowerCase().includes(term) ||
+        (u.id !== profile?.id && u.name.toLowerCase().includes(term)) ||
         u.email.toLowerCase().includes(term) ||
         (ROLE_LABEL[u.role] ?? u.role).toLowerCase().includes(term) ||
         (u.sector?.toLowerCase().includes(term) ?? false)
@@ -67,8 +59,6 @@ export function UsersView() {
       </div>
     );
   }
-
-  if (!isSuperuser) return null;
 
   return (
     <>

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { apiGet, apiPatch } from '@/lib/api-client';
+import { apiGet, apiPatch, apiDelete } from '@/lib/api-client';
 import { useAccessToken } from './_shared/use-access-token';
 import { useUserProfile } from '@/components/providers/user-profile-provider';
 import { setRoleCookie } from '@/app/actions/set-role-cookie';
@@ -24,6 +24,10 @@ async function updateOne(
   data: UpdateUserPayload
 ): Promise<UserResponse> {
   return apiPatch<UserResponse>(`/users/${id}`, token, data);
+}
+
+async function deleteOne(token: string, id: string): Promise<void> {
+  return apiDelete<void>(`/users/${id}`, token);
 }
 
 function useAll() {
@@ -61,6 +65,17 @@ function useUpdateOne() {
   });
 }
 
+function useDeleteOne() {
+  const token = useAccessToken();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteOne(token, id),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: keys.all() });
+    }
+  });
+}
+
 function invalidateAll(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: keys.all() });
 }
@@ -70,8 +85,10 @@ export const UserRepository = {
   getAll,
   getOne,
   updateOne,
+  deleteOne,
   useAll,
   useOne,
   useUpdateOne,
+  useDeleteOne,
   invalidateAll
 };

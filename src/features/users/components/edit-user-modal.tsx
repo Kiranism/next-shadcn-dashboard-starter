@@ -9,6 +9,17 @@ import {
   DialogTitle,
   DialogFooter
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,6 +45,7 @@ interface EditUserModalProps {
 
 export function EditUserModal({ user, onClose }: EditUserModalProps) {
   const mutation = UserRepository.useUpdateOne();
+  const deleteMutation = UserRepository.useDeleteOne();
 
   const [name, setName] = useState(user?.name ?? '');
   const [role, setRole] = useState(user?.role ?? '');
@@ -69,6 +81,17 @@ export function EditUserModal({ user, onClose }: EditUserModalProps) {
         onError: (err: Error) => toast.error(toUserMessage(err))
       }
     );
+  }
+
+  function handleDelete() {
+    if (!user) return;
+    deleteMutation.mutate(user.id, {
+      onSuccess: () => {
+        toast.success('Usuário desativado com sucesso');
+        onClose();
+      },
+      onError: (err: Error) => toast.error(toUserMessage(err))
+    });
   }
 
   function handleOpenChange(open: boolean) {
@@ -138,10 +161,47 @@ export function EditUserModal({ user, onClose }: EditUserModalProps) {
         </div>
 
         <DialogFooter className='gap-2'>
-          <Button variant='ghost' onClick={onClose} disabled={mutation.isPending}>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant='destructive'
+                className='mr-auto'
+                disabled={mutation.isPending || deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? (
+                  <Icons.spinner className='mr-2 size-4 animate-spin' />
+                ) : null}
+                Excluir
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Desativar usuário</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tem certeza que deseja desativar <strong>{user?.name}</strong>? O usuário não
+                  poderá mais acessar o sistema.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                >
+                  Desativar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <Button
+            variant='ghost'
+            onClick={onClose}
+            disabled={mutation.isPending || deleteMutation.isPending}
+          >
             Cancelar
           </Button>
-          <Button onClick={handleSave} disabled={mutation.isPending}>
+          <Button onClick={handleSave} disabled={mutation.isPending || deleteMutation.isPending}>
             {mutation.isPending ? <Icons.spinner className='mr-2 size-4 animate-spin' /> : null}
             Salvar
           </Button>
