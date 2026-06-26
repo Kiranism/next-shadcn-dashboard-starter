@@ -14,6 +14,17 @@ import { EditUserModal } from './edit-user-modal';
 import { SendNotificationDialog } from '@/features/notifications/components/send-notification-dialog';
 import type { UserResponse } from '@/types/api';
 
+type SortKey = 'name' | 'email' | 'role' | 'sector';
+type SortDir = 'asc' | 'desc';
+
+const ROLE_RANK: Record<string, number> = {
+  consultor: 0,
+  gerente: 1,
+  diretor: 2,
+  assessor: 3,
+  presidente: 4
+};
+
 function formatCpf(cpf: string | null) {
   if (!cpf) return '—';
   const digits = cpf.replace(/\D/g, '');
@@ -37,20 +48,50 @@ export function UsersView() {
   const [search, setSearch] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserResponse | null>(null);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>('name');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
 
   const { data: users = [], isLoading } = UserRepository.useAll();
 
   const filtered = useMemo(() => {
-    if (!search) return users.filter((u) => u.id !== profile?.id);
-    const term = search.toLowerCase();
-    return users.filter(
-      (u) =>
-        (u.id !== profile?.id && u.name.toLowerCase().includes(term)) ||
-        u.email.toLowerCase().includes(term) ||
-        (ROLE_LABEL[u.role] ?? u.role).toLowerCase().includes(term) ||
-        (u.sector?.toLowerCase().includes(term) ?? false)
+    let result = users.filter((u) => u.id !== profile?.id);
+    if (search) {
+      const term = search.toLowerCase();
+      result = result.filter(
+        (u) =>
+          u.name.toLowerCase().includes(term) ||
+          u.email.toLowerCase().includes(term) ||
+          (ROLE_LABEL[u.role] ?? u.role).toLowerCase().includes(term) ||
+          (u.sector?.toLowerCase().includes(term) ?? false)
+      );
+    }
+    return [...result].sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === 'name') cmp = a.name.localeCompare(b.name, 'pt-BR');
+      else if (sortKey === 'email') cmp = a.email.localeCompare(b.email, 'pt-BR');
+      else if (sortKey === 'role') cmp = (ROLE_RANK[a.role] ?? 0) - (ROLE_RANK[b.role] ?? 0);
+      else if (sortKey === 'sector') cmp = (a.sector ?? '').localeCompare(b.sector ?? '', 'pt-BR');
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [users, search, sortKey, sortDir, profile?.id]);
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  }
+
+  function SortIcon({ col }: { col: SortKey }) {
+    if (sortKey !== col) return <Icons.chevronsDown className='ml-1 size-3 opacity-30' />;
+    return sortDir === 'asc' ? (
+      <Icons.chevronUp className='ml-1 size-3' />
+    ) : (
+      <Icons.chevronDown className='ml-1 size-3' />
     );
-  }, [users, search]);
+  }
 
   if (profileLoading) {
     return (
@@ -124,16 +165,31 @@ export function UsersView() {
                   <thead>
                     <tr className='border-b'>
                       <th className='text-muted-foreground px-6 py-2.5 text-left text-xs font-medium uppercase tracking-wider'>
-                        Usuário
+                        <button
+                          className='flex items-center hover:opacity-100'
+                          onClick={() => toggleSort('name')}
+                        >
+                          Usuário <SortIcon col='name' />
+                        </button>
                       </th>
                       <th className='text-muted-foreground px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider'>
-                        Email
+                        <button
+                          className='flex items-center hover:opacity-100'
+                          onClick={() => toggleSort('email')}
+                        >
+                          Email <SortIcon col='email' />
+                        </button>
                       </th>
                       <th className='text-muted-foreground px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider'>
                         CPF
                       </th>
                       <th className='text-muted-foreground px-4 py-2.5 pr-6 text-left text-xs font-medium uppercase tracking-wider'>
-                        Cargo / Setor
+                        <button
+                          className='flex items-center hover:opacity-100'
+                          onClick={() => toggleSort('role')}
+                        >
+                          Cargo / Setor <SortIcon col='role' />
+                        </button>
                       </th>
                     </tr>
                   </thead>
