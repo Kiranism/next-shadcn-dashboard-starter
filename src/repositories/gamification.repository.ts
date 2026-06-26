@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient, useQueries } from '@tanstack/react-query';
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api-client';
 import { useAccessToken } from './_shared/use-access-token';
+import { useSession } from '@/components/providers/session-provider';
 import type {
   House,
   HouseMember,
@@ -232,10 +233,11 @@ async function reviewSubmission(
 
 function useMySubmissions() {
   const token = useAccessToken();
+  const { user } = useSession();
   return useQuery({
     queryKey: gamificationKeys.submissions('me'),
-    queryFn: () => getSubmissions(token),
-    enabled: !!token,
+    queryFn: () => getSubmissions(token, { userId: user?.id }),
+    enabled: !!token && !!user?.id,
     staleTime: 0
   });
 }
@@ -256,7 +258,9 @@ function useCreateSubmission() {
   return useMutation({
     mutationFn: (payload: CreateSubmissionPayload) => createSubmission(token, payload),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: gamificationKeys.submissions('me') });
+      void qc.invalidateQueries({
+        queryKey: gamificationKeys.submissions('me')
+      });
     }
   });
 }
@@ -268,7 +272,9 @@ function useReviewSubmission() {
     mutationFn: ({ id, payload }: { id: string; payload: ReviewSubmissionPayload }) =>
       reviewSubmission(token, id, payload),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: gamificationKeys.submissions('pending') });
+      void qc.invalidateQueries({
+        queryKey: gamificationKeys.submissions('pending')
+      });
       void qc.invalidateQueries({ queryKey: gamificationKeys.leaderboard() });
     }
   });
