@@ -61,10 +61,10 @@ export function NotificationItem({ notification, onDelete, isDeleting }: Notific
         </div>
 
         {/* Content */}
-        <div className='min-w-0 flex-1 pr-5'>
-          <p className='text-sm font-semibold leading-snug'>{notification.title}</p>
+        <div className='min-w-0 flex-1 pr-7'>
+          <p className='break-all text-sm font-semibold leading-snug'>{notification.title}</p>
           {notification.description && (
-            <p className='text-muted-foreground mt-1 text-xs leading-relaxed'>
+            <p className='text-muted-foreground mt-1 break-all text-xs leading-relaxed'>
               {notification.description}
             </p>
           )}
@@ -89,7 +89,7 @@ export function NotificationItem({ notification, onDelete, isDeleting }: Notific
       <Button
         variant='ghost'
         size='icon'
-        className='absolute right-1.5 top-2 size-6 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 text-muted-foreground hover:text-foreground hover:bg-muted'
+        className='absolute right-1.5 top-2 size-6 shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted'
         onClick={() => onDelete(notification.id)}
         aria-label='Descartar notificação'
       >
