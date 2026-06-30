@@ -41,10 +41,9 @@ export function CandidatesTab() {
   // Build interview info for all users from their own slots.
   // Admins see all slots so they get complete interviewer lists;
   // rank=0 consultants see only their own slot + pair_name from the API.
-  const { bookedEmails, interviewInfoByEmail } = useMemo(() => {
+  const { interviewInfoByEmail } = useMemo(() => {
     if (!slots) {
       return {
-        bookedEmails: new Set<string>(),
         interviewInfoByEmail: new Map<string, CandidateInterviewInfo>()
       };
     }
@@ -69,7 +68,7 @@ export function CandidatesTab() {
         interviewers: [...interviewerSet]
       });
     }
-    return { bookedEmails: new Set(interviewInfoByEmail.keys()), interviewInfoByEmail };
+    return { interviewInfoByEmail };
   }, [slots]);
 
   const sortedFilterStages = [...(filterStages ?? [])].sort((a, b) => a.position - b.position);
@@ -170,8 +169,8 @@ export function CandidatesTab() {
                 candidate={c}
                 currentStageName={getStageLabel(c.current_stage_id)}
                 canEdit={canEdit}
-                hasInterview={bookedEmails.has(c.email)}
-                canShowInterviewStatus={canEdit || bookedEmails.has(c.email)}
+                interviewStartsAt={interviewInfoByEmail.get(c.email)?.startsAt}
+                canShowInterviewStatus={canEdit || interviewInfoByEmail.has(c.email)}
                 onOpen={() => setSheetCandidate(c)}
               />
             ))}

@@ -48,7 +48,7 @@ interface CandidateCardProps {
   candidate: Candidate;
   currentStageName?: string;
   canEdit: boolean;
-  hasInterview?: boolean;
+  interviewStartsAt?: string;
   canShowInterviewStatus?: boolean;
   onOpen: () => void;
 }
@@ -57,7 +57,7 @@ export function CandidateCard({
   candidate,
   currentStageName,
   canEdit,
-  hasInterview,
+  interviewStartsAt,
   canShowInterviewStatus,
   onOpen
 }: CandidateCardProps) {
@@ -65,6 +65,8 @@ export function CandidateCard({
   const updateMutation = SelectionProcessRepository.useUpdateCandidate();
   const isPending = updateMutation.isPending;
   const isActive = candidate.status === 'active';
+  const hasInterview = !!interviewStartsAt;
+  const interviewPast = hasInterview && new Date(interviewStartsAt!) < new Date();
 
   function handleAction(e: React.MouseEvent, status: 'approved' | 'reproved') {
     e.stopPropagation();
@@ -138,7 +140,15 @@ export function CandidateCard({
           <CandidateStatusBadge status={candidate.status} />
           {canShowInterviewStatus &&
             isActive &&
-            (hasInterview ? (
+            (interviewPast ? (
+              <Badge
+                variant='outline'
+                className='border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-400 text-[0.65rem] px-1.5 py-0 h-5 gap-1'
+              >
+                <Icons.checks className='size-2.5' />
+                Entrevista realizada
+              </Badge>
+            ) : hasInterview ? (
               <Badge
                 variant='outline'
                 className='border-emerald-300 text-emerald-700 dark:border-emerald-700 dark:text-emerald-400 text-[0.65rem] px-1.5 py-0 h-5 gap-1'
