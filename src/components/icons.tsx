@@ -1,9 +1,16 @@
+import type { IconProps } from '@tabler/icons-react';
 import {
   IconAdjustmentsHorizontal,
   IconAlertCircle,
+  IconArrowsMaximize,
   IconAlertTriangle,
   IconArrowRight,
   IconBell,
+  IconBellOff,
+  IconBriefcase,
+  IconBuilding,
+  IconMapPin,
+  IconTag,
   IconBold,
   IconBox,
   IconBrandGithub,
@@ -26,7 +33,6 @@ import {
   IconClipboardText,
   IconClock,
   IconCode,
-  IconCommand,
   IconCreditCard,
   IconDeviceLaptop,
   IconDots,
@@ -62,7 +68,6 @@ import {
   IconPhoto,
   IconPizza,
   IconPlus,
-  IconProps,
   IconRosetteDiscountCheck,
   IconSearch,
   IconSelector,
@@ -72,6 +77,7 @@ import {
   IconSlash,
   IconSparkles,
   IconStack2,
+  IconTrophyFilled,
   IconStar,
   IconSun,
   IconTrash,
@@ -85,12 +91,39 @@ import {
   IconUserEdit,
   IconUserX,
   IconUsers,
+  IconUsersGroup,
   IconVideo,
   IconCrown,
-  IconX
+  IconX,
+  IconReceipt
 } from '@tabler/icons-react';
 
 export type Icon = React.ComponentType<IconProps>;
+
+function LogoIcon({ className, size = 24 }: IconProps) {
+  return (
+    <svg
+      xmlns='http://www.w3.org/2000/svg'
+      viewBox='0 0 24 24'
+      width={size}
+      height={size}
+      className={className}
+      fill='currentColor'
+      aria-hidden='true'
+    >
+      <text
+        x='12'
+        y='17'
+        textAnchor='middle'
+        fontSize='16'
+        fontWeight='700'
+        fontFamily='system-ui, sans-serif'
+      >
+        W
+      </text>
+    </svg>
+  );
+}
 
 export const Icons = {
   // General
@@ -136,15 +169,17 @@ export const Icons = {
   employee: IconUserX,
   userPen: IconUserEdit,
   teams: IconUsers,
+  usersGroup: IconUsersGroup,
 
   // Brand
   github: IconBrandGithub,
   twitter: IconBrandTwitter,
-  logo: IconCommand,
+  logo: LogoIcon,
 
   // Communication
   chat: IconMessage,
   notification: IconBell,
+  notificationOff: IconBellOff,
   phone: IconPhone,
   video: IconVideo,
   send: IconSend,
@@ -183,6 +218,15 @@ export const Icons = {
   laptop: IconDeviceLaptop,
   palette: IconPalette,
 
+  // CRM / Comercial
+  briefcase: IconBriefcase,
+  building: IconBuilding,
+  mapPin: IconMapPin,
+  tag: IconTag,
+
+  // Finance
+  receipt: IconReceipt,
+
   // Commerce / Plans
   billing: IconCreditCard,
   creditCard: IconCreditCard,
@@ -219,5 +263,7 @@ export const Icons = {
   slash: IconSlash,
   calendar: IconCalendar,
   galleryVerticalEnd: IconStack2,
-  moreHorizontal: IconDots
+  trophy: IconTrophyFilled,
+  moreHorizontal: IconDots,
+  maximize: IconArrowsMaximize
 };

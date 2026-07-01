@@ -1,30 +1,15 @@
 import PageContainer from '@/components/layout/page-container';
-import UserListingPage from '@/features/users/components/user-listing';
-import { searchParamsCache } from '@/lib/searchparams';
-import type { SearchParams } from 'nuqs/server';
-import { usersInfoContent } from '@/features/users/info-content';
-import { UserFormSheetTrigger } from '@/features/users/components/user-form-sheet';
+import { UsersView } from '@/features/users/components/users-view';
 
-export const metadata = {
-  title: 'Dashboard: Users'
-};
+export const metadata = { title: 'Dashboard: Usuários' };
 
-type PageProps = {
-  searchParams: Promise<SearchParams>;
-};
-
-export default async function UsersPage(props: PageProps) {
-  const searchParams = await props.searchParams;
-  searchParamsCache.parse(searchParams);
-
+export default function UsersPage() {
   return (
     <PageContainer
-      pageTitle='Users'
-      pageDescription='Manage users (React Query + nuqs table pattern.)'
-      infoContent={usersInfoContent}
-      pageHeaderAction={<UserFormSheetTrigger />}
+      pageTitle='Usuários'
+      pageDescription='Gerencie as informações dos colaboradores cadastrados.'
     >
-      <UserListingPage />
+      <UsersView />
     </PageContainer>
   );
 }

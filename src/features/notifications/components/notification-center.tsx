@@ -1,100 +1,108 @@
 'use client';
 
-import { Icons } from '@/components/icons';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { NotificationCard } from '@/components/ui/notification-card';
-import { useNotificationStore } from '../utils/store';
-import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Icons } from '@/components/icons';
+import { NotificationsRepository } from '@/repositories/notifications.repository';
+import { usePushNotifications } from '@/features/push-notifications/hooks/use-push-notifications';
+import { NotificationItem } from './notification-item';
+import { toast } from 'sonner';
+import { toUserMessage } from '@/lib/api-client';
 
-const MAX_VISIBLE = 5;
+interface NotificationCenterProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
 
-const actionRoutes: Record<string, string> = {
-  view: '/dashboard/workspaces',
-  'view-product': '/dashboard/product',
-  billing: '/dashboard/billing',
-  open: '/dashboard/kanban',
-  'open-chat': '/dashboard/chat'
-};
+export function NotificationCenter({ open, onOpenChange }: NotificationCenterProps) {
+  const { data: notifications, isLoading } = NotificationsRepository.useNotifications();
+  const deleteMutation = NotificationsRepository.useDeleteNotification();
+  const { permission, registerPush } = usePushNotifications();
 
-export function NotificationCenter() {
-  const { notifications, markAsRead, markAllAsRead, unreadCount } = useNotificationStore();
-  const router = useRouter();
-  const count = unreadCount();
-  const visibleNotifications = notifications.slice(0, MAX_VISIBLE);
+  function handleDelete(id: string) {
+    deleteMutation.mutate(id, {
+      onError: (err) => toast.error(toUserMessage(err))
+    });
+  }
+
+  async function handleEnablePush() {
+    try {
+      await registerPush();
+    } catch {
+      toast.error('Não foi possível ativar as notificações push.');
+    }
+  }
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant='ghost' size='icon' className='relative h-8 w-8'>
-          <Icons.notification className='h-4 w-4' />
-          {count > 0 && (
-            <span className='bg-destructive text-destructive-foreground absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium'>
-              {count > 9 ? '9+' : count}
-            </span>
-          )}
-          <span className='sr-only'>Notifications</span>
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align='end' className='w-[calc(100vw-2rem)] p-0 sm:w-[380px]' sideOffset={8}>
-        <div className='flex items-center justify-between px-4 py-3'>
-          <Link href='/dashboard/notifications' className='group flex items-center gap-1'>
-            <h4 className='text-sm font-semibold group-hover:underline'>Notifications</h4>
-            <Icons.chevronRight className='text-muted-foreground h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5' />
-          </Link>
-          <div className='flex items-center gap-2'>
-            {count > 0 && (
-              <span className='bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs'>
-                {count} new
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side='right' className='flex w-[min(85vw,400px)] flex-col p-0 sm:w-[400px]'>
+        <SheetHeader className='border-b px-4 py-3'>
+          <div className='flex items-center gap-2 pr-8'>
+            <SheetTitle className='text-base'>Notificações</SheetTitle>
+            {notifications && notifications.length > 0 && (
+              <span className='bg-primary/10 text-primary rounded-full px-2 py-0.5 text-xs font-semibold'>
+                {notifications.length}
               </span>
             )}
-            {count > 0 && (
-              <Button
-                variant='ghost'
-                size='sm'
-                className='text-muted-foreground h-auto px-2 py-1 text-xs'
-                onClick={markAllAsRead}
-              >
-                Mark all as read
-              </Button>
+            {permission !== 'granted' && permission !== 'denied' && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    className='size-7 text-muted-foreground hover:text-foreground'
+                    onClick={handleEnablePush}
+                  >
+                    <Icons.notificationOff className='size-4' />
+                    <span className='sr-only'>Ativar notificações push</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side='bottom'>Ativar notificações push</TooltipContent>
+              </Tooltip>
             )}
           </div>
-        </div>
-        <Separator />
-        <ScrollArea className='h-[400px]'>
-          {notifications.length === 0 ? (
-            <div className='flex flex-col items-center justify-center py-12'>
-              <Icons.notification className='text-muted-foreground/40 mb-2 h-8 w-8' />
-              <p className='text-muted-foreground text-sm'>No notifications yet</p>
+        </SheetHeader>
+
+        <ScrollArea className='flex-1'>
+          {isLoading ? (
+            <div className='space-y-1.5 px-3 py-2'>
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className='rounded-lg border bg-card px-4 py-3.5 space-y-2'>
+                  <Skeleton className='h-4 w-3/4' />
+                  <Skeleton className='h-3 w-full' />
+                  <Skeleton className='h-3 w-1/3' />
+                </div>
+              ))}
             </div>
-          ) : (
-            <div className='flex flex-col gap-1 p-2'>
-              {visibleNotifications.map((notification) => (
-                <NotificationCard
-                  key={notification.id}
-                  id={notification.id}
-                  title={notification.title}
-                  body={notification.body}
-                  status={notification.status}
-                  createdAt={notification.createdAt}
-                  actions={notification.actions}
-                  onMarkAsRead={markAsRead}
-                  onAction={(notifId, actionId) => {
-                    const route = actionRoutes[actionId];
-                    if (route) {
-                      markAsRead(notifId);
-                      router.push(route);
-                    }
-                  }}
+          ) : notifications && notifications.length > 0 ? (
+            <div className='py-1.5'>
+              {notifications.map((n) => (
+                <NotificationItem
+                  key={n.id}
+                  notification={n}
+                  onDelete={handleDelete}
+                  isDeleting={deleteMutation.isPending && deleteMutation.variables === n.id}
                 />
               ))}
             </div>
+          ) : (
+            <div className='flex flex-col items-center justify-center gap-3 py-16 text-center'>
+              <div className='flex size-14 items-center justify-center rounded-full bg-muted'>
+                <Icons.notification className='text-muted-foreground size-6' />
+              </div>
+              <div>
+                <p className='text-sm font-medium'>Tudo em dia</p>
+                <p className='text-muted-foreground mt-0.5 text-xs'>
+                  Nenhuma notificação no momento
+                </p>
+              </div>
+            </div>
           )}
         </ScrollArea>
-      </PopoverContent>
-    </Popover>
+      </SheetContent>
+    </Sheet>
   );
 }

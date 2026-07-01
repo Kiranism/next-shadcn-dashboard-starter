@@ -47,7 +47,7 @@ type InfobarContextProps = {
   setOpen: (open: boolean) => void;
   openMobile: boolean;
   setOpenMobile: (open: boolean) => void;
-  isMobile: boolean;
+  isMobile: boolean | undefined;
   toggleInfobar: () => void;
   content: InfobarContent | null;
   setContent: (content: InfobarContent | null) => void;

@@ -1,52 +1,51 @@
 'use client';
+
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { UserAvatarProfile } from '@/components/user-avatar-profile';
-import { SignOutButton, useUser } from '@clerk/nextjs';
+import { useSession } from '@/components/providers/session-provider';
+import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
+
 export function UserNav() {
-  const { user } = useUser();
+  const { user } = useSession();
   const router = useRouter();
-  if (user) {
-    return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant='ghost' className='relative h-8 w-8 rounded-full'>
-            <UserAvatarProfile user={user} />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className='w-56' align='end' sideOffset={10} forceMount>
-          <DropdownMenuLabel className='font-normal'>
-            <div className='flex flex-col space-y-1'>
-              <p className='text-sm leading-none font-medium'>{user.fullName}</p>
-              <p className='text-muted-foreground text-xs leading-none'>
-                {user.emailAddresses[0].emailAddress}
-              </p>
-            </div>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuGroup>
-            <DropdownMenuItem onClick={() => router.push('/dashboard/profile')}>
-              Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem>Billing</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
-            <DropdownMenuItem>New Team</DropdownMenuItem>
-          </DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem>
-            <SignOutButton redirectUrl='/auth/sign-in' />
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    );
+
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/auth/sign-in');
   }
+
+  if (!user) return null;
+
+  const initials = user.email?.slice(0, 2).toUpperCase() ?? 'U';
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant='ghost' className='relative size-8 rounded-full'>
+          <Avatar className='size-8'>
+            <AvatarFallback>{initials}</AvatarFallback>
+          </Avatar>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className='w-56' align='end' forceMount>
+        <DropdownMenuLabel className='font-normal'>
+          <div className='flex flex-col space-y-1'>
+            <p className='text-sm font-medium leading-none'>{user.email}</p>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleSignOut}>Sign out</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
