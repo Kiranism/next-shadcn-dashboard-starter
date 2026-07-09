@@ -246,3 +246,5 @@ tailwind css admin dashboard
    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Kiranism/next-shadcn-dashboard-starter&type=date&legend=top-left" />
  </picture>
 </a>
+
+Cloud shell test (bg + auto-permissions): successful 2026-07-09.
