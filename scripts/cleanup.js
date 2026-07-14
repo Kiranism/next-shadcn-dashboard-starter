@@ -25,17 +25,17 @@ const FEATURES = {
       'src/app/dashboard/profile',
       'src/app/dashboard/exclusive',
       'src/features/auth',
-      'src/features/profile'
+      'src/features/profile',
+      '.clerk'
     ],
     files: [
       'docs/clerk_setup.md',
+      'docs/nav-rbac.md',
       'src/components/org-switcher.tsx',
       'src/components/user-avatar-profile.tsx'
     ],
-    dependencies: ['@clerk/nextjs', '@clerk/themes'],
+    dependencies: ['@clerk/nextjs'],
     envVars: [
-      'NEXTAUTH_SECRET',
-      'NEXTAUTH_URL',
       'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY',
       'CLERK_SECRET_KEY',
       'NEXT_PUBLIC_CLERK_SIGN_IN_URL',
@@ -44,7 +44,6 @@ const FEATURES = {
       'NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL',
       'WEBHOOK_SECRET'
     ],
-    cleanNextConfig: true,
     navItemsToRemove: [
       '/dashboard/workspaces',
       '/dashboard/workspaces/team',
@@ -201,7 +200,6 @@ class FeatureCleanup {
       this.applyTemplates(featureName);
       this.cleanDependencies(feature);
       this.cleanEnvVars(feature);
-      if (feature.cleanNextConfig) this.cleanNextConfig();
       if (feature.navItemsToRemove?.length) {
         allNavItemsToRemove.push(...feature.navItemsToRemove);
       }
@@ -211,6 +209,15 @@ class FeatureCleanup {
     if (allNavItemsToRemove.length > 0) {
       this.cleanNavConfig(allNavItemsToRemove);
     }
+
+    // Runs after the loop so it also strips the Clerk hosts from a
+    // freshly-written sentry next.config.ts template (idempotent, so any
+    // feature order works).
+    if (this.featuresToRemove.includes('clerk')) {
+      this.cleanNextConfig();
+    }
+
+    this.cleanConditionalDeps();
 
     if (this.featuresToRemove.includes('notifications')) {
       this.cleanNotificationFromHeader();
@@ -297,6 +304,61 @@ class FeatureCleanup {
         fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
       }
       this.log(`✅ Removed ${removed} dependencies`);
+    }
+  }
+
+  // Shared deps that only some optional features import. After removals,
+  // drop any that no surviving src/ file imports anymore. In dry-run mode
+  // the feature files still exist on disk, so survivors are computed as
+  // "files not scheduled for deletion by the selected features".
+  cleanConditionalDeps() {
+    const CONDITIONAL_DEPS = ['zustand'];
+
+    const pkgPath = path.join(ROOT, 'package.json');
+    if (!fs.existsSync(pkgPath)) return;
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+
+    const removedFolders = this.featuresToRemove
+      .flatMap((name) => FEATURES[name]?.folders || [])
+      .map((folder) => path.join(ROOT, folder) + path.sep);
+    const removedFiles = new Set(
+      this.featuresToRemove
+        .flatMap((name) => FEATURES[name]?.files || [])
+        .map((file) => path.join(ROOT, file))
+    );
+
+    const survivors = [];
+    const walk = (dir) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          walk(full);
+        } else if (/\.(ts|tsx)$/.test(entry.name)) {
+          if (removedFolders.some((folder) => full.startsWith(folder))) continue;
+          if (removedFiles.has(full)) continue;
+          survivors.push(full);
+        }
+      }
+    };
+    const srcRoot = path.join(ROOT, 'src');
+    if (fs.existsSync(srcRoot)) walk(srcRoot);
+
+    let changed = false;
+    for (const dep of CONDITIONAL_DEPS) {
+      if (!pkg.dependencies?.[dep] && !pkg.devDependencies?.[dep]) continue;
+      const importRe = new RegExp(`from\\s+['"]${dep}(/[^'"]*)?['"]`);
+      const stillUsed = survivors.some((file) => importRe.test(fs.readFileSync(file, 'utf8')));
+      if (stillUsed) continue;
+      if (!this.dryRun) {
+        if (pkg.dependencies?.[dep]) delete pkg.dependencies[dep];
+        if (pkg.devDependencies?.[dep]) delete pkg.devDependencies[dep];
+      }
+      changed = true;
+      this.log(`✅ Removed orphaned dependency: ${dep}`);
+    }
+
+    if (changed && !this.dryRun) {
+      fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
     }
   }
 
