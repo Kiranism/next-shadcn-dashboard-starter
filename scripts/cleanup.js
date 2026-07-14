@@ -520,6 +520,10 @@ class FeatureCleanup {
     );
 
     content = content.replace(/,(\s*\])/g, '$1');
+    // Removing an empty parent group that was the FIRST element of its
+    // array leaves its trailing comma behind ("items: [,") — an elision
+    // that fails typechecking. Drop any comma directly after '['.
+    content = content.replace(/\[(\s*),/g, '[$1');
     content = content.replace(/\n\s*\n\s*\n/g, '\n\n');
 
     if (modified) {
