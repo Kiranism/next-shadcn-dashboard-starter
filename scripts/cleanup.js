@@ -13,397 +13,6 @@ const { execSync } = require('child_process');
 
 const ROOT = process.cwd();
 
-// ─── Templates (inline) ────────────────────────────────────────────
-
-const TEMPLATES = {
-  clerk: {
-    'src/app/page.tsx': `import { redirect } from 'next/navigation';
-
-export default async function Page() {
-  redirect('/dashboard/overview');
-}
-`,
-    'src/app/dashboard/page.tsx': `import { redirect } from 'next/navigation';
-
-export default async function Dashboard() {
-  redirect('/dashboard/overview');
-}
-`,
-    'src/components/layout/providers.tsx': `'use client';
-import React from 'react';
-import { ActiveThemeProvider } from '../themes/active-theme';
-import QueryProvider from './query-provider';
-
-export default function Providers({
-  activeThemeValue,
-  children
-}: {
-  activeThemeValue: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <>
-      <ActiveThemeProvider initialTheme={activeThemeValue}>
-        <QueryProvider>{children}</QueryProvider>
-      </ActiveThemeProvider>
-    </>
-  );
-}
-`,
-    'src/components/layout/app-sidebar.tsx': `'use client';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
-  SidebarRail
-} from '@/components/ui/sidebar';
-import { navGroups } from '@/config/nav-config';
-import { useMediaQuery } from '@/hooks/use-media-query';
-import { useFilteredNavGroups } from '@/hooks/use-nav';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import * as React from 'react';
-import { Icons } from '../icons';
-
-export default function AppSidebar() {
-  const pathname = usePathname();
-  const { isOpen } = useMediaQuery();
-  const filteredGroups = useFilteredNavGroups(navGroups);
-
-  React.useEffect(() => {
-    // Side effects based on sidebar state changes
-  }, [isOpen]);
-
-  return (
-    <Sidebar collapsible='icon'>
-      <SidebarHeader />
-      <SidebarContent className='overflow-x-hidden'>
-        {filteredGroups.map((group) => (
-          <SidebarGroup key={group.label || 'ungrouped'} className='py-0'>
-            {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
-            <SidebarMenu>
-              {group.items.map((item) => {
-                const Icon = item.icon ? Icons[item.icon] : Icons.logo;
-                return item?.items && item?.items?.length > 0 ? (
-                  <Collapsible
-                    key={item.title}
-                    asChild
-                    defaultOpen={item.isActive}
-                    className='group/collapsible'
-                  >
-                    <SidebarMenuItem>
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuButton tooltip={item.title} isActive={pathname === item.url}>
-                          {item.icon && <Icon />}
-                          <span>{item.title}</span>
-                          <Icons.chevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
-                        </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <SidebarMenuSub>
-                          {item.items?.map((subItem) => (
-                            <SidebarMenuSubItem key={subItem.title}>
-                              <SidebarMenuSubButton asChild isActive={pathname === subItem.url}>
-                                <Link href={subItem.url}>
-                                  <span>{subItem.title}</span>
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </SidebarMenuItem>
-                  </Collapsible>
-                ) : (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      tooltip={item.title}
-                      isActive={pathname === item.url}
-                    >
-                      <Link href={item.url}>
-                        <Icon />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroup>
-        ))}
-      </SidebarContent>
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  size='lg'
-                  className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
-                >
-                  <span className='truncate'>Account</span>
-                  <Icons.chevronsDown className='ml-auto size-4' />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className='w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg'
-                side='bottom'
-                align='end'
-                sideOffset={4}
-              >
-                <DropdownMenuLabel className='p-0 font-normal'>
-                  <div className='text-muted-foreground px-1 py-1.5 text-sm'>
-                    Sign in to manage your account
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <Icons.notification className='mr-2 h-4 w-4' />
-                  Notifications
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
-      <SidebarRail />
-    </Sidebar>
-  );
-}
-`,
-    'src/components/layout/user-nav.tsx': `'use client';
-
-export function UserNav() {
-  return null;
-}
-`,
-    'src/hooks/use-nav.ts': `'use client';
-
-import type { NavItem, NavGroup } from '@/types';
-
-export function useFilteredNavItems(items: NavItem[]) {
-  return items;
-}
-
-export function useFilteredNavGroups(groups: NavGroup[]) {
-  return groups;
-}
-`,
-    'src/config/infoconfig.ts': `import type { InfobarContent } from '@/components/ui/infobar';
-
-export const productInfoContent: InfobarContent = {
-  title: 'Product Management',
-  sections: [
-    {
-      title: 'Overview',
-      description:
-        'The Products page allows you to manage your product catalog. You can view all products in a table format with server-side functionality including sorting, filtering, pagination, and search capabilities. Use the "Add New" button to create new products.',
-      links: [
-        {
-          title: 'Product Management Guide',
-          url: '#'
-        }
-      ]
-    },
-    {
-      title: 'Adding Products',
-      description:
-        'To add a new product, click the "Add New" button in the page header. You will be taken to a form where you can enter product details including name, description, price, category, and upload product images.',
-      links: [
-        {
-          title: 'Adding Products Documentation',
-          url: '#'
-        }
-      ]
-    },
-    {
-      title: 'Editing Products',
-      description:
-        'You can edit existing products by clicking on a product row in the table. This will open the product edit form where you can modify any product information. Changes are saved automatically when you submit the form.',
-      links: [
-        {
-          title: 'Editing Products Guide',
-          url: '#'
-        }
-      ]
-    },
-    {
-      title: 'Deleting Products',
-      description:
-        'Products can be deleted from the product listing table. Click the delete action for the product you want to remove. You will be asked to confirm the deletion before the product is permanently removed from your catalog.',
-      links: [
-        {
-          title: 'Product Deletion Policy',
-          url: '#'
-        }
-      ]
-    },
-    {
-      title: 'Table Features',
-      description:
-        'The product table includes several powerful features to help you manage large product catalogs efficiently. You can sort columns by clicking on column headers, filter products using the filter controls, navigate through pages using pagination, and quickly find products using the search functionality.',
-      links: [
-        {
-          title: 'Table Features Documentation',
-          url: '#'
-        },
-        {
-          title: 'Sorting and Filtering Guide',
-          url: '#'
-        }
-      ]
-    },
-    {
-      title: 'Product Fields',
-      description:
-        'Each product can have the following fields: Name (required), Description (optional text), Price (numeric value), Category (for organizing products), and Image Upload (for product photos). All fields can be edited when creating or updating a product.',
-      links: [
-        {
-          title: 'Product Fields Specification',
-          url: '#'
-        }
-      ]
-    }
-  ]
-};
-`
-  },
-  sentry: {
-    'next.config.ts': `import type { NextConfig } from 'next';
-
-const nextConfig: NextConfig = {
-  output: process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
-  images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'api.slingacademy.com',
-        port: ''
-      },
-      {
-        protocol: 'https',
-        hostname: 'img.clerk.com',
-        port: ''
-      },
-      {
-        protocol: 'https',
-        hostname: 'clerk.com',
-        port: ''
-      }
-    ]
-  },
-  transpilePackages: ['geist'],
-  compiler: {
-    removeConsole: process.env.NODE_ENV === 'production'
-  }
-};
-
-export default nextConfig;
-`,
-    'src/app/global-error.tsx': `'use client';
-
-import NextError from 'next/error';
-import { useEffect } from 'react';
-
-export default function GlobalError({
-  error
-}: {
-  error: Error & { digest?: string };
-}) {
-  useEffect(() => {
-    console.error(error);
-  }, [error]);
-
-  return (
-    <html lang='en'>
-      <body>
-        <NextError statusCode={0} />
-      </body>
-    </html>
-  );
-}
-`,
-    'src/app/dashboard/overview/@bar_stats/error.tsx': `'use client';
-
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Icons } from '@/components/icons';
-import { useRouter } from 'next/navigation';
-import { useEffect, useTransition } from 'react';
-
-interface StatsErrorProps {
-  error: Error;
-  reset: () => void;
-}
-export default function StatsError({ error, reset }: StatsErrorProps) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-
-  useEffect(() => {
-    console.error(error);
-  }, [error]);
-
-  const reload = () => {
-    startTransition(() => {
-      router.refresh();
-      reset();
-    });
-  };
-  return (
-    <Card className='border-red-500'>
-      <CardHeader className='flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row'>
-        <div className='flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6'>
-          <Alert variant='destructive' className='border-none'>
-            <Icons.alertCircle className='h-4 w-4' />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription className='mt-2'>
-              Failed to load statistics: {error.message}
-            </AlertDescription>
-          </Alert>
-        </div>
-      </CardHeader>
-      <CardContent className='flex h-[316px] items-center justify-center p-6'>
-        <div className='text-center'>
-          <p className='text-muted-foreground mb-4 text-sm'>
-            Unable to display statistics at this time
-          </p>
-          <Button
-            onClick={() => reload()}
-            variant='outline'
-            className='min-w-[120px]'
-            disabled={isPending}
-          >
-            Try again
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-`
-  }
-};
-
 // ─── Feature Configuration ──────────────────────────────────────────
 
 const FEATURES = {
@@ -442,24 +51,7 @@ const FEATURES = {
       '/dashboard/billing',
       '/dashboard/profile',
       '/dashboard/exclusive'
-    ],
-    templates: TEMPLATES.clerk,
-    replacements: {
-      'src/proxy.ts': `import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-
-export function proxy(_req: NextRequest) {
-  return NextResponse.next();
-}
-
-export const config = {
-  matcher: [
-    '/((?!_next|[^?]*\\\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    '/(api|trpc)(.*)'
-  ]
-};
-`
-    }
+    ]
   },
   kanban: {
     name: 'Kanban (Drag & Drop task board)',
@@ -523,8 +115,7 @@ export const config = {
       'NEXT_PUBLIC_SENTRY_PROJECT',
       'SENTRY_AUTH_TOKEN',
       'NEXT_PUBLIC_SENTRY_DISABLED'
-    ],
-    templates: TEMPLATES.sentry
+    ]
   }
 };
 
@@ -607,8 +198,7 @@ class FeatureCleanup {
 
       this.deleteFolders(feature);
       this.deleteFiles(feature);
-      this.writeTemplates(feature);
-      this.writeReplacements(feature);
+      this.applyTemplates(featureName);
       this.cleanDependencies(feature);
       this.cleanEnvVars(feature);
       if (feature.cleanNextConfig) this.cleanNextConfig();
@@ -635,7 +225,7 @@ class FeatureCleanup {
       console.log('  1. Run: bun install (or npm install) to sync dependencies');
       console.log('  2. Review and test your application');
       console.log('  3. To revert: git restore . (or git checkout .)');
-      console.log('  4. Delete scripts/cleanup.js if no longer needed\n');
+      console.log('  4. Delete scripts/cleanup.js and scripts/cleanup-templates/ if no longer needed\n');
     }
   }
 
@@ -663,30 +253,26 @@ class FeatureCleanup {
     }
   }
 
-  writeTemplates(feature) {
-    if (!feature.templates) return;
-    for (const [destPath, content] of Object.entries(feature.templates)) {
-      if (!this.dryRun) {
-        const fullPath = path.join(ROOT, destPath);
-        const dir = path.dirname(fullPath);
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(fullPath, content, 'utf8');
+  applyTemplates(featureName) {
+    const templatesRoot = path.join(__dirname, 'cleanup-templates', featureName);
+    if (!fs.existsSync(templatesRoot)) return;
+    const walk = (dir) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          walk(full);
+        } else {
+          const rel = path.relative(templatesRoot, full);
+          if (!this.dryRun) {
+            const dest = path.join(ROOT, rel);
+            fs.mkdirSync(path.dirname(dest), { recursive: true });
+            fs.copyFileSync(full, dest);
+          }
+          this.log(`✅ Wrote: ${rel}`);
+        }
       }
-      this.log(`✅ Wrote: ${destPath}`);
-    }
-  }
-
-  writeReplacements(feature) {
-    if (!feature.replacements) return;
-    for (const [filePath, content] of Object.entries(feature.replacements)) {
-      if (!this.dryRun) {
-        const fullPath = path.join(ROOT, filePath);
-        const dir = path.dirname(fullPath);
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(fullPath, content.trimEnd() + '\n', 'utf8');
-      }
-      this.log(`✅ Wrote: ${filePath}`);
-    }
+    };
+    walk(templatesRoot);
   }
 
   cleanDependencies(feature) {
