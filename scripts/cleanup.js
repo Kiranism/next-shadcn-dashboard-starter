@@ -252,6 +252,7 @@ class FeatureCleanup {
     // feature order works).
     if (this.featuresToRemove.includes('clerk')) {
       this.cleanNextConfig();
+      this.remapNotificationLinks();
     }
 
     this.cleanConditionalDeps();
@@ -605,6 +606,35 @@ class FeatureCleanup {
     }
   }
 
+  // The notifications demo hardcodes links to Clerk-backed pages
+  // (/dashboard/workspaces, /dashboard/billing). When clerk is removed but
+  // notifications is kept, point those links at a surviving route.
+  remapNotificationLinks() {
+    if (this.featuresToRemove.includes('notifications')) return;
+    const notifDir = path.join(ROOT, 'src/features/notifications');
+    if (!fs.existsSync(notifDir)) return;
+
+    const walk = (dir) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          walk(full);
+        } else if (/\.(ts|tsx)$/.test(entry.name)) {
+          const content = fs.readFileSync(full, 'utf8');
+          const updated = content.replace(
+            /\/dashboard\/(workspaces|billing)/g,
+            '/dashboard/overview'
+          );
+          if (updated !== content) {
+            if (!this.dryRun) fs.writeFileSync(full, updated, 'utf8');
+            this.log(`✅ Remapped Clerk demo links: ${path.relative(ROOT, full)}`);
+          }
+        }
+      }
+    };
+    walk(notifDir);
+  }
+
   cleanLaunchJson() {
     const launchPath = path.join(ROOT, '.vscode/launch.json');
     if (!fs.existsSync(launchPath)) return;
@@ -636,6 +666,20 @@ class FeatureCleanup {
         .replace(/-/g, ' ')
         .replace(/\b\w/g, (c) => c.toUpperCase())
     }));
+
+    // Prefer the display names already configured in theme.config.ts
+    // (e.g. 'WhatsApp', not the title-cased filename 'Whatsapp').
+    const themeConfigPath = path.join(ROOT, 'src/components/themes/theme.config.ts');
+    if (fs.existsSync(themeConfigPath)) {
+      const configSource = fs.readFileSync(themeConfigPath, 'utf8');
+      const existingNames = new Map();
+      for (const m of configSource.matchAll(/\{\s*name:\s*'([^']*)',\s*value:\s*'([^']*)'\s*\}/g)) {
+        existingNames.set(m[2], m[1]);
+      }
+      for (const theme of themes) {
+        if (existingNames.has(theme.value)) theme.name = existingNames.get(theme.value);
+      }
+    }
 
     if (themes.length <= 1) {
       this.log('Only one theme found, nothing to clean.');
@@ -717,10 +761,9 @@ body {
     }
 
     // Rewrite theme.config.ts
-    const configPath = path.join(ROOT, 'src/components/themes/theme.config.ts');
-    if (fs.existsSync(configPath)) {
+    if (fs.existsSync(themeConfigPath)) {
       fs.writeFileSync(
-        configPath,
+        themeConfigPath,
         `/**
  * Default theme that loads when no user preference is set
  * Change this value to set a different default theme
@@ -738,6 +781,92 @@ export const THEMES = [
       );
       this.log('✅ Rewrote: src/components/themes/theme.config.ts');
     }
+
+    this.removeThemeSelector();
+    this.pruneFontConfig(keep.file);
+  }
+
+  // With a single theme left, the selector is a dead one-item dropdown.
+  removeThemeSelector() {
+    const headerPath = path.join(ROOT, 'src/components/layout/header.tsx');
+    const selectorPath = path.join(ROOT, 'src/components/themes/theme-selector.tsx');
+    if (!fs.existsSync(selectorPath)) return;
+
+    if (fs.existsSync(headerPath)) {
+      let header = fs.readFileSync(headerPath, 'utf8');
+      const before = header;
+      header = header.replace(/import\s*\{\s*ThemeSelector\s*\}[^;]*;\n?/, '');
+      header = header.replace(/\s*<div className='hidden sm:block'>\s*<ThemeSelector \/>\s*<\/div>/, '');
+      if (header !== before) {
+        fs.writeFileSync(headerPath, header, 'utf8');
+        this.log('✅ Cleaned header.tsx (removed ThemeSelector)');
+      }
+    }
+
+    fs.rmSync(selectorPath, { force: true });
+    this.log('✅ Deleted: src/components/themes/theme-selector.tsx');
+  }
+
+  // Google-font loaders are eagerly downloaded at build time and their CSS
+  // variables injected on every page — drop the ones the kept theme never
+  // references.
+  pruneFontConfig(keptThemeFile) {
+    const fontConfigPath = path.join(ROOT, 'src/components/themes/font.config.ts');
+    if (!fs.existsSync(fontConfigPath)) return;
+
+    // Vars still referenced after the rewrite (+ the always-kept pair)
+    const needed = new Set(['--font-sans', '--font-mono']);
+    const cssFiles = [
+      path.join(ROOT, 'src/styles/theme.css'),
+      path.join(ROOT, 'src/styles/themes', keptThemeFile)
+    ];
+    for (const cssFile of cssFiles) {
+      if (!fs.existsSync(cssFile)) continue;
+      const css = fs.readFileSync(cssFile, 'utf8');
+      for (const m of css.matchAll(/--font-[a-z0-9-]+/g)) needed.add(m[0]);
+    }
+
+    let source = fs.readFileSync(fontConfigPath, 'utf8');
+    const blockRe = /const (\w+) = (\w+)\(\{[\s\S]*?variable: '(--font-[a-z0-9-]+)'[\s\S]*?\}\);/g;
+    const blocks = [...source.matchAll(blockRe)];
+    const variableCount = (source.match(/variable: '--font-/g) || []).length;
+    if (blocks.length !== variableCount) {
+      this.log(
+        `⚠️  font.config.ts structure not recognized (parsed ${blocks.length} of ${variableCount} loaders) — skipping font pruning`
+      );
+      return;
+    }
+
+    const removed = blocks.filter((b) => !needed.has(b[3]));
+    if (removed.length === 0) return;
+
+    for (const block of removed) {
+      source = source.replace(block[0], '');
+    }
+
+    // Drop the removed Google font names from the next/font/google import
+    const removedFonts = new Set(removed.map((b) => b[2]));
+    source = source.replace(/import \{([\s\S]*?)\} from 'next\/font\/google';/, (_, names) => {
+      const keptNames = names
+        .split(',')
+        .map((n) => n.trim())
+        .filter((n) => n && !removedFonts.has(n));
+      return `import {\n  ${keptNames.join(',\n  ')}\n} from 'next/font/google';`;
+    });
+
+    // Drop the removed locals from the fontVariables aggregation
+    const removedLocals = new Set(removed.map((b) => b[1]));
+    source = source.replace(/export const fontVariables = cn\(([\s\S]*?)\);/, (_, entries) => {
+      const keptEntries = entries
+        .split(',')
+        .map((e) => e.trim())
+        .filter((e) => e && !removedLocals.has(e.replace('.variable', '')));
+      return `export const fontVariables = cn(\n  ${keptEntries.join(',\n  ')}\n);`;
+    });
+
+    source = source.replace(/\n{3,}/g, '\n\n');
+    fs.writeFileSync(fontConfigPath, source, 'utf8');
+    this.log(`✅ Pruned font.config.ts (removed ${removed.length} unused font loaders)`);
   }
 }
 
