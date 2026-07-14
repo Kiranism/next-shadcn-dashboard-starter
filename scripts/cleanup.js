@@ -13,6 +13,22 @@ const { execSync } = require('child_process');
 
 const ROOT = process.cwd();
 
+// Files that carry `cleanup:<feature>:start|end|line` strip markers.
+// Marker syntax is comment-style-agnostic — the engine matches the token
+// anywhere in a line, so <!-- cleanup:clerk:start -->,
+// {/* cleanup:clerk:start */} and # cleanup:clerk:start all work.
+const MARKED_FILES = [
+  'README.md',
+  'AGENTS.md',
+  'CLAUDE.md',
+  'docs/forms.md',
+  'env.example.txt',
+  'Dockerfile',
+  'Dockerfile.bun',
+  'src/app/about/page.tsx',
+  'src/app/privacy-policy/page.tsx'
+];
+
 // ─── Feature Configuration ──────────────────────────────────────────
 
 const FEATURES = {
@@ -50,6 +66,20 @@ const FEATURES = {
       '/dashboard/billing',
       '/dashboard/profile',
       '/dashboard/exclusive'
+    ],
+    // Lines inside fenced code blocks (tree diagrams, docker commands)
+    // can't carry invisible comment markers — drop them by content instead.
+    // Only applied to README.md and AGENTS.md.
+    treeTokens: [
+      '── workspaces',
+      '── billing',
+      '── profile',
+      '── exclusive',
+      '── auth',
+      '── clerk_setup',
+      '── nav-rbac',
+      'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=',
+      'CLERK_SECRET_KEY='
     ]
   },
   kanban: {
@@ -62,21 +92,24 @@ const FEATURES = {
       '@dnd-kit/sortable',
       '@dnd-kit/utilities'
     ],
-    navItemsToRemove: ['/dashboard/kanban']
+    navItemsToRemove: ['/dashboard/kanban'],
+    treeTokens: ['── kanban']
   },
   chat: {
     name: 'Chat (Messaging UI)',
     folders: ['src/app/dashboard/chat', 'src/features/chat'],
     files: ['src/components/ui/file-preview.tsx'],
     dependencies: [],
-    navItemsToRemove: ['/dashboard/chat']
+    navItemsToRemove: ['/dashboard/chat'],
+    treeTokens: ['── chat']
   },
   notifications: {
     name: 'Notifications (Notification center & page)',
     folders: ['src/app/dashboard/notifications', 'src/features/notifications'],
     files: ['src/components/ui/notification-card.tsx'],
     dependencies: [],
-    navItemsToRemove: ['/dashboard/notifications']
+    navItemsToRemove: ['/dashboard/notifications'],
+    treeTokens: ['── notifications']
   },
   examples: {
     name: 'Examples (Forms, React Query demo, Icons)',
@@ -97,7 +130,11 @@ const FEATURES = {
       '/dashboard/forms/advanced',
       '/dashboard/react-query',
       '/dashboard/elements/icons'
-    ]
+    ],
+    // No '── forms' / '── elements' tokens: the only tree line matching
+    // those is src/components/forms/ (shared field wrappers), which
+    // survives examples removal.
+    treeTokens: ['── react-query']
   },
   themes: {
     name: 'Extra Themes (keep only one theme)',
@@ -203,7 +240,7 @@ class FeatureCleanup {
       if (feature.navItemsToRemove?.length) {
         allNavItemsToRemove.push(...feature.navItemsToRemove);
       }
-      this.cleanDocReferences(feature);
+      this.stripMarkers(featureName);
     }
 
     if (allNavItemsToRemove.length > 0) {
@@ -222,6 +259,10 @@ class FeatureCleanup {
     if (this.featuresToRemove.includes('notifications')) {
       this.cleanNotificationFromHeader();
       this.cleanNotificationFromSidebar();
+    }
+
+    if (this.featuresToRemove.includes('sentry')) {
+      this.cleanLaunchJson();
     }
 
     if (this.dryRun) {
@@ -521,28 +562,62 @@ class FeatureCleanup {
     }
   }
 
-  cleanDocReferences(feature) {
-    if (!feature.name.toLowerCase().includes('clerk')) return;
+  // Drops marker-tagged doc content for a removed feature:
+  //  - every line from `cleanup:<feature>:start` through the next
+  //    `cleanup:<feature>:end` (both marker lines included)
+  //  - any single line containing `cleanup:<feature>:line`
+  //  - in README.md/AGENTS.md only: lines matching the feature's
+  //    treeTokens (fenced code blocks can't carry comment markers)
+  stripMarkers(featureName) {
+    const startToken = `cleanup:${featureName}:start`;
+    const endToken = `cleanup:${featureName}:end`;
+    const lineToken = `cleanup:${featureName}:line`;
+    const treeTokens = FEATURES[featureName]?.treeTokens || [];
 
-    const docFiles = [
-      path.join(ROOT, 'README.md'),
-      path.join(ROOT, 'docs/nav-rbac.md'),
-      path.join(ROOT, 'src/config/infoconfig.ts')
-    ];
-
-    for (const filePath of docFiles) {
+    for (const relPath of MARKED_FILES) {
+      const filePath = path.join(ROOT, relPath);
       if (!fs.existsSync(filePath)) continue;
-      let content = fs.readFileSync(filePath, 'utf8');
-      const before = content;
-      content = content.replace(/\n*# Clerk Setup Guide[\s\S]*?(?=\n#|\n##|$)/gi, '\n');
-      content = content.replace(/Clerk['\s]/gi, 'Auth ');
-      content = content.replace(/clerk\.com[^\s]*/gi, '');
-      if (content !== before) {
-        if (!this.dryRun) {
-          fs.writeFileSync(filePath, content.replace(/\n\s*\n\s*\n/g, '\n\n'), 'utf8');
+
+      const original = fs.readFileSync(filePath, 'utf8');
+      const useTreeTokens = relPath === 'README.md' || relPath === 'AGENTS.md';
+      const kept = [];
+      let inBlock = false;
+
+      for (const line of original.split('\n')) {
+        if (inBlock) {
+          if (line.includes(endToken)) inBlock = false;
+          continue;
         }
-        this.log(`✅ Cleaned doc references: ${path.relative(ROOT, filePath)}`);
+        if (line.includes(startToken)) {
+          inBlock = true;
+          continue;
+        }
+        if (line.includes(lineToken)) continue;
+        if (useTreeTokens && treeTokens.some((token) => line.includes(token))) continue;
+        kept.push(line);
       }
+
+      const content = kept.join('\n').replace(/\n{3,}/g, '\n\n');
+      if (content !== original) {
+        if (!this.dryRun) fs.writeFileSync(filePath, content, 'utf8');
+        this.log(`✅ Cleaned markers: ${relPath}`);
+      }
+    }
+  }
+
+  cleanLaunchJson() {
+    const launchPath = path.join(ROOT, '.vscode/launch.json');
+    if (!fs.existsSync(launchPath)) return;
+
+    let content = fs.readFileSync(launchPath, 'utf8');
+    const before = content;
+
+    content = content.replace(/,?\s*"NEXT_PUBLIC_SENTRY_DISABLED":\s*"[^"]*"/, '');
+    content = content.replace(/,(\s*[}\]])/g, '$1');
+
+    if (content !== before) {
+      if (!this.dryRun) fs.writeFileSync(launchPath, content, 'utf8');
+      this.log('✅ Cleaned .vscode/launch.json (removed NEXT_PUBLIC_SENTRY_DISABLED)');
     }
   }
 

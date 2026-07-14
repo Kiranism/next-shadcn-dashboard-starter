@@ -36,7 +36,7 @@ export default function PrivacyPolicyPage() {
           </p>
         </section>
 
-        {/* Auth handled by Clerk */}
+        {/* cleanup:clerk:start */}
         <section>
           <h2 className='text-foreground mb-3 text-xl font-semibold'>Authentication by Clerk</h2>
           <p className='text-muted-foreground text-base leading-relaxed'>
@@ -63,6 +63,7 @@ export default function PrivacyPolicyPage() {
             .
           </p>
         </section>
+        {/* cleanup:clerk:end */}
 
         {/* No data misuse */}
         <section>

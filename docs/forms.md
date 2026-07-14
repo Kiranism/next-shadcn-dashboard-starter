@@ -610,7 +610,7 @@ const form = useAppForm({
 <Step1 form={form} fields={{ name: 'name', category: 'category' }} />
 ```
 
-See `src/features/forms/components/multi-step-product-form.tsx`.
+See `src/features/forms/components/multi-step-product-form.tsx`. <!-- cleanup:examples:line -->
 
 ### Nested object fields
 
@@ -1031,6 +1031,7 @@ To include in `useFormFields`, add to its return object.
 
 ## Dashboard Examples
 
+<!-- cleanup:examples:start -->
 ### Form Pages (`/dashboard/forms/...`)
 
 | Page                  | Route                         | Patterns demonstrated                                                                                                                                                                                                                           |
@@ -1039,11 +1040,12 @@ To include in `useFormFields`, add to its return object.
 | **Multi-Step Form**   | `/dashboard/forms/multi-step` | `withFieldGroup`, per-step Zod schemas, `revalidateLogic`, step navigation, review summary                                                                                                                                                      |
 | **Sheet & Dialog**    | `/dashboard/forms/sheet-form` | Form in Sheet with external submit button, form in Dialog, close + reset on success                                                                                                                                                             |
 | **Advanced Patterns** | `/dashboard/forms/advanced`   | Async validation (username check), linked fields (`onChangeListenTo` for password confirm), nested objects (`team.name`), dynamic array rows (members), dependent dropdowns (country → state with listener), `FormErrors`, `scrollToFirstError` |
+<!-- cleanup:examples:end -->
 
 ### Other Forms
 
 | Form          | File                                                   | Patterns                                   |
 | ------------- | ------------------------------------------------------ | ------------------------------------------ |
 | Product CRUD  | `src/features/products/components/product-form.tsx`    | Pattern 1, split schema, onBlur validators |
-| Sheet Product | `src/features/forms/components/sheet-product-form.tsx` | Pattern 2 in Sheet                         |
-| Auth          | `src/features/auth/components/user-auth-form.tsx`      | Pattern 2, minimal                         |
+| Sheet Product | `src/features/forms/components/sheet-product-form.tsx` | Pattern 2 in Sheet <!-- cleanup:examples:line --> |
+| Auth          | `src/features/auth/components/user-auth-form.tsx`      | Pattern 2, minimal <!-- cleanup:clerk:line --> |
