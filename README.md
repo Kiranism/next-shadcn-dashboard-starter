@@ -184,7 +184,7 @@ node scripts/cleanup.js --dry-run chat  # preview before removing
 node scripts/cleanup.js kanban chat     # remove specific features
 ```
 
-Run `node scripts/cleanup.js --help` for all options. Delete `scripts/cleanup.js` when you're done.
+Run `node scripts/cleanup.js --help` for all options. The replacement files it writes live in `scripts/cleanup-templates/` as real, typechecked code. Delete `scripts/cleanup.js` and `scripts/cleanup-templates/` when you're done.
 
 ## Deploy
 

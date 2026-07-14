@@ -158,7 +158,8 @@ The project follows a feature-based folder structure designed for scalability in
 │   └── themes.md          # Theme customization guide
 
 /scripts                   # Dev tooling
-    ├── cleanup.js         # Feature removal (self-contained, delete when done)
+    ├── cleanup.js         # Feature removal (templates in cleanup-templates/, typechecked)
+    ├── cleanup-templates/ # Replacement files cleanup.js copies into the repo
     └── postinstall.js     # Dev server cleanup message (auto-cleans)
 
 Dockerfile                 # Node.js production Dockerfile
@@ -615,7 +616,9 @@ node scripts/cleanup.js --list
 
 **Safety**: Script requires git repository with at least one commit. Use `--force` to skip.
 
-After cleanup, delete `scripts/cleanup.js` — the dev server message auto-cleans on next start.
+Replacement files live in `scripts/cleanup-templates/` as real `.ts`/`.tsx` files typechecked by `tsc` and `next build`, so template rot fails loudly instead of shipping broken code.
+
+After cleanup, delete `scripts/cleanup.js` and `scripts/cleanup-templates/` — the dev server message auto-cleans on next start.
 
 ---
 
