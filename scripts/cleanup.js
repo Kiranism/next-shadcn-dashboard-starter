@@ -13,396 +13,21 @@ const { execSync } = require('child_process');
 
 const ROOT = process.cwd();
 
-// ─── Templates (inline) ────────────────────────────────────────────
-
-const TEMPLATES = {
-  clerk: {
-    'src/app/page.tsx': `import { redirect } from 'next/navigation';
-
-export default async function Page() {
-  redirect('/dashboard/overview');
-}
-`,
-    'src/app/dashboard/page.tsx': `import { redirect } from 'next/navigation';
-
-export default async function Dashboard() {
-  redirect('/dashboard/overview');
-}
-`,
-    'src/components/layout/providers.tsx': `'use client';
-import React from 'react';
-import { ActiveThemeProvider } from '../themes/active-theme';
-import QueryProvider from './query-provider';
-
-export default function Providers({
-  activeThemeValue,
-  children
-}: {
-  activeThemeValue: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <>
-      <ActiveThemeProvider initialTheme={activeThemeValue}>
-        <QueryProvider>{children}</QueryProvider>
-      </ActiveThemeProvider>
-    </>
-  );
-}
-`,
-    'src/components/layout/app-sidebar.tsx': `'use client';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
-  SidebarRail
-} from '@/components/ui/sidebar';
-import { navGroups } from '@/config/nav-config';
-import { useMediaQuery } from '@/hooks/use-media-query';
-import { useFilteredNavGroups } from '@/hooks/use-nav';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import * as React from 'react';
-import { Icons } from '../icons';
-
-export default function AppSidebar() {
-  const pathname = usePathname();
-  const { isOpen } = useMediaQuery();
-  const filteredGroups = useFilteredNavGroups(navGroups);
-
-  React.useEffect(() => {
-    // Side effects based on sidebar state changes
-  }, [isOpen]);
-
-  return (
-    <Sidebar collapsible='icon'>
-      <SidebarHeader />
-      <SidebarContent className='overflow-x-hidden'>
-        {filteredGroups.map((group) => (
-          <SidebarGroup key={group.label || 'ungrouped'} className='py-0'>
-            {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
-            <SidebarMenu>
-              {group.items.map((item) => {
-                const Icon = item.icon ? Icons[item.icon] : Icons.logo;
-                return item?.items && item?.items?.length > 0 ? (
-                  <Collapsible
-                    key={item.title}
-                    asChild
-                    defaultOpen={item.isActive}
-                    className='group/collapsible'
-                  >
-                    <SidebarMenuItem>
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuButton tooltip={item.title} isActive={pathname === item.url}>
-                          {item.icon && <Icon />}
-                          <span>{item.title}</span>
-                          <Icons.chevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
-                        </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <SidebarMenuSub>
-                          {item.items?.map((subItem) => (
-                            <SidebarMenuSubItem key={subItem.title}>
-                              <SidebarMenuSubButton asChild isActive={pathname === subItem.url}>
-                                <Link href={subItem.url}>
-                                  <span>{subItem.title}</span>
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </SidebarMenuItem>
-                  </Collapsible>
-                ) : (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      tooltip={item.title}
-                      isActive={pathname === item.url}
-                    >
-                      <Link href={item.url}>
-                        <Icon />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroup>
-        ))}
-      </SidebarContent>
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  size='lg'
-                  className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
-                >
-                  <span className='truncate'>Account</span>
-                  <Icons.chevronsDown className='ml-auto size-4' />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className='w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg'
-                side='bottom'
-                align='end'
-                sideOffset={4}
-              >
-                <DropdownMenuLabel className='p-0 font-normal'>
-                  <div className='text-muted-foreground px-1 py-1.5 text-sm'>
-                    Sign in to manage your account
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <Icons.notification className='mr-2 h-4 w-4' />
-                  Notifications
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
-      <SidebarRail />
-    </Sidebar>
-  );
-}
-`,
-    'src/components/layout/user-nav.tsx': `'use client';
-
-export function UserNav() {
-  return null;
-}
-`,
-    'src/hooks/use-nav.ts': `'use client';
-
-import type { NavItem, NavGroup } from '@/types';
-
-export function useFilteredNavItems(items: NavItem[]) {
-  return items;
-}
-
-export function useFilteredNavGroups(groups: NavGroup[]) {
-  return groups;
-}
-`,
-    'src/config/infoconfig.ts': `import type { InfobarContent } from '@/components/ui/infobar';
-
-export const productInfoContent: InfobarContent = {
-  title: 'Product Management',
-  sections: [
-    {
-      title: 'Overview',
-      description:
-        'The Products page allows you to manage your product catalog. You can view all products in a table format with server-side functionality including sorting, filtering, pagination, and search capabilities. Use the "Add New" button to create new products.',
-      links: [
-        {
-          title: 'Product Management Guide',
-          url: '#'
-        }
-      ]
-    },
-    {
-      title: 'Adding Products',
-      description:
-        'To add a new product, click the "Add New" button in the page header. You will be taken to a form where you can enter product details including name, description, price, category, and upload product images.',
-      links: [
-        {
-          title: 'Adding Products Documentation',
-          url: '#'
-        }
-      ]
-    },
-    {
-      title: 'Editing Products',
-      description:
-        'You can edit existing products by clicking on a product row in the table. This will open the product edit form where you can modify any product information. Changes are saved automatically when you submit the form.',
-      links: [
-        {
-          title: 'Editing Products Guide',
-          url: '#'
-        }
-      ]
-    },
-    {
-      title: 'Deleting Products',
-      description:
-        'Products can be deleted from the product listing table. Click the delete action for the product you want to remove. You will be asked to confirm the deletion before the product is permanently removed from your catalog.',
-      links: [
-        {
-          title: 'Product Deletion Policy',
-          url: '#'
-        }
-      ]
-    },
-    {
-      title: 'Table Features',
-      description:
-        'The product table includes several powerful features to help you manage large product catalogs efficiently. You can sort columns by clicking on column headers, filter products using the filter controls, navigate through pages using pagination, and quickly find products using the search functionality.',
-      links: [
-        {
-          title: 'Table Features Documentation',
-          url: '#'
-        },
-        {
-          title: 'Sorting and Filtering Guide',
-          url: '#'
-        }
-      ]
-    },
-    {
-      title: 'Product Fields',
-      description:
-        'Each product can have the following fields: Name (required), Description (optional text), Price (numeric value), Category (for organizing products), and Image Upload (for product photos). All fields can be edited when creating or updating a product.',
-      links: [
-        {
-          title: 'Product Fields Specification',
-          url: '#'
-        }
-      ]
-    }
-  ]
-};
-`
-  },
-  sentry: {
-    'next.config.ts': `import type { NextConfig } from 'next';
-
-const nextConfig: NextConfig = {
-  output: process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
-  images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'api.slingacademy.com',
-        port: ''
-      },
-      {
-        protocol: 'https',
-        hostname: 'img.clerk.com',
-        port: ''
-      },
-      {
-        protocol: 'https',
-        hostname: 'clerk.com',
-        port: ''
-      }
-    ]
-  },
-  transpilePackages: ['geist'],
-  compiler: {
-    removeConsole: process.env.NODE_ENV === 'production'
-  }
-};
-
-export default nextConfig;
-`,
-    'src/app/global-error.tsx': `'use client';
-
-import NextError from 'next/error';
-import { useEffect } from 'react';
-
-export default function GlobalError({
-  error
-}: {
-  error: Error & { digest?: string };
-}) {
-  useEffect(() => {
-    console.error(error);
-  }, [error]);
-
-  return (
-    <html lang='en'>
-      <body>
-        <NextError statusCode={0} />
-      </body>
-    </html>
-  );
-}
-`,
-    'src/app/dashboard/overview/@bar_stats/error.tsx': `'use client';
-
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Icons } from '@/components/icons';
-import { useRouter } from 'next/navigation';
-import { useEffect, useTransition } from 'react';
-
-interface StatsErrorProps {
-  error: Error;
-  reset: () => void;
-}
-export default function StatsError({ error, reset }: StatsErrorProps) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-
-  useEffect(() => {
-    console.error(error);
-  }, [error]);
-
-  const reload = () => {
-    startTransition(() => {
-      router.refresh();
-      reset();
-    });
-  };
-  return (
-    <Card className='border-red-500'>
-      <CardHeader className='flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row'>
-        <div className='flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6'>
-          <Alert variant='destructive' className='border-none'>
-            <Icons.alertCircle className='h-4 w-4' />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription className='mt-2'>
-              Failed to load statistics: {error.message}
-            </AlertDescription>
-          </Alert>
-        </div>
-      </CardHeader>
-      <CardContent className='flex h-[316px] items-center justify-center p-6'>
-        <div className='text-center'>
-          <p className='text-muted-foreground mb-4 text-sm'>
-            Unable to display statistics at this time
-          </p>
-          <Button
-            onClick={() => reload()}
-            variant='outline'
-            className='min-w-[120px]'
-            disabled={isPending}
-          >
-            Try again
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-`
-  }
-};
+// Files that carry `cleanup:<feature>:start|end|line` strip markers.
+// Marker syntax is comment-style-agnostic — the engine matches the token
+// anywhere in a line, so <!-- cleanup:clerk:start -->,
+// {/* cleanup:clerk:start */} and # cleanup:clerk:start all work.
+const MARKED_FILES = [
+  'README.md',
+  'AGENTS.md',
+  'CLAUDE.md',
+  'docs/forms.md',
+  'env.example.txt',
+  'Dockerfile',
+  'Dockerfile.bun',
+  'src/app/about/page.tsx',
+  'src/app/privacy-policy/page.tsx'
+];
 
 // ─── Feature Configuration ──────────────────────────────────────────
 
@@ -416,17 +41,17 @@ const FEATURES = {
       'src/app/dashboard/profile',
       'src/app/dashboard/exclusive',
       'src/features/auth',
-      'src/features/profile'
+      'src/features/profile',
+      '.clerk'
     ],
     files: [
       'docs/clerk_setup.md',
+      'docs/nav-rbac.md',
       'src/components/org-switcher.tsx',
       'src/components/user-avatar-profile.tsx'
     ],
-    dependencies: ['@clerk/nextjs', '@clerk/themes'],
+    dependencies: ['@clerk/nextjs'],
     envVars: [
-      'NEXTAUTH_SECRET',
-      'NEXTAUTH_URL',
       'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY',
       'CLERK_SECRET_KEY',
       'NEXT_PUBLIC_CLERK_SIGN_IN_URL',
@@ -435,7 +60,6 @@ const FEATURES = {
       'NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL',
       'WEBHOOK_SECRET'
     ],
-    cleanNextConfig: true,
     navItemsToRemove: [
       '/dashboard/workspaces',
       '/dashboard/workspaces/team',
@@ -443,23 +67,20 @@ const FEATURES = {
       '/dashboard/profile',
       '/dashboard/exclusive'
     ],
-    templates: TEMPLATES.clerk,
-    replacements: {
-      'src/proxy.ts': `import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-
-export function proxy(_req: NextRequest) {
-  return NextResponse.next();
-}
-
-export const config = {
-  matcher: [
-    '/((?!_next|[^?]*\\\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    '/(api|trpc)(.*)'
-  ]
-};
-`
-    }
+    // Lines inside fenced code blocks (tree diagrams, docker commands)
+    // can't carry invisible comment markers — drop them by content instead.
+    // Only applied to README.md and AGENTS.md.
+    treeTokens: [
+      '── workspaces',
+      '── billing',
+      '── profile',
+      '── exclusive',
+      '── auth',
+      '── clerk_setup',
+      '── nav-rbac',
+      'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=',
+      'CLERK_SECRET_KEY='
+    ]
   },
   kanban: {
     name: 'Kanban (Drag & Drop task board)',
@@ -471,21 +92,24 @@ export const config = {
       '@dnd-kit/sortable',
       '@dnd-kit/utilities'
     ],
-    navItemsToRemove: ['/dashboard/kanban']
+    navItemsToRemove: ['/dashboard/kanban'],
+    treeTokens: ['── kanban']
   },
   chat: {
     name: 'Chat (Messaging UI)',
     folders: ['src/app/dashboard/chat', 'src/features/chat'],
     files: ['src/components/ui/file-preview.tsx'],
     dependencies: [],
-    navItemsToRemove: ['/dashboard/chat']
+    navItemsToRemove: ['/dashboard/chat'],
+    treeTokens: ['── chat']
   },
   notifications: {
     name: 'Notifications (Notification center & page)',
     folders: ['src/app/dashboard/notifications', 'src/features/notifications'],
     files: ['src/components/ui/notification-card.tsx'],
     dependencies: [],
-    navItemsToRemove: ['/dashboard/notifications']
+    navItemsToRemove: ['/dashboard/notifications'],
+    treeTokens: ['── notifications']
   },
   examples: {
     name: 'Examples (Forms, React Query demo, Icons)',
@@ -506,7 +130,11 @@ export const config = {
       '/dashboard/forms/advanced',
       '/dashboard/react-query',
       '/dashboard/elements/icons'
-    ]
+    ],
+    // No '── forms' / '── elements' tokens: the only tree line matching
+    // those is src/components/forms/ (shared field wrappers), which
+    // survives examples removal.
+    treeTokens: ['── react-query']
   },
   themes: {
     name: 'Extra Themes (keep only one theme)',
@@ -523,8 +151,7 @@ export const config = {
       'NEXT_PUBLIC_SENTRY_PROJECT',
       'SENTRY_AUTH_TOKEN',
       'NEXT_PUBLIC_SENTRY_DISABLED'
-    ],
-    templates: TEMPLATES.sentry
+    ]
   }
 };
 
@@ -607,24 +234,36 @@ class FeatureCleanup {
 
       this.deleteFolders(feature);
       this.deleteFiles(feature);
-      this.writeTemplates(feature);
-      this.writeReplacements(feature);
+      this.applyTemplates(featureName);
       this.cleanDependencies(feature);
       this.cleanEnvVars(feature);
-      if (feature.cleanNextConfig) this.cleanNextConfig();
       if (feature.navItemsToRemove?.length) {
         allNavItemsToRemove.push(...feature.navItemsToRemove);
       }
-      this.cleanDocReferences(feature);
+      this.stripMarkers(featureName);
     }
 
     if (allNavItemsToRemove.length > 0) {
       this.cleanNavConfig(allNavItemsToRemove);
     }
 
+    // Runs after the loop so it also strips the Clerk hosts from a
+    // freshly-written sentry next.config.ts template (idempotent, so any
+    // feature order works).
+    if (this.featuresToRemove.includes('clerk')) {
+      this.cleanNextConfig();
+      this.remapNotificationLinks();
+    }
+
+    this.cleanConditionalDeps();
+
     if (this.featuresToRemove.includes('notifications')) {
       this.cleanNotificationFromHeader();
       this.cleanNotificationFromSidebar();
+    }
+
+    if (this.featuresToRemove.includes('sentry')) {
+      this.cleanLaunchJson();
     }
 
     if (this.dryRun) {
@@ -635,7 +274,7 @@ class FeatureCleanup {
       console.log('  1. Run: bun install (or npm install) to sync dependencies');
       console.log('  2. Review and test your application');
       console.log('  3. To revert: git restore . (or git checkout .)');
-      console.log('  4. Delete scripts/cleanup.js if no longer needed\n');
+      console.log('  4. Delete scripts/cleanup.js and scripts/cleanup-templates/ if no longer needed\n');
     }
   }
 
@@ -663,30 +302,26 @@ class FeatureCleanup {
     }
   }
 
-  writeTemplates(feature) {
-    if (!feature.templates) return;
-    for (const [destPath, content] of Object.entries(feature.templates)) {
-      if (!this.dryRun) {
-        const fullPath = path.join(ROOT, destPath);
-        const dir = path.dirname(fullPath);
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(fullPath, content, 'utf8');
+  applyTemplates(featureName) {
+    const templatesRoot = path.join(__dirname, 'cleanup-templates', featureName);
+    if (!fs.existsSync(templatesRoot)) return;
+    const walk = (dir) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          walk(full);
+        } else {
+          const rel = path.relative(templatesRoot, full);
+          if (!this.dryRun) {
+            const dest = path.join(ROOT, rel);
+            fs.mkdirSync(path.dirname(dest), { recursive: true });
+            fs.copyFileSync(full, dest);
+          }
+          this.log(`✅ Wrote: ${rel}`);
+        }
       }
-      this.log(`✅ Wrote: ${destPath}`);
-    }
-  }
-
-  writeReplacements(feature) {
-    if (!feature.replacements) return;
-    for (const [filePath, content] of Object.entries(feature.replacements)) {
-      if (!this.dryRun) {
-        const fullPath = path.join(ROOT, filePath);
-        const dir = path.dirname(fullPath);
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(fullPath, content.trimEnd() + '\n', 'utf8');
-      }
-      this.log(`✅ Wrote: ${filePath}`);
-    }
+    };
+    walk(templatesRoot);
   }
 
   cleanDependencies(feature) {
@@ -711,6 +346,61 @@ class FeatureCleanup {
         fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
       }
       this.log(`✅ Removed ${removed} dependencies`);
+    }
+  }
+
+  // Shared deps that only some optional features import. After removals,
+  // drop any that no surviving src/ file imports anymore. In dry-run mode
+  // the feature files still exist on disk, so survivors are computed as
+  // "files not scheduled for deletion by the selected features".
+  cleanConditionalDeps() {
+    const CONDITIONAL_DEPS = ['zustand'];
+
+    const pkgPath = path.join(ROOT, 'package.json');
+    if (!fs.existsSync(pkgPath)) return;
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+
+    const removedFolders = this.featuresToRemove
+      .flatMap((name) => FEATURES[name]?.folders || [])
+      .map((folder) => path.join(ROOT, folder) + path.sep);
+    const removedFiles = new Set(
+      this.featuresToRemove
+        .flatMap((name) => FEATURES[name]?.files || [])
+        .map((file) => path.join(ROOT, file))
+    );
+
+    const survivors = [];
+    const walk = (dir) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          walk(full);
+        } else if (/\.(ts|tsx)$/.test(entry.name)) {
+          if (removedFolders.some((folder) => full.startsWith(folder))) continue;
+          if (removedFiles.has(full)) continue;
+          survivors.push(full);
+        }
+      }
+    };
+    const srcRoot = path.join(ROOT, 'src');
+    if (fs.existsSync(srcRoot)) walk(srcRoot);
+
+    let changed = false;
+    for (const dep of CONDITIONAL_DEPS) {
+      if (!pkg.dependencies?.[dep] && !pkg.devDependencies?.[dep]) continue;
+      const importRe = new RegExp(`from\\s+['"]${dep}(/[^'"]*)?['"]`);
+      const stillUsed = survivors.some((file) => importRe.test(fs.readFileSync(file, 'utf8')));
+      if (stillUsed) continue;
+      if (!this.dryRun) {
+        if (pkg.dependencies?.[dep]) delete pkg.dependencies[dep];
+        if (pkg.devDependencies?.[dep]) delete pkg.devDependencies[dep];
+      }
+      changed = true;
+      this.log(`✅ Removed orphaned dependency: ${dep}`);
+    }
+
+    if (changed && !this.dryRun) {
+      fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
     }
   }
 
@@ -830,6 +520,10 @@ class FeatureCleanup {
     );
 
     content = content.replace(/,(\s*\])/g, '$1');
+    // Removing an empty parent group that was the FIRST element of its
+    // array leaves its trailing comma behind ("items: [,") — an elision
+    // that fails typechecking. Drop any comma directly after '['.
+    content = content.replace(/\[(\s*),/g, '[$1');
     content = content.replace(/\n\s*\n\s*\n/g, '\n\n');
 
     if (modified) {
@@ -873,28 +567,91 @@ class FeatureCleanup {
     }
   }
 
-  cleanDocReferences(feature) {
-    if (!feature.name.toLowerCase().includes('clerk')) return;
+  // Drops marker-tagged doc content for a removed feature:
+  //  - every line from `cleanup:<feature>:start` through the next
+  //    `cleanup:<feature>:end` (both marker lines included)
+  //  - any single line containing `cleanup:<feature>:line`
+  //  - in README.md/AGENTS.md only: lines matching the feature's
+  //    treeTokens (fenced code blocks can't carry comment markers)
+  stripMarkers(featureName) {
+    const startToken = `cleanup:${featureName}:start`;
+    const endToken = `cleanup:${featureName}:end`;
+    const lineToken = `cleanup:${featureName}:line`;
+    const treeTokens = FEATURES[featureName]?.treeTokens || [];
 
-    const docFiles = [
-      path.join(ROOT, 'README.md'),
-      path.join(ROOT, 'docs/nav-rbac.md'),
-      path.join(ROOT, 'src/config/infoconfig.ts')
-    ];
-
-    for (const filePath of docFiles) {
+    for (const relPath of MARKED_FILES) {
+      const filePath = path.join(ROOT, relPath);
       if (!fs.existsSync(filePath)) continue;
-      let content = fs.readFileSync(filePath, 'utf8');
-      const before = content;
-      content = content.replace(/\n*# Clerk Setup Guide[\s\S]*?(?=\n#|\n##|$)/gi, '\n');
-      content = content.replace(/Clerk['\s]/gi, 'Auth ');
-      content = content.replace(/clerk\.com[^\s]*/gi, '');
-      if (content !== before) {
-        if (!this.dryRun) {
-          fs.writeFileSync(filePath, content.replace(/\n\s*\n\s*\n/g, '\n\n'), 'utf8');
+
+      const original = fs.readFileSync(filePath, 'utf8');
+      const useTreeTokens = relPath === 'README.md' || relPath === 'AGENTS.md';
+      const kept = [];
+      let inBlock = false;
+
+      for (const line of original.split('\n')) {
+        if (inBlock) {
+          if (line.includes(endToken)) inBlock = false;
+          continue;
         }
-        this.log(`✅ Cleaned doc references: ${path.relative(ROOT, filePath)}`);
+        if (line.includes(startToken)) {
+          inBlock = true;
+          continue;
+        }
+        if (line.includes(lineToken)) continue;
+        if (useTreeTokens && treeTokens.some((token) => line.includes(token))) continue;
+        kept.push(line);
       }
+
+      const content = kept.join('\n').replace(/\n{3,}/g, '\n\n');
+      if (content !== original) {
+        if (!this.dryRun) fs.writeFileSync(filePath, content, 'utf8');
+        this.log(`✅ Cleaned markers: ${relPath}`);
+      }
+    }
+  }
+
+  // The notifications demo hardcodes links to Clerk-backed pages
+  // (/dashboard/workspaces, /dashboard/billing). When clerk is removed but
+  // notifications is kept, point those links at a surviving route.
+  remapNotificationLinks() {
+    if (this.featuresToRemove.includes('notifications')) return;
+    const notifDir = path.join(ROOT, 'src/features/notifications');
+    if (!fs.existsSync(notifDir)) return;
+
+    const walk = (dir) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          walk(full);
+        } else if (/\.(ts|tsx)$/.test(entry.name)) {
+          const content = fs.readFileSync(full, 'utf8');
+          const updated = content.replace(
+            /\/dashboard\/(workspaces|billing)/g,
+            '/dashboard/overview'
+          );
+          if (updated !== content) {
+            if (!this.dryRun) fs.writeFileSync(full, updated, 'utf8');
+            this.log(`✅ Remapped Clerk demo links: ${path.relative(ROOT, full)}`);
+          }
+        }
+      }
+    };
+    walk(notifDir);
+  }
+
+  cleanLaunchJson() {
+    const launchPath = path.join(ROOT, '.vscode/launch.json');
+    if (!fs.existsSync(launchPath)) return;
+
+    let content = fs.readFileSync(launchPath, 'utf8');
+    const before = content;
+
+    content = content.replace(/,?\s*"NEXT_PUBLIC_SENTRY_DISABLED":\s*"[^"]*"/, '');
+    content = content.replace(/,(\s*[}\]])/g, '$1');
+
+    if (content !== before) {
+      if (!this.dryRun) fs.writeFileSync(launchPath, content, 'utf8');
+      this.log('✅ Cleaned .vscode/launch.json (removed NEXT_PUBLIC_SENTRY_DISABLED)');
     }
   }
 
@@ -913,6 +670,20 @@ class FeatureCleanup {
         .replace(/-/g, ' ')
         .replace(/\b\w/g, (c) => c.toUpperCase())
     }));
+
+    // Prefer the display names already configured in theme.config.ts
+    // (e.g. 'WhatsApp', not the title-cased filename 'Whatsapp').
+    const themeConfigPath = path.join(ROOT, 'src/components/themes/theme.config.ts');
+    if (fs.existsSync(themeConfigPath)) {
+      const configSource = fs.readFileSync(themeConfigPath, 'utf8');
+      const existingNames = new Map();
+      for (const m of configSource.matchAll(/\{\s*name:\s*'([^']*)',\s*value:\s*'([^']*)'\s*\}/g)) {
+        existingNames.set(m[2], m[1]);
+      }
+      for (const theme of themes) {
+        if (existingNames.has(theme.value)) theme.name = existingNames.get(theme.value);
+      }
+    }
 
     if (themes.length <= 1) {
       this.log('Only one theme found, nothing to clean.');
@@ -994,10 +765,9 @@ body {
     }
 
     // Rewrite theme.config.ts
-    const configPath = path.join(ROOT, 'src/components/themes/theme.config.ts');
-    if (fs.existsSync(configPath)) {
+    if (fs.existsSync(themeConfigPath)) {
       fs.writeFileSync(
-        configPath,
+        themeConfigPath,
         `/**
  * Default theme that loads when no user preference is set
  * Change this value to set a different default theme
@@ -1015,6 +785,92 @@ export const THEMES = [
       );
       this.log('✅ Rewrote: src/components/themes/theme.config.ts');
     }
+
+    this.removeThemeSelector();
+    this.pruneFontConfig(keep.file);
+  }
+
+  // With a single theme left, the selector is a dead one-item dropdown.
+  removeThemeSelector() {
+    const headerPath = path.join(ROOT, 'src/components/layout/header.tsx');
+    const selectorPath = path.join(ROOT, 'src/components/themes/theme-selector.tsx');
+    if (!fs.existsSync(selectorPath)) return;
+
+    if (fs.existsSync(headerPath)) {
+      let header = fs.readFileSync(headerPath, 'utf8');
+      const before = header;
+      header = header.replace(/import\s*\{\s*ThemeSelector\s*\}[^;]*;\n?/, '');
+      header = header.replace(/\s*<div className='hidden sm:block'>\s*<ThemeSelector \/>\s*<\/div>/, '');
+      if (header !== before) {
+        fs.writeFileSync(headerPath, header, 'utf8');
+        this.log('✅ Cleaned header.tsx (removed ThemeSelector)');
+      }
+    }
+
+    fs.rmSync(selectorPath, { force: true });
+    this.log('✅ Deleted: src/components/themes/theme-selector.tsx');
+  }
+
+  // Google-font loaders are eagerly downloaded at build time and their CSS
+  // variables injected on every page — drop the ones the kept theme never
+  // references.
+  pruneFontConfig(keptThemeFile) {
+    const fontConfigPath = path.join(ROOT, 'src/components/themes/font.config.ts');
+    if (!fs.existsSync(fontConfigPath)) return;
+
+    // Vars still referenced after the rewrite (+ the always-kept pair)
+    const needed = new Set(['--font-sans', '--font-mono']);
+    const cssFiles = [
+      path.join(ROOT, 'src/styles/theme.css'),
+      path.join(ROOT, 'src/styles/themes', keptThemeFile)
+    ];
+    for (const cssFile of cssFiles) {
+      if (!fs.existsSync(cssFile)) continue;
+      const css = fs.readFileSync(cssFile, 'utf8');
+      for (const m of css.matchAll(/--font-[a-z0-9-]+/g)) needed.add(m[0]);
+    }
+
+    let source = fs.readFileSync(fontConfigPath, 'utf8');
+    const blockRe = /const (\w+) = (\w+)\(\{[\s\S]*?variable: '(--font-[a-z0-9-]+)'[\s\S]*?\}\);/g;
+    const blocks = [...source.matchAll(blockRe)];
+    const variableCount = (source.match(/variable: '--font-/g) || []).length;
+    if (blocks.length !== variableCount) {
+      this.log(
+        `⚠️  font.config.ts structure not recognized (parsed ${blocks.length} of ${variableCount} loaders) — skipping font pruning`
+      );
+      return;
+    }
+
+    const removed = blocks.filter((b) => !needed.has(b[3]));
+    if (removed.length === 0) return;
+
+    for (const block of removed) {
+      source = source.replace(block[0], '');
+    }
+
+    // Drop the removed Google font names from the next/font/google import
+    const removedFonts = new Set(removed.map((b) => b[2]));
+    source = source.replace(/import \{([\s\S]*?)\} from 'next\/font\/google';/, (_, names) => {
+      const keptNames = names
+        .split(',')
+        .map((n) => n.trim())
+        .filter((n) => n && !removedFonts.has(n));
+      return `import {\n  ${keptNames.join(',\n  ')}\n} from 'next/font/google';`;
+    });
+
+    // Drop the removed locals from the fontVariables aggregation
+    const removedLocals = new Set(removed.map((b) => b[1]));
+    source = source.replace(/export const fontVariables = cn\(([\s\S]*?)\);/, (_, entries) => {
+      const keptEntries = entries
+        .split(',')
+        .map((e) => e.trim())
+        .filter((e) => e && !removedLocals.has(e.replace('.variable', '')));
+      return `export const fontVariables = cn(\n  ${keptEntries.join(',\n  ')}\n);`;
+    });
+
+    source = source.replace(/\n{3,}/g, '\n\n');
+    fs.writeFileSync(fontConfigPath, source, 'utf8');
+    this.log(`✅ Pruned font.config.ts (removed ${removed.length} unused font loaders)`);
   }
 }
 
