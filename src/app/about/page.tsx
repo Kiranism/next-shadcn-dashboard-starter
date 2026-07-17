@@ -38,7 +38,6 @@ export default function AboutPage() {
             </p>
           </section>
 
-          {/* cleanup:clerk:start */}
           <section className='bg-card rounded-2xl border p-8 shadow-sm'>
             <h2 className='text-foreground mb-4 text-xl font-semibold'>Authentication by Clerk</h2>
             <p className='text-muted-foreground text-lg leading-relaxed'>
@@ -55,7 +54,6 @@ export default function AboutPage() {
               session management, and user data protection out of the box.
             </p>
           </section>
-          {/* cleanup:clerk:end */}
 
           {/* Data Privacy Section */}
           <section className='bg-card rounded-2xl border p-8 shadow-sm'>

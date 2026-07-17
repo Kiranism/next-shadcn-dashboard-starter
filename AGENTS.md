@@ -12,8 +12,8 @@ This file provides essential information for AI coding agents working on this pr
 - **Language**: TypeScript 5.7
 - **Styling**: Tailwind CSS v4
 - **UI Components**: shadcn/ui (New York style)
-- **Authentication**: Clerk (with Organizations/Billing support) <!-- cleanup:clerk:line -->
-- **Error Tracking**: Sentry <!-- cleanup:sentry:line -->
+- **Authentication**: Clerk (with Organizations/Billing support)
+- **Error Tracking**: Sentry
 - **Charts**: Recharts
 - **Containerization**: Docker (Node.js & Bun Dockerfiles)
 - **Package Manager**: Bun (preferred) or npm
@@ -51,14 +51,12 @@ The project follows a feature-based folder structure designed for scalability in
 - `useMutation` + `invalidateQueries` for form submissions
 - Query client singleton in `src/lib/query-client.ts`
 
-<!-- cleanup:clerk:start -->
 ### Authentication & Authorization
 
 - Clerk for authentication and user management
 - Clerk Organizations for multi-tenant workspaces
 - Clerk Billing for subscription management (B2B)
 - Client-side RBAC for navigation visibility
-<!-- cleanup:clerk:end -->
 
 ### Data & APIs
 
@@ -203,7 +201,6 @@ bun run prepare      # Install Husky hooks
 
 Copy `env.example.txt` to `.env.local` and configure:
 
-<!-- cleanup:clerk:start -->
 ### Required for Authentication (Clerk)
 
 ```env
@@ -216,9 +213,7 @@ NEXT_PUBLIC_CLERK_SIGN_UP_URL="/auth/sign-up"
 NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL="/dashboard/overview"
 NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL="/dashboard/overview"
 ```
-<!-- cleanup:clerk:end -->
 
-<!-- cleanup:sentry:start -->
 ### Optional for Error Tracking (Sentry)
 
 ```env
@@ -228,9 +223,8 @@ NEXT_PUBLIC_SENTRY_PROJECT=your-project
 SENTRY_AUTH_TOKEN=sntrys_...
 NEXT_PUBLIC_SENTRY_DISABLED="false"  # Set to "true" to disable in dev
 ```
-<!-- cleanup:sentry:end -->
 
-**Note**: Clerk supports "keyless mode" - the app works without API keys for initial development. <!-- cleanup:clerk:line -->
+**Note**: Clerk supports "keyless mode" - the app works without API keys for initial development.
 
 ---
 
@@ -340,15 +334,12 @@ export const navGroups: NavGroup[] = [
 - `plan: string` - Requires specific subscription plan
 - `feature: string` - Requires specific feature
 
-<!-- cleanup:clerk:start -->
 ### Client-Side Filtering
 
 The `useFilteredNavItems()` hook in `src/hooks/use-nav.ts` filters navigation client-side using Clerk's `useOrganization()` and `useUser()` hooks. This is for UX only - actual security checks must happen server-side.
-<!-- cleanup:clerk:end -->
 
 ---
 
-<!-- cleanup:clerk:start -->
 ## Authentication Patterns
 
 ### Protected Routes
@@ -388,7 +379,6 @@ const hasFeature = has({ feature: 'premium_access' });
 ```
 
 ---
-<!-- cleanup:clerk:end -->
 
 ## Data Fetching Patterns
 
@@ -512,7 +502,6 @@ Tables use TanStack Table with React Query:
 
 ## Error Handling & Monitoring
 
-<!-- cleanup:sentry:start -->
 ### Sentry Integration
 
 Sentry is configured for both client and server:
@@ -526,11 +515,10 @@ To disable Sentry in development:
 ```env
 NEXT_PUBLIC_SENTRY_DISABLED="true"
 ```
-<!-- cleanup:sentry:end -->
 
 ### Error Boundaries
 
-- `global-error.tsx` - Catches all errors, reports to Sentry <!-- cleanup:sentry:line -->
+- `global-error.tsx` - Catches all errors, reports to Sentry
 - Parallel route `error.tsx` files for specific sections
 
 ---
@@ -566,10 +554,10 @@ Recommended test locations:
 
 Ensure these are set in your deployment platform:
 
-- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` <!-- cleanup:clerk:line -->
-- `CLERK_SECRET_KEY` <!-- cleanup:clerk:line -->
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+- `CLERK_SECRET_KEY`
 - All `NEXT_PUBLIC_*` variables for client-side access
-- `SENTRY_*` variables if using error tracking <!-- cleanup:sentry:line -->
+- `SENTRY_*` variables if using error tracking
 
 ### Docker
 
@@ -583,8 +571,8 @@ Both use `output: 'standalone'` in `next.config.ts`. Pass `NEXT_PUBLIC_*` vars a
 ### Build Considerations
 
 - Output: `standalone` (optimized for Docker/self-hosting)
-- Images: Configured for `api.slingacademy.com`, `img.clerk.com`, `clerk.com` <!-- cleanup:clerk:line -->
-- Sentry source maps uploaded automatically in CI <!-- cleanup:sentry:line -->
+- Images: Configured for `api.slingacademy.com`, `img.clerk.com`, `clerk.com`
+- Sentry source maps uploaded automatically in CI
 
 ---
 
@@ -672,11 +660,9 @@ export const Icons = {
 | Text formatting | `bold`, `italic`, `underline`, `text`                                         |
 | Data / Charts   | `trendingUp`, `trendingDown`, `eyeOff`, `adjustments`                         |
 
-<!-- cleanup:examples:start -->
 ### Icon Showcase Page
 
 Browse all available icons at `/dashboard/elements/icons` — a searchable grid of every icon in the registry.
-<!-- cleanup:examples:end -->
 
 ### Why This Pattern?
 
@@ -727,35 +713,31 @@ See "Theming System" section above or `docs/themes.md`.
 - Ensure using Tailwind CSS v4 syntax (`@import 'tailwindcss'`)
 - Check `postcss.config.js` uses `@tailwindcss/postcss`
 
-<!-- cleanup:clerk:start -->
 **Clerk keyless mode popup**
 
 - Normal in development without API keys
 - Click popup to claim application or set env variables
-<!-- cleanup:clerk:end -->
 
 **Theme not applying**
 
 - Check theme name matches in CSS `[data-theme]` and `theme.config.ts`
 - Verify theme CSS is imported in `theme.css`
 
-<!-- cleanup:clerk:start -->
 **Navigation items not showing**
 
 - Check `access` property in nav config
 - Verify user has required org/permission/role
-<!-- cleanup:clerk:end -->
 
 ---
 
 ## External Documentation
 
 - [Next.js App Router](https://nextjs.org/docs/app)
-- [Clerk Next.js SDK](https://clerk.com/docs/references/nextjs) <!-- cleanup:clerk:line -->
+- [Clerk Next.js SDK](https://clerk.com/docs/references/nextjs)
 - [shadcn/ui](https://ui.shadcn.com/docs)
 - [Tailwind CSS v4](https://tailwindcss.com/docs)
 - [TanStack Table](https://tanstack.com/table/latest)
-- [Sentry Next.js](https://docs.sentry.io/platforms/javascript/guides/nextjs/) <!-- cleanup:sentry:line -->
+- [Sentry Next.js](https://docs.sentry.io/platforms/javascript/guides/nextjs/)
 
 ---
 

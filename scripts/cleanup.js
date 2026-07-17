@@ -13,21 +13,136 @@ const { execSync } = require('child_process');
 
 const ROOT = process.cwd();
 
-// Files that carry `cleanup:<feature>:start|end|line` strip markers.
-// Marker syntax is comment-style-agnostic — the engine matches the token
-// anywhere in a line, so <!-- cleanup:clerk:start -->,
-// {/* cleanup:clerk:start */} and # cleanup:clerk:start all work.
-const MARKED_FILES = [
-  'README.md',
-  'AGENTS.md',
-  'CLAUDE.md',
-  'docs/forms.md',
-  'env.example.txt',
-  'Dockerfile',
-  'Dockerfile.bun',
-  'src/app/about/page.tsx',
-  'src/app/privacy-policy/page.tsx'
-];
+// Feature-specific doc content is removed by CONTENT ANCHORS — no marker
+// comments live in the docs themselves. Rule types, applied per file:
+//   lines:       drop every line containing the substring
+//   sections:    drop a markdown section — the exact heading line through
+//                the line before the next heading of the same/higher level
+//   blocks:      drop from the line containing `start` through the line
+//                containing `end` (inclusive)
+//   envSections: drop an env.example-style `# ===` header trio + its body
+//   jsxSections: drop the enclosing <section>…</section> around the text
+// Anchors that no longer match anything print a ⚠️ warning so doc drift
+// is loud instead of silent.
+const DOC_RULES = {
+  clerk: [
+    {
+      file: 'README.md',
+      lines: [
+        'Sponsored_by-Clerk',
+        'Auth, organizations, and billing function end-to-end.',
+        '- Auth - [Clerk](',
+        '- Authentication and user management through Clerk',
+        'using Clerk Organizations (create, switch',
+        'via Clerk Billing for B2B',
+        '- Client-side RBAC navigation that filters menu items',
+        '| [Signup / Signin](',
+        '| [Profile](',
+        '| [Workspaces](',
+        '| [Team Management](',
+        '| [Billing & Plans](',
+        '| [Exclusive Page](',
+        '── workspaces',
+        '── billing',
+        '── profile',
+        '── exclusive',
+        '── auth',
+        'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=',
+        'CLERK_SECRET_KEY='
+      ],
+      blocks: [
+        { start: '##### Clerk setup', end: 'docs/clerk_setup.md).' },
+        { start: '**Can I use it without Clerk?**', end: 'wire in your own auth solution.' }
+      ]
+    },
+    {
+      file: 'AGENTS.md',
+      lines: [
+        '**Authentication**: Clerk',
+        '**Note**: Clerk supports "keyless mode"',
+        '- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`',
+        '- `CLERK_SECRET_KEY`',
+        '`img.clerk.com`',
+        '[Clerk Next.js SDK]',
+        '── workspaces',
+        '── billing',
+        '── profile',
+        '── exclusive',
+        '── auth',
+        '── clerk_setup',
+        '── nav-rbac'
+      ],
+      sections: [
+        '### Authentication & Authorization',
+        '## Authentication Patterns',
+        '### Client-Side Filtering',
+        '### Required for Authentication (Clerk)'
+      ],
+      blocks: [
+        { start: '**Clerk keyless mode popup**', end: 'claim application or set env variables' },
+        { start: '**Navigation items not showing**', end: 'org/permission/role' }
+      ]
+    },
+    { file: 'CLAUDE.md', lines: ['nav-rbac.md', 'clerk_setup.md'] },
+    { file: 'docs/forms.md', lines: ['user-auth-form.tsx'] },
+    {
+      file: 'env.example.txt',
+      envSections: [
+        'Authentication Configuration (Clerk)',
+        'Clerk Organizations Configuration',
+        'Clerk Webhooks'
+      ]
+    },
+    { file: 'Dockerfile', lines: ['ARG NEXT_PUBLIC_CLERK'] },
+    { file: 'Dockerfile.bun', lines: ['ARG NEXT_PUBLIC_CLERK'] },
+    { file: 'src/app/about/page.tsx', jsxSections: ['Authentication by Clerk'] },
+    { file: 'src/app/privacy-policy/page.tsx', jsxSections: ['Authentication by Clerk'] }
+  ],
+  sentry: [
+    {
+      file: 'README.md',
+      lines: ['- Error tracking - [Sentry](', '| [Global Error](']
+    },
+    {
+      file: 'AGENTS.md',
+      lines: [
+        '**Error Tracking**: Sentry',
+        '- `global-error.tsx` - Catches all errors, reports to Sentry',
+        '- `SENTRY_*` variables',
+        '- Sentry source maps uploaded automatically',
+        '[Sentry Next.js]'
+      ],
+      sections: ['### Optional for Error Tracking (Sentry)', '### Sentry Integration']
+    },
+    { file: 'env.example.txt', envSections: ['Error Tracking Configuration (Sentry)'] },
+    { file: 'Dockerfile', lines: ['ARG NEXT_PUBLIC_SENTRY'] },
+    { file: 'Dockerfile.bun', lines: ['ARG NEXT_PUBLIC_SENTRY'] }
+  ],
+  kanban: [
+    { file: 'README.md', lines: ['| [Kanban Board](', '── kanban'] },
+    { file: 'AGENTS.md', lines: ['── kanban'] }
+  ],
+  chat: [
+    { file: 'README.md', lines: ['| [Chat](', '── chat'] },
+    { file: 'AGENTS.md', lines: ['── chat'] }
+  ],
+  notifications: [
+    { file: 'README.md', lines: ['| [Notifications](', '── notifications'] },
+    { file: 'AGENTS.md', lines: ['── notifications'] }
+  ],
+  examples: [
+    { file: 'README.md', lines: ['| [React Query Demo](', '── react-query'] },
+    // No '── forms' / '── elements' anchors: the only tree line matching
+    // those is src/components/forms/ (shared field wrappers), which
+    // survives examples removal.
+    { file: 'AGENTS.md', lines: ['── react-query'], sections: ['### Icon Showcase Page'] },
+    {
+      file: 'docs/forms.md',
+      lines: ['multi-step-product-form.tsx', 'sheet-product-form.tsx'],
+      sections: ['### Form Pages (`/dashboard/forms/...`)']
+    }
+  ]
+};
 
 // ─── Feature Configuration ──────────────────────────────────────────
 
@@ -66,20 +181,6 @@ const FEATURES = {
       '/dashboard/billing',
       '/dashboard/profile',
       '/dashboard/exclusive'
-    ],
-    // Lines inside fenced code blocks (tree diagrams, docker commands)
-    // can't carry invisible comment markers — drop them by content instead.
-    // Only applied to README.md and AGENTS.md.
-    treeTokens: [
-      '── workspaces',
-      '── billing',
-      '── profile',
-      '── exclusive',
-      '── auth',
-      '── clerk_setup',
-      '── nav-rbac',
-      'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=',
-      'CLERK_SECRET_KEY='
     ]
   },
   kanban: {
@@ -92,24 +193,21 @@ const FEATURES = {
       '@dnd-kit/sortable',
       '@dnd-kit/utilities'
     ],
-    navItemsToRemove: ['/dashboard/kanban'],
-    treeTokens: ['── kanban']
+    navItemsToRemove: ['/dashboard/kanban']
   },
   chat: {
     name: 'Chat (Messaging UI)',
     folders: ['src/app/dashboard/chat', 'src/features/chat'],
     files: ['src/components/ui/file-preview.tsx'],
     dependencies: [],
-    navItemsToRemove: ['/dashboard/chat'],
-    treeTokens: ['── chat']
+    navItemsToRemove: ['/dashboard/chat']
   },
   notifications: {
     name: 'Notifications (Notification center & page)',
     folders: ['src/app/dashboard/notifications', 'src/features/notifications'],
     files: ['src/components/ui/notification-card.tsx'],
     dependencies: [],
-    navItemsToRemove: ['/dashboard/notifications'],
-    treeTokens: ['── notifications']
+    navItemsToRemove: ['/dashboard/notifications']
   },
   examples: {
     name: 'Examples (Forms, React Query demo, Icons)',
@@ -130,11 +228,7 @@ const FEATURES = {
       '/dashboard/forms/advanced',
       '/dashboard/react-query',
       '/dashboard/elements/icons'
-    ],
-    // No '── forms' / '── elements' tokens: the only tree line matching
-    // those is src/components/forms/ (shared field wrappers), which
-    // survives examples removal.
-    treeTokens: ['── react-query']
+    ]
   },
   themes: {
     name: 'Extra Themes (keep only one theme)',
@@ -240,7 +334,7 @@ class FeatureCleanup {
       if (feature.navItemsToRemove?.length) {
         allNavItemsToRemove.push(...feature.navItemsToRemove);
       }
-      this.stripMarkers(featureName);
+      this.applyDocRules(featureName);
     }
 
     if (allNavItemsToRemove.length > 0) {
@@ -364,7 +458,9 @@ class FeatureCleanup {
   // the feature files still exist on disk, so survivors are computed as
   // "files not scheduled for deletion by the selected features".
   cleanConditionalDeps() {
-    const CONDITIONAL_DEPS = ['zustand'];
+    // zustand: chat/kanban/notifications stores · motion: chat + the
+    // examples multi-step form · uuid: kanban store
+    const CONDITIONAL_DEPS = ['zustand', 'motion', 'uuid'];
 
     const pkgPath = path.join(ROOT, 'package.json');
     if (!fs.existsSync(pkgPath)) return;
@@ -410,6 +506,7 @@ class FeatureCleanup {
       if (!this.dryRun) {
         if (pkg.dependencies?.[dep]) delete pkg.dependencies[dep];
         if (pkg.devDependencies?.[dep]) delete pkg.devDependencies[dep];
+        if (pkg.devDependencies?.[`@types/${dep}`]) delete pkg.devDependencies[`@types/${dep}`];
       }
       changed = true;
       removedDeps.push(dep);
@@ -615,45 +712,102 @@ class FeatureCleanup {
     }
   }
 
-  // Drops marker-tagged doc content for a removed feature:
-  //  - every line from `cleanup:<feature>:start` through the next
-  //    `cleanup:<feature>:end` (both marker lines included)
-  //  - any single line containing `cleanup:<feature>:line`
-  //  - in README.md/AGENTS.md only: lines matching the feature's
-  //    treeTokens (fenced code blocks can't carry comment markers)
-  stripMarkers(featureName) {
-    const startToken = `cleanup:${featureName}:start`;
-    const endToken = `cleanup:${featureName}:end`;
-    const lineToken = `cleanup:${featureName}:line`;
-    const treeTokens = FEATURES[featureName]?.treeTokens || [];
+  // Drops a removed feature's doc content by content anchors (see DOC_RULES).
+  // No marker comments exist in the docs — every anchor is real content, and
+  // an anchor that stops matching prints a warning instead of failing silent.
+  applyDocRules(featureName) {
+    const rules = DOC_RULES[featureName];
+    if (!rules) return;
 
-    for (const relPath of MARKED_FILES) {
-      const filePath = path.join(ROOT, relPath);
+    for (const rule of rules) {
+      const filePath = path.join(ROOT, rule.file);
       if (!fs.existsSync(filePath)) continue;
 
       const original = fs.readFileSync(filePath, 'utf8');
-      const useTreeTokens = relPath === 'README.md' || relPath === 'AGENTS.md';
-      const kept = [];
-      let inBlock = false;
+      let lines = original.split('\n');
+      const warn = (anchor) =>
+        this.log(`⚠️  Doc anchor not found in ${rule.file}: ${anchor}`);
 
-      for (const line of original.split('\n')) {
-        if (inBlock) {
-          if (line.includes(endToken)) inBlock = false;
+      for (const heading of rule.sections || []) {
+        const idx = lines.findIndex((line) => line.trim() === heading);
+        if (idx === -1) {
+          warn(heading);
           continue;
         }
-        if (line.includes(startToken)) {
-          inBlock = true;
-          continue;
+        const level = heading.match(/^#+/)[0].length;
+        let end = lines.length;
+        for (let i = idx + 1; i < lines.length; i++) {
+          const m = lines[i].match(/^(#{1,6})\s/);
+          if (m && m[1].length <= level) {
+            end = i;
+            break;
+          }
         }
-        if (line.includes(lineToken)) continue;
-        if (useTreeTokens && treeTokens.some((token) => line.includes(token))) continue;
-        kept.push(line);
+        lines.splice(idx, end - idx);
       }
 
-      const content = kept.join('\n').replace(/\n{3,}/g, '\n\n');
+      for (const block of rule.blocks || []) {
+        const start = lines.findIndex((line) => line.includes(block.start));
+        if (start === -1) {
+          warn(block.start);
+          continue;
+        }
+        let end = -1;
+        for (let i = start; i < lines.length; i++) {
+          if (lines[i].includes(block.end)) {
+            end = i;
+            break;
+          }
+        }
+        if (end === -1) {
+          warn(block.end);
+          continue;
+        }
+        lines.splice(start, end - start + 1);
+      }
+
+      for (const title of rule.envSections || []) {
+        const isBar = (line) => /^# ={10,}/.test(line || '');
+        const t = lines.findIndex(
+          (line, i) => line.includes(title) && isBar(lines[i - 1]) && isBar(lines[i + 1])
+        );
+        if (t === -1) {
+          warn(title);
+          continue;
+        }
+        let end = lines.length;
+        for (let i = t + 2; i < lines.length; i++) {
+          if (isBar(lines[i]) && lines[i + 1] !== undefined && !isBar(lines[i + 1])) {
+            end = i;
+            break;
+          }
+        }
+        lines.splice(t - 1, end - (t - 1));
+      }
+
+      for (const text of rule.jsxSections || []) {
+        const hit = lines.findIndex((line) => line.includes(text));
+        if (hit === -1) {
+          warn(text);
+          continue;
+        }
+        let start = hit;
+        while (start > 0 && !lines[start].includes('<section')) start--;
+        let end = hit;
+        while (end < lines.length - 1 && !lines[end].includes('</section>')) end++;
+        lines.splice(start, end - start + 1);
+      }
+
+      for (const token of rule.lines || []) {
+        const before = lines.length;
+        lines = lines.filter((line) => !line.includes(token));
+        if (lines.length === before) warn(token);
+      }
+
+      const content = lines.join('\n').replace(/\n{3,}/g, '\n\n');
       if (content !== original) {
         if (!this.dryRun) fs.writeFileSync(filePath, content, 'utf8');
-        this.log(`✅ Cleaned markers: ${relPath}`);
+        this.log(`✅ Cleaned docs: ${rule.file}`);
       }
     }
   }
