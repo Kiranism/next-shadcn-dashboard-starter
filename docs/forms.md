@@ -860,7 +860,7 @@ const { FormTextField, FormSelectField, FormTextareaField, FormFileUploadField }
 <form.AppField name="available-date">...</form.AppField>
 ```
 
-See `/dashboard/forms/application` for the full working example.
+See `/dashboard/forms/basic` for the full working example.
 
 ---
 

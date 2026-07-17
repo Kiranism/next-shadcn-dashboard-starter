@@ -138,7 +138,11 @@ const DOC_RULES = {
     { file: 'AGENTS.md', lines: ['── react-query'], sections: ['### Icon Showcase Page'] },
     {
       file: 'docs/forms.md',
-      lines: ['multi-step-product-form.tsx', 'sheet-product-form.tsx'],
+      lines: [
+        'multi-step-product-form.tsx',
+        'sheet-product-form.tsx',
+        'for the full working example'
+      ],
       sections: ['### Form Pages (`/dashboard/forms/...`)']
     }
   ]
@@ -658,6 +662,12 @@ class FeatureCleanup {
       return match.includes("url: '#'") ? '' : match;
     });
 
+    // Normalize commas orphaned by the removals above BEFORE the label-group
+    // pass — a removed first/last element leaves "[ ," or ", ]" inside the
+    // group, and the empty-label regex only matches a truly empty "[ ]".
+    content = content.replace(/,(\s*\])/g, '$1');
+    content = content.replace(/\[(\s*),/g, '[$1');
+
     // Clean up empty label groups with no items left
     content = content.replace(
       /,?\s*\{\s*label:\s*['"][^'"]*['"],\s*items:\s*\[\s*\]\s*\}/g,
@@ -665,9 +675,6 @@ class FeatureCleanup {
     );
 
     content = content.replace(/,(\s*\])/g, '$1');
-    // Removing an empty parent group that was the FIRST element of its
-    // array leaves its trailing comma behind ("items: [,") — an elision
-    // that fails typechecking. Drop any comma directly after '['.
     content = content.replace(/\[(\s*),/g, '[$1');
     content = content.replace(/\n\s*\n\s*\n/g, '\n\n');
 
