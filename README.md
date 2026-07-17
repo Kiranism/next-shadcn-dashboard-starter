@@ -24,7 +24,9 @@
 
 A free, open source (MIT) admin dashboard starter built with Next.js 16, shadcn/ui on Base UI primitives, TypeScript, and Tailwind CSS v4.
 
-Every feature is a working, production-ready implementation — not static demo UI. Tables search, filter, sort, and paginate for real. Forms validate and mutate with cache invalidation. Auth, organizations, and billing function end-to-end. Clone it, strip what you don't need with the built-in cleanup script, and start building on patterns you'd write yourself. It works well as a base for SaaS apps, internal tools, and admin panels.
+Every feature is a working, production-ready implementation — not static demo UI. Tables search, filter, sort, and paginate for real. Forms validate and mutate with cache invalidation.
+Auth, organizations, and billing function end-to-end. <!-- cleanup:clerk:line -->
+Clone it, strip what you don't need with the built-in cleanup script, and start building on patterns you'd write yourself. It works well as a base for SaaS apps, internal tools, and admin panels.
 
 ### Why This Template
 
@@ -202,8 +204,10 @@ Yes. Every feature is a complete, working implementation — authentication, CRU
 **Is it free for commercial use?**
 Yes. MIT-licensed and free for both personal and commercial projects — no paid tier, no license keys.
 
+<!-- cleanup:clerk:start -->
 **Can I use it without Clerk?**
 Yes. Run `node scripts/cleanup.js clerk` to remove Clerk authentication (along with organizations and billing) and wire in your own auth solution.
+<!-- cleanup:clerk:end -->
 
 **How do I remove demo pages or features I don't need?**
 Run `node scripts/cleanup.js --interactive` and pick what to strip, or `node scripts/cleanup.js --list` to see what can be removed.

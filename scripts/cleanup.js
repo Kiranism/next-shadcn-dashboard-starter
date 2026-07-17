@@ -269,11 +269,20 @@ class FeatureCleanup {
     if (this.dryRun) {
       console.log('\n🔍 Dry run complete — no files were modified.\n');
     } else {
+      // Stale generated route types for deleted pages would fail
+      // `tsc --noEmit` until the next build regenerates them.
+      const nextCache = path.join(ROOT, '.next');
+      if (fs.existsSync(nextCache)) {
+        fs.rmSync(nextCache, { recursive: true, force: true });
+        console.log('  🧹 Cleared .next cache (stale route types for removed pages)');
+      }
       console.log('\n✨ Cleanup complete!\n');
       console.log('📋 Next steps:');
       console.log('  1. Run: bun install (or npm install) to sync dependencies');
       console.log('  2. Review and test your application');
       console.log('  3. To revert: git restore . (or git checkout .)');
+      console.log('     Untracked files are not covered by git restore — modified env files');
+      console.log('     are backed up as *.cleanup-backup; .clerk/ regenerates on next dev run');
       console.log('  4. Delete scripts/cleanup.js and scripts/cleanup-templates/ if no longer needed\n');
     }
   }
@@ -407,12 +416,16 @@ class FeatureCleanup {
   cleanEnvVars(feature) {
     if (!feature.envVars?.length) return;
     const envFiles = ['.env.local', '.env.example', '.env', 'env.example.txt'];
+    // git restore can't bring back untracked files — keep a one-time backup
+    // of the user's real env files before the first modification.
+    const backupWorthy = new Set(['.env.local', '.env']);
 
     for (const envFile of envFiles) {
       const envPath = path.join(ROOT, envFile);
       if (!fs.existsSync(envPath)) continue;
 
-      let content = fs.readFileSync(envPath, 'utf8');
+      const original = fs.readFileSync(envPath, 'utf8');
+      let content = original;
       let modified = false;
 
       for (const envVar of feature.envVars) {
@@ -425,7 +438,16 @@ class FeatureCleanup {
 
       if (modified) {
         content = content.replace(/\n\s*\n\s*\n/g, '\n\n');
-        if (!this.dryRun) fs.writeFileSync(envPath, content, 'utf8');
+        if (!this.dryRun) {
+          if (backupWorthy.has(envFile)) {
+            const backupPath = envPath + '.cleanup-backup';
+            if (!fs.existsSync(backupPath)) {
+              fs.writeFileSync(backupPath, original, 'utf8');
+              this.log(`🛟 Backed up ${envFile} → ${envFile}.cleanup-backup`);
+            }
+          }
+          fs.writeFileSync(envPath, content, 'utf8');
+        }
         this.log(`✅ Cleaned ${envFile}`);
       }
     }
