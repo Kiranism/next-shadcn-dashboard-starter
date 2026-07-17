@@ -252,8 +252,9 @@ class FeatureCleanup {
     // feature order works).
     if (this.featuresToRemove.includes('clerk')) {
       this.cleanNextConfig();
-      this.remapNotificationLinks();
     }
+
+    this.remapNotificationLinks(allNavItemsToRemove);
 
     this.cleanConditionalDeps();
 
@@ -394,7 +395,13 @@ class FeatureCleanup {
     const srcRoot = path.join(ROOT, 'src');
     if (fs.existsSync(srcRoot)) walk(srcRoot);
 
+    // Doc lines to drop when the dep actually leaves package.json
+    // (tech-stack bullets can't carry per-feature markers — they only go
+    // stale once every consumer feature is gone).
+    const DEP_DOC_TOKENS = { zustand: ['Zustand'] };
+
     let changed = false;
+    const removedDeps = [];
     for (const dep of CONDITIONAL_DEPS) {
       if (!pkg.dependencies?.[dep] && !pkg.devDependencies?.[dep]) continue;
       const importRe = new RegExp(`from\\s+['"]${dep}(/[^'"]*)?['"]`);
@@ -405,11 +412,30 @@ class FeatureCleanup {
         if (pkg.devDependencies?.[dep]) delete pkg.devDependencies[dep];
       }
       changed = true;
+      removedDeps.push(dep);
       this.log(`✅ Removed orphaned dependency: ${dep}`);
     }
 
     if (changed && !this.dryRun) {
       fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
+    }
+
+    for (const dep of removedDeps) {
+      const tokens = DEP_DOC_TOKENS[dep];
+      if (!tokens) continue;
+      for (const docFile of ['README.md', 'AGENTS.md']) {
+        const docPath = path.join(ROOT, docFile);
+        if (!fs.existsSync(docPath)) continue;
+        const original = fs.readFileSync(docPath, 'utf8');
+        const kept = original
+          .split('\n')
+          .filter((line) => !tokens.some((token) => line.includes(token)))
+          .join('\n');
+        if (kept !== original) {
+          if (!this.dryRun) fs.writeFileSync(docPath, kept, 'utf8');
+          this.log(`✅ Dropped ${dep} doc lines: ${docFile}`);
+        }
+      }
     }
   }
 
@@ -632,13 +658,20 @@ class FeatureCleanup {
     }
   }
 
-  // The notifications demo hardcodes links to Clerk-backed pages
-  // (/dashboard/workspaces, /dashboard/billing). When clerk is removed but
-  // notifications is kept, point those links at a surviving route.
-  remapNotificationLinks() {
+  // The notifications demo hardcodes links to other feature pages
+  // (/dashboard/workspaces, /dashboard/billing, /dashboard/kanban, …).
+  // When those features are removed but notifications is kept, point the
+  // now-dead links at a surviving route.
+  remapNotificationLinks(removedUrls) {
     if (this.featuresToRemove.includes('notifications')) return;
+    if (!removedUrls?.length) return;
     const notifDir = path.join(ROOT, 'src/features/notifications');
     if (!fs.existsSync(notifDir)) return;
+
+    // Longest first so '/dashboard/workspaces/team' wins over '/dashboard/workspaces'
+    const urls = removedUrls
+      .filter((url) => url.startsWith('/dashboard'))
+      .sort((a, b) => b.length - a.length);
 
     const walk = (dir) => {
       for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -647,13 +680,13 @@ class FeatureCleanup {
           walk(full);
         } else if (/\.(ts|tsx)$/.test(entry.name)) {
           const content = fs.readFileSync(full, 'utf8');
-          const updated = content.replace(
-            /\/dashboard\/(workspaces|billing)/g,
-            '/dashboard/overview'
-          );
+          let updated = content;
+          for (const url of urls) {
+            updated = updated.split(url).join('/dashboard/overview');
+          }
           if (updated !== content) {
             if (!this.dryRun) fs.writeFileSync(full, updated, 'utf8');
-            this.log(`✅ Remapped Clerk demo links: ${path.relative(ROOT, full)}`);
+            this.log(`✅ Remapped dead demo links: ${path.relative(ROOT, full)}`);
           }
         }
       }

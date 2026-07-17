@@ -39,7 +39,7 @@ The project follows a feature-based folder structure designed for scalability in
 
 ### State Management
 
-- Zustand 5.x for local UI state (chat, kanban, notifications)
+- Zustand 5.x for local UI state in the stateful demo features
 - Nuqs for URL search params state management
 - TanStack Form + Zod for form handling (via `useAppForm` hook)
 

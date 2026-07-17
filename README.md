@@ -125,7 +125,7 @@ src/
 │   └── api/                       # API routes
 │
 ├── components/                    # Shared components
-│   ├── ui/                        # UI primitives (buttons, inputs, kanban, etc.)
+│   ├── ui/                        # UI primitives (buttons, inputs, dialogs, etc.)
 │   ├── layout/                    # Layout components (header, sidebar, etc.)
 │   ├── themes/                    # Theme system (selector, mode toggle, config)
 │   └── kbar/                      # Command+K interface
