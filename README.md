@@ -183,7 +183,7 @@ The app should now be running at http://localhost:3000.
 
 ## Cleanup Script — Start Minimal in 60 Seconds
 
-Most starters make you hand-delete demo pages and rip out dependencies. This one ships with a cleanup script that removes the features you don't need (auth, kanban, chat, notifications, extra themes, Sentry) — folders, files, and dependencies — leaving a minimal base to build on:
+Most starters make you hand-delete demo pages and rip out dependencies. This one ships with a cleanup script that removes the optional features you don't need — folders, files, dependencies, docs, and env entries — leaving a minimal base to build on (run `--list` to see what's removable):
 
 ```bash
 node scripts/cleanup.js --interactive   # interactive mode

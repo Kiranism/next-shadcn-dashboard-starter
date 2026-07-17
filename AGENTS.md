@@ -96,7 +96,7 @@ The project follows a feature-based folder structure designed for scalability in
 │   ├── api/               # API routes (if any)
 │   ├── layout.tsx         # Root layout with providers
 │   ├── page.tsx           # Landing page
-│   ├── global-error.tsx   # Sentry-integrated error boundary
+│   ├── global-error.tsx   # Global error boundary
 │   └── not-found.tsx      # 404 page
 │
 ├── components/
