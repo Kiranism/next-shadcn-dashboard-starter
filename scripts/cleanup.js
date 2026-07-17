@@ -736,7 +736,14 @@ class FeatureCleanup {
         }
         const level = heading.match(/^#+/)[0].length;
         let end = lines.length;
+        let inFence = false;
         for (let i = idx + 1; i < lines.length; i++) {
+          if (/^\s*```/.test(lines[i])) {
+            inFence = !inFence;
+            continue;
+          }
+          // `# comment` lines inside code fences are not markdown headings
+          if (inFence) continue;
           const m = lines[i].match(/^(#{1,6})\s/);
           if (m && m[1].length <= level) {
             end = i;
