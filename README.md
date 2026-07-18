@@ -1,6 +1,6 @@
 <h1 align="center">Admin Dashboard Template with Next.js &amp; Shadcn UI</h1>
 
-<div align="center">Free, open source admin dashboard starter built with Next.js 16, shadcn/ui on Base UI, Tailwind CSS, and TypeScript.<br />Every feature actually works — production-ready implementations, not static demo screens.</div>
+<div align="center">Free, open source admin dashboard starter built with Next.js 16, shadcn/ui on Base UI, Tailwind CSS, and TypeScript.<br />Every feature actually works: production-ready implementations, not static demo screens.</div>
 
 <br />
 
@@ -24,17 +24,17 @@
 
 A free, open source (MIT) admin dashboard starter built with Next.js 16, shadcn/ui on Base UI primitives, TypeScript, and Tailwind CSS v4.
 
-Every feature is a working, production-ready implementation — not static demo UI. Tables search, filter, sort, and paginate for real. Forms validate and mutate with cache invalidation.
+Every feature is a working, production-ready implementation, not static demo UI. Tables search, filter, sort, and paginate for real. Forms validate and mutate with cache invalidation.
 Auth, organizations, and billing function end-to-end.
 Clone it, strip what you don't need with the built-in cleanup script, and start building on patterns you'd write yourself. It works well as a base for SaaS apps, internal tools, and admin panels.
 
 ### Why This Template
 
-Most dashboard templates are static demo boilerplates — screens that look finished but need rebuilding the moment you wire in real data. This starter takes the opposite approach:
+Most dashboard templates are static demo boilerplates: screens that look finished but need rebuilding the moment you wire in real data. This starter takes the opposite approach:
 
-- **Everything actually works.** Data tables run end-to-end: server prefetch, client-side React Query cache, and URL-synced search, filtering, sorting, and pagination via nuqs. Forms are built from reusable, composable fields with Zod validation — including advanced patterns like multi-step and dialog/sheet forms — with real create/update mutations and cache invalidation on success.
+- **Everything actually works.** Data tables run end-to-end: server prefetch, client-side React Query cache, and URL-synced search, filtering, sorting, and pagination via nuqs. Forms are built from reusable, composable fields with Zod validation, including advanced patterns like multi-step and dialog/sheet forms, with real create/update mutations and cache invalidation on success.
 - **Industry-standard implementations.** The data layer follows the official TanStack Query SSR pattern (server prefetch + `HydrationBoundary` + `useSuspenseQuery`), typed end to end, organized in a feature-based structure with a clean API layer per feature. These are patterns you copy into production code as-is, not mockups you rebuild from scratch.
-- **Minimal by design.** Deliberately lean, with no bloated boilerplate — so you spend your time tweaking it to your use case, not deleting someone else's code. The built-in [cleanup script](#cleanup-script--start-minimal-in-60-seconds) strips any feature you don't need in under a minute.
+- **Minimal by design.** Deliberately lean, with no bloated boilerplate, so you spend your time tweaking it to your use case, not deleting someone else's code. The built-in [cleanup script](#cleanup-script-start-minimal-in-60-seconds) strips any feature you don't need in under a minute.
 
 ### Tech Stack
 
@@ -181,9 +181,9 @@ The app should now be running at http://localhost:3000.
 
 ---
 
-## Cleanup Script — Start Minimal in 60 Seconds
+## Cleanup Script: Start Minimal in 60 Seconds
 
-Most starters make you hand-delete demo pages and rip out dependencies. This one ships with a cleanup script that removes the optional features you don't need — folders, files, dependencies, docs, and env entries — leaving a minimal base to build on (run `--list` to see what's removable):
+Most starters make you hand-delete demo pages and rip out dependencies. This one ships with a cleanup script that removes the optional features you don't need (folders, files, dependencies, docs, and env entries), leaving a minimal base to build on. Run `--list` to see what's removable:
 
 ```bash
 node scripts/cleanup.js --interactive   # interactive mode
@@ -197,10 +197,10 @@ Run `node scripts/cleanup.js --help` for all options. The replacement files it w
 ## FAQ
 
 **Is it production ready?**
-Yes. Every feature is a complete, working implementation — authentication, CRUD flows, table search/filter/sort/pagination, and form validation with mutations all function end-to-end. It's a starting point for real applications, not a visual mockup.
+Yes. Every feature is a complete, working implementation: authentication, CRUD flows, table search/filter/sort/pagination, and form validation with mutations all function end-to-end. It's a starting point for real applications, not a visual mockup.
 
 **Is it free for commercial use?**
-Yes. MIT-licensed and free for both personal and commercial projects — no paid tier, no license keys.
+Yes. MIT-licensed and free for both personal and commercial projects: no paid tier, no license keys.
 
 **Can I use it without Clerk?**
 Yes. Run `node scripts/cleanup.js clerk` to remove Clerk authentication (along with organizations and billing) and wire in your own auth solution.
@@ -212,7 +212,7 @@ Run `node scripts/cleanup.js --interactive` and pick what to strip, or `node scr
 Yes. The template is built on Next.js 16 (App Router), React 19, and Tailwind CSS v4, with shadcn/ui on Base UI primitives, and is actively maintained to track new releases.
 
 **Can I use npm instead of Bun?**
-Yes. Bun is preferred, but npm works too — the repo even ships both Node.js and Bun Dockerfiles for deployment.
+Yes. Bun is preferred, but npm works too, and the repo even ships both Node.js and Bun Dockerfiles for deployment.
 
 ## Deploy
 
