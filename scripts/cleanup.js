@@ -347,8 +347,15 @@ class FeatureCleanup {
 
     // Runs after the loop so it also strips the Clerk hosts from a
     // freshly-written sentry next.config.ts template (idempotent, so any
-    // feature order works).
-    if (this.featuresToRemove.includes('clerk')) {
+    // feature order works). Checks package.json too, so a sentry run AFTER
+    // an earlier clerk removal doesn't re-add the hosts.
+    const pkgPath = path.join(ROOT, 'package.json');
+    const pkgNow = fs.existsSync(pkgPath)
+      ? JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
+      : null;
+    const clerkGone =
+      this.featuresToRemove.includes('clerk') || !pkgNow?.dependencies?.['@clerk/nextjs'];
+    if (clerkGone) {
       this.cleanNextConfig();
     }
 
