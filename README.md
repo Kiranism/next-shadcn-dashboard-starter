@@ -1,6 +1,6 @@
 <h1 align="center">Admin Dashboard Template with Next.js &amp; Shadcn UI</h1>
 
-<div align="center">Free, open source admin dashboard starter: Next.js 16, shadcn/ui, Tailwind CSS, TypeScript.</div>
+<div align="center">Free, open source admin dashboard starter built with Next.js 16, shadcn/ui, Tailwind CSS, and TypeScript</div>
 
 <div align="center">
   <a href="https://dub.sh/shadcn-dashboard"><strong>View Demo</strong></a>
@@ -21,10 +21,6 @@
   <img src="https://img.shields.io/badge/Next.js-16-black" alt="Next.js" />
   <a href="https://go.clerk.com/ILdYhn7"><img src="https://img.shields.io/badge/Sponsored_by-Clerk-6C47FF?style=flat-square&logo=clerk" alt="Sponsored by Clerk" /></a>
 </p>
-
-<div align="center">
-  <a href="https://dub.sh/shadcn-dashboard"><strong>View Demo</strong></a>
-</div>
 
 ## Overview
 
