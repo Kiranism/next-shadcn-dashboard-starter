@@ -39,7 +39,7 @@ The project follows a feature-based folder structure designed for scalability in
 
 ### State Management
 
-- Zustand 5.x for local UI state (chat, kanban, notifications)
+- Zustand 5.x for local UI state in the stateful demo features
 - Nuqs for URL search params state management
 - TanStack Form + Zod for form handling (via `useAppForm` hook)
 
@@ -96,7 +96,7 @@ The project follows a feature-based folder structure designed for scalability in
 │   ├── api/               # API routes (if any)
 │   ├── layout.tsx         # Root layout with providers
 │   ├── page.tsx           # Landing page
-│   ├── global-error.tsx   # Sentry-integrated error boundary
+│   ├── global-error.tsx   # Global error boundary
 │   └── not-found.tsx      # 404 page
 │
 ├── components/
@@ -156,7 +156,8 @@ The project follows a feature-based folder structure designed for scalability in
 │   └── themes.md          # Theme customization guide
 
 /scripts                   # Dev tooling
-    ├── cleanup.js         # Feature removal (self-contained, delete when done)
+    ├── cleanup.js         # Feature removal (templates in cleanup-templates/, typechecked)
+    ├── cleanup-templates/ # Replacement files cleanup.js copies into the repo
     └── postinstall.js     # Dev server cleanup message (auto-cleans)
 
 Dockerfile                 # Node.js production Dockerfile
@@ -603,7 +604,9 @@ node scripts/cleanup.js --list
 
 **Safety**: Script requires git repository with at least one commit. Use `--force` to skip.
 
-After cleanup, delete `scripts/cleanup.js` — the dev server message auto-cleans on next start.
+Replacement files live in `scripts/cleanup-templates/` as real `.ts`/`.tsx` files typechecked by `tsc` and `next build`, so template rot fails loudly instead of shipping broken code.
+
+After cleanup, delete `scripts/cleanup.js` and `scripts/cleanup-templates/` — the dev server message auto-cleans on next start.
 
 ---
 

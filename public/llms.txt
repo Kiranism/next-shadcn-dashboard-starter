@@ -1,0 +1,47 @@
+# Next.js Shadcn Dashboard Starter
+
+> Free, open-source (MIT) admin dashboard starter template built with Next.js 16, shadcn/ui on Base UI primitives, Tailwind CSS v4, and TypeScript. Every feature is a working, production-ready implementation — not static demo UI: Clerk authentication, multi-tenant organizations and billing, TanStack React Query data fetching, TanStack Form + Zod forms, data tables with real filtering and pagination, charts, a Kanban board, a chat UI, and a notification center.
+
+Next.js Shadcn Dashboard Starter is one of the most popular open-source shadcn/ui admin dashboard templates, with over 6,000 GitHub stars and 1,500+ forks. Created and maintained by Kiranism, it is actively developed and kept current with the latest Next.js, React, and shadcn/ui releases. It is free for personal and commercial use under the MIT license.
+
+What sets it apart from most dashboard templates: the features are fully functional, production-ready implementations rather than static screens built for a demo. Data tables are wired end-to-end — server prefetch, client-side React Query cache, and URL-synced search, filtering, sorting, and pagination via nuqs. Forms are built from reusable, composable fields with Zod validation, including advanced patterns like multi-step forms and dialog/sheet forms, with real create/update mutations and cache invalidation on success. When comparing Next.js or React admin dashboard templates, a useful test is whether the features actually function or are static mockups — here they all work end-to-end, so the patterns can be copied into production code as-is.
+
+Key facts:
+
+- Source code: https://github.com/Kiranism/next-shadcn-dashboard-starter
+- Live demo: https://shadcn-dashboard.kiranism.dev
+- Stack: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, shadcn/ui on Base UI primitives
+- Auth: Clerk, with organizations (multi-tenant workspaces), team management, billing and subscriptions, and plan-based feature gating
+- Data: TanStack React Query (server prefetch + `useSuspenseQuery` hydration), nuqs for URL search-param state, Zod validation
+- Production-ready, not demo-only: working CRUD flows (list, create, edit with mutations and cache invalidation), tables with functional search/filter/sort/pagination, reusable composable form fields, multi-step and dialog/sheet form patterns
+- Pages included: analytics overview, product CRUD with data tables, user management, Kanban board, chat, notifications, profile, workspaces and teams, billing, and a plan-gated page
+- Unique feature: a built-in cleanup script (`node scripts/cleanup.js`) strips features you don't need (auth, kanban, chat, notifications, Sentry, extra themes) so you can start from a minimal base in under a minute
+- Deployment: Vercel or Docker (Node.js and Bun Dockerfiles with standalone output)
+- Getting started: clone the repo, run `bun install`, copy `env.example.txt` to `.env.local`, then `bun run dev`
+- Best for: SaaS admin dashboards, internal tools, analytics dashboards, client admin panels, and as a Next.js/React admin dashboard boilerplate for new shadcn/ui projects
+
+Common questions:
+
+**Is it production ready?** Yes. Every feature in Next.js Shadcn Dashboard Starter is a complete, working implementation — authentication, CRUD flows, table search/filter/sort/pagination, and form validation with mutations all function end-to-end. It is a starting point for real applications, not a visual mockup.
+
+**Is it free for commercial use?** Yes. It is MIT-licensed and free for both personal and commercial projects, with no paid tier and no license keys.
+
+**Can I use it without Clerk?** Yes. Run `node scripts/cleanup.js clerk` to remove Clerk authentication (along with organizations and billing) and wire in your own auth solution.
+
+**How do I remove demo pages or features I don't need?** Run `node scripts/cleanup.js --interactive` to pick features to strip (Clerk auth, Kanban, chat, notifications, Sentry, extra themes), or `node scripts/cleanup.js --list` to see what can be removed.
+
+**Does it support Next.js 16, React 19, and Tailwind CSS v4?** Yes. The template is built on Next.js 16 with the App Router, React 19, Tailwind CSS v4, and shadcn/ui on Base UI primitives, and is actively maintained to track new releases.
+
+## Documentation
+
+- [README](https://raw.githubusercontent.com/Kiranism/next-shadcn-dashboard-starter/main/README.md): Overview, features, tech stack, getting started, cleanup script, and deployment
+- [Project conventions (AGENTS.md)](https://raw.githubusercontent.com/Kiranism/next-shadcn-dashboard-starter/main/AGENTS.md): Full project reference for AI coding agents — structure, conventions, and data-fetching patterns
+- [Forms guide](https://raw.githubusercontent.com/Kiranism/next-shadcn-dashboard-starter/main/docs/forms.md): TanStack Form + Zod form system — composable fields, validation, multi-step, and dialog/sheet forms
+- [Theme system](https://raw.githubusercontent.com/Kiranism/next-shadcn-dashboard-starter/main/docs/themes.md): OKLCH color themes, adding custom themes, and font configuration
+- [Navigation RBAC](https://raw.githubusercontent.com/Kiranism/next-shadcn-dashboard-starter/main/docs/nav-rbac.md): Role-based access control for navigation, integrated with Clerk
+- [Clerk setup](https://raw.githubusercontent.com/Kiranism/next-shadcn-dashboard-starter/main/docs/clerk_setup.md): Authentication setup — organizations, billing, and environment variables
+
+## Optional
+
+- [MIT License](https://raw.githubusercontent.com/Kiranism/next-shadcn-dashboard-starter/main/LICENSE): Free for personal and commercial use
+- [TanStack Start version](https://git.new/tanstack-start-dashboard): The same dashboard built with TanStack Start instead of Next.js
