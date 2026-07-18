@@ -70,7 +70,8 @@ const DOC_RULES = {
         '── exclusive',
         '── auth',
         '── clerk_setup',
-        '── nav-rbac'
+        '── nav-rbac',
+        '# Remove auth/org/billing'
       ],
       sections: [
         '### Authentication & Authorization',
@@ -110,7 +111,8 @@ const DOC_RULES = {
         '- `global-error.tsx` - Catches all errors, reports to Sentry',
         '- `SENTRY_*` variables',
         '- Sentry source maps uploaded automatically',
-        '[Sentry Next.js]'
+        '[Sentry Next.js]',
+        '# Remove error tracking'
       ],
       sections: ['### Optional for Error Tracking (Sentry)', '### Sentry Integration']
     },
@@ -120,16 +122,17 @@ const DOC_RULES = {
   ],
   kanban: [
     { file: 'README.md', lines: ['| [Kanban Board](', '── kanban'] },
-    { file: 'AGENTS.md', lines: ['── kanban'] }
+    { file: 'AGENTS.md', lines: ['── kanban', '# Remove kanban board'] }
   ],
   chat: [
     { file: 'README.md', lines: ['| [Chat](', '── chat'] },
-    { file: 'AGENTS.md', lines: ['── chat'] }
+    { file: 'AGENTS.md', lines: ['── chat', '# Remove messaging UI'] }
   ],
   notifications: [
     { file: 'README.md', lines: ['| [Notifications](', '── notifications'] },
-    { file: 'AGENTS.md', lines: ['── notifications'] }
+    { file: 'AGENTS.md', lines: ['── notifications', '# Remove notification center'] }
   ],
+  themes: [{ file: 'AGENTS.md', lines: ['# Keep one theme, remove rest'] }],
   examples: [
     { file: 'README.md', lines: ['| [React Query Demo](', '── react-query'] },
     // No '── forms' / '── elements' anchors: the only tree line matching
@@ -326,6 +329,7 @@ class FeatureCleanup {
       console.log(`\n📦 Removing ${feature.name}...`);
 
       if (feature.custom && featureName === 'themes') {
+        this.applyDocRules(featureName);
         await this.cleanThemes();
         continue;
       }
