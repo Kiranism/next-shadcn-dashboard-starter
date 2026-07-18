@@ -1,6 +1,10 @@
 <h1 align="center">Admin Dashboard Template with Next.js &amp; Shadcn UI</h1>
 
-<div align="center">Free, open source admin dashboard starter built with Next.js 16, shadcn/ui on Base UI, Tailwind CSS, and TypeScript.<br />Every feature actually works: production-ready implementations, not static demo screens.</div>
+<div align="center">Free, open source admin dashboard starter: Next.js 16, shadcn/ui, Tailwind CSS, TypeScript.</div>
+
+<div align="center">
+  <img src="/public/shadcn-dashboard.png" alt="Shadcn Dashboard Cover" style="max-width: 100%; border-radius: 8px;" />
+</div>
 
 <p align="center">
   <a href="https://github.com/Kiranism/next-shadcn-dashboard-starter/stargazers"><img src="https://img.shields.io/github/stars/Kiranism/next-shadcn-dashboard-starter?style=social" alt="GitHub stars" /></a>
@@ -12,12 +16,6 @@
 
 <div align="center">
   <a href="https://dub.sh/shadcn-dashboard"><strong>View Demo</strong></a>
-</div>
-
-<br />
-
-<div align="center">
-  <img src="/public/shadcn-dashboard.png" alt="Shadcn Dashboard Cover" style="max-width: 100%; border-radius: 8px;" />
 </div>
 
 ## Overview
