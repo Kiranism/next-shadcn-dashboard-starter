@@ -2,9 +2,13 @@
 
 <div align="center">Free, open source admin dashboard starter: Next.js 16, shadcn/ui, Tailwind CSS, TypeScript.</div>
 
+<br />
+
 <div align="center">
   <img src="/public/shadcn-dashboard.png" alt="Shadcn Dashboard Cover" style="max-width: 100%; border-radius: 8px;" />
 </div>
+
+<br />
 
 <p align="center">
   <a href="https://github.com/Kiranism/next-shadcn-dashboard-starter/stargazers"><img src="https://img.shields.io/github/stars/Kiranism/next-shadcn-dashboard-starter?style=social" alt="GitHub stars" /></a>
