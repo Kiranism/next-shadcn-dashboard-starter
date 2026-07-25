@@ -16,7 +16,9 @@ const META_THEME_COLORS = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'https://shadcn-dashboard.kiranism.dev'),
+  ...(process.env.NEXT_PUBLIC_APP_URL
+    ? { metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL) }
+    : {}),
   title: {
     default: 'Shadcn Dashboard - Next.js Admin Dashboard Template',
     template: '%s | Shadcn Dashboard'

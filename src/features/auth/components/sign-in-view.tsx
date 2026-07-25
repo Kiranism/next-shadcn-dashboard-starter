@@ -1,5 +1,4 @@
 import { buttonVariants } from '@/components/ui/button';
-import { GitHubStarsButton } from '@/components/github-stars-button';
 import { cn } from '@/lib/utils';
 import { SignIn as ClerkSignInForm } from '@clerk/nextjs';
 import { Metadata } from 'next';
@@ -58,55 +57,11 @@ export default function SignInViewPage() {
       </div>
       <div className='flex h-full items-center justify-center p-4 lg:p-8'>
         <div className='flex w-full max-w-md flex-col items-center justify-center space-y-6'>
-          {/* github link  */}
-          <GitHubStarsButton
-            owner='kiranism'
-            repo='next-shadcn-dashboard-starter'
-            showRepo
-            variant='outline'
-            size='default'
-          />
           <ClerkSignInForm
             initialValues={{
               emailAddress: 'your_mail+clerk_test@example.com'
             }}
           />
-          <div className='text-muted-foreground space-y-2 px-8 text-center text-xs'>
-            <p>
-              This is an{' '}
-              <Link href='/about' className='hover:text-primary underline underline-offset-4'>
-                open-source project
-              </Link>{' '}
-              for demo purposes. Authentication is handled securely by Clerk.
-            </p>
-            <p>
-              <Link
-                href='https://github.com/kiranism/next-shadcn-dashboard-starter'
-                target='_blank'
-                className='hover:text-primary underline underline-offset-4'
-              >
-                View on GitHub
-              </Link>
-            </p>
-          </div>
-
-          <p className='text-muted-foreground px-8 text-center text-sm'>
-            By clicking continue, you agree to our{' '}
-            <Link
-              href='/terms-of-service'
-              className='hover:text-primary underline underline-offset-4'
-            >
-              Terms of Service
-            </Link>{' '}
-            and{' '}
-            <Link
-              href='/privacy-policy'
-              className='hover:text-primary underline underline-offset-4'
-            >
-              Privacy Policy
-            </Link>
-            .
-          </p>
         </div>
       </div>
     </div>
