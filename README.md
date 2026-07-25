@@ -205,10 +205,10 @@ Yes. Every feature is a complete, working implementation: authentication, CRUD f
 Yes. MIT-licensed and free for both personal and commercial projects: no paid tier, no license keys.
 
 **Can I use it without Clerk?**
-Yes. Run `node scripts/cleanup.js clerk` to remove Clerk authentication (along with organizations and billing) and wire in your own auth solution.
+Yes. Run `bun run cleanup clerk` to remove Clerk authentication (along with organizations and billing) and wire in your own auth solution.
 
 **How do I remove demo pages or features I don't need?**
-Run `node scripts/cleanup.js --interactive` and pick what to strip, or `node scripts/cleanup.js --list` to see what can be removed.
+Run `bun run cleanup --interactive` and pick what to strip, or `bun run cleanup --list` to see what can be removed.
 
 **Does it support Next.js 16, React 19, and Tailwind CSS v4?**
 Yes. The template is built on Next.js 16 (App Router), React 19, and Tailwind CSS v4, with shadcn/ui on Base UI primitives, and is actively maintained to track new releases.
