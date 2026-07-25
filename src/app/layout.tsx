@@ -16,8 +16,13 @@ const META_THEME_COLORS = {
 };
 
 export const metadata: Metadata = {
-  title: 'Next Shadcn',
-  description: 'Basic dashboard with Next.js and Shadcn'
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'https://shadcn-dashboard.kiranism.dev'),
+  title: {
+    default: 'Shadcn Dashboard - Next.js Admin Dashboard Template',
+    template: '%s | Shadcn Dashboard'
+  },
+  description:
+    'Free, open source admin dashboard starter built with Next.js 16, shadcn/ui, Tailwind CSS, and TypeScript.'
 };
 
 export const viewport: Viewport = {
