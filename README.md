@@ -188,13 +188,13 @@ The app should now be running at http://localhost:3000.
 Most starters make you hand-delete demo pages and rip out dependencies. This one ships with a cleanup script that removes the optional features you don't need (folders, files, dependencies, docs, and env entries), leaving a minimal base to build on. Run `--list` to see what's removable:
 
 ```bash
-node scripts/cleanup.js --interactive   # interactive mode
-node scripts/cleanup.js --list          # see available features
-node scripts/cleanup.js --dry-run chat  # preview before removing
-node scripts/cleanup.js kanban chat     # remove specific features
+bun run cleanup --interactive    # interactive mode
+bun run cleanup --list           # see available features
+bun run cleanup --dry-run chat   # preview before removing
+bun run cleanup kanban chat      # remove specific features
 ```
 
-Run `node scripts/cleanup.js --help` for all options. The replacement files it writes live in `scripts/cleanup-templates/` as real, typechecked code. Delete `scripts/cleanup.js` and `scripts/cleanup-templates/` when you're done.
+Run `bun run cleanup --help` for all options (with npm, pass flags after `--`: `npm run cleanup -- --list`). The replacement files it writes live in `scripts/cleanup-templates/` as real, typechecked code. When you're done, delete `scripts/cleanup.js`, `scripts/cleanup-templates/`, and the `cleanup` entry in `package.json`.
 
 ## FAQ
 

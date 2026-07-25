@@ -156,9 +156,8 @@ The project follows a feature-based folder structure designed for scalability in
 │   └── themes.md          # Theme customization guide
 
 /scripts                   # Dev tooling
-    ├── cleanup.js         # Feature removal (templates in cleanup-templates/, typechecked)
-    ├── cleanup-templates/ # Replacement files cleanup.js copies into the repo
-    └── postinstall.js     # Dev server cleanup message (auto-cleans)
+    ├── cleanup.js         # Feature removal, run via `bun run cleanup` (templates in cleanup-templates/, typechecked)
+    └── cleanup-templates/ # Replacement files cleanup.js copies into the repo
 
 Dockerfile                 # Node.js production Dockerfile
 Dockerfile.bun             # Bun production Dockerfile
