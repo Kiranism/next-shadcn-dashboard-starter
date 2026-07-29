@@ -19,13 +19,11 @@
 
 import { createFormHookContexts, revalidateLogic, useStore } from '@tanstack/react-form';
 import type { AnyFieldApi, DeepKeys } from '@tanstack/form-core';
-import type { VariantProps } from 'class-variance-authority';
 import * as React from 'react';
 import {
   Field as DefaultField,
   FieldError as DefaultFieldError,
-  FieldSet as DefaultFieldSet,
-  fieldVariants
+  FieldSet as DefaultFieldSet
 } from '@/components/ui/field';
 import { cn } from '@/lib/utils';
 
@@ -89,10 +87,7 @@ function FieldSet({ className, children, ...props }: React.ComponentProps<'field
   );
 }
 
-function Field({
-  children,
-  ...props
-}: React.ComponentProps<'div'> & VariantProps<typeof fieldVariants>) {
+function Field({ children, ...props }: React.ComponentProps<typeof DefaultField>) {
   const { errors, formItemId, formDescriptionId, formMessageId, store } = useFieldContext();
   const form = useFormContext();
   const isTouched = useStore(store, (state) => state.meta.isTouched);

@@ -4,6 +4,11 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Base UI exposes orientation as data-orientation="…"; the base-nova
+   components style it via these shorthand variants. */
+@custom-variant data-horizontal (&[data-orientation='horizontal']);
+@custom-variant data-vertical (&[data-orientation='vertical']);
+
 @import './theme.css';
 
 @layer base {

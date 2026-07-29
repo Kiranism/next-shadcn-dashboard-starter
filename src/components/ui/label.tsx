@@ -6,8 +6,7 @@ import { cn } from '@/lib/utils';
 
 function Label({ className, ...props }: React.ComponentProps<'label'>) {
   return (
-    // Generic wrapper: htmlFor/children always come from the call site via props.
-    // eslint-disable-next-line jsx-a11y/label-has-associated-control
+    // oxlint-disable-next-line jsx-a11y/label-has-associated-control -- htmlFor/children arrive via props at each call site
     <label
       data-slot='label'
       className={cn(

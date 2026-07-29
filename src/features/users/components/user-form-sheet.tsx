@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useAppForm, useFormFields } from '@/components/ui/tanstack-form';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import {
   Sheet,
   SheetContent,
@@ -93,7 +94,7 @@ export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) 
 
         <div className='flex-1 overflow-auto'>
           <form.AppForm>
-            <form.Form id='user-form-sheet' className='space-y-4'>
+            <form.Form id='user-form-sheet' className='space-y-4 p-4 md:p-4'>
               <div className='grid grid-cols-2 gap-4'>
                 <FormTextField
                   name='first_name'
@@ -166,8 +167,13 @@ export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) 
           <Button type='button' variant='outline' onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button type='submit' form='user-form-sheet' isLoading={isPending}>
-            <Icons.check /> {isEdit ? 'Update User' : 'Create User'}
+          <Button type='submit' form='user-form-sheet' disabled={isPending}>
+            {isPending ? (
+              <Spinner data-icon='inline-start' />
+            ) : (
+              <Icons.check data-icon='inline-start' />
+            )}
+            {isEdit ? 'Update User' : 'Create User'}
           </Button>
         </SheetFooter>
       </SheetContent>

@@ -9,6 +9,7 @@ import { createFormHook } from '@tanstack/react-form';
 import type { VariantProps } from 'class-variance-authority';
 import * as React from 'react';
 import { Button, type buttonVariants } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import {
   FieldContent,
   FieldDescription,
@@ -92,10 +93,10 @@ function SubmitButton({
           className={className}
           size={size}
           type='submit'
-          disabled={!canSubmit}
-          isLoading={isSubmitting}
+          disabled={!canSubmit || isSubmitting}
           {...props}
         >
+          {isSubmitting && <Spinner data-icon='inline-start' />}
           {children}
         </Button>
       )}
