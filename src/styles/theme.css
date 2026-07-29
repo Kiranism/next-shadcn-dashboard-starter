@@ -1,6 +1,5 @@
 /* Import individual theme files */
 @import './themes/claude.css';
-@import './themes/neobrutualism.css';
 @import './themes/supabase.css';
 @import './themes/vercel.css';
 @import './themes/mono.css';
