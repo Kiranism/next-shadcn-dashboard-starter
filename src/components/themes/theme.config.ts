@@ -10,10 +10,6 @@ export const THEMES = [
     value: 'claude'
   },
   {
-    name: 'Neobrutualism',
-    value: 'neobrutualism'
-  },
-  {
     name: 'Supabase',
     value: 'supabase'
   },
