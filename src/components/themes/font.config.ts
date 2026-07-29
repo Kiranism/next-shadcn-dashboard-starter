@@ -4,6 +4,7 @@ import {
   Fira_Code,
   Geist,
   Geist_Mono,
+  Google_Sans_Flex,
   Instrument_Sans,
   Inter,
   JetBrains_Mono,
@@ -12,6 +13,7 @@ import {
   Playfair_Display,
   Noto_Sans_Mono,
   Outfit,
+  Source_Code_Pro,
   Space_Mono
 } from 'next/font/google';
 
@@ -25,6 +27,16 @@ const fontSans = Geist({
 const fontMono = Geist_Mono({
   subsets: ['latin'],
   variable: '--font-mono'
+});
+
+const fontGoogleSansFlex = Google_Sans_Flex({
+  subsets: ['latin'],
+  variable: '--font-google-sans-flex'
+});
+
+const fontSourceCodePro = Source_Code_Pro({
+  subsets: ['latin'],
+  variable: '--font-source-code-pro'
 });
 
 const fontInstrument = Instrument_Sans({
@@ -93,6 +105,8 @@ const fontPlayfairDisplay = Playfair_Display({
 export const fontVariables = cn(
   fontSans.variable,
   fontMono.variable,
+  fontGoogleSansFlex.variable,
+  fontSourceCodePro.variable,
   fontInstrument.variable,
   fontNotoMono.variable,
   fontMullish.variable,

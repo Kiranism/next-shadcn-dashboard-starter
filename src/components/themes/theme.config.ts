@@ -10,6 +10,10 @@ export const THEMES = [
     value: 'claude'
   },
   {
+    name: 'Discord',
+    value: 'discord'
+  },
+  {
     name: 'Supabase',
     value: 'supabase'
   },

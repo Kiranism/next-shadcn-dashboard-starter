@@ -271,6 +271,7 @@ The project uses a sophisticated multi-theme system with 10 built-in themes:
 
 - `vercel` (default)
 - `claude`
+- `discord`
 - `supabase`
 - `mono`
 - `notebook`
