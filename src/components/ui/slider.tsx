@@ -1,6 +1,3 @@
-'use client';
-
-import * as React from 'react';
 import { Slider as SliderPrimitive } from '@base-ui/react/slider';
 
 import { cn } from '@/lib/utils';
@@ -13,44 +10,38 @@ function Slider({
   max = 100,
   ...props
 }: SliderPrimitive.Root.Props) {
-  const thumbValues = React.useMemo(
-    () => (Array.isArray(value) ? value : Array.isArray(defaultValue) ? defaultValue : [min, max]),
-    [value, defaultValue, min, max]
-  );
+  const resolvedValues = Array.isArray(value)
+    ? value
+    : Array.isArray(defaultValue)
+      ? defaultValue
+      : [min, max];
 
   return (
     <SliderPrimitive.Root
+      className={cn('data-horizontal:w-full data-vertical:h-full', className)}
       data-slot='slider'
       defaultValue={defaultValue}
       value={value}
       min={min}
       max={max}
       thumbAlignment='edge'
-      className={cn(
-        'data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full',
-        className
-      )}
       {...props}
     >
-      <SliderPrimitive.Control className='relative flex w-full touch-none items-center select-none data-disabled:opacity-50 data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col'>
+      <SliderPrimitive.Control className='relative flex w-full touch-none items-center select-none data-disabled:opacity-50 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col'>
         <SliderPrimitive.Track
           data-slot='slider-track'
-          className={cn(
-            'bg-muted relative grow overflow-hidden rounded-full data-[orientation=horizontal]:h-1.5 data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-1.5'
-          )}
+          className='relative grow overflow-hidden rounded-full bg-muted select-none data-horizontal:h-1 data-horizontal:w-full data-vertical:h-full data-vertical:w-1'
         >
           <SliderPrimitive.Indicator
             data-slot='slider-range'
-            className={cn(
-              'bg-primary data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full'
-            )}
+            className='bg-primary select-none data-horizontal:h-full data-vertical:w-full'
           />
         </SliderPrimitive.Track>
-        {Array.from({ length: thumbValues.length }, (_, index) => (
+        {Array.from({ length: resolvedValues.length }, (_, index) => (
           <SliderPrimitive.Thumb
             data-slot='slider-thumb'
             key={index}
-            className='border-primary bg-background ring-ring/50 block size-4 shrink-0 rounded-full border shadow-sm transition-[color,box-shadow] hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden data-disabled:pointer-events-none data-disabled:opacity-50'
+            className='relative block size-3 shrink-0 rounded-full border border-ring bg-white ring-ring/50 transition-[color,box-shadow] select-none after:absolute after:-inset-2 hover:ring-3 focus-visible:ring-3 focus-visible:outline-hidden active:ring-3 disabled:pointer-events-none disabled:opacity-50'
           />
         ))}
       </SliderPrimitive.Control>

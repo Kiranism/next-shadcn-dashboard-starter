@@ -73,7 +73,7 @@ export default function SheetProductForm() {
 
         <div className='flex-1 overflow-auto'>
           <form.AppForm>
-            <form.Form id='sheet-product-form' className='space-y-4'>
+            <form.Form id='sheet-product-form' className='space-y-4 p-4 md:p-4'>
               <form.AppField
                 name='name'
                 children={(field) => {

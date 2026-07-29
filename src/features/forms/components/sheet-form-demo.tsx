@@ -103,7 +103,7 @@ function SheetFormSection() {
             </SheetHeader>
 
             <form.AppForm>
-              <form.Form id='sheet-form-id' className='space-y-4 p-0 md:p-0'>
+              <form.Form id='sheet-form-id' className='space-y-4 p-4 md:p-4'>
                 <FormTextField
                   name='name'
                   label='Product Name'
