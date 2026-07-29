@@ -73,6 +73,7 @@ _Looking for a TanStack Start version? Here's the [repo](https://git.new/tanstac
 - shadcn/ui components on Base UI primitives, styled with Tailwind CSS
 - Six-plus themes with a theme switcher
 - Feature-based folder structure
+- AI-ready: ships AGENTS.md, CLAUDE.md, and a bundled Claude Code skill so coding agents follow the template's patterns
 - A starting point for SaaS dashboards, internal tools, and client admin panels
 
 ## Use Cases
@@ -215,6 +216,9 @@ Yes. The template is built on Next.js 16 (App Router), React 19, and Tailwind CS
 
 **Can I use npm instead of Bun?**
 Yes. Bun is preferred, but npm works too, and the repo even ships both Node.js and Bun Dockerfiles for deployment.
+
+**Does it work with AI coding assistants?**
+Yes. The repo ships AGENTS.md and CLAUDE.md with the project's conventions, plus a bundled Claude Code skill (`.claude/skills/kiranism-shadcn-dashboard`) that teaches agents how to add pages, tables, forms, and navigation the template way. Works with Claude Code, Cursor, and any tool that reads AGENTS.md.
 
 ## Deploy
 
