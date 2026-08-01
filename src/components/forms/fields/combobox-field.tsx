@@ -135,8 +135,8 @@ export function ComboboxField({
         {description && (
           <FieldDescription id={field.formDescriptionId}>{description}</FieldDescription>
         )}
+        <FormFieldError />
       </FormField>
-      <FormFieldError />
     </FormFieldSet>
   );
 }

@@ -78,8 +78,8 @@ export function SliderField({
         {description && (
           <FieldDescription id={field.formDescriptionId}>{description}</FieldDescription>
         )}
+        <FormFieldError />
       </FormField>
-      <FormFieldError />
     </FormFieldSet>
   );
 }

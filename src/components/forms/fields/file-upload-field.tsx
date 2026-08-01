@@ -55,8 +55,8 @@ export function FileUploadField({
         {description && (
           <FieldDescription id={field.formDescriptionId}>{description}</FieldDescription>
         )}
+        <FormFieldError />
       </FormField>
-      <FormFieldError />
     </FormFieldSet>
   );
 }

@@ -117,8 +117,8 @@ export function TextField({
         {description && (
           <FieldDescription id={field.formDescriptionId}>{description}</FieldDescription>
         )}
+        <FormFieldError />
       </FormField>
-      <FormFieldError />
     </FormFieldSet>
   );
 }
