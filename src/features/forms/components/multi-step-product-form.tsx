@@ -18,7 +18,7 @@ import { Separator } from '@/components/ui/separator';
 const productFormSchema = z.object({
   name: z.string().min(2, 'Product name must be at least 2 characters'),
   category: z.string().min(1, 'Please select a category'),
-  price: z.number().min(0.01, 'Price must be greater than 0'),
+  price: z.number({ error: 'Price is required' }).min(0.01, 'Price must be greater than 0'),
   description: z.string().min(10, 'Description must be at least 10 characters')
 });
 

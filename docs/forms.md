@@ -195,7 +195,7 @@ Every widget exports a base component (for Pattern 2) and appears in `useFormFie
 
 **Write-side guards** (the compiler also checks what widgets could *write*): option widgets' `options[].value` must belong to the path's literal union; free-text widgets (Text/Textarea — and ArrayText rows, per element) are not offered literal-union paths at all (use Select/Combobox/RadioGroup/CheckboxGroup for those); DatePicker only binds paths that admit `undefined` (clearing writes `undefined` — use `.nullish()`/optional date schemas). Option constants for literal-union paths need narrow values — add `as const` in the constants file (`const roleOptions = [{ value: 'admin', label: 'Admin' }] as const;`), or a widened plain array fails the guard. Known boundary: SliderField accepts numeric-literal-union paths (discrete scales are its primary use — pair `step` with the scale).
 
-**Number fields:** clearing a `type='number'` TextField writes `undefined` (not `''`) — optional number schemas pass, required ones report a missing value.
+**Number fields:** clearing a `type='number'` TextField writes `undefined` (not `''`) — optional number schemas pass; give REQUIRED number fields a human message or users see Zod's raw type error: `z.number({ error: 'Age is required' }).min(18, '…')`. You do NOT need `z.coerce` — widgets emit real numbers (coercing an empty value can silently produce `0`).
 
 ---
 
