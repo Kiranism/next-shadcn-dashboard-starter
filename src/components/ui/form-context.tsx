@@ -5,20 +5,30 @@
  *  - React contexts created by TanStack Form (fieldContext, formContext)
  *  - Enhanced useFieldContext with accessibility IDs and error state
  *  - Structural layout components (FormFieldSet, FormField, FormFieldError)
- *  - createFormField() — wraps a base field into a flat, self-wiring component
- *  - FieldConfig types — validators, listeners, asyncDebounceMs
- *  - Type-safe name utilities (WithTypedName, typedField)
+ *  - The typed composition core: AtomicFieldValues, StrictDeepKeysOfType,
+ *    TypedFieldValidators/TypedFieldConfig, BoundFormField, fieldFor,
+ *    FormLike, bindFieldComponent — see docs/forms.md
+ *  - Deprecated legacy layer (createFormField, FieldConfig types, typedField)
  *
  * Consumed by:
- *  - fields/*.tsx  (import structural components + createFormField)
- *  - tanstack-form.tsx (import contexts + re-export everything)
+ *  - fields/*.tsx  (import structural components)
+ *  - tanstack-form.tsx (import contexts + core, re-export everything)
  *
  * This file must NOT import from tanstack-form.tsx or fields/*.tsx to avoid
  * circular dependencies.
  */
 
 import { createFormHookContexts, revalidateLogic, useStore } from '@tanstack/react-form';
-import type { AnyFieldApi, DeepKeys } from '@tanstack/form-core';
+import type {
+  AnyFieldApi,
+  AnyFormApi,
+  DeepKeys,
+  DeepKeysOfType,
+  DeepValue,
+  FieldValidateOrFn,
+  FieldAsyncValidateOrFn,
+  FieldListeners
+} from '@tanstack/form-core';
 import * as React from 'react';
 import {
   Field as DefaultField,
@@ -194,14 +204,248 @@ function scrollToFirstError() {
 }
 
 // ---------------------------------------------------------------------------
-// 4. Field-level configuration types
+// 4. Typed composition core
+//
+//    The instance-bound flat-field system: useFormFields(form) returns
+//    components whose `name` is constrained to paths the widget can edit and
+//    whose validators/listeners/defaultValue are typed per path. See
+//    docs/forms.md. All type machinery is compiler-verified by the probe
+//    suite in src/components/forms/fields/__typetests__/.
+// ---------------------------------------------------------------------------
+
+/**
+ * Registry of types treated as ATOMIC form values: a path to one of these
+ * binds as a whole value ('attachments' works), but paths that tunnel into
+ * its own properties ('attachments[0].name') are not offered as fields.
+ * Extensible via declaration merging:
+ *
+ * @example
+ * ```ts
+ * declare module '@/components/ui/form-context' {
+ *   interface AtomicFieldValues { money: Money }
+ * }
+ * ```
+ */
+export interface AtomicFieldValues {
+  file: File;
+  blob: Blob;
+  fileList: FileList;
+  /** Already atomic upstream (form-core special-cases Date); kept so the
+   *  guarantee survives if upstream changes. */
+  date: Date;
+}
+
+type AtomicValue = AtomicFieldValues[keyof AtomicFieldValues];
+
+/** Paths whose value is an atomic leaf — the roots of excluded subtrees. */
+type AtomicRoots<TValues> = DeepKeysOfType<TValues, AtomicValue | null | undefined>;
+
+/** Every path that tunnels INTO an atomic leaf ('avatar.name', 'files[0].size', …). */
+type AtomicSubPaths<TValues> =
+  | `${AtomicRoots<TValues>}.${string}`
+  | `${AtomicRoots<TValues>}[${string}`;
+
+/** DeepKeys<TValues> minus paths that tunnel into atomic leaves. */
+export type AtomicDeepKeys<TValues> = Exclude<DeepKeys<TValues>, AtomicSubPaths<TValues>>;
+
+/** DeepKeysOfType<TValues, TAllowed> minus paths that tunnel into atomic leaves. */
+export type AtomicDeepKeysOfType<TValues, TAllowed> = Exclude<
+  DeepKeysOfType<TValues, TAllowed>,
+  AtomicSubPaths<TValues>
+>;
+
+/**
+ * Strict union-aware widget path filter.
+ *
+ * TanStack's DeepKeysOfType<A | B, V> accepts a path when ANY union branch's
+ * value matches V. This variant re-checks each candidate against the MERGED
+ * value across branches (DeepValue<A | B, K> unions colliding keys) — a path
+ * that is number in one branch and string in another is offered only to
+ * widgets whose contract covers both, never to single-type widgets.
+ * Branch-specific keys keep their one branch's value, so discriminated-union
+ * forms are unaffected; non-union TValues is unaffected (per-branch and
+ * merged values coincide). Atomic-leaf sub-paths are excluded (see
+ * AtomicFieldValues).
+ */
+export type StrictDeepKeysOfType<TData, TValue> =
+  AtomicDeepKeysOfType<TData, TValue> extends infer TKey
+    ? TKey extends AtomicDeepKeysOfType<TData, TValue>
+      ? [DeepValue<TData, TKey>] extends [TValue]
+        ? TKey
+        : never
+      : never
+    : never;
+
+/** Field-level validators, typed per (form values, field path). */
+export interface TypedFieldValidators<TValues, TName extends DeepKeys<TValues>> {
+  /** Sync validator — runs on field mount. Function or Zod schema. */
+  onMount?: FieldValidateOrFn<TValues, TName>;
+  /** Sync validator — runs on every value change. Function or Zod schema. */
+  onChange?: FieldValidateOrFn<TValues, TName>;
+  /** Async validator — runs on value change (debounced). */
+  onChangeAsync?: FieldAsyncValidateOrFn<TValues, TName>;
+  /** Debounce (ms) for onChangeAsync. */
+  onChangeAsyncDebounceMs?: number;
+  /** Re-run onChange/onChangeAsync when these other fields change. Path-checked. */
+  onChangeListenTo?: AtomicDeepKeys<TValues>[];
+  /** Sync validator — runs when the field loses focus. */
+  onBlur?: FieldValidateOrFn<TValues, TName>;
+  /** Async validator — runs on blur. */
+  onBlurAsync?: FieldAsyncValidateOrFn<TValues, TName>;
+  /** Debounce (ms) for onBlurAsync. */
+  onBlurAsyncDebounceMs?: number;
+  /** Re-run onBlur/onBlurAsync when these other fields blur. Path-checked. */
+  onBlurListenTo?: AtomicDeepKeys<TValues>[];
+  /** Sync validator — runs on form submission. */
+  onSubmit?: FieldValidateOrFn<TValues, TName>;
+  /** Async validator — runs on form submission. */
+  onSubmitAsync?: FieldAsyncValidateOrFn<TValues, TName>;
+  /** Dynamic validator — pairs with revalidateLogic() (multi-step forms). */
+  onDynamic?: FieldValidateOrFn<TValues, TName>;
+  /** Async dynamic validator. */
+  onDynamicAsync?: FieldAsyncValidateOrFn<TValues, TName>;
+  /** Debounce (ms) for onDynamicAsync. */
+  onDynamicAsyncDebounceMs?: number;
+}
+
+/** Everything a bound flat field forwards to form.Field, fully typed. */
+export interface TypedFieldConfig<TValues, TName extends DeepKeys<TValues>> {
+  name: TName;
+  validators?: TypedFieldValidators<TValues, TName>;
+  /** TanStack's own type: `value` and `fieldApi.form.setFieldValue` are path-checked. */
+  listeners?: FieldListeners<TValues, TName>;
+  /** Default debounce (ms) for all async validators on this field. */
+  asyncDebounceMs?: number;
+  /** Default value for this field — typed as the path's value. */
+  defaultValue?: NoInfer<DeepValue<TValues, TName>>;
+}
+
+/**
+ * A flat field component bound to one form. TAllowed filters which paths the
+ * widget may bind to (a switch only binds to boolean paths); TName is
+ * inferred per JSX site from the `name` literal, which pins the types of
+ * validators, listeners and defaultValue.
+ */
+export interface BoundFormField<TValues, TAllowed, TProps extends object> {
+  <const TName extends StrictDeepKeysOfType<TValues, TAllowed>>(
+    props: Omit<TProps, keyof TypedFieldConfig<TValues, TName>> & TypedFieldConfig<TValues, TName>
+  ): React.ReactNode;
+  displayName?: string;
+}
+
+declare const FIELD_VALUE: unique symbol;
+
+/** A base field component branded with the value type it edits. */
+export type FieldComponentFor<V, P extends object> = React.ComponentType<P> & {
+  readonly [FIELD_VALUE]: V;
+};
+
+/**
+ * Brand a base field component with the value type it edits, so it can join
+ * useFormFields(form, { ... }) with correct path filtering. Brand AFTER any
+ * wrapping HOC: fieldFor<V>()(React.memo(Base)).
+ *
+ * @example
+ * ```tsx
+ * const DatePickerField = fieldFor<Date | null | undefined>()(DatePickerBase);
+ * const { FormDatePickerField } = useFormFields(form, { FormDatePickerField: DatePickerField });
+ * <FormDatePickerField name='dueDate' label='Due Date' />  // Date-valued paths only
+ * ```
+ */
+export function fieldFor<V>() {
+  return <P extends object>(component: React.ComponentType<P>) =>
+    component as FieldComponentFor<V, P>;
+}
+
+/** Maps a registry of branded base fields to bound, typed flat components. */
+export type BoundExtraFields<TValues, TExtra> = {
+  [K in keyof TExtra]: TExtra[K] extends FieldComponentFor<infer V, infer P extends object>
+    ? BoundFormField<TValues, V, P>
+    : never;
+};
+
+/* oxlint-disable typescript/no-explicit-any --
+   Centralized runtime cast: React 19's ComponentType contravariance rejects
+   every narrower type for these slots (compiler-verified in the design
+   spike). The public surface (BoundFormField / TypedFieldConfig) is fully
+   typed; the __typetests__ suite and scripts/smoke-form-binding.tsx guard
+   this internal contract. */
+
+/**
+ * Structural view of a TanStack form instance — TValues is inferred from
+ * state.values. Deliberately does NOT name ReactFormExtendedApi's generics.
+ */
+export interface FormLike<TValues> {
+  /** The form's own render-prop Field component — the real runtime binding.
+   *  (React 19 components may return Promise<ReactNode>, hence the union.) */
+  Field: (props: any) => React.ReactNode | Promise<React.ReactNode>;
+  state: { values: TValues };
+}
+
+/** Untyped internal view of form.Field — the single centralized cast. */
+interface FieldSlotProps {
+  name: string;
+  validators?: unknown;
+  listeners?: unknown;
+  asyncDebounceMs?: number;
+  defaultValue?: unknown;
+  children: (fieldApi: AnyFieldApi) => React.ReactNode;
+}
+
+/**
+ * Binds a base field component to a specific form instance: the bound
+ * component renders THAT form's Field (not whatever form context happens to
+ * be above it) and re-provides form/field context for useFieldContext.
+ *
+ * Internal — prefer fieldFor<V>() + useFormFields(form, extras), which add
+ * the value-contract typing this raw binder does not have. Only the keys of
+ * TypedFieldConfig are diverted to form.Field; every other prop (including a
+ * base component's own `mode`, if it has one) reaches the base component.
+ * Array-mode field slots are a Phase 3 binder extension — do NOT resurrect a
+ * `mode` divert here without re-adding it to TypedFieldConfig.
+ */
+export function bindFieldComponent(
+  form: FormLike<unknown>,
+  Base: React.ComponentType<any>
+): React.ComponentType<any> {
+  function Bound({ name, validators, listeners, asyncDebounceMs, defaultValue, ...rest }: any) {
+    const FieldSlot = form.Field as unknown as React.ComponentType<FieldSlotProps>;
+    return (
+      <FieldSlot
+        name={name}
+        validators={validators}
+        listeners={listeners}
+        asyncDebounceMs={asyncDebounceMs}
+        defaultValue={defaultValue}
+      >
+        {(fieldApi) => (
+          <formContext.Provider value={form as unknown as AnyFormApi}>
+            <fieldContext.Provider value={fieldApi}>
+              <Base {...rest} />
+            </fieldContext.Provider>
+          </formContext.Provider>
+        )}
+      </FieldSlot>
+    );
+  }
+  Bound.displayName = `Bound(${Base.displayName || Base.name || 'Field'})`;
+  return Bound;
+}
+/* oxlint-enable typescript/no-explicit-any */
+
+// ---------------------------------------------------------------------------
+// 5. Legacy field-level configuration types (deprecated)
 //
 //    These mirror TanStack Form's field options that get forwarded to
 //    form.Field when using the flat FormXxxField pattern via createFormField.
 //    Validator values accept Zod schemas (StandardSchemaV1) or plain functions.
 // ---------------------------------------------------------------------------
 
-/** Field-level validators forwarded to form.Field */
+/**
+ * Field-level validators forwarded to form.Field.
+ * @deprecated Use useFormFields(form) — validators are then typed per path
+ * (TypedFieldValidators). Removed in the next release.
+ */
 interface FieldValidatorConfig {
   /** Sync validator — runs on every value change. Accepts a function or Zod schema. */
   onChange?: unknown;
@@ -227,7 +471,12 @@ interface FieldValidatorConfig {
   onMount?: unknown;
 }
 
-/** Field-level side-effect listeners forwarded to form.Field */
+/**
+ * Field-level side-effect listeners forwarded to form.Field.
+ * @deprecated Use useFormFields(form) — listeners are then TanStack's own
+ * FieldListeners with typed value and path-checked setFieldValue. Removed in
+ * the next release.
+ */
 interface FieldListenerConfig {
   /** Fires after the field value changes. Use for side effects (e.g., resetting dependent fields). */
   onChange?: (props: { value: unknown; fieldApi: AnyFieldApi }) => void;
@@ -248,7 +497,9 @@ interface FieldListenerConfig {
  * Use with createFormField composed components (FormTextField, etc.)
  * to enable field-level validation, async validation, and side-effect listeners.
  *
- * For type-safe field names, use form.AppField render-prop pattern instead.
+ * @deprecated Use useFormFields(form) — the bound components take
+ * TypedFieldConfig, which checks all of this per path. Removed in the next
+ * release.
  */
 interface FieldConfig {
   /** Field-level validators (onBlur, onChange, onSubmit + async variants). */
@@ -264,13 +515,14 @@ interface FieldConfig {
 }
 
 // ---------------------------------------------------------------------------
-// 5. createFormField — lifts a field component into a flat form-level component
+// 6. createFormField — legacy module-level flat components (deprecated)
 //
 //    Forwards TanStack Form's field-level config (validators, listeners)
 //    to form.Field while keeping the ergonomic flat API.
 //
-//    For type-safe field names, use form.AppField render-prop pattern.
-//    The flat FormXxxField pattern trades name type-safety for ergonomics.
+//    Deprecated: components created this way bind to whatever form context
+//    is above them and their config slots are untyped. useFormFields(form)
+//    provides the same ergonomics with real typing and instance binding.
 // ---------------------------------------------------------------------------
 
 type FormFieldSlot = React.ComponentType<{
@@ -283,6 +535,11 @@ type FormFieldSlot = React.ComponentType<{
   children: (fieldApi: AnyFieldApi) => React.ReactNode;
 }>;
 
+/**
+ * @deprecated Use useFormFields(form) for shipped widgets, or brand a base
+ * component with fieldFor<V>() and pass it via useFormFields(form, extras).
+ * Removed in the next release.
+ */
 function createFormField<P extends object>(FieldComponent: React.ComponentType<P>) {
   function ComposedFormField({
     name,
@@ -329,7 +586,9 @@ function createFormField<P extends object>(FieldComponent: React.ComponentType<P
 
 /**
  * Narrows a composed field component's `name` prop to `DeepKeys<TValues>`.
- * Used internally by useFormFields and typedField.
+ * Used internally by the deprecated zero-arg useFormFields overload.
+ * @deprecated Superseded by BoundFormField via useFormFields(form). Removed
+ * in the next release.
  */
 type WithTypedName<C, TValues> =
   C extends React.ComponentType<infer P>
@@ -340,14 +599,12 @@ type WithTypedName<C, TValues> =
 
 /**
  * Narrows any single composed field component's `name` prop to type-safe field paths.
- * Use for custom fields not included in useFormFields.
  *
- * @example
- * ```tsx
- * const narrow = typedField<MyFormValues>();
- * const TypedDatePicker = narrow(FormDatePickerField);
- * <TypedDatePicker name="birthDate" />  // ✅ type-safe
- * ```
+ * @deprecated This utility's constraint rejects every real field component
+ * (components with required props like `label` fail contravariance) — it has
+ * never compiled against the shipped fields. Brand your base component with
+ * fieldFor<V>() and pass it via useFormFields(form, extras) instead. Removed
+ * in the next release.
  */
 function typedField<TValues extends Record<string, unknown>>() {
   return function <C extends React.ComponentType<{ name: string }>>(
@@ -361,7 +618,19 @@ function typedField<TValues extends Record<string, unknown>>() {
 // 7. Exports
 // ---------------------------------------------------------------------------
 
-export type { FieldConfig, FieldValidatorConfig, FieldListenerConfig, WithTypedName };
+// Typed-composition core types/functions are exported inline at their
+// declarations above (AtomicFieldValues, AtomicDeepKeys[OfType],
+// StrictDeepKeysOfType, TypedFieldValidators, TypedFieldConfig,
+// BoundFormField, FieldComponentFor, fieldFor, BoundExtraFields, FormLike,
+// bindFieldComponent).
+
+export type {
+  // Deprecated legacy types (removed next release)
+  FieldConfig,
+  FieldValidatorConfig,
+  FieldListenerConfig,
+  WithTypedName
+};
 
 export {
   fieldContext,

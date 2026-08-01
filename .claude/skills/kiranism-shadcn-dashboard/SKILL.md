@@ -240,7 +240,7 @@ initialState: {
 
 ## 4. Forms
 
-See `docs/forms.md` for the complete form system. Forms use **TanStack Form + Zod** with `useAppForm` + `useFormFields<T>()` and `useMutation` for submission.
+See `docs/forms.md` for the complete form system. Forms use **TanStack Form + Zod** with `useAppForm` + `useFormFields(form)` (pass the form instance — types are inferred from it; the zero-arg `useFormFields<T>()` is deprecated) and `useMutation` for submission. Custom fields join via `fieldFor<V>()` + `useFormFields(form, extras)`.
 
 ---
 

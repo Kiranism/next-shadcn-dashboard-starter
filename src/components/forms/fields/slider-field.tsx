@@ -18,6 +18,9 @@ interface SliderFieldProps {
   step?: number;
 }
 
+/** Path value type SliderField can edit — matches the `as number` cast below. */
+export type SliderFieldValue = number | null | undefined;
+
 export function SliderField({
   label,
   description,
@@ -55,4 +58,5 @@ export function SliderField({
   );
 }
 
+/** @deprecated Use useFormFields(form).FormSliderField — typed and instance-bound. Removed next release. */
 export const FormSliderField = createFormField(SliderField);

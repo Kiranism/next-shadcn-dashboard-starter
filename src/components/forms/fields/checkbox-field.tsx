@@ -16,6 +16,9 @@ interface CheckboxFieldProps {
   description?: string;
 }
 
+/** Path value type CheckboxField can edit — matches the `as boolean` cast below. */
+export type CheckboxFieldValue = boolean | null | undefined;
+
 export function CheckboxField({ label, description }: CheckboxFieldProps) {
   const field = useFieldContext();
   const isTouched = useStore(field.store, (s) => s.meta.isTouched);
@@ -43,4 +46,5 @@ export function CheckboxField({ label, description }: CheckboxFieldProps) {
   );
 }
 
+/** @deprecated Use useFormFields(form).FormCheckboxField — typed and instance-bound. Removed next release. */
 export const FormCheckboxField = createFormField(CheckboxField);

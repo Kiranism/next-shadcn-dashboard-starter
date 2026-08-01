@@ -22,6 +22,12 @@ interface TextFieldProps extends Omit<
   type?: 'text' | 'email' | 'password' | 'tel' | 'url' | 'number';
 }
 
+/** Path value type TextField can edit — matches the `as string | number`
+ *  cast below; `number` covers type='number', null/undefined cover optional
+ *  and nullable schema fields (rendered as ''). Widen deliberately if you
+ *  change the component's value handling. */
+export type TextFieldValue = string | number | null | undefined;
+
 export function TextField({
   label,
   description,
@@ -74,4 +80,5 @@ export function TextField({
   );
 }
 
+/** @deprecated Use useFormFields(form).FormTextField — typed and instance-bound. Removed next release. */
 export const FormTextField = createFormField(TextField);

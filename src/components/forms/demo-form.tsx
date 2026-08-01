@@ -299,7 +299,7 @@ export default function DemoForm() {
     FormRadioGroupField,
     FormSliderField,
     FormFileUploadField
-  } = useFormFields<DemoFormValues>();
+  } = useFormFields(form);
 
   const formValues = useStore(form.store, (s) => s.values);
 

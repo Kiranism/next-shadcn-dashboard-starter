@@ -219,7 +219,7 @@ export default function MyForm() {
 
 ### Pattern 1: `useFormFields` — Type-safe flat fields (recommended)
 
-Type-safe field names with autocomplete. Concise. Supports validators, listeners, `mode`, `defaultValue`. **Use for most forms.**
+Type-safe field names with autocomplete. Concise. Supports validators, listeners, `defaultValue`. **Use for most forms.**
 
 ```tsx
 import { useAppForm, useFormFields } from '@/components/ui/tanstack-form';
@@ -246,7 +246,6 @@ const { FormTextField, FormSelectField } = useFormFields<FormValues>();
 | `validators`       | `FieldValidatorConfig`                          | `onBlur`, `onChange`, `onChangeAsync`, `onSubmit`, `onChangeListenTo`, etc. |
 | `asyncDebounceMs`  | `number`                                        | Default debounce for all async validators                                   |
 | `listeners`        | `FieldListenerConfig`                           | `onChange`, `onBlur`, `onMount`, `onSubmit` + debounce options              |
-| `mode`             | `'value' \| 'array'`                            | Set to `'array'` for array fields                                           |
 | `defaultValue`     | `unknown`                                       | Initial value (for dynamically added fields)                                |
 | ...component props | varies                                          | `label`, `required`, `placeholder`, `options`, etc.                         |
 
@@ -328,7 +327,7 @@ import { FormTextField } from '@/components/forms/fields';
 | Standard fields (text, select, checkbox, etc.)     | **Pattern 1** | Type-safe + concise                         |
 | Custom one-off fields (date picker, OTP, combobox) | **Pattern 2** | Full field API access                       |
 | Array fields with custom row layout                | **Pattern 2** | Need `pushValue`, `removeValue`, sub-fields |
-| Array fields with composed component               | **Pattern 1** | Pass `mode="array"`                         |
+| Array fields (dynamic rows, multi-select)          | **Pattern 2** | `mode='array'` on `form.AppField` + array API |
 | Multi-step form steps                              | **Pattern 2** | `group.AppField` + `field.TextField`        |
 | Linked field validation (`onChangeListenTo`)       | **Pattern 2** | Need `fieldApi` in validator                |
 | Quick prototype / dynamic field names              | **Pattern 3** | Fastest                                     |

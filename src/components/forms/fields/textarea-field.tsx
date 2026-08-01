@@ -22,6 +22,9 @@ interface TextareaFieldProps extends Omit<
   showCount?: boolean;
 }
 
+/** Path value type TextareaField can edit — matches the `as string` cast below. */
+export type TextareaFieldValue = string | null | undefined;
+
 export function TextareaField({
   label,
   description,
@@ -66,4 +69,5 @@ export function TextareaField({
   );
 }
 
+/** @deprecated Use useFormFields(form).FormTextareaField — typed and instance-bound. Removed next release. */
 export const FormTextareaField = createFormField(TextareaField);

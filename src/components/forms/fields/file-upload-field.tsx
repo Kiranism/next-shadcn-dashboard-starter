@@ -19,6 +19,9 @@ interface FileUploadFieldProps {
   maxFiles?: number;
 }
 
+/** Path value type FileUploadField can edit — matches the `as File[] | undefined` cast below. */
+export type FileUploadFieldValue = File[] | null | undefined;
+
 export function FileUploadField({
   label,
   description,
@@ -51,4 +54,5 @@ export function FileUploadField({
   );
 }
 
+/** @deprecated Use useFormFields(form).FormFileUploadField — typed and instance-bound. Removed next release. */
 export const FormFileUploadField = createFormField(FileUploadField);

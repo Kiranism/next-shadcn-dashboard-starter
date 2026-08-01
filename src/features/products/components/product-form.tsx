@@ -72,7 +72,7 @@ export default function ProductForm({
   });
 
   const { FormTextField, FormSelectField, FormTextareaField, FormFileUploadField } =
-    useFormFields<ProductFormValues>();
+    useFormFields(form);
 
   return (
     <Card className='mx-auto w-full'>

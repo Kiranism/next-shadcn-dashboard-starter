@@ -76,7 +76,7 @@ function SheetFormSection() {
     }
   });
 
-  const { FormTextField, FormSelectField, FormTextareaField } = useFormFields<SheetFormValues>();
+  const { FormTextField, FormSelectField, FormTextareaField } = useFormFields(form);
 
   return (
     <Card>
@@ -188,7 +188,7 @@ function DialogFormSection() {
     }
   });
 
-  const { FormSliderField, FormTextareaField } = useFormFields<DialogFormValues>();
+  const { FormSliderField, FormTextareaField } = useFormFields(form);
 
   return (
     <Card>

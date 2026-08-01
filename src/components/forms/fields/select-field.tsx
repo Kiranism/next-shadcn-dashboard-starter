@@ -27,6 +27,9 @@ interface SelectFieldProps {
   placeholder?: string;
 }
 
+/** Path value type SelectField can edit — matches the `as string` cast below. */
+export type SelectFieldValue = string | null | undefined;
+
 export function SelectField({
   label,
   description,
@@ -72,4 +75,5 @@ export function SelectField({
   );
 }
 
+/** @deprecated Use useFormFields(form).FormSelectField — typed and instance-bound. Removed next release. */
 export const FormSelectField = createFormField(SelectField);

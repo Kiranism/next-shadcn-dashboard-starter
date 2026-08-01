@@ -20,6 +20,9 @@ interface RadioGroupFieldProps {
   options: Option[];
 }
 
+/** Path value type RadioGroupField can edit — matches the `as string` cast below. */
+export type RadioGroupFieldValue = string | null | undefined;
+
 export function RadioGroupField({ label, description, required, options }: RadioGroupFieldProps) {
   const field = useFieldContext();
   const value = useStore(field.store, (s) => s.value) as string;
@@ -49,4 +52,5 @@ export function RadioGroupField({ label, description, required, options }: Radio
   );
 }
 
+/** @deprecated Use useFormFields(form).FormRadioGroupField — typed and instance-bound. Removed next release. */
 export const FormRadioGroupField = createFormField(RadioGroupField);

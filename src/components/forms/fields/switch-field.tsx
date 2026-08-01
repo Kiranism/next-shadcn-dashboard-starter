@@ -15,6 +15,9 @@ interface SwitchFieldProps {
   description?: string;
 }
 
+/** Path value type SwitchField can edit — matches the `as boolean` cast below. */
+export type SwitchFieldValue = boolean | null | undefined;
+
 export function SwitchField({ label, description }: SwitchFieldProps) {
   const field = useFieldContext();
   const value = useStore(field.store, (s) => s.value) as boolean;
@@ -32,4 +35,5 @@ export function SwitchField({ label, description }: SwitchFieldProps) {
   );
 }
 
+/** @deprecated Use useFormFields(form).FormSwitchField — typed and instance-bound. Removed next release. */
 export const FormSwitchField = createFormField(SwitchField);
