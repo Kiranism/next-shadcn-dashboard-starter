@@ -279,7 +279,7 @@ Type-safe names (native TanStack Form). Full field API access. **Use for custom 
 | Component                | Purpose                                                     |
 | ------------------------ | ----------------------------------------------------------- |
 | `field.FieldSet`         | Wrapper — generates unique accessibility IDs                |
-| `field.Field`            | Container — wires `aria-invalid`, `aria-describedby`        |
+| `field.Field`            | Container — data-invalid state anchor (aria lives on the control) |
 | `field.FieldLabel`       | `<label>` connected to the field                            |
 | `field.FieldError`       | Renders validation errors (shows after touch or submit)     |
 | `field.FieldContent`     | Flex container for label + description (horizontal layouts) |
@@ -1005,7 +1005,7 @@ To include in `useFormFields`, add to its return object.
 | `revalidateLogic`      | Utility   | Dynamic validation logic for multi-step                                  |
 | `scrollToFirstError`   | Utility   | Scroll + focus first invalid field                                       |
 | `FormFieldSet`         | Component | Structural — accessibility ID wrapper                                    |
-| `FormField`            | Component | Structural — aria-invalid, aria-describedby                              |
+| `FormField`            | Component | Structural — data-invalid anchor (aria lives on the control)                |
 | `FormFieldError`       | Component | Renders field-level errors                                               |
 | `FormErrors`           | Component | Renders form-level errors                                                |
 | `FieldConfig`          | Type      | `validators` + `asyncDebounceMs` + `listeners` + `mode` + `defaultValue` |

@@ -2,7 +2,7 @@
 
 import { useStore } from '@tanstack/react-form';
 import { Textarea } from '@/components/ui/textarea';
-import { FieldDescription, FieldLabel } from '@/components/ui/field';
+import { FieldContent, FieldDescription, FieldLabel } from '@/components/ui/field';
 import {
   useFieldContext,
   FormFieldSet,
@@ -20,6 +20,9 @@ interface TextareaFieldProps extends Omit<
   required?: boolean;
   maxLength?: number;
   showCount?: boolean;
+  /** 'horizontal'/'responsive' render label + description + error beside the
+   *  textarea (canonical FieldContent anatomy). Default: stacked. */
+  orientation?: 'vertical' | 'horizontal' | 'responsive';
 }
 
 /** Path value type TextareaField can edit — matches the `as string` cast below. */
@@ -31,38 +34,72 @@ export function TextareaField({
   required,
   maxLength,
   showCount = !!maxLength,
+  orientation = 'vertical',
   className,
   ...textareaProps
 }: TextareaFieldProps) {
   const field = useFieldContext();
-  const isTouched = useStore(field.store, (s) => s.meta.isTouched);
-  const isValid = useStore(field.store, (s) => s.meta.isValid);
   const value = (useStore(field.store, (s) => s.value) as string) ?? '';
+
+  const describedBy =
+    [description ? field.formDescriptionId : null, field.isInvalid ? field.formMessageId : null]
+      .filter(Boolean)
+      .join(' ') || undefined;
+
+  const control = (
+    <div className='w-full'>
+      <Textarea
+        id={field.controlId}
+        name={field.name}
+        value={value}
+        onBlur={field.handleBlur}
+        onChange={(e) => field.handleChange(e.target.value)}
+        maxLength={maxLength}
+        aria-invalid={field.isInvalid}
+        aria-describedby={describedBy}
+        className={className}
+        {...textareaProps}
+      />
+      {showCount && (
+        <div className='text-muted-foreground text-right text-xs tabular-nums'>
+          {value.length}
+          {maxLength ? ` / ${maxLength}` : ''}
+        </div>
+      )}
+    </div>
+  );
+
+  if (orientation !== 'vertical') {
+    return (
+      <FormFieldSet>
+        <FormField orientation={orientation}>
+          <FieldContent>
+            <FieldLabel htmlFor={field.controlId}>
+              {label}
+              {required && ' *'}
+            </FieldLabel>
+            {description && (
+              <FieldDescription id={field.formDescriptionId}>{description}</FieldDescription>
+            )}
+            <FormFieldError />
+          </FieldContent>
+          {control}
+        </FormField>
+      </FormFieldSet>
+    );
+  }
 
   return (
     <FormFieldSet>
       <FormField>
-        <FieldLabel htmlFor={field.name}>
+        <FieldLabel htmlFor={field.controlId}>
           {label}
           {required && ' *'}
         </FieldLabel>
-        <Textarea
-          id={field.name}
-          value={value}
-          onBlur={field.handleBlur}
-          onChange={(e) => field.handleChange(e.target.value)}
-          maxLength={maxLength}
-          aria-invalid={isTouched && !isValid}
-          className={className}
-          {...textareaProps}
-        />
-        {showCount && (
-          <div className='text-muted-foreground text-right text-xs tabular-nums'>
-            {value.length}
-            {maxLength ? ` / ${maxLength}` : ''}
-          </div>
+        {control}
+        {description && (
+          <FieldDescription id={field.formDescriptionId}>{description}</FieldDescription>
         )}
-        {description && <FieldDescription>{description}</FieldDescription>}
       </FormField>
       <FormFieldError />
     </FormFieldSet>

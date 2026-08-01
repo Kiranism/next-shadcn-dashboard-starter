@@ -170,5 +170,137 @@ check(
   html4.slice(0, 300)
 );
 
+// ---------------------------------------------------------------------------
+// 5. Phase 2 anatomy: collision-free ids, name passthrough, disabled,
+//    orientation, switch error slot wiring
+// ---------------------------------------------------------------------------
+function AnatomyProbe() {
+  const form = useAppForm({
+    defaultValues: defaults,
+    onSubmit: ({ value }) => void value
+  });
+  const { FormTextField, FormSwitchField } = useFormFields(form);
+  return (
+    <div>
+      <FormTextField name='title' label='Title' description='Desc here' disabled />
+      <FormTextField name='nickname' label='Nick' orientation='responsive' />
+      <FormSwitchField name='urgent' label='Urgent' description='Pages on-call' />
+    </div>
+  );
+}
+
+const html5 = renderToString(<AnatomyProbe />);
+check('anatomy: input carries native name attribute', /name="title"/.test(html5));
+check('anatomy: input disabled propagates', /name="title"[^>]*disabled|disabled[^>]*name="title"/.test(html5));
+check(
+  'anatomy: control id is useId-namespaced, not bare field name',
+  !/id="title"/.test(html5) && /id="[^"]+-title"/.test(html5),
+  html5.match(/id="[^"]*title[^"]*"/g)?.join(',')
+);
+check(
+  'anatomy: description rendered with resolvable describedby id',
+  (() => {
+    const descId = html5.match(/aria-describedby="([^"]+)"/)?.[1];
+    return !!descId && html5.includes(`id="${descId}"`);
+  })()
+);
+check('anatomy: responsive orientation renders data-orientation', /data-orientation="responsive"/.test(html5));
+check('anatomy: switch renders inside FieldContent', /data-slot="field-content"/.test(html5));
+
+// Two forms, same field name → distinct control ids (the old collision bug)
+function TwinForms() {
+  const a = useAppForm({ defaultValues: { title: 'A' }, onSubmit: () => {} });
+  const b = useAppForm({ defaultValues: { title: 'B' }, onSubmit: () => {} });
+  const A = useFormFields(a);
+  const B = useFormFields(b);
+  return (
+    <div>
+      <A.FormTextField name='title' label='T1' />
+      <B.FormTextField name='title' label='T2' />
+    </div>
+  );
+}
+const html6 = renderToString(<TwinForms />);
+const titleIds = [...html6.matchAll(/<input[^>]*id="([^"]*title[^"]*)"/g)].map((m) => m[1]);
+check(
+  'anatomy: same field name in two forms gets distinct ids',
+  titleIds.length === 2 && titleIds[0] !== titleIds[1],
+  titleIds.join(' vs ')
+);
+
+// ---------------------------------------------------------------------------
+// 6. Phase 3 fields: checkbox group + array text render and wire correctly
+// ---------------------------------------------------------------------------
+function Phase3Probe() {
+  const form = useAppForm({
+    defaultValues: { interests: ['a'], emails: ['x@y.z', ''] } as {
+      interests: string[];
+      emails: string[];
+    },
+    onSubmit: ({ value }) => void value
+  });
+  const { FormCheckboxGroupField, FormArrayTextField } = useFormFields(form);
+  return (
+    <div>
+      <FormCheckboxGroupField
+        name='interests'
+        label='Interests'
+        options={[
+          { value: 'a', label: 'Alpha' },
+          { value: 'b', label: 'Beta', disabled: true }
+        ]}
+        columns={2}
+      />
+      <FormArrayTextField name='emails' label='Emails' itemPlaceholder='name@example.com' addLabel='Add Email' />
+    </div>
+  );
+}
+const html7 = renderToString(<Phase3Probe />);
+check('phase3: checkbox-group slot rendered', /data-slot="checkbox-group"/.test(html7));
+check('phase3: checked state reflects array value', /aria-checked="true"|data-checked/.test(html7));
+check('phase3: disabled option propagates', /disabled/.test(html7));
+check(
+  'phase3: array field renders one input per value',
+  (html7.match(/name@example\.com/g) ?? []).length === 2,
+  String((html7.match(/name@example\.com/g) ?? []).length)
+);
+check('phase3: array field renders inline remove button', /aria-label="Remove Emails 1"/.test(html7));
+check('phase3: add button rendered', />Add Email</.test(html7));
+
+// ---------------------------------------------------------------------------
+// 7. Pattern 2 (AppField render prop) id scope — the withItemScope path.
+//    Body-computed ids (control, describedby targets) and child-computed ids
+//    (error/description elements) must agree even without bindFieldComponent.
+// ---------------------------------------------------------------------------
+function Pattern2Probe() {
+  const form = useAppForm({
+    defaultValues: defaults,
+    onSubmit: ({ value }) => void value
+  });
+  return (
+    <form.AppForm>
+      <form.AppField name='title'>
+        {(field) => <field.TextField label='Title' description='P2 description' />}
+      </form.AppField>
+    </form.AppForm>
+  );
+}
+const html8 = renderToString(<Pattern2Probe />);
+check(
+  'pattern2: control id is scope-namespaced (withItemScope active)',
+  !/id="title"/.test(html8) && /id="[^"]+-title"/.test(html8),
+  html8.match(/id="[^"]*title[^"]*"/g)?.join(',')
+);
+check(
+  'pattern2: every aria-describedby target id exists in the markup',
+  (() => {
+    const refs = [...html8.matchAll(/aria-describedby="([^"]+)"/g)].flatMap((m) =>
+      m[1].split(' ')
+    );
+    return refs.length > 0 && refs.every((r) => html8.includes(`id="${r}"`));
+  })(),
+  [...html8.matchAll(/aria-describedby="([^"]+)"/g)].map((m) => m[1]).join(';')
+);
+
 console.log(failures === 0 ? 'SMOKE: ALL PASS' : `SMOKE: ${failures} FAILURE(S)`);
 process.exit(failures === 0 ? 0 : 1);

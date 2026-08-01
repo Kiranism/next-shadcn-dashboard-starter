@@ -2,7 +2,7 @@
 
 import { useStore } from '@tanstack/react-form';
 import { Checkbox } from '@/components/ui/checkbox';
-import { FieldDescription, FieldLabel } from '@/components/ui/field';
+import { FieldContent, FieldDescription, FieldLabel } from '@/components/ui/field';
 import {
   useFieldContext,
   FormFieldSet,
@@ -14,33 +14,47 @@ import {
 interface CheckboxFieldProps {
   label: string;
   description?: string;
+  required?: boolean;
+  disabled?: boolean;
 }
 
 /** Path value type CheckboxField can edit — matches the `as boolean` cast below. */
 export type CheckboxFieldValue = boolean | null | undefined;
 
-export function CheckboxField({ label, description }: CheckboxFieldProps) {
+export function CheckboxField({ label, description, required, disabled }: CheckboxFieldProps) {
   const field = useFieldContext();
-  const isTouched = useStore(field.store, (s) => s.meta.isTouched);
-  const isValid = useStore(field.store, (s) => s.meta.isValid);
   const value = useStore(field.store, (s) => s.value) as boolean;
+
+  const describedBy =
+    [description ? field.formDescriptionId : null, field.isInvalid ? field.formMessageId : null]
+      .filter(Boolean)
+      .join(' ') || undefined;
 
   return (
     <FormFieldSet>
       <FormField orientation='horizontal'>
         <Checkbox
+          id={field.controlId}
+          name={field.name}
           checked={value}
+          disabled={disabled}
           onCheckedChange={(checked) => {
             field.handleChange(checked as boolean);
             field.handleBlur();
           }}
-          aria-invalid={isTouched && !isValid}
+          aria-invalid={field.isInvalid}
+          aria-describedby={describedBy}
         />
-        <div className='flex flex-1 flex-col gap-1.5 leading-snug'>
-          <FieldLabel className='leading-none'>{label}</FieldLabel>
-          {description && <FieldDescription>{description}</FieldDescription>}
+        <FieldContent>
+          <FieldLabel htmlFor={field.controlId} className='leading-none'>
+            {label}
+            {required && ' *'}
+          </FieldLabel>
+          {description && (
+            <FieldDescription id={field.formDescriptionId}>{description}</FieldDescription>
+          )}
           <FormFieldError />
-        </div>
+        </FieldContent>
       </FormField>
     </FormFieldSet>
   );

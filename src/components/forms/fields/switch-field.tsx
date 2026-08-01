@@ -2,34 +2,58 @@
 
 import { useStore } from '@tanstack/react-form';
 import { Switch } from '@/components/ui/switch';
-import { FieldDescription, FieldLabel } from '@/components/ui/field';
+import { FieldContent, FieldDescription, FieldLabel } from '@/components/ui/field';
 import {
   useFieldContext,
   FormFieldSet,
   FormField,
+  FormFieldError,
   createFormField
 } from '@/components/ui/form-context';
 
 interface SwitchFieldProps {
   label: string;
   description?: string;
+  disabled?: boolean;
 }
 
 /** Path value type SwitchField can edit — matches the `as boolean` cast below. */
 export type SwitchFieldValue = boolean | null | undefined;
 
-export function SwitchField({ label, description }: SwitchFieldProps) {
+export function SwitchField({ label, description, disabled }: SwitchFieldProps) {
   const field = useFieldContext();
   const value = useStore(field.store, (s) => s.value) as boolean;
 
+  const describedBy =
+    [description ? field.formDescriptionId : null, field.isInvalid ? field.formMessageId : null]
+      .filter(Boolean)
+      .join(' ') || undefined;
+
   return (
     <FormFieldSet>
-      <FormField orientation='horizontal'>
-        <div className='flex flex-1 flex-col gap-1.5 leading-snug'>
-          <FieldLabel className='text-base'>{label}</FieldLabel>
-          {description && <FieldDescription>{description}</FieldDescription>}
-        </div>
-        <Switch checked={value} onCheckedChange={field.handleChange} onBlur={field.handleBlur} />
+      {/* items-center: the field-content alignment hook flips horizontal
+          fields to items-start, and its checkbox/radio optical nudge does not
+          cover role=switch — center like the pre-FieldContent layout. */}
+      <FormField orientation='horizontal' className='items-center'>
+        <FieldContent>
+          <FieldLabel htmlFor={field.controlId} className='text-base'>
+            {label}
+          </FieldLabel>
+          {description && (
+            <FieldDescription id={field.formDescriptionId}>{description}</FieldDescription>
+          )}
+          <FormFieldError />
+        </FieldContent>
+        <Switch
+          id={field.controlId}
+          name={field.name}
+          checked={value}
+          disabled={disabled}
+          onCheckedChange={field.handleChange}
+          onBlur={field.handleBlur}
+          aria-invalid={field.isInvalid}
+          aria-describedby={describedBy}
+        />
       </FormField>
     </FormFieldSet>
   );

@@ -28,7 +28,6 @@ import {
   CommandList
 } from '@/components/ui/command';
 import { Calendar } from '@/components/ui/calendar';
-import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
 import { Icons } from '@/components/icons';
@@ -298,7 +297,8 @@ export default function DemoForm() {
     FormSwitchField,
     FormRadioGroupField,
     FormSliderField,
-    FormFileUploadField
+    FormFileUploadField,
+    FormCheckboxGroupField
   } = useFormFields(form);
 
   const formValues = useStore(form.store, (s) => s.values);
@@ -452,49 +452,25 @@ export default function DemoForm() {
               {/* ─── CHECKBOX & RADIO ─── */}
               <SectionTitle>Checkbox & Radio</SectionTitle>
 
-              {/* Checkbox Group — array mode, needs AppField */}
-              <form.AppField
+              {/* Checkbox Group — composed array field (was a 40-line
+                  AppField hand-roll before FormCheckboxGroupField existed) */}
+              <FormCheckboxGroupField
                 name='interests'
-                mode='array'
-                children={(field) => {
-                  const values: string[] = field.state.value || [];
-                  return (
-                    <field.FieldSet>
-                      <field.FieldLabel>Interests *</field.FieldLabel>
-                      <FieldDescription>Select all that apply</FieldDescription>
-                      <div className='grid grid-cols-2 gap-3 md:grid-cols-3'>
-                        {interestOptions.map((opt) => (
-                          <div key={opt.value} className='flex items-center space-x-2'>
-                            <Checkbox
-                              id={`interests-${opt.value}`}
-                              checked={values.includes(opt.value)}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  field.pushValue(opt.value);
-                                } else {
-                                  const idx = values.indexOf(opt.value);
-                                  if (idx > -1) field.removeValue(idx);
-                                }
-                              }}
-                            />
-                            <Label htmlFor={`interests-${opt.value}`}>{opt.label}</Label>
-                          </div>
-                        ))}
-                      </div>
-                      {values.length > 0 && (
-                        <div className='flex flex-wrap gap-2'>
-                          {values.map((v) => (
-                            <Badge key={v} variant='secondary'>
-                              {interestOptions.find((o) => o.value === v)?.label || v}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                      <field.FieldError />
-                    </field.FieldSet>
-                  );
-                }}
+                label='Interests'
+                required
+                description='Select all that apply'
+                options={interestOptions}
+                className='grid grid-cols-2 gap-3 md:grid-cols-3'
               />
+              {formValues.interests.length > 0 && (
+                <div className='flex flex-wrap gap-2'>
+                  {formValues.interests.map((v) => (
+                    <Badge key={v} variant='secondary'>
+                      {interestOptions.find((o) => o.value === v)?.label || v}
+                    </Badge>
+                  ))}
+                </div>
+              )}
 
               {/* Radio Group (flat pattern + onBlur validation) */}
               <FormRadioGroupField

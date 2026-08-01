@@ -32,7 +32,7 @@ import type {
 import * as React from 'react';
 import {
   Field as DefaultField,
-  FieldError as DefaultFieldError,
+  FieldError,
   FieldSet as DefaultFieldSet
 } from '@/components/ui/field';
 import { cn } from '@/lib/utils';
@@ -67,15 +67,32 @@ const useFieldContext = () => {
   }
 
   const { name, store, ...rest } = fieldCtx;
+  const form = useFormContext();
   const errors = useStore(store, (state) => state.meta.errors);
+  const isTouched = useStore(store, (state) => state.meta.isTouched);
+  const isValid = useStore(store, (state) => state.meta.isValid);
+  const hasSubmitted = useStore(form.store, (s) => s.submissionAttempts > 0);
+
+  // The ONE invalid source for wrappers, controls and error display alike:
+  // errors surface after user interaction OR a submit attempt — never on a
+  // pristine form.
+  const isInvalid = !isValid && (isTouched || hasSubmitted);
+
+  // IDs namespace the field name under the FieldSet's React.useId, so two
+  // forms with the same field name on one page never collide, while every
+  // child of the same FieldSet resolves identical values from context.
+  // Outside a FieldSet (no provider) they fall back to the bare name.
+  const base = id ? `${id}-${name}` : name;
 
   return {
     id,
     name,
-    formItemId: `${id}-form-item`,
-    formDescriptionId: `${id}-form-item-description`,
-    formMessageId: `${id}-form-item-message`,
+    controlId: base,
+    formItemId: `${base}-form-item`,
+    formDescriptionId: `${base}-form-item-description`,
+    formMessageId: `${base}-form-item-message`,
     errors,
+    isInvalid,
     store,
     ...rest
   };
@@ -86,10 +103,16 @@ const useFieldContext = () => {
 // ---------------------------------------------------------------------------
 
 function FieldSet({ className, children, ...props }: React.ComponentProps<'fieldset'>) {
-  const id = React.useId();
+  // NEVER mint an id here: the scope is established ABOVE the field
+  // component body (bindFieldComponent, withItemScope, createFormField), so
+  // body-computed ids and child-computed ids always agree. Without a
+  // provider both sides fall back to the bare field name — consistent, so
+  // aria-describedby still resolves (at the cost of possible cross-form id
+  // collisions, the pre-existing behavior for fully hand-rolled usage).
+  const inherited = React.useContext(FormItemContext);
 
   return (
-    <FormItemContext.Provider value={{ id }}>
+    <FormItemContext.Provider value={inherited}>
       <DefaultFieldSet className={cn('grid gap-1', className)} {...props}>
         {children}
       </DefaultFieldSet>
@@ -98,41 +121,33 @@ function FieldSet({ className, children, ...props }: React.ComponentProps<'field
 }
 
 function Field({ children, ...props }: React.ComponentProps<typeof DefaultField>) {
-  const { errors, formItemId, formDescriptionId, formMessageId, store } = useFieldContext();
-  const form = useFormContext();
-  const isTouched = useStore(store, (state) => state.meta.isTouched);
-  // Show errors after user interaction OR after first submit attempt
-  const hasSubmitted = useStore(form.store, (s) => s.submissionAttempts > 0);
-  const hasVisibleErrors = !!errors.length && (isTouched || hasSubmitted);
+  const { formItemId, isInvalid } = useFieldContext();
 
+  // aria-invalid/aria-describedby live on the CONTROL (canonical shadcn
+  // anatomy), not this role='group' wrapper; data-invalid stays for styling
+  // hooks and scrollToFirstError.
   return (
-    <DefaultField
-      data-invalid={hasVisibleErrors}
-      id={formItemId}
-      aria-describedby={
-        !hasVisibleErrors ? `${formDescriptionId}` : `${formDescriptionId} ${formMessageId}`
-      }
-      aria-invalid={hasVisibleErrors}
-      {...props}
-    >
+    <DefaultField data-invalid={isInvalid} id={formItemId} {...props}>
       {children}
     </DefaultField>
   );
 }
 
-function FieldError({ className, ...props }: React.ComponentProps<'p'>) {
-  const { errors, formMessageId, store } = useFieldContext();
-  const form = useFormContext();
-  const isTouched = useStore(store, (state) => state.meta.isTouched);
-  const hasSubmitted = useStore(form.store, (s) => s.submissionAttempts > 0);
-  if (!errors.length || (!isTouched && !hasSubmitted)) return null;
+function FormFieldError({ className, ...props }: React.ComponentProps<'p'>) {
+  const { errors, formMessageId, isInvalid } = useFieldContext();
+  if (!isInvalid || !errors.length) return null;
+  // Function validators return plain strings; FieldError only renders
+  // { message } objects, so normalize to keep both error shapes visible.
+  const normalizedErrors = errors.map((error) =>
+    typeof error === 'string' ? { message: error } : error
+  );
   return (
-    <DefaultFieldError
+    <FieldError
       data-slot='form-message'
       id={formMessageId}
       className={cn('text-destructive text-sm', className)}
       {...props}
-      errors={errors}
+      errors={normalizedErrors}
     />
   );
 }
@@ -388,8 +403,52 @@ interface FieldSlotProps {
   validators?: unknown;
   listeners?: unknown;
   asyncDebounceMs?: number;
+  mode?: 'value' | 'array';
   defaultValue?: unknown;
   children: (fieldApi: AnyFieldApi) => React.ReactNode;
+}
+
+/**
+ * Wraps a base field component so a per-instance accessibility-id scope
+ * exists ABOVE its body — the body's useFieldContext and the children of the
+ * FormFieldSet it renders then resolve identical, collision-free ids. Used
+ * for the fieldComponents registry (Pattern 2 render props) and the legacy
+ * createFormField path; bindFieldComponent establishes the same scope
+ * itself.
+ */
+export function withItemScope<P extends object>(
+  Base: React.ComponentType<P>
+): React.ComponentType<P> {
+  // HOC factory: ItemScoped closes over Base; hoisting it would break that.
+  // oxlint-disable-next-line unicorn/consistent-function-scoping
+  function ItemScoped(props: P) {
+    const id = React.useId();
+    return (
+      <FormItemContext.Provider value={{ id }}>
+        <Base {...props} />
+      </FormItemContext.Provider>
+    );
+  }
+  ItemScoped.displayName = `ItemScope(${Base.displayName || Base.name || 'Field'})`;
+  // Preserve the array-mode marker across wrapping.
+  (ItemScoped as { fieldMode?: 'array' }).fieldMode = (Base as { fieldMode?: 'array' }).fieldMode;
+  return ItemScoped;
+}
+
+/**
+ * Marks a base field component as editing an ARRAY value: the binder mounts
+ * its form.Field with mode='array' so the field API gains pushValue/
+ * removeValue/etc. Declared by the COMPONENT (not passed by callers), so the
+ * typed prop surface and the runtime cannot disagree.
+ *
+ * @example
+ * ```tsx
+ * export const CheckboxGroupField = asArrayField(CheckboxGroupBase);
+ * ```
+ */
+export function asArrayField<C extends React.ComponentType<any>>(component: C): C {
+  (component as C & { fieldMode?: 'array' }).fieldMode = 'array';
+  return component;
 }
 
 /**
@@ -410,20 +469,28 @@ export function bindFieldComponent(
 ): React.ComponentType<any> {
   function Bound({ name, validators, listeners, asyncDebounceMs, defaultValue, ...rest }: any) {
     const FieldSlot = form.Field as unknown as React.ComponentType<FieldSlotProps>;
+    // Establish the accessibility-id scope ABOVE the base component, so its
+    // body and the FormFieldSet children it renders resolve identical,
+    // per-instance-unique ids (two forms — or two usages — with the same
+    // field name never collide).
+    const boundId = React.useId();
     return (
       <FieldSlot
         name={name}
         validators={validators}
         listeners={listeners}
         asyncDebounceMs={asyncDebounceMs}
+        mode={(Base as { fieldMode?: 'array' }).fieldMode}
         defaultValue={defaultValue}
       >
         {(fieldApi) => (
-          <formContext.Provider value={form as unknown as AnyFormApi}>
-            <fieldContext.Provider value={fieldApi}>
-              <Base {...rest} />
-            </fieldContext.Provider>
-          </formContext.Provider>
+          <FormItemContext.Provider value={{ id: boundId }}>
+            <formContext.Provider value={form as unknown as AnyFormApi}>
+              <fieldContext.Provider value={fieldApi}>
+                <Base {...rest} />
+              </fieldContext.Provider>
+            </formContext.Provider>
+          </FormItemContext.Provider>
         )}
       </FieldSlot>
     );
@@ -553,6 +620,7 @@ function createFormField<P extends object>(FieldComponent: React.ComponentType<P
     Omit<P, 'name' | 'validators' | 'asyncDebounceMs' | 'listeners' | 'mode' | 'defaultValue'>) {
     const form = useFormContext();
     const FieldSlot = form.Field as unknown as FormFieldSlot;
+    const scopeId = React.useId();
     return (
       <FieldSlot
         name={name}
@@ -563,9 +631,11 @@ function createFormField<P extends object>(FieldComponent: React.ComponentType<P
         defaultValue={defaultValue}
       >
         {(fieldApi) => (
-          <fieldContext.Provider value={fieldApi}>
-            <FieldComponent {...(props as unknown as P)} />
-          </fieldContext.Provider>
+          <FormItemContext.Provider value={{ id: scopeId }}>
+            <fieldContext.Provider value={fieldApi}>
+              <FieldComponent {...(props as unknown as P)} />
+            </fieldContext.Provider>
+          </FormItemContext.Provider>
         )}
       </FieldSlot>
     );
@@ -643,6 +713,6 @@ export {
   scrollToFirstError,
   FieldSet as FormFieldSet,
   Field as FormField,
-  FieldError as FormFieldError,
+  FormFieldError,
   FormErrors
 };

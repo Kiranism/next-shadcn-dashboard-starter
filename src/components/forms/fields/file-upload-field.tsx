@@ -17,6 +17,7 @@ interface FileUploadFieldProps {
   required?: boolean;
   maxSize?: number;
   maxFiles?: number;
+  disabled?: boolean;
 }
 
 /** Path value type FileUploadField can edit — matches the `as File[] | undefined` cast below. */
@@ -27,7 +28,8 @@ export function FileUploadField({
   description,
   required,
   maxSize,
-  maxFiles
+  maxFiles,
+  disabled
 }: FileUploadFieldProps) {
   const field = useFieldContext();
   const value = useStore(field.store, (s) => s.value) as File[] | undefined;
@@ -35,7 +37,9 @@ export function FileUploadField({
   return (
     <FormFieldSet>
       <FormField>
-        <FieldLabel htmlFor={field.name}>
+        {/* No htmlFor: FileUploader renders a dropzone region, not a
+            labellable control — the visible label text is the association. */}
+        <FieldLabel>
           {label}
           {required && ' *'}
         </FieldLabel>
@@ -45,9 +49,12 @@ export function FileUploadField({
             onValueChange={field.handleChange}
             maxSize={maxSize}
             maxFiles={maxFiles}
+            disabled={disabled}
           />
         </div>
-        {description && <FieldDescription>{description}</FieldDescription>}
+        {description && (
+          <FieldDescription id={field.formDescriptionId}>{description}</FieldDescription>
+        )}
       </FormField>
       <FormFieldError />
     </FormFieldSet>

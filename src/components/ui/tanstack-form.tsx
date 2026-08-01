@@ -5,7 +5,7 @@
  * withForm, and withFieldGroup. See docs/forms.md for full usage guide.
  */
 
-import { createFormHook } from '@tanstack/react-form';
+import { createFormHook, useStore } from '@tanstack/react-form';
 import type { VariantProps } from 'class-variance-authority';
 import * as React from 'react';
 import { Button, type buttonVariants } from '@/components/ui/button';
@@ -29,6 +29,8 @@ import {
   RadioGroupField,
   SliderField,
   FileUploadField,
+  CheckboxGroupField,
+  ArrayTextField,
   FormTextField,
   FormTextareaField,
   FormSelectField,
@@ -44,7 +46,9 @@ import {
   type SwitchFieldValue,
   type RadioGroupFieldValue,
   type SliderFieldValue,
-  type FileUploadFieldValue
+  type FileUploadFieldValue,
+  type CheckboxGroupFieldValue,
+  type ArrayTextFieldValue
 } from '@/components/forms/fields';
 import { cn } from '@/lib/utils';
 import {
@@ -55,6 +59,7 @@ import {
   FormField,
   FormFieldError,
   bindFieldComponent,
+  withItemScope,
   type FormLike,
   type BoundFormField,
   type BoundExtraFields,
@@ -73,6 +78,7 @@ function Form({
   children?: React.ReactNode;
 }) {
   const form = useFormContext();
+  const isSubmitting = useStore(form.store, (s) => s.isSubmitting);
   const handleSubmit = React.useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
@@ -84,6 +90,7 @@ function Form({
   return (
     <form
       onSubmit={handleSubmit}
+      aria-busy={isSubmitting}
       className={cn('mx-auto flex w-full flex-col gap-2 p-2 md:p-5', props.className)}
       noValidate
       {...props}
@@ -156,15 +163,19 @@ const { useAppForm, withForm, withFieldGroup } = createFormHook({
     InputGroup,
     InputGroupAddon,
     InputGroupInput,
-    // Base field components (for AppField render-prop pattern)
-    TextField,
-    TextareaField,
-    SelectField,
-    CheckboxField,
-    SwitchField,
-    RadioGroupField,
-    SliderField,
-    FileUploadField
+    // Base field components (for AppField render-prop pattern), each wrapped
+    // in a per-instance accessibility-id scope so body- and child-computed
+    // ids agree (see withItemScope).
+    TextField: withItemScope(TextField),
+    TextareaField: withItemScope(TextareaField),
+    SelectField: withItemScope(SelectField),
+    CheckboxField: withItemScope(CheckboxField),
+    SwitchField: withItemScope(SwitchField),
+    RadioGroupField: withItemScope(RadioGroupField),
+    SliderField: withItemScope(SliderField),
+    FileUploadField: withItemScope(FileUploadField),
+    CheckboxGroupField: withItemScope(CheckboxGroupField),
+    ArrayTextField: withItemScope(ArrayTextField)
   },
   formComponents: {
     // Layout & actions
@@ -224,6 +235,16 @@ export interface TypedFormFields<TValues> {
     TValues,
     FileUploadFieldValue,
     React.ComponentProps<typeof FileUploadField>
+  >;
+  FormCheckboxGroupField: BoundFormField<
+    TValues,
+    CheckboxGroupFieldValue,
+    React.ComponentProps<typeof CheckboxGroupField>
+  >;
+  FormArrayTextField: BoundFormField<
+    TValues,
+    ArrayTextFieldValue,
+    React.ComponentProps<typeof ArrayTextField>
   >;
 }
 
@@ -340,7 +361,9 @@ function useFormFields(
       FormSwitchField: bindFieldComponent(form, SwitchField),
       FormRadioGroupField: bindFieldComponent(form, RadioGroupField),
       FormSliderField: bindFieldComponent(form, SliderField),
-      FormFileUploadField: bindFieldComponent(form, FileUploadField)
+      FormFileUploadField: bindFieldComponent(form, FileUploadField),
+      FormCheckboxGroupField: bindFieldComponent(form, CheckboxGroupField),
+      FormArrayTextField: bindFieldComponent(form, ArrayTextField)
     };
     extraKeys.forEach((key, i) => {
       bound[key] = bindFieldComponent(form, extraValues[i]);
@@ -364,6 +387,7 @@ export { useAppForm, withForm, withFieldGroup, useFormFields };
 // extras), which add the value-contract typing.)
 export {
   fieldFor,
+  asArrayField,
   revalidateLogic,
   scrollToFirstError,
   useFieldContext,
