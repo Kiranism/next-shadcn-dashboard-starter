@@ -27,6 +27,10 @@ interface SelectFieldProps {
   options: Option[];
   placeholder?: string;
   disabled?: boolean;
+  /** Non-interactive but not dimmed — for view-permission display modes. */
+  readOnly?: boolean;
+  /** Visually hide the label (kept for screen readers). */
+  labelSrOnly?: boolean;
   /** 'horizontal'/'responsive' render label + description + error beside the
    *  trigger (canonical FieldContent anatomy). Default: stacked. */
   orientation?: 'vertical' | 'horizontal' | 'responsive';
@@ -42,6 +46,8 @@ export function SelectField({
   options,
   placeholder = 'Select an option',
   disabled,
+  readOnly,
+  labelSrOnly,
   orientation = 'vertical'
 }: SelectFieldProps) {
   const field = useFieldContext();
@@ -60,10 +66,15 @@ export function SelectField({
       // Base UI latches controlled-ness on first render (useControlled ref).
       value={value ?? ''}
       disabled={disabled}
-      onValueChange={(v) => field.handleChange(v ?? '')}
+      onValueChange={(v) => {
+        if (readOnly) return;
+        field.handleChange(v ?? '');
+      }}
       onOpenChange={(open) => {
+        if (readOnly) return;
         if (!open) field.handleBlur();
       }}
+      readOnly={readOnly}
     >
       <SelectTrigger
         id={field.controlId}
@@ -89,7 +100,7 @@ export function SelectField({
       <FormFieldSet>
         <FormField orientation={orientation}>
           <FieldContent>
-            <FieldLabel htmlFor={field.controlId}>
+            <FieldLabel htmlFor={field.controlId} className={labelSrOnly ? 'sr-only' : undefined}>
               {label}
               {required && ' *'}
             </FieldLabel>
@@ -107,7 +118,7 @@ export function SelectField({
   return (
     <FormFieldSet>
       <FormField>
-        <FieldLabel htmlFor={field.controlId}>
+        <FieldLabel htmlFor={field.controlId} className={labelSrOnly ? 'sr-only' : undefined}>
           {label}
           {required && ' *'}
         </FieldLabel>

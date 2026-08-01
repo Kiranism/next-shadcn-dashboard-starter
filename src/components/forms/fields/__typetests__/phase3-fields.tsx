@@ -18,6 +18,7 @@ interface Phase3Values {
   interests: string[];
   emails: string[];
   plan: string;
+  due: Date | null;
 }
 
 const defaults: Phase3Values = {
@@ -26,7 +27,8 @@ const defaults: Phase3Values = {
   severity: 3,
   interests: [],
   emails: [''],
-  plan: ''
+  plan: '',
+  due: null
 };
 
 const interestOptions = [
@@ -85,9 +87,21 @@ export function Phase3Positive() {
 
 export function Phase3Negative() {
   const form = useAppForm({ defaultValues: defaults, onSubmit: () => {} });
-  const { FormCheckboxGroupField, FormArrayTextField, FormTextField } = useFormFields(form);
+  const {
+    FormCheckboxGroupField,
+    FormArrayTextField,
+    FormTextField,
+    FormDatePickerField,
+    FormComboboxField
+  } = useFormFields(form);
   return (
     <>
+      {/* shipped DatePicker/Combobox obey their value contracts */}
+      <FormDatePickerField name='due' label='Due' />
+      {/* @ts-expect-error P3-N8: date picker on a string path */}
+      <FormDatePickerField name='title' label='Nope' />
+      {/* @ts-expect-error P3-N9: combobox on a Date path */}
+      <FormComboboxField name='due' label='Nope' options={interestOptions} />
       {/* @ts-expect-error P3-N1: checkbox group on a scalar string path */}
       <FormCheckboxGroupField name='title' label='Nope' options={interestOptions} />
       {/* @ts-expect-error P3-N2: checkbox group on a boolean path */}
@@ -124,7 +138,7 @@ export function ReviewFixProbes() {
   const collision = useFormFields(form, shadowing);
   void collision;
   // Positive: non-colliding extras still bind.
-  const { FormDatePickerField } = useFormFields(form, { FormDatePickerField: DatePickerField });
-  void FormDatePickerField;
+  const { FormCustomDateField } = useFormFields(form, { FormCustomDateField: DatePickerField });
+  void FormCustomDateField;
   return null;
 }

@@ -47,8 +47,8 @@ export function NegativeProbes() {
     onSubmit: ({ value }) => void value
   });
 
-  const { FormTextField, FormSwitchField, FormDatePickerField } = useFormFields(form, {
-    FormDatePickerField: DatePickerField
+  const { FormTextField, FormSwitchField, FormCustomDateField } = useFormFields(form, {
+    FormCustomDateField: DatePickerField
   });
 
   return (
@@ -121,7 +121,7 @@ export function NegativeProbes() {
       />
 
       {/* R6 negative: custom Date field rejects a string path */}
-      <FormDatePickerField
+      <FormCustomDateField
         // @ts-expect-error R6 — 'title' is string, not a Date path
         name='title'
         label='R6-neg'
@@ -178,7 +178,7 @@ export function UnbrandedRejection() {
   });
   const fields = useFormFields(form, {
     // @ts-expect-error unbranded base components are rejected (no fieldFor brand)
-    FormDatePickerField: UnbrandedDatePickerField
+    FormCustomDateField: UnbrandedDatePickerField
   });
   return <>{Object.keys(fields).length}</>;
 }

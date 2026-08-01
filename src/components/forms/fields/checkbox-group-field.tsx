@@ -8,11 +8,12 @@ import {
   FieldDescription,
   FieldGroup,
   FieldLabel,
-  FieldLegend
+  FieldLegend,
+  FieldSet
 } from '@/components/ui/field';
 import {
   useFieldContext,
-  FormFieldSet,
+  useArrayFieldApi,
   FormFieldError,
   asArrayField
 } from '@/components/ui/form-context';
@@ -57,12 +58,7 @@ function CheckboxGroupBase({
     columns && Number.isFinite(columns) && Math.floor(columns) > 1
       ? Math.min(Math.floor(columns), 6)
       : undefined;
-  // Array field API — present at runtime under mode='array' (asArrayField);
-  // the context's generic types can't express it, hence the local view.
-  const arrayApi = field as unknown as {
-    pushValue: (value: string) => void;
-    removeValue: (index: number) => void;
-  };
+  const arrayApi = useArrayFieldApi<string>(field);
 
   const toggle = (optValue: string, checked: boolean) => {
     if (checked) {
@@ -75,7 +71,8 @@ function CheckboxGroupBase({
   };
 
   return (
-    <FormFieldSet data-invalid={field.isInvalid} aria-describedby={describedBy}>
+    // A real <fieldset>: semantic group with a legend (canonical anatomy).
+    <FieldSet data-invalid={field.isInvalid} aria-describedby={describedBy}>
       <FieldLegend variant='label'>
         {label}
         {required && ' *'}
@@ -120,7 +117,7 @@ function CheckboxGroupBase({
         ))}
       </FieldGroup>
       <FormFieldError />
-    </FormFieldSet>
+    </FieldSet>
   );
 }
 

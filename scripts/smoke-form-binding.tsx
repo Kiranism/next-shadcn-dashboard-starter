@@ -369,5 +369,90 @@ check(
 );
 check('submitButton: caller disabled can force-disable', hasDisabledAttr(disabledHtml));
 
+// ---------------------------------------------------------------------------
+// 9. 100/100 pack: schemaFor derivation, applyServerErrors round-trip,
+//    DatePicker/Combobox composed fields, readOnly guards
+// ---------------------------------------------------------------------------
+import { schemaFor, applyServerErrors, clearServerErrors } from '@/lib/form-helpers';
+
+const orgSchema = z.object({
+  name: z.string().min(2, 'Too short'),
+  contact: z.object({ email: z.string().email('Bad email') }),
+  tags: z.array(z.string().min(1, 'Empty tag')).optional(),
+  nickname: z.string().min(3).optional()
+});
+check(
+  'schemaFor: nested path resolves and validates',
+  schemaFor(orgSchema, 'contact.email')?.safeParse('nope').success === false &&
+    schemaFor(orgSchema, 'contact.email')?.safeParse('a@b.co').success === true
+);
+check(
+  'schemaFor: array element path resolves through optional wrapper',
+  schemaFor(orgSchema, 'tags[0]')?.safeParse('').success === false
+);
+check(
+  'schemaFor: optional leaf unwraps to its inner rule',
+  schemaFor(orgSchema, 'nickname')?.safeParse('ab').success === false
+);
+check('schemaFor: unresolvable path degrades to undefined', schemaFor(orgSchema, 'no.such') === undefined);
+
+const serverForm = new FormApi({ defaultValues: { email: '', name: '' } });
+serverForm.mount();
+applyServerErrors(serverForm, {
+  fieldErrors: { email: 'Email already registered' },
+  formErrors: ['Account limit reached']
+});
+const emailMeta = serverForm.state.fieldMeta.email as
+  | { isTouched: boolean; errorMap: Record<string, unknown> }
+  | undefined;
+check(
+  'serverErrors: field error lands touched under onServer',
+  emailMeta?.isTouched === true && emailMeta?.errorMap.onServer === 'Email already registered'
+);
+check(
+  'serverErrors: form-level error reaches state.errors via flatten',
+  flattenFormErrors(serverForm.state.errors as unknown[]).includes('Account limit reached'),
+  JSON.stringify(serverForm.state.errors)
+);
+clearServerErrors(serverForm);
+check(
+  'serverErrors: clear removes both levels',
+  (serverForm.state.fieldMeta.email as { errorMap: Record<string, unknown> }).errorMap.onServer ===
+    undefined && flattenFormErrors(serverForm.state.errors as unknown[]).length === 0
+);
+
+function NewFieldsProbe() {
+  const form = useAppForm({
+    defaultValues: { due: null, assignee: '' } as { due: Date | null; assignee: string },
+    onSubmit: ({ value }) => void value
+  });
+  const { FormDatePickerField, FormComboboxField } = useFormFields(form);
+  return (
+    <div>
+      <FormDatePickerField name='due' label='Due Date' placeholder='Pick a due date' />
+      <FormComboboxField
+        name='assignee'
+        label='Assignee'
+        readOnly
+        options={[{ value: 'k', label: 'Kiran' }]}
+        placeholder='Choose assignee'
+      />
+    </div>
+  );
+}
+const html11 = renderToString(<NewFieldsProbe />);
+check('datePicker: renders trigger with placeholder', /Pick a due date/.test(html11));
+check(
+  'combobox: renders with role, placeholder and aria-readonly',
+  /role="combobox"/.test(html11) && /Choose assignee/.test(html11) && /aria-readonly="true"/.test(html11)
+);
+check(
+  'newFields: describedby targets resolve',
+  (() => {
+    const refs = [...html11.matchAll(/aria-describedby="([^"]+)"/g)].flatMap((m) => m[1].split(' '));
+    return refs.every((r) => html11.includes(`id="${r}"`));
+  })()
+);
+
 console.log(failures === 0 ? 'SMOKE: ALL PASS' : `SMOKE: ${failures} FAILURE(S)`);
 process.exit(failures === 0 ? 0 : 1);

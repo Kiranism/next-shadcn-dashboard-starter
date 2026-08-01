@@ -18,6 +18,10 @@ interface SliderFieldProps {
   max?: number;
   step?: number;
   disabled?: boolean;
+  /** Non-interactive but not dimmed — for view-permission display modes. */
+  readOnly?: boolean;
+  /** Visually hide the label (kept for screen readers). */
+  labelSrOnly?: boolean;
 }
 
 /** Path value type SliderField can edit — matches the `as number` cast below. */
@@ -29,7 +33,9 @@ export function SliderField({
   min = 0,
   max = 100,
   step = 1,
-  disabled
+  disabled,
+  readOnly,
+  labelSrOnly
 }: SliderFieldProps) {
   const field = useFieldContext();
   const value = (useStore(field.store, (s) => s.value) as number) ?? min;
@@ -43,7 +49,9 @@ export function SliderField({
   return (
     <FormFieldSet>
       <FormField>
-        <FieldLabel id={labelId}>{label}</FieldLabel>
+        <FieldLabel id={labelId} className={labelSrOnly ? 'sr-only' : undefined}>
+          {label}
+        </FieldLabel>
         <div className='px-1'>
           <Slider
             min={min}
@@ -51,7 +59,10 @@ export function SliderField({
             step={step}
             value={[value]}
             disabled={disabled}
-            onValueChange={(v) => field.handleChange(Array.isArray(v) ? v[0] : v)}
+            onValueChange={(v) => {
+              if (readOnly) return;
+              field.handleChange(Array.isArray(v) ? v[0] : v);
+            }}
             onBlur={field.handleBlur}
             aria-labelledby={labelId}
             aria-describedby={describedBy}

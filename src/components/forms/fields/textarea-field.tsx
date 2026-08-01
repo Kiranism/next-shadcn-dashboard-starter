@@ -20,6 +20,8 @@ interface TextareaFieldProps extends Omit<
   required?: boolean;
   maxLength?: number;
   showCount?: boolean;
+  /** Visually hide the label (kept for screen readers). */
+  labelSrOnly?: boolean;
   /** 'horizontal'/'responsive' render label + description + error beside the
    *  textarea (canonical FieldContent anatomy). Default: stacked. */
   orientation?: 'vertical' | 'horizontal' | 'responsive';
@@ -34,6 +36,7 @@ export function TextareaField({
   required,
   maxLength,
   showCount = !!maxLength,
+  labelSrOnly,
   orientation = 'vertical',
   className,
   ...textareaProps
@@ -74,7 +77,7 @@ export function TextareaField({
       <FormFieldSet>
         <FormField orientation={orientation}>
           <FieldContent>
-            <FieldLabel htmlFor={field.controlId}>
+            <FieldLabel htmlFor={field.controlId} className={labelSrOnly ? 'sr-only' : undefined}>
               {label}
               {required && ' *'}
             </FieldLabel>
@@ -92,7 +95,7 @@ export function TextareaField({
   return (
     <FormFieldSet>
       <FormField>
-        <FieldLabel htmlFor={field.controlId}>
+        <FieldLabel htmlFor={field.controlId} className={labelSrOnly ? 'sr-only' : undefined}>
           {label}
           {required && ' *'}
         </FieldLabel>

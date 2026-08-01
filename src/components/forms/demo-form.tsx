@@ -19,14 +19,6 @@ import {
   InputOTPSeparator
 } from '@/components/ui/input-otp';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList
-} from '@/components/ui/command';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
@@ -94,71 +86,6 @@ const genderOptions = [
 ];
 
 // ─── Custom field components (no pre-built field component exists) ───
-
-function ComboboxField({
-  value,
-  onChange,
-  onBlur,
-  isTouched,
-  isValid
-}: {
-  value: string;
-  onChange: (val: string) => void;
-  onBlur: () => void;
-  isTouched: boolean;
-  isValid: boolean;
-}) {
-  const [open, setOpen] = React.useState(false);
-  const selected = frameworkOptions.find((o) => o.value === value);
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={
-          <Button
-            variant='outline'
-            role='combobox'
-            aria-controls='framework-listbox'
-            aria-expanded={open}
-            className='w-full justify-between font-normal'
-            aria-invalid={isTouched && !isValid}
-            onBlur={onBlur}
-          />
-        }
-      >
-        {selected?.label ?? 'Search frameworks...'}
-        <Icons.chevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
-      </PopoverTrigger>
-      <PopoverContent className='w-(--anchor-width) p-0'>
-        <Command>
-          <CommandInput placeholder='Search...' />
-          <CommandList>
-            <CommandEmpty>No framework found.</CommandEmpty>
-            <CommandGroup>
-              {frameworkOptions.map((opt) => (
-                <CommandItem
-                  key={opt.value}
-                  value={opt.value}
-                  onSelect={(val) => {
-                    onChange(val);
-                    setOpen(false);
-                  }}
-                >
-                  <Icons.check
-                    className={cn(
-                      'mr-2 h-4 w-4',
-                      value === opt.value ? 'opacity-100' : 'opacity-0'
-                    )}
-                  />
-                  {opt.label}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
-}
 
 function TagsField({
   values,
@@ -298,7 +225,9 @@ export default function DemoForm() {
     FormRadioGroupField,
     FormSliderField,
     FormFileUploadField,
-    FormCheckboxGroupField
+    FormCheckboxGroupField,
+    FormComboboxField,
+    FormDatePickerField
   } = useFormFields(form);
 
   const formValues = useStore(form.store, (s) => s.values);
@@ -427,25 +356,15 @@ export default function DemoForm() {
                   }}
                 />
 
-                {/* Combobox — custom, needs AppField (type-safe name) */}
-                <form.AppField
+                {/* Combobox — composed searchable select (was a 60-line
+                    hand-roll before FormComboboxField existed) */}
+                <FormComboboxField
                   name='framework'
-                  children={(field) => (
-                    <field.FieldSet>
-                      <field.Field>
-                        <field.FieldLabel>Framework *</field.FieldLabel>
-                        <ComboboxField
-                          value={field.state.value}
-                          onChange={field.handleChange}
-                          onBlur={field.handleBlur}
-                          isTouched={field.state.meta.isTouched}
-                          isValid={field.state.meta.isValid}
-                        />
-                        <FieldDescription>Searchable dropdown</FieldDescription>
-                      </field.Field>
-                      <field.FieldError />
-                    </field.FieldSet>
-                  )}
+                  label='Framework'
+                  required
+                  description='Searchable dropdown'
+                  options={frameworkOptions}
+                  placeholder='Search frameworks...'
                 />
               </div>
 
@@ -564,45 +483,12 @@ export default function DemoForm() {
               <SectionTitle>Date & Time</SectionTitle>
 
               <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-                {/* Date Picker */}
-                <form.AppField
+                {/* Date Picker — composed (was a 38-line AppField hand-roll
+                    before FormDatePickerField existed) */}
+                <FormDatePickerField
                   name='birthDate'
-                  children={(field) => (
-                    <field.FieldSet>
-                      <field.Field>
-                        <field.FieldLabel>Birth Date</field.FieldLabel>
-                        <Popover>
-                          <PopoverTrigger
-                            render={
-                              <Button
-                                variant='outline'
-                                className={cn(
-                                  'w-full justify-start text-left font-normal',
-                                  !field.state.value && 'text-muted-foreground'
-                                )}
-                              />
-                            }
-                          >
-                            <Icons.calendar className='mr-2 h-4 w-4' />
-                            {field.state.value ? (
-                              format(field.state.value, 'PPP')
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                          </PopoverTrigger>
-                          <PopoverContent className='w-auto p-0' align='start'>
-                            <Calendar
-                              mode='single'
-                              selected={field.state.value}
-                              onSelect={field.handleChange}
-                              disabled={(date) => date > new Date()}
-                              autoFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </field.Field>
-                    </field.FieldSet>
-                  )}
+                  label='Birth Date'
+                  disabledDates={(date) => date > new Date()}
                 />
 
                 {/* Time Input */}

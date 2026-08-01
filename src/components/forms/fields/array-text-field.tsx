@@ -10,7 +10,8 @@ import {
   FieldDescription,
   FieldError,
   FieldGroup,
-  FieldLegend
+  FieldLegend,
+  FieldSet
 } from '@/components/ui/field';
 import {
   InputGroup,
@@ -22,7 +23,7 @@ import { Icons } from '@/components/icons';
 import {
   useFieldContext,
   useFormContext,
-  FormFieldSet,
+  useArrayFieldApi,
   FormFieldError,
   asArrayField
 } from '@/components/ui/form-context';
@@ -79,14 +80,11 @@ function ArrayTextBase({
   // Field render-prop (bound fields re-provide the live form in context), so
   // per-row validation and error state are native TanStack field state.
   const RowField = (form as unknown as { Field: React.ComponentType<RowFieldSlotProps> }).Field;
-  const arrayApi = field as unknown as {
-    pushValue: (value: string) => void;
-    removeValue: (index: number) => void;
-  };
+  const arrayApi = useArrayFieldApi<string>(field);
 
   return (
     // data-invalid anchors group-level (array) errors for scrollToFirstError.
-    <FormFieldSet data-invalid={field.isInvalid}>
+    <FieldSet data-invalid={field.isInvalid}>
       <FieldLegend variant='label'>
         {label}
         {required && ' *'}
@@ -161,7 +159,7 @@ function ArrayTextBase({
         </Button>
       </div>
       <FormFieldError />
-    </FormFieldSet>
+    </FieldSet>
   );
 }
 

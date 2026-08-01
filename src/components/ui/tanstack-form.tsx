@@ -31,6 +31,8 @@ import {
   FileUploadField,
   CheckboxGroupField,
   ArrayTextField,
+  DatePickerField,
+  ComboboxField,
   FormTextField,
   FormTextareaField,
   FormSelectField,
@@ -48,7 +50,9 @@ import {
   type SliderFieldValue,
   type FileUploadFieldValue,
   type CheckboxGroupFieldValue,
-  type ArrayTextFieldValue
+  type ArrayTextFieldValue,
+  type DatePickerFieldValue,
+  type ComboboxFieldValue
 } from '@/components/forms/fields';
 import { cn } from '@/lib/utils';
 import {
@@ -183,7 +187,9 @@ const { useAppForm, withForm, withFieldGroup } = createFormHook({
     SliderField: withItemScope(SliderField),
     FileUploadField: withItemScope(FileUploadField),
     CheckboxGroupField: withItemScope(CheckboxGroupField),
-    ArrayTextField: withItemScope(ArrayTextField)
+    ArrayTextField: withItemScope(ArrayTextField),
+    DatePickerField: withItemScope(DatePickerField),
+    ComboboxField: withItemScope(ComboboxField)
   },
   formComponents: {
     // Layout & actions
@@ -253,6 +259,16 @@ export interface TypedFormFields<TValues> {
     TValues,
     ArrayTextFieldValue,
     React.ComponentProps<typeof ArrayTextField>
+  >;
+  FormDatePickerField: BoundFormField<
+    TValues,
+    DatePickerFieldValue,
+    React.ComponentProps<typeof DatePickerField>
+  >;
+  FormComboboxField: BoundFormField<
+    TValues,
+    ComboboxFieldValue,
+    React.ComponentProps<typeof ComboboxField>
   >;
 }
 
@@ -376,7 +392,9 @@ function useFormFields(
       FormSliderField: bindFieldComponent(form, SliderField),
       FormFileUploadField: bindFieldComponent(form, FileUploadField),
       FormCheckboxGroupField: bindFieldComponent(form, CheckboxGroupField),
-      FormArrayTextField: bindFieldComponent(form, ArrayTextField)
+      FormArrayTextField: bindFieldComponent(form, ArrayTextField),
+      FormDatePickerField: bindFieldComponent(form, DatePickerField),
+      FormComboboxField: bindFieldComponent(form, ComboboxField)
     };
     extraKeys.forEach((key, i) => {
       bound[key] = bindFieldComponent(form, extraValues[i]);
@@ -424,6 +442,10 @@ export type {
   FieldComponentFor,
   FormLike
 } from './form-context';
+
+// Schema/server helpers
+export { schemaFor, applyServerErrors, clearServerErrors } from '@/lib/form-helpers';
+export type { ServerErrors } from '@/lib/form-helpers';
 
 // Deprecated legacy surface (removed next release)
 export { createFormField, typedField } from './form-context';

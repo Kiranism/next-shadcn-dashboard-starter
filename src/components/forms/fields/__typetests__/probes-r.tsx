@@ -59,10 +59,10 @@ export function PositiveProbes() {
     FormSliderField,
     FormCheckboxField,
     FormFileUploadField,
-    FormDatePickerField,
+    FormCustomDateField,
     FormSingleFileField
   } = useFormFields(form, {
-    FormDatePickerField: DatePickerField,
+    FormCustomDateField: DatePickerField,
     FormSingleFileField: SingleFileField
   });
 
@@ -119,7 +119,7 @@ export function PositiveProbes() {
       <FormSingleFileField name='attachments[0]' label='First attachment' />
 
       {/* R6 positive: custom Date field binds Date-valued paths with full config typing */}
-      <FormDatePickerField
+      <FormCustomDateField
         name='dueDate'
         label='Due Date'
         validators={{

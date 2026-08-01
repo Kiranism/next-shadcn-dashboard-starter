@@ -16,12 +16,20 @@ interface CheckboxFieldProps {
   description?: string;
   required?: boolean;
   disabled?: boolean;
+  /** Non-interactive but not dimmed — for view-permission display modes. */
+  readOnly?: boolean;
 }
 
 /** Path value type CheckboxField can edit — matches the `as boolean` cast below. */
 export type CheckboxFieldValue = boolean | null | undefined;
 
-export function CheckboxField({ label, description, required, disabled }: CheckboxFieldProps) {
+export function CheckboxField({
+  label,
+  description,
+  required,
+  disabled,
+  readOnly
+}: CheckboxFieldProps) {
   const field = useFieldContext();
   const value = useStore(field.store, (s) => s.value) as boolean;
 
@@ -41,9 +49,11 @@ export function CheckboxField({ label, description, required, disabled }: Checkb
           checked={value ?? false}
           disabled={disabled}
           onCheckedChange={(checked) => {
+            if (readOnly) return;
             field.handleChange(checked as boolean);
             field.handleBlur();
           }}
+          aria-readonly={readOnly || undefined}
           aria-invalid={field.isInvalid}
           aria-describedby={describedBy}
         />

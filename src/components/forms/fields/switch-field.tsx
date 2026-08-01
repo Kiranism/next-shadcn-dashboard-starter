@@ -15,12 +15,14 @@ interface SwitchFieldProps {
   label: string;
   description?: string;
   disabled?: boolean;
+  /** Non-interactive but not dimmed — for view-permission display modes. */
+  readOnly?: boolean;
 }
 
 /** Path value type SwitchField can edit — matches the `as boolean` cast below. */
 export type SwitchFieldValue = boolean | null | undefined;
 
-export function SwitchField({ label, description, disabled }: SwitchFieldProps) {
+export function SwitchField({ label, description, disabled, readOnly }: SwitchFieldProps) {
   const field = useFieldContext();
   const value = useStore(field.store, (s) => s.value) as boolean;
 
@@ -51,8 +53,12 @@ export function SwitchField({ label, description, disabled }: SwitchFieldProps) 
           // latches controlled-ness on first render).
           checked={value ?? false}
           disabled={disabled}
-          onCheckedChange={field.handleChange}
+          onCheckedChange={(checked) => {
+            if (readOnly) return;
+            field.handleChange(checked);
+          }}
           onBlur={field.handleBlur}
+          aria-readonly={readOnly || undefined}
           aria-invalid={field.isInvalid}
           aria-describedby={describedBy}
         />

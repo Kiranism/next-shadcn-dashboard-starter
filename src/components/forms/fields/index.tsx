@@ -9,6 +9,8 @@ export { SliderField } from './slider-field';
 export { FileUploadField } from './file-upload-field';
 export { CheckboxGroupField } from './checkbox-group-field';
 export { ArrayTextField } from './array-text-field';
+export { DatePickerField } from './date-picker-field';
+export { ComboboxField } from './combobox-field';
 
 // Per-widget path value contracts (which paths each widget may bind to)
 export type { TextFieldValue } from './text-field';
@@ -21,6 +23,8 @@ export type { SliderFieldValue } from './slider-field';
 export type { FileUploadFieldValue } from './file-upload-field';
 export type { CheckboxGroupFieldValue } from './checkbox-group-field';
 export type { ArrayTextFieldValue } from './array-text-field';
+export type { DatePickerFieldValue } from './date-picker-field';
+export type { ComboboxFieldValue } from './combobox-field';
 
 // Composed (deprecated — use useFormFields(form) instead; removed next release)
 export { FormTextField } from './text-field';

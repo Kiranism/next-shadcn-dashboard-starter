@@ -30,11 +30,7 @@ import type {
   FieldListeners
 } from '@tanstack/form-core';
 import * as React from 'react';
-import {
-  Field as DefaultField,
-  FieldError,
-  FieldSet as DefaultFieldSet
-} from '@/components/ui/field';
+import { Field as DefaultField, FieldError } from '@/components/ui/field';
 import { cn } from '@/lib/utils';
 
 // ---------------------------------------------------------------------------
@@ -102,20 +98,26 @@ const useFieldContext = () => {
 // 3. Structural field components
 // ---------------------------------------------------------------------------
 
-function FieldSet({ className, children, ...props }: React.ComponentProps<'fieldset'>) {
+function FieldSet({ className, children, ...props }: React.ComponentProps<'div'>) {
   // NEVER mint an id here: the scope is established ABOVE the field
   // component body (bindFieldComponent, withItemScope, createFormField), so
   // body-computed ids and child-computed ids always agree. Without a
   // provider both sides fall back to the bare field name — consistent, so
   // aria-describedby still resolves (at the cost of possible cross-form id
   // collisions, the pre-existing behavior for fully hand-rolled usage).
+  //
+  // Renders a DIV, not a <fieldset>: per the canonical Field anatomy,
+  // <fieldset>/<legend> are reserved for semantic GROUPS (radio groups,
+  // checkbox groups, array fields — those widgets render a real FieldSet
+  // from ui/field themselves). A legendless per-field fieldset added no
+  // semantics and carried min-content/nesting landmines.
   const inherited = React.useContext(FormItemContext);
 
   return (
     <FormItemContext.Provider value={inherited}>
-      <DefaultFieldSet className={cn('grid gap-1', className)} {...props}>
+      <div data-slot='form-field-set' className={cn('grid gap-1', className)} {...props}>
         {children}
-      </DefaultFieldSet>
+      </div>
     </FormItemContext.Provider>
   );
 }
@@ -456,6 +458,32 @@ interface FieldSlotProps {
   mode?: 'value' | 'array';
   defaultValue?: unknown;
   children: (fieldApi: AnyFieldApi) => React.ReactNode;
+}
+
+/**
+ * Typed view of the array-mode field API for authors of custom array field
+ * components. The generic context can't express the array methods (they
+ * exist only under mode='array', i.e. asArrayField), so this is the single
+ * sanctioned cast — custom fields no longer hand-roll their own.
+ *
+ * @example
+ * ```tsx
+ * const field = useFieldContext();
+ * const array = useArrayFieldApi<string>(field);
+ * array.pushValue('');
+ * ```
+ */
+export interface ArrayFieldApi<TItem> {
+  pushValue: (value: TItem) => void;
+  removeValue: (index: number) => void;
+  insertValue: (index: number, value: TItem) => void;
+  replaceValue: (index: number, value: TItem) => void;
+  swapValues: (indexA: number, indexB: number) => void;
+  moveValue: (from: number, to: number) => void;
+}
+
+export function useArrayFieldApi<TItem>(field: ReturnType<typeof useFieldContext>) {
+  return field as unknown as ArrayFieldApi<TItem>;
 }
 
 /**

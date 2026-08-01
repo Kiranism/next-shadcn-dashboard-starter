@@ -9,14 +9,10 @@ import {
   FieldDescription,
   FieldLegend,
   FieldLabel,
+  FieldSet,
   FieldTitle
 } from '@/components/ui/field';
-import {
-  useFieldContext,
-  FormFieldSet,
-  FormFieldError,
-  createFormField
-} from '@/components/ui/form-context';
+import { useFieldContext, FormFieldError, createFormField } from '@/components/ui/form-context';
 
 type Option = { value: string; label: string; description?: string; disabled?: boolean };
 
@@ -26,6 +22,8 @@ interface RadioGroupFieldProps {
   required?: boolean;
   options: Option[];
   disabled?: boolean;
+  /** Non-interactive but not dimmed — for view-permission display modes. */
+  readOnly?: boolean;
   /** 'card' renders each option as a selectable card with title + description
    *  (canonical shadcn anatomy). Defaults to 'card' automatically when any
    *  option carries a description, else 'inline'. */
@@ -41,6 +39,7 @@ export function RadioGroupField({
   required,
   options,
   disabled,
+  readOnly,
   variant
 }: RadioGroupFieldProps) {
   const field = useFieldContext();
@@ -54,7 +53,9 @@ export function RadioGroupField({
       .join(' ') || undefined;
 
   return (
-    <FormFieldSet>
+    // A real <fieldset>: this is a semantic GROUP with a legend (canonical
+    // Field anatomy reserves fieldset/legend for exactly this).
+    <FieldSet data-invalid={field.isInvalid}>
       <FieldLegend variant='label' id={legendId}>
         {label}
         {required && ' *'}
@@ -68,8 +69,12 @@ export function RadioGroupField({
         // latches controlled-ness on first render).
         value={value ?? ''}
         disabled={disabled}
-        onValueChange={field.handleChange}
+        onValueChange={(next) => {
+          if (readOnly) return;
+          field.handleChange(next);
+        }}
         onBlur={field.handleBlur}
+        aria-readonly={readOnly || undefined}
         aria-labelledby={legendId}
         aria-describedby={describedBy}
         className={
@@ -106,7 +111,7 @@ export function RadioGroupField({
             ))}
       </RadioGroup>
       <FormFieldError />
-    </FormFieldSet>
+    </FieldSet>
   );
 }
 
