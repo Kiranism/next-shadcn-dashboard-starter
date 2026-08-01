@@ -24,7 +24,29 @@ export const metadata: Metadata = {
     template: '%s | Shadcn Dashboard'
   },
   description:
-    'Free, open source admin dashboard starter built with Next.js 16, shadcn/ui, Tailwind CSS, and TypeScript.'
+    'Free, open source admin dashboard starter built with Next.js 16, shadcn/ui, Tailwind CSS, and TypeScript.',
+  openGraph: {
+    title: 'Shadcn Dashboard - Next.js Admin Dashboard Template',
+    description:
+      'Free, open source admin dashboard starter built with Next.js 16, shadcn/ui, Tailwind CSS, and TypeScript.',
+    siteName: 'Shadcn Dashboard',
+    type: 'website',
+    images: [
+      {
+        url: '/shadcn-dashboard.png',
+        width: 3200,
+        height: 1600,
+        alt: 'Shadcn Dashboard overview page'
+      }
+    ]
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Shadcn Dashboard - Next.js Admin Dashboard Template',
+    description:
+      'Free, open source admin dashboard starter built with Next.js 16, shadcn/ui, Tailwind CSS, and TypeScript.',
+    images: ['/shadcn-dashboard.png']
+  }
 };
 
 export const viewport: Viewport = {
