@@ -160,7 +160,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 type DemoFormValues = {
   name: string;
   email: string;
-  age: number;
+  age?: number;
   password: string;
   phone: string;
   website: string;
@@ -187,7 +187,7 @@ export default function DemoForm() {
     defaultValues: {
       name: '',
       email: '',
-      age: 18,
+      age: undefined,
       password: '',
       phone: '',
       website: '',
