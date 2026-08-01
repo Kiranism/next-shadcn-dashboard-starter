@@ -629,8 +629,9 @@ export function asArrayField<C extends React.ComponentType<any>>(component: C): 
  * the value-contract typing this raw binder does not have. Only the keys of
  * TypedFieldConfig are diverted to form.Field; every other prop (including a
  * base component's own `mode`, if it has one) reaches the base component.
- * Array-mode field slots are a Phase 3 binder extension — do NOT resurrect a
- * `mode` divert here without re-adding it to TypedFieldConfig.
+ * Array mode is declared by the field component itself (asArrayField) —
+ * do NOT resurrect a `mode` divert here without re-adding it to
+ * TypedFieldConfig.
  */
 export function bindFieldComponent(
   form: FormLike<unknown>,

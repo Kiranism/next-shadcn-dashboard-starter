@@ -1,11 +1,9 @@
 'use client';
 
 /**
- * R8 target: the audit's enterprise-settings scenario (23 fields, 3-level
- * nesting) ported to the NEW API. The only page-level change vs the archived
- * original is `useFormFields<OrgSettingsValues>()` -> `useFormFields(form)`
- * (plus the import source). Everything else — validators, listeners,
- * AppField escape hatch, disabled/min/max passthrough — is verbatim.
+ * Enterprise-settings scenario (23 fields, 3-level nesting) — the tsc-perf
+ * canary. Validators, listeners, the AppField escape hatch and
+ * disabled/min/max passthrough all bind through `useFormFields(form)`.
  */
 
 import { useStore } from '@tanstack/react-form';

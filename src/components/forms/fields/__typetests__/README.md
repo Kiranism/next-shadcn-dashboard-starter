@@ -16,6 +16,7 @@ Compile-time probe suite for the typed composition layer
 | `probes-a.tsx` | A1–A9: value-type mismatches, wrong-typed validators, `defaultValue`, `onChangeListenTo` typos, atomic-leaf sub-path rejections (`attachments[0].name`) |
 | `probes-r.tsx` | R-regressions: optional paths, template-literal array paths, number paths, typed validator functions, File/Date whole-value binding, custom branded field joining |
 | `union-form.tsx` + `union-strict-probes.tsx` | Discriminated-union `TFormData` works; cross-branch type conflicts rejected for single-type widgets (`StrictDeepKeysOfType`) |
+| `composed-fields.tsx` | Group/array widgets (`FormCheckboxGroupField`, `FormArrayTextField`), shared prop surface (orientation/disabled/rich radio options), literal-union write guards, `schemaFor`/`applyServerErrors` helpers, extras collision guard |
 | `enterprise-form.tsx` (+ `org-settings*.ts`) | 23-field, 3-level nested shape compiles — the tsc-perf canary |
 | `mechanics.ts` | Type-level assertions on the atomic-exclusion machinery |
 | `augment-test.tsx` | `AtomicFieldValues` declaration-merge extensibility |

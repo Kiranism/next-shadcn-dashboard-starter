@@ -177,7 +177,7 @@ check(
 );
 
 // ---------------------------------------------------------------------------
-// 5. Phase 2 anatomy: collision-free ids, name passthrough, disabled,
+// 5. Field anatomy: collision-free ids, name passthrough, disabled,
 //    orientation, switch error slot wiring
 // ---------------------------------------------------------------------------
 function AnatomyProbe() {
@@ -235,9 +235,9 @@ check(
 );
 
 // ---------------------------------------------------------------------------
-// 6. Phase 3 fields: checkbox group + array text render and wire correctly
+// 6. Group & array fields: checkbox group + array text render and wire correctly
 // ---------------------------------------------------------------------------
-function Phase3Probe() {
+function GroupArrayProbe() {
   const form = useAppForm({
     defaultValues: { interests: ['a'], emails: ['x@y.z', ''] } as {
       interests: string[];
@@ -261,17 +261,17 @@ function Phase3Probe() {
     </div>
   );
 }
-const html7 = renderToString(<Phase3Probe />);
-check('phase3: checkbox-group slot rendered', /data-slot="checkbox-group"/.test(html7));
-check('phase3: checked state reflects array value', /aria-checked="true"|data-checked/.test(html7));
-check('phase3: disabled option propagates', /disabled/.test(html7));
+const html7 = renderToString(<GroupArrayProbe />);
+check('group-array: checkbox-group slot rendered', /data-slot="checkbox-group"/.test(html7));
+check('group-array: checked state reflects array value', /aria-checked="true"|data-checked/.test(html7));
+check('group-array: disabled option propagates', /disabled/.test(html7));
 check(
-  'phase3: array field renders one input per value',
+  'group-array: array field renders one input per value',
   (html7.match(/name@example\.com/g) ?? []).length === 2,
   String((html7.match(/name@example\.com/g) ?? []).length)
 );
-check('phase3: array field renders inline remove button', /aria-label="Remove Emails 1"/.test(html7));
-check('phase3: add button rendered', />Add Email</.test(html7));
+check('group-array: array field renders inline remove button', /aria-label="Remove Emails 1"/.test(html7));
+check('group-array: add button rendered', />Add Email</.test(html7));
 
 // ---------------------------------------------------------------------------
 // 7. Pattern 2 (AppField render prop) id scope — the withItemScope path.
@@ -309,7 +309,7 @@ check(
 );
 
 // ---------------------------------------------------------------------------
-// 8. Review-fix pack: FormErrors flattening (REAL form-core submit),
+// 8. FormErrors flattening (REAL form-core submit),
 //    form.Form className merge, SubmitButton disabled gate
 // ---------------------------------------------------------------------------
 const flattenSchema = z
@@ -459,7 +459,7 @@ check(
 );
 
 // ---------------------------------------------------------------------------
-// 10. Score-fix pack: stepper dead-click painting, typed server-error keys
+// 10. Stepper dead-click painting, typed server-error keys
 // ---------------------------------------------------------------------------
 import { applyStepIssues } from '@/hooks/use-stepper';
 

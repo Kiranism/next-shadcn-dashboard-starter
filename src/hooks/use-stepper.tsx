@@ -176,8 +176,8 @@ export function useFormStepper(schemas: ZodTypeAny[], options?: UseFormStepperOp
   };
 
   const handleCancelOrBack = (opts?: HandleCancelOrBackOpts) => {
-    // Back works from EVERY step after the first — including the review
-    // step (previously a no-op there); cancel only from step 1.
+    // Back works from every step after the first, including the review
+    // step; cancel only from step 1.
     if (currentStep > 1) {
       opts?.onBack?.();
       goToPrevStep();

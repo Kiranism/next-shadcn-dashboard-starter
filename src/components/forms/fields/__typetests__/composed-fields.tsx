@@ -1,9 +1,10 @@
 'use client';
 
 /**
- * PHASE 3 PROBES — FormCheckboxGroupField / FormArrayTextField (string[]
- * contracts) and the Phase 2 prop-surface additions (orientation, disabled,
- * rich radio options). Same oracle as the rest of the suite.
+ * Composed-field probes — FormCheckboxGroupField / FormArrayTextField
+ * (string[] contracts), the shared prop surface (orientation, disabled,
+ * rich radio options), write guards and the schema/server helpers. Same
+ * oracle as the rest of the suite.
  */
 
 import * as React from 'react';
@@ -36,7 +37,7 @@ const interestOptions = [
   { value: 'b', label: 'B', description: 'The B option', disabled: true }
 ];
 
-export function Phase3Positive() {
+export function ComposedPositive() {
   const form = useAppForm({ defaultValues: defaults, onSubmit: () => {} });
   const {
     FormTextField,
@@ -65,7 +66,7 @@ export function Phase3Positive() {
         maxItems={5}
         addLabel='Add Email'
       />
-      {/* Phase 2 prop-surface additions */}
+      {/* Shared prop surface */}
       <FormTextField name='title' label='Title' orientation='responsive' disabled />
       <FormSelectField
         name='plan'
@@ -85,7 +86,7 @@ export function Phase3Positive() {
   );
 }
 
-export function Phase3Negative() {
+export function ComposedNegative() {
   const form = useAppForm({ defaultValues: defaults, onSubmit: () => {} });
   const {
     FormCheckboxGroupField,
@@ -98,22 +99,22 @@ export function Phase3Negative() {
     <>
       {/* shipped DatePicker/Combobox obey their value contracts */}
       <FormDatePickerField name='due' label='Due' />
-      {/* @ts-expect-error P3-N8: date picker on a string path */}
+      {/* @ts-expect-error CF-N8: date picker on a string path */}
       <FormDatePickerField name='title' label='Nope' />
-      {/* @ts-expect-error P3-N9: combobox on a Date path */}
+      {/* @ts-expect-error CF-N9: combobox on a Date path */}
       <FormComboboxField name='due' label='Nope' options={interestOptions} />
-      {/* @ts-expect-error P3-N1: checkbox group on a scalar string path */}
+      {/* @ts-expect-error CF-N1: checkbox group on a scalar string path */}
       <FormCheckboxGroupField name='title' label='Nope' options={interestOptions} />
-      {/* @ts-expect-error P3-N2: checkbox group on a boolean path */}
+      {/* @ts-expect-error CF-N2: checkbox group on a boolean path */}
       <FormCheckboxGroupField name='urgent' label='Nope' options={interestOptions} />
-      {/* @ts-expect-error P3-N3: array text field on a number path */}
+      {/* @ts-expect-error CF-N3: array text field on a number path */}
       <FormArrayTextField name='severity' label='Nope' />
-      {/* @ts-expect-error P3-N4: text field on a string[] path (unchanged from A4) */}
+      {/* @ts-expect-error CF-N4: text field on a string[] path (unchanged from A4) */}
       <FormTextField name='interests' label='Nope' />
-      {/* @ts-expect-error P3-N5: orientation is a closed union */}
+      {/* @ts-expect-error CF-N5: orientation is a closed union */}
       <FormTextField name='title' label='Nope' orientation='diagonal' />
-      {/* review-fix: the itemValidators slot is typed to STRING validators */}
-      {/* @ts-expect-error P3-N6: a number schema is rejected */}
+      {/* The itemValidators slot is typed to STRING validators */}
+      {/* @ts-expect-error CF-N6: a number schema is rejected */}
       <FormArrayTextField name='emails' label='Nope' itemValidators={{ onBlur: z.number() }} />
     </>
   );
@@ -169,8 +170,7 @@ export function HelperProbes() {
   const form = useAppForm({ defaultValues: defaults, onSubmit: () => {} });
   const { FormTextField } = useFormFields(form);
   const mounted = (
-    // Positive: schemaFor's result mounts on a TYPED validator slot (the
-    // scorer-found compile break, now guarded).
+    // Positive: schemaFor's result mounts on a TYPED validator slot.
     <FormTextField
       name='title'
       label='Title'
@@ -212,7 +212,7 @@ export function ReviewFixProbes() {
   // Negative: an extras key that shadows a shipped widget is rejected
   // (silently replacing FormTextField would crash at runtime).
   const shadowing = { FormTextField: DatePickerField };
-  // @ts-expect-error P3-N7: extras key collision with a shipped field
+  // @ts-expect-error CF-N7: extras key collision with a shipped field
   const collision = useFormFields(form, shadowing);
   void collision;
   // Positive: non-colliding extras still bind.

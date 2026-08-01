@@ -358,8 +358,7 @@ export default function DemoForm() {
                   }}
                 />
 
-                {/* Combobox — composed searchable select (was a 60-line
-                    hand-roll before FormComboboxField existed) */}
+                {/* Combobox — searchable select */}
                 <FormComboboxField
                   name='framework'
                   label='Framework'
@@ -373,8 +372,7 @@ export default function DemoForm() {
               {/* ─── CHECKBOX & RADIO ─── */}
               <SectionTitle>Checkbox & Radio</SectionTitle>
 
-              {/* Checkbox Group — composed array field (was a 40-line
-                  AppField hand-roll before FormCheckboxGroupField existed) */}
+              {/* Checkbox Group — array field */}
               <FormCheckboxGroupField
                 name='interests'
                 label='Interests'
@@ -485,8 +483,7 @@ export default function DemoForm() {
               <SectionTitle>Date & Time</SectionTitle>
 
               <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-                {/* Date Picker — composed (was a 38-line AppField hand-roll
-                    before FormDatePickerField existed) */}
+                {/* Date Picker */}
                 <FormDatePickerField
                   name='birthDate'
                   label='Birth Date'

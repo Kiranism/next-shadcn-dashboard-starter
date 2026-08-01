@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * R4: discriminated-union TFormData (the audit's validation-gauntlet shape).
- * Shared keys and branch-specific keys must both bind; typos must still error.
+ * Discriminated-union TFormData: shared keys and branch-specific keys must
+ * both bind; typos must still error.
  */
 
 import * as React from 'react';

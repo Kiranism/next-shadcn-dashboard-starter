@@ -373,8 +373,8 @@ function useFormFields(
 
   // A ref-based cache instead of useMemo: React compares useMemo deps only
   // up to the shorter length, so a spread of Object.values(extra) in a deps
-  // array returns a STALE map when the extras cardinality changes (verified
-  // against react-dom 19 source). The ref compares keys AND values exactly,
+  // array returns a STALE map when the extras cardinality changes.
+  // The ref compares keys AND values exactly,
   // rebuilding when the map really changed — and NOT rebuilding for a fresh
   // inline `extra` literal with the same (module-scope) components, so
   // fields are never remounted per render.
