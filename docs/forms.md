@@ -59,21 +59,23 @@ src/features/products/
 └── components/product-form.tsx  ← Form UI (imports schema + options)
 ```
 
-The schema is reusable in API routes, server actions, tables and tests with zero duplication. Always prefer `z.infer<typeof schema>` as the form values type.
+The schema is reusable in API routes, server actions, tables and tests with zero duplication. Use **`FormValuesOf<typeof schema>`** (= `z.input`) as the form values type — NOT `z.infer`: requiredness refines on nullish fields (`.refine((v) => v != null)`) narrow z.infer's output under TS 5.5+ inferred type predicates, and transforms/defaults diverge input from output; the form always holds the INPUT shape.
 
-**Default values:** `satisfies` enforces completeness (`{} satisfies FormValues` is a compile error; `{} as FormValues` is not) — but under `satisfies`, TypeScript keeps each property's *narrow* inferred type, so widen non-string defaults per field or the inferred `TValues` won't match your widgets:
+**Default values:** declare them with a TYPE ANNOTATION — it enforces completeness AND widens every literal automatically (no per-field `as` dance):
 
 ```ts
-defaultValues: {
-  name: '',                        // strings are fine as-is
-  active: false as boolean,        // widen: bare `false` infers the literal type
-  launchDate: null as Date | null, // widen: bare `null` collapses the path entirely
-  price: undefined as number | undefined,
-  tags: [] as string[]             // widen: bare [] infers never[]
-} satisfies ProductFormValues
+import type { FormValuesOf } from '@/components/ui/tanstack-form';
+
+const defaultValues: FormValuesOf<typeof productSchema> = {
+  name: '',
+  active: false,
+  launchDate: null,
+  price: undefined,
+  tags: []
+};
 ```
 
-Rule of thumb: `satisfies` + per-field widening for object shapes; keep the `as FormValues` cast for discriminated-union defaults (and know it silently permits missing fields).
+`satisfies` also enforces completeness but KEEPS narrow literal types (bare `null`/`false`/enum strings collapse their paths out of the widgets' offered names) — avoid it for mixed shapes. Keep the `as FormValues` cast only for discriminated-union defaults (and know it silently permits missing fields).
 
 ---
 
@@ -82,7 +84,7 @@ Rule of thumb: `satisfies` + per-field widening for object shapes; keep the `as 
 ```tsx
 'use client';
 
-import { useAppForm, useFormFields } from '@/components/ui/tanstack-form';
+import { useAppForm, useFormFields, type FormValuesOf } from '@/components/ui/tanstack-form';
 import * as z from 'zod';
 
 const schema = z.object({
@@ -90,11 +92,9 @@ const schema = z.object({
   email: z.string().email('Invalid email')
 });
 
-type FormValues = z.infer<typeof schema>;
-
 export default function MyForm() {
   const form = useAppForm({
-    defaultValues: { name: '', email: '' } satisfies FormValues,
+    defaultValues: { name: '', email: '' } as FormValuesOf<typeof schema>,
     validators: { onSubmit: schema },
     onSubmit: ({ value }) => console.log(value)
   });
@@ -180,12 +180,12 @@ Every widget exports a base component (for Pattern 2) and appears in `useFormFie
 | `TextareaField`      | `string \| null?`            | `maxLength` + character counter, `orientation`, `labelSrOnly`                                                    |
 | `SelectField`        | `string \| null?`            | `options: {value, label, disabled?}`, `orientation`, `disabled`, `readOnly`, `labelSrOnly`                       |
 | `ComboboxField`      | `string \| null?`            | Searchable dropdown (Command in Popover), `options`, `disabled`, `readOnly`, `labelSrOnly`                       |
-| `DatePickerField`    | `Date \| null?`              | Calendar popover, `disabledDates`, `disabled`, `readOnly`, `labelSrOnly`. Stores a real `Date`                   |
+| `DatePickerField`    | `Date \| undefined` (+null ok) | Calendar popover, `disabledDates`, `disabled`, `readOnly`, `labelSrOnly`. Stores a real `Date`                   |
 | `CheckboxField`      | `boolean \| null?`           | `disabled`, `readOnly`                                                                                           |
 | `SwitchField`        | `boolean \| null?`           | Renders errors (inside `FieldContent`), `disabled`, `readOnly`                                                   |
 | `RadioGroupField`    | `string \| null?`            | Rich options `{value, label, description?, disabled?}`; auto **card variant** when descriptions present          |
 | `SliderField`        | `number \| null?`            | min/max readout, error slot, `disabled`, `readOnly`, `labelSrOnly`                                               |
-| `FileUploadField`    | `File[] \| null?`            | Drag-and-drop, `maxSize`/`maxFiles`, `disabled`                                                                  |
+| `FileUploadField`    | `File[] \| null?`            | Drag-and-drop, `maxSize`/`maxFiles`, `disabled`, `readOnly`                                                                  |
 | `CheckboxGroupField` | `string[] \| null?`          | Multi-select group (canonical `checkbox-group` anatomy): `options: {value, label, description?, disabled?}[]`, `columns`/`className` layouts, `readOnly`. **Array mode automatic** |
 | `ArrayTextField`     | `string[] \| null?`          | Dynamic string list — InputGroup rows, inline remove, `itemValidators: { onChange?, onBlur? }` (string schema or `({ value }) => …`), `maxItems`, `readOnly`. **Array mode automatic** |
 
@@ -248,7 +248,7 @@ import { schemaFor } from '@/components/ui/tanstack-form';
   validators={{ onBlur: schemaFor(orgSchema, 'contact.email') }} />
 ```
 
-`schemaFor` resolves dot paths and array-element paths, unwrapping `optional`/`nullable`/`default`. It returns `undefined` for paths it can't traverse (unions, refine-wrapped objects) — a no-op validator — so keep explicit validators there.
+`schemaFor`'s path argument is TYPE-CHECKED against the schema's input shape (typos are compile errors) and its return is typed to the path's value (mounting it on the wrong field is a compile error). Wrappers (`optional`/`nullable`/`default`) are unwrapped only to TRAVERSE — the resolved leaf KEEPS them, so a derived validator accepts exactly what the schema accepts (clearing an optional field never fails a derived required check). It returns `undefined` for paths it can't traverse (unions) — a no-op validator — so keep explicit validators there.
 
 ### Validator timing
 

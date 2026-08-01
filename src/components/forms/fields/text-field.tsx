@@ -14,7 +14,9 @@ import { Spinner } from '@/components/ui/spinner';
 
 interface TextFieldProps extends Omit<
   React.ComponentProps<'input'>,
-  'value' | 'onChange' | 'onBlur'
+  // id/name/aria-* are wired by the field system — a caller-supplied id
+  // would sever the label/description/error pairing, so they're not props.
+  'value' | 'onChange' | 'onBlur' | 'id' | 'name' | 'aria-invalid' | 'aria-describedby'
 > {
   label: string;
   description?: string;

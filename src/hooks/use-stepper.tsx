@@ -29,17 +29,21 @@ type StepState = {
  * Exported for the smoke suite; consumed by the step gate below.
  */
 export function applyStepIssues(
-  form: Pick<AnyFormApi, 'setFieldMeta'>,
+  form: Pick<AnyFormApi, 'setFieldMeta'> & { setErrorMap?(map: unknown): void },
   issues: ReadonlyArray<{ path: ReadonlyArray<PropertyKey>; message: string }>
 ) {
   const byField = new Map<string, string[]>();
+  const pathless: string[] = [];
   for (const issue of issues) {
     const path = issue.path.reduce<string>(
       (acc, seg) =>
         typeof seg === 'number' ? `${acc}[${seg}]` : acc ? `${acc}.${String(seg)}` : String(seg),
       ''
     );
-    if (!path) continue;
+    if (!path) {
+      pathless.push(issue.message);
+      continue;
+    }
     byField.set(path, [...(byField.get(path) ?? []), issue.message]);
   }
   for (const [path, messages] of byField) {
@@ -48,6 +52,13 @@ export function applyStepIssues(
       isTouched: true,
       errorMap: { ...meta?.errorMap, onSubmit: messages.join(' ') }
     }));
+  }
+  // Pathless (cross-field) issues have no field to render at — surface them
+  // through the form-level display (FormErrors shows onServer entries even
+  // before a submit attempt, since programmatic errors are always
+  // intentional).
+  if (pathless.length && form.setErrorMap) {
+    form.setErrorMap({ onServer: pathless.join(' ') });
   }
 }
 
@@ -153,9 +164,11 @@ export function useFormStepper(schemas: ZodTypeAny[], options?: UseFormStepperOp
           }, 0);
           return;
         }
-        // Cross-step failure not attributable to one step (e.g. a pathless
-        // refine): fall through — the submit below runs the form's own
-        // validators and FormErrors renders pathless issues.
+        // Cross-step failure not attributable to one step (a pathless
+        // refine): NEVER submit an invalid form — paint the issues (fields
+        // + form-level box) and block.
+        applyStepIssues(form, full.error.issues);
+        return;
       }
     }
 

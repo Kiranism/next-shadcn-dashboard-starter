@@ -175,6 +175,19 @@ export function HelperProbes() {
   applyServerErrors(form, { fieldErrors: { title: 'Taken' } });
   // @ts-expect-error W5: typo'd server-error field key rejected
   applyServerErrors(form, { fieldErrors: { titel: 'Taken' } });
+  const helperSchema = z.object({ title: z.string().min(2), count: z.number() });
+  // @ts-expect-error W6: schemaFor path typos are compile errors
+  const typoed = schemaFor(helperSchema, 'titel');
+  void typoed;
+  const wrongTyped = (
+    <FormTextField
+      name='title'
+      label='Nope'
+      // @ts-expect-error W7: number-path schema rejected on a string field
+      validators={{ onBlur: schemaFor(helperSchema, 'count') }}
+    />
+  );
+  void wrongTyped;
   return null;
 }
 

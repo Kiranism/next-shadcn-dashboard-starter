@@ -129,6 +129,7 @@ function ArrayTextBase({
                         aria-invalid={rowInvalid}
                         aria-describedby={rowInvalid ? rowMessageId : undefined}
                         placeholder={itemPlaceholder}
+                        readOnly={readOnly}
                         disabled={disabled}
                       />
                       {values.length > 1 && (
@@ -142,7 +143,7 @@ function ArrayTextBase({
                               arrayApi.removeValue(index);
                             }}
                             aria-label={`Remove ${label} ${index + 1}`}
-                            disabled={disabled}
+                            disabled={disabled || readOnly}
                           >
                             <Icons.close />
                           </InputGroupButton>
@@ -172,7 +173,7 @@ function ArrayTextBase({
             if (readOnly) return;
             arrayApi.pushValue('');
           }}
-          disabled={disabled || (maxItems !== undefined && values.length >= maxItems)}
+          disabled={disabled || readOnly || (maxItems !== undefined && values.length >= maxItems)}
         >
           {addLabel}
         </Button>

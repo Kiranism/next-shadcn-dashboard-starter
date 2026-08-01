@@ -216,13 +216,17 @@ function flattenFormErrors(errors: unknown[]): string[] {
 function FormErrors({ className, ...props }: React.ComponentProps<'div'>) {
   const form = useFormContext();
   // Gate on a submit attempt: form-level onChange/onMount validators must not
-  // paint a pristine form red.
+  // paint a pristine form red. PROGRAMMATIC errors (errorMap.onServer — set
+  // by applyServerErrors and the stepper's pathless-issue painting) are
+  // always intentional and show immediately.
   const hasSubmitted = useStore(form.store, (s) => s.submissionAttempts > 0);
+  const serverError = useStore(form.store, (s) => (s.errorMap as { onServer?: unknown }).onServer);
   return (
     <form.Subscribe selector={(state) => state.errors}>
       {(errors) => {
-        if (!hasSubmitted) return null;
-        const messages = flattenFormErrors(errors);
+        const messages = hasSubmitted
+          ? flattenFormErrors(errors)
+          : flattenFormErrors(serverError != null ? [serverError] : []);
         if (!messages.length) return null;
         return (
           <div

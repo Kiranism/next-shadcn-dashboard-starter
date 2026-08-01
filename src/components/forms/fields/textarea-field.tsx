@@ -13,7 +13,8 @@ import {
 
 interface TextareaFieldProps extends Omit<
   React.ComponentProps<'textarea'>,
-  'value' | 'onChange' | 'onBlur'
+  // id/name/aria-* are wired by the field system (see TextField).
+  'value' | 'onChange' | 'onBlur' | 'id' | 'name' | 'aria-invalid' | 'aria-describedby'
 > {
   label: string;
   description?: string;

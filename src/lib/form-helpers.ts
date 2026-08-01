@@ -3,8 +3,17 @@
  * See docs/forms.md ("Deriving field validators" and "Server errors").
  */
 
-import type { DeepKeys, StandardSchemaV1 } from '@tanstack/form-core';
-import type { ZodTypeAny } from 'zod';
+import type { DeepKeys, DeepValue, StandardSchemaV1 } from '@tanstack/form-core';
+import type { input as ZodInput, ZodType, ZodTypeAny } from 'zod';
+
+/**
+ * The FORM-VALUES type for a schema: its INPUT side. Prefer this over
+ * z.infer for form values — requiredness refines on nullish fields
+ * (`.refine((v) => v != null)`) narrow z.infer's OUTPUT under TS 5.5+
+ * inferred type predicates, and transforms/defaults diverge input from
+ * output; the form always holds the input shape.
+ */
+export type FormValuesOf<S extends ZodTypeAny> = ZodInput<S>;
 
 /**
  * Minimal structural view of a form instance — accepts ANY concrete
@@ -60,10 +69,10 @@ function unwrapSchema(schema: any): any {
  * union or a refine-wrapped object) — passing undefined as a validator is a
  * no-op, so this degrades safely; keep explicit validators for those paths.
  */
-export function schemaFor<TValue = any>(
-  schema: ZodTypeAny,
-  path: string
-): StandardSchemaV1<TValue, unknown> | undefined {
+export function schemaFor<S extends ZodType, const TPath extends DeepKeys<ZodInput<S>> & string>(
+  schema: S,
+  path: TPath
+): StandardSchemaV1<DeepValue<ZodInput<S>, TPath>, unknown> | undefined {
   const segments = path
     .replace(/\[\d*\]/g, '.__element__')
     .split('.')
@@ -71,6 +80,11 @@ export function schemaFor<TValue = any>(
 
   let current: any = schema;
   for (const segment of segments) {
+    // Unwrap optional/nullable/default ONLY to traverse into the next
+    // segment — the FINAL segment keeps its wrappers, so a derived
+    // validator accepts exactly what the schema accepts (an optional field
+    // cleared to undefined must not fail a derived required check) and
+    // leaf-attached refine messages survive.
     current = unwrapSchema(current);
     if (!current) return undefined;
     if (segment === '__element__') {
@@ -79,10 +93,7 @@ export function schemaFor<TValue = any>(
     }
     current = current.shape?.[segment];
   }
-  // The traversal is untyped by nature; the `any`-input StandardSchemaV1
-  // return keeps the result assignable to every typed validator slot, and
-  // pinning TValue (schemaFor<string>(...)) restores exactness when wanted.
-  return unwrapSchema(current) as StandardSchemaV1<TValue, unknown> | undefined;
+  return current as StandardSchemaV1<DeepValue<ZodInput<S>, TPath>, unknown> | undefined;
 }
 
 export interface ServerErrors<TValues = Record<string, unknown>> {

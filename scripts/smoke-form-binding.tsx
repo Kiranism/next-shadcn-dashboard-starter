@@ -394,10 +394,11 @@ check(
   rule(schemaFor(orgSchema, 'tags[0]'))?.safeParse('').success === false
 );
 check(
-  'schemaFor: optional leaf unwraps to its inner rule',
-  rule(schemaFor(orgSchema, 'nickname'))?.safeParse('ab').success === false
+  'schemaFor: optional leaf VALIDATES present values but ACCEPTS cleared ones',
+  rule(schemaFor(orgSchema, 'nickname'))?.safeParse('ab').success === false &&
+    rule(schemaFor(orgSchema, 'nickname'))?.safeParse(undefined).success === true
 );
-check('schemaFor: unresolvable path degrades to undefined', schemaFor(orgSchema, 'no.such') === undefined);
+check('schemaFor: unresolvable path degrades to undefined', schemaFor(orgSchema, 'no.such' as never) === undefined);
 
 const serverForm = new FormApi({ defaultValues: { email: '', name: '' } });
 serverForm.mount();

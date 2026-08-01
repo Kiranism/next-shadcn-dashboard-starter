@@ -441,9 +441,13 @@ export type {
   AtomicDeepKeys,
   AtomicDeepKeysOfType,
   StrictDeepKeysOfType,
+  FreeTextKeys,
+  ClearableKeys,
   TypedFieldValidators,
   TypedFieldConfig,
   BoundFormField,
+  BoundFreeTextField,
+  BoundClearableField,
   BoundExtraFields,
   FieldComponentFor,
   FormLike
@@ -451,7 +455,7 @@ export type {
 
 // Schema/server helpers
 export { schemaFor, applyServerErrors, clearServerErrors } from '@/lib/form-helpers';
-export type { ServerErrors } from '@/lib/form-helpers';
+export type { ServerErrors, FormValuesOf } from '@/lib/form-helpers';
 
 // Deprecated legacy surface (removed next release)
 export { createFormField, typedField } from './form-context';

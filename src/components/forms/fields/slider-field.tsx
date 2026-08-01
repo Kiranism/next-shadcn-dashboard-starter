@@ -67,6 +67,7 @@ export function SliderField({
               field.handleChange(Array.isArray(v) ? v[0] : v);
             }}
             onBlur={field.handleBlur}
+            aria-readonly={readOnly || undefined}
             aria-labelledby={labelId}
             aria-describedby={describedBy}
           />
