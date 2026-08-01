@@ -34,6 +34,13 @@ export function NavProjects({
     <SidebarGroup className='group-data-[collapsible=icon]:hidden'>
       <SidebarGroupLabel>Projects</SidebarGroupLabel>
       <SidebarMenu>
+        {projects.length === 0 && (
+          <SidebarMenuItem>
+            <p className='text-sidebar-foreground/70 px-2 py-1.5 text-xs'>
+              No projects yet. Create one to see it here.
+            </p>
+          </SidebarMenuItem>
+        )}
         {projects.map((item) => (
           <SidebarMenuItem key={item.name}>
             <SidebarMenuButton render={<a href={item.url} aria-label={item.name} />}>

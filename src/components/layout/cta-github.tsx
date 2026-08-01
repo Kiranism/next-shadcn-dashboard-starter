@@ -8,6 +8,7 @@ export default function CtaGithub() {
       size='sm'
       className='group hidden sm:flex'
       nativeButton={false}
+      aria-label='View on GitHub'
       render={
         <a
           aria-label='View on GitHub'

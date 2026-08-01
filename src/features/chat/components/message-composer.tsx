@@ -63,6 +63,7 @@ export function MessageComposer({
             }}
             placeholder={'Message ' + contactName + ' (Enter to send, Shift+Enter for newline)'}
             rows={2}
+            required={attachments.length === 0}
             className='text-foreground placeholder:text-muted-foreground/70 min-h-[3rem] w-full resize-none border-none bg-transparent text-xs focus-visible:ring-0 focus-visible:outline-none sm:min-h-[4rem] sm:text-sm'
             aria-label={'Message ' + contactName}
           />

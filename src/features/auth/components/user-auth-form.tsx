@@ -41,12 +41,19 @@ export default function UserAuthForm() {
                   <Input
                     id={field.name}
                     name={field.name}
+                    type='email'
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
                     placeholder='Enter your email...'
                     disabled={loading}
+                    aria-label='Email'
                     aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                    aria-describedby={
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                        ? `${field.name}-form-item-message`
+                        : undefined
+                    }
                   />
                 </field.Field>
                 <field.FieldError />

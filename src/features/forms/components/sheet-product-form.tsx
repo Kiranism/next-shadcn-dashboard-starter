@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue
@@ -90,6 +91,9 @@ export default function SheetProductForm() {
                           onChange={(e) => field.handleChange(e.target.value)}
                           placeholder='Enter product name'
                           aria-invalid={isInvalid}
+                          aria-describedby={
+                            isInvalid ? `${field.name}-form-item-message` : undefined
+                          }
                         />
                       </field.Field>
                       <field.FieldError />
@@ -112,15 +116,24 @@ export default function SheetProductForm() {
                           value={field.state.value}
                           onValueChange={(value) => field.handleChange(value ?? '')}
                         >
-                          <SelectTrigger id={field.name} aria-invalid={isInvalid}>
+                          <SelectTrigger
+                            id={field.name}
+                            aria-label='Category'
+                            aria-invalid={isInvalid}
+                            aria-describedby={
+                              isInvalid ? `${field.name}-form-item-message` : undefined
+                            }
+                          >
                             <SelectValue placeholder='Select category' />
                           </SelectTrigger>
                           <SelectContent>
-                            {categoryOptions.map((opt) => (
-                              <SelectItem key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </SelectItem>
-                            ))}
+                            <SelectGroup>
+                              {categoryOptions.map((opt) => (
+                                <SelectItem key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
                           </SelectContent>
                         </Select>
                       </field.Field>
@@ -152,6 +165,9 @@ export default function SheetProductForm() {
                           }}
                           placeholder='Enter price'
                           aria-invalid={isInvalid}
+                          aria-describedby={
+                            isInvalid ? `${field.name}-form-item-message` : undefined
+                          }
                         />
                       </field.Field>
                       <field.FieldError />
@@ -178,6 +194,9 @@ export default function SheetProductForm() {
                           maxLength={500}
                           rows={4}
                           aria-invalid={isInvalid}
+                          aria-describedby={
+                            isInvalid ? `${field.name}-form-item-message` : undefined
+                          }
                         />
                         <div className='text-muted-foreground text-right text-sm'>
                           {field.state.value?.length || 0} / 500

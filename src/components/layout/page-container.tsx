@@ -4,7 +4,11 @@ import type { InfobarContent } from '@/components/ui/infobar';
 
 function PageSkeleton() {
   return (
-    <div className='flex flex-1 animate-pulse flex-col gap-4 p-4 md:px-6'>
+    <div
+      role='status'
+      aria-label='Loading page'
+      className='flex flex-1 animate-pulse flex-col gap-4 p-4 md:px-6'
+    >
       <div className='flex items-center justify-between'>
         <div>
           <div className='bg-muted mb-2 h-8 w-48 rounded' />
@@ -38,7 +42,7 @@ export default function PageContainer({
 }) {
   if (!access) {
     return (
-      <div className='flex flex-1 items-center justify-center p-4 md:px-6'>
+      <div role='status' className='flex flex-1 items-center justify-center p-4 md:px-6'>
         {accessFallback ?? (
           <div className='text-muted-foreground text-center text-lg'>
             You do not have access to this page.
