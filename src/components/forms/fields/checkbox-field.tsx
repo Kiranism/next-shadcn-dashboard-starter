@@ -2,7 +2,7 @@
 
 import { useStore } from '@tanstack/react-form';
 import { Checkbox } from '@/components/ui/checkbox';
-import { FieldDescription, FieldLabel } from '@/components/ui/field';
+import { FieldContent, FieldDescription, FieldLabel } from '@/components/ui/field';
 import {
   useFieldContext,
   FormFieldSet,
@@ -14,33 +14,66 @@ import {
 interface CheckboxFieldProps {
   label: string;
   description?: string;
+  /** Class for the outer field wrapper (grid placement, spans, …). */
+  fieldClassName?: string;
+  required?: boolean;
+  disabled?: boolean;
+  /** Non-interactive but not dimmed — for view-permission display modes. */
+  readOnly?: boolean;
 }
 
-export function CheckboxField({ label, description }: CheckboxFieldProps) {
+/** Path value type CheckboxField can edit — matches the `as boolean` cast below. */
+export type CheckboxFieldValue = boolean | null | undefined;
+
+export function CheckboxField({
+  label,
+  description,
+  fieldClassName,
+  required,
+  disabled,
+  readOnly
+}: CheckboxFieldProps) {
   const field = useFieldContext();
-  const isTouched = useStore(field.store, (s) => s.meta.isTouched);
-  const isValid = useStore(field.store, (s) => s.meta.isValid);
   const value = useStore(field.store, (s) => s.value) as boolean;
 
+  const describedBy =
+    [description ? field.formDescriptionId : null, field.isInvalid ? field.formMessageId : null]
+      .filter(Boolean)
+      .join(' ') || undefined;
+
   return (
-    <FormFieldSet>
+    <FormFieldSet className={fieldClassName}>
       <FormField orientation='horizontal'>
         <Checkbox
-          checked={value}
+          id={field.controlId}
+          name={field.name}
+          // ?? false keeps the control CONTROLLED on undefined paths (Base UI
+          // latches controlled-ness on first render).
+          checked={value ?? false}
+          disabled={disabled}
           onCheckedChange={(checked) => {
+            if (readOnly) return;
             field.handleChange(checked as boolean);
             field.handleBlur();
           }}
-          aria-invalid={isTouched && !isValid}
+          aria-readonly={readOnly || undefined}
+          aria-invalid={field.isInvalid}
+          aria-describedby={describedBy}
         />
-        <div className='flex flex-1 flex-col gap-1.5 leading-snug'>
-          <FieldLabel className='leading-none'>{label}</FieldLabel>
-          {description && <FieldDescription>{description}</FieldDescription>}
+        <FieldContent>
+          <FieldLabel htmlFor={field.controlId} className='leading-none'>
+            {label}
+            {required && ' *'}
+          </FieldLabel>
+          {description && (
+            <FieldDescription id={field.formDescriptionId}>{description}</FieldDescription>
+          )}
           <FormFieldError />
-        </div>
+        </FieldContent>
       </FormField>
     </FormFieldSet>
   );
 }
 
+/** @deprecated Use useFormFields(form).FormCheckboxField — typed and instance-bound. Removed next release. */
 export const FormCheckboxField = createFormField(CheckboxField);

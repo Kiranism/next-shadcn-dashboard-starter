@@ -76,7 +76,7 @@ export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) 
     }
   });
 
-  const { FormTextField, FormSelectField } = useFormFields<UserFormValues>();
+  const { FormTextField, FormSelectField } = useFormFields(form);
 
   const isPending = createMutation.isPending || updateMutation.isPending;
 
