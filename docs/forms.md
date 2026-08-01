@@ -193,7 +193,7 @@ Every widget exports a base component (for Pattern 2) and appears in `useFormFie
 
 **`readOnly` vs `disabled`:** `disabled` dims and skips validation focus; `readOnly` keeps full-contrast display but ignores interaction — use it for view-permission modes. Every widget also takes **`fieldClassName`** for grid placement of the whole field (`col-span-2`, `max-w-sm`, …); `className` on Text/Textarea targets the control itself.
 
-**Write-side guards** (the compiler also checks what widgets could *write*): option widgets' `options[].value` must belong to the path's literal union; free-text widgets (Text/Textarea) are not offered literal-union paths at all (use Select/Combobox/RadioGroup for discriminators); DatePicker only binds paths that admit `undefined` (clearing writes `undefined` — use `.nullish()`/optional date schemas).
+**Write-side guards** (the compiler also checks what widgets could *write*): option widgets' `options[].value` must belong to the path's literal union; free-text widgets (Text/Textarea — and ArrayText rows, per element) are not offered literal-union paths at all (use Select/Combobox/RadioGroup/CheckboxGroup for those); DatePicker only binds paths that admit `undefined` (clearing writes `undefined` — use `.nullish()`/optional date schemas). Option constants for literal-union paths need narrow values — add `as const` in the constants file (`const roleOptions = [{ value: 'admin', label: 'Admin' }] as const;`), or a widened plain array fails the guard. Known boundary: SliderField accepts numeric-literal-union paths (discrete scales are its primary use — pair `step` with the scale).
 
 **Number fields:** clearing a `type='number'` TextField writes `undefined` (not `''`) — optional number schemas pass, required ones report a missing value.
 
@@ -326,6 +326,11 @@ Field-pathed issues from a form-level schema display at their fields; **pathless
 Three steps — no template-owned files are edited:
 
 ```tsx
+import {
+  useFieldContext, FormFieldSet, FormField, FormFieldError,
+  FieldLabel, fieldFor, useFormFields
+} from '@/components/ui/tanstack-form';
+
 // 1. Base component: read useFieldContext, render the shared anatomy
 function RatingBase({ label }: { label: string }) {
   const field = useFieldContext();     // controlId, isInvalid, formMessageId, handleChange, …

@@ -122,14 +122,16 @@ export function Phase3Negative() {
 interface WriteGuardValues {
   role: 'admin' | 'viewer';
   bio: string;
+  colors: ('red' | 'blue')[];
+  notes: string[];
 }
 
 export function WriteGuardProbes() {
   const form = useAppForm({
-    defaultValues: { role: 'viewer', bio: '' } as WriteGuardValues,
+    defaultValues: { role: 'viewer', bio: '', colors: [], notes: [] } as WriteGuardValues,
     onSubmit: () => {}
   });
-  const { FormSelectField, FormTextField } = useFormFields(form);
+  const { FormSelectField, FormTextField, FormArrayTextField } = useFormFields(form);
   return (
     <>
       {/* Positive: literal-union path binds a select with union-valid options */}
@@ -153,6 +155,10 @@ export function WriteGuardProbes() {
       <FormTextField name='role' label='Nope' />
       {/* Positive: plain string paths keep fully-open options and free text */}
       <FormTextField name='bio' label='Bio' />
+      {/* @ts-expect-error W8: free-text ROWS not offered literal-element arrays */}
+      <FormArrayTextField name='colors' label='Nope' />
+      {/* Positive: plain string[] paths still bind free-text rows */}
+      <FormArrayTextField name='notes' label='Notes' />
     </>
   );
 }

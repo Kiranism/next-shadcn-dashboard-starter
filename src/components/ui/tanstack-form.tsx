@@ -20,6 +20,10 @@ import {
   FieldTitle
 } from '@/components/ui/field';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group';
+
+// Field primitives re-exported so custom-field recipes need only this
+// entry point (the Custom Fields docs snippet imports them from here).
+export { FieldContent, FieldDescription, FieldLabel, FieldTitle } from '@/components/ui/field';
 import {
   TextField,
   TextareaField,
@@ -68,6 +72,7 @@ import {
   type BoundFormField,
   type BoundFreeTextField,
   type BoundClearableField,
+  type BoundFreeTextArrayField,
   type BoundExtraFields,
   type FieldComponentFor,
   type WithTypedName
@@ -261,7 +266,7 @@ export interface TypedFormFields<TValues> {
     CheckboxGroupFieldValue,
     React.ComponentProps<typeof CheckboxGroupField>
   >;
-  FormArrayTextField: BoundFormField<
+  FormArrayTextField: BoundFreeTextArrayField<
     TValues,
     ArrayTextFieldValue,
     React.ComponentProps<typeof ArrayTextField>

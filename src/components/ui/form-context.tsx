@@ -469,6 +469,28 @@ export interface BoundClearableField<TValues, TAllowed, TProps extends object> {
   displayName?: string;
 }
 
+/** Array paths whose ELEMENT admits arbitrary text — free-text row widgets
+ *  (ArrayTextField) are not offered literal-element arrays they could
+ *  corrupt ('green' into ('red' | 'blue')[]). */
+export type FreeTextElementKeys<TValues, TAllowed> =
+  StrictDeepKeysOfType<TValues, TAllowed> extends infer TKey
+    ? TKey extends StrictDeepKeysOfType<TValues, TAllowed>
+      ? NonNullable<DeepValue<TValues, TKey>> extends ReadonlyArray<infer E>
+        ? [string] extends [E]
+          ? TKey
+          : never
+        : never
+      : never
+    : never;
+
+/** BoundFormField for free-text ARRAY widgets — literal-element arrays excluded. */
+export interface BoundFreeTextArrayField<TValues, TAllowed, TProps extends object> {
+  <const TName extends FreeTextElementKeys<TValues, TAllowed>>(
+    props: Omit<TProps, keyof TypedFieldConfig<TValues, TName>> & TypedFieldConfig<TValues, TName>
+  ): React.ReactNode;
+  displayName?: string;
+}
+
 declare const FIELD_VALUE: unique symbol;
 
 /** A base field component branded with the value type it edits. */
