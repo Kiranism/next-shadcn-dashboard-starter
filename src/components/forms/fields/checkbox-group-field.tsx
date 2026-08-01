@@ -51,6 +51,12 @@ function CheckboxGroupBase({
     [description ? field.formDescriptionId : null, field.isInvalid ? field.formMessageId : null]
       .filter(Boolean)
       .join(' ') || undefined;
+
+  // Clamp to a sane integer grid (2-6); anything else = single column.
+  const cols =
+    columns && Number.isFinite(columns) && Math.floor(columns) > 1
+      ? Math.min(Math.floor(columns), 6)
+      : undefined;
   // Array field API — present at runtime under mode='array' (asArrayField);
   // the context's generic types can't express it, hence the local view.
   const arrayApi = field as unknown as {
@@ -79,10 +85,10 @@ function CheckboxGroupBase({
       )}
       <FieldGroup
         data-slot='checkbox-group'
-        className={className ?? (columns && columns > 1 ? 'grid gap-3' : undefined)}
+        className={className ?? (cols ? 'grid gap-3' : undefined)}
         style={
-          !className && columns && columns > 1
-            ? { gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }
+          !className && cols
+            ? { gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }
             : undefined
         }
       >

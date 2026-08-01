@@ -50,7 +50,9 @@ export function TextField({
       .join(' ') || undefined;
 
   const control = (
-    <div className='relative'>
+    // flex-1/min-w-0 in side-by-side orientations: the input fills the row
+    // remainder instead of collapsing to content width.
+    <div className={orientation === 'vertical' ? 'relative' : 'relative min-w-0 flex-1'}>
       <Input
         id={field.controlId}
         name={field.name}
@@ -60,7 +62,10 @@ export function TextField({
         onChange={(e) => {
           if (type === 'number') {
             const v = e.target.value;
-            field.handleChange(v === '' ? '' : parseFloat(v));
+            // Clearing writes undefined (not ''): optional number schemas
+            // pass, and required z.number() reports a missing value instead
+            // of the confusing 'expected number, received string'.
+            field.handleChange(v === '' ? undefined : parseFloat(v));
           } else {
             field.handleChange(e.target.value);
           }

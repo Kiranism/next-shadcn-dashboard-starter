@@ -19,7 +19,13 @@
 import * as React from 'react';
 import { renderToString } from 'react-dom/server';
 import { z } from 'zod';
-import { useAppForm, useFormFields, type FormLike } from '@/components/ui/tanstack-form';
+import { FormApi } from '@tanstack/form-core';
+import {
+  useAppForm,
+  useFormFields,
+  flattenFormErrors,
+  type FormLike
+} from '@/components/ui/tanstack-form';
 
 interface Values {
   title: string;
@@ -301,6 +307,67 @@ check(
   })(),
   [...html8.matchAll(/aria-describedby="([^"]+)"/g)].map((m) => m[1]).join(';')
 );
+
+// ---------------------------------------------------------------------------
+// 8. Review-fix pack: FormErrors flattening (REAL form-core submit),
+//    form.Form className merge, SubmitButton disabled gate
+// ---------------------------------------------------------------------------
+const flattenSchema = z
+  .object({ name: z.string().min(2, 'Name too short'), end: z.number() })
+  .refine((v) => v.end > 3, { message: 'End must be after start' });
+const coreForm = new FormApi({
+  defaultValues: { name: '', end: 1 },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  validators: { onSubmit: flattenSchema as any }
+});
+coreForm.mount();
+await coreForm.handleSubmit();
+const flat = flattenFormErrors(coreForm.state.errors as unknown[]);
+check(
+  'formErrors: pathless refine message extracted from a real failed submit',
+  flat.includes('End must be after start'),
+  JSON.stringify(flat)
+);
+check(
+  'formErrors: field-mapped issues skipped, nothing stringifies to [object Object]',
+  flat.length === 1 && !flat.some((m) => m.includes('object Object')),
+  JSON.stringify(flat)
+);
+
+function FormClassProbe() {
+  const form = useAppForm({ defaultValues: { a: '' }, onSubmit: () => {} });
+  return (
+    <form.AppForm>
+      <form.Form className='custom-marker p-0'>x</form.Form>
+    </form.AppForm>
+  );
+}
+const html10 = renderToString(<FormClassProbe />);
+const formClass = html10.match(/<form[^>]*class="([^"]*)"/)?.[1] ?? '';
+check(
+  'form.Form: caller className MERGES with base layout classes',
+  formClass.includes('custom-marker') && formClass.includes('flex') && formClass.includes('w-full'),
+  formClass
+);
+check('form.Form: tailwind-merge lets caller padding win', !/\bp-2\b/.test(formClass), formClass);
+
+function SubmitGateProbe({ callerDisabled }: { callerDisabled?: boolean }) {
+  const form = useAppForm({ defaultValues: { a: '' }, onSubmit: () => {} });
+  return (
+    <form.AppForm>
+      <form.SubmitButton disabled={callerDisabled}>Save</form.SubmitButton>
+    </form.AppForm>
+  );
+}
+const enabledHtml = renderToString(<SubmitGateProbe />);
+const disabledHtml = renderToString(<SubmitGateProbe callerDisabled />);
+// Match the ATTRIBUTE, not Tailwind's `disabled:` class variants.
+const hasDisabledAttr = (html: string) => /<button[^>]*\sdisabled(=""|[\s>])/.test(html);
+check(
+  'submitButton: enabled when gate open and caller passes nothing',
+  !hasDisabledAttr(enabledHtml)
+);
+check('submitButton: caller disabled can force-disable', hasDisabledAttr(disabledHtml));
 
 console.log(failures === 0 ? 'SMOKE: ALL PASS' : `SMOKE: ${failures} FAILURE(S)`);
 process.exit(failures === 0 ? 0 : 1);

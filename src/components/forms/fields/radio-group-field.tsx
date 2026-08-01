@@ -64,7 +64,9 @@ export function RadioGroupField({
       )}
       <RadioGroup
         name={field.name}
-        value={value}
+        // ?? '' keeps the control CONTROLLED on undefined paths (Base UI
+        // latches controlled-ness on first render).
+        value={value ?? ''}
         disabled={disabled}
         onValueChange={field.handleChange}
         onBlur={field.handleBlur}

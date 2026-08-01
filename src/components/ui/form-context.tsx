@@ -166,12 +166,62 @@ function FormFieldError({ className, ...props }: React.ComponentProps<'p'>) {
  * </form.AppForm>
  * ```
  */
+/**
+ * Flattens form-level `state.errors` entries into displayable strings.
+ *
+ * Function validators contribute plain strings — kept as-is. Standard-schema
+ * (Zod) form validators contribute PATH-KEYED objects like
+ * `{ name: [issue...], '': [pathless issues] }` (shape verified against
+ * form-core 1.32): field-pathed issues are already rendered at their fields
+ * by FormFieldError, so only the pathless (`''`) issues — refine/superRefine
+ * with no path, the primary cross-field use case — belong to the form-level
+ * display. Anything unrecognized degrades to a JSON string, never
+ * '[object Object]'.
+ */
+function flattenFormErrors(errors: unknown[]): string[] {
+  const messages: string[] = [];
+  for (const error of errors) {
+    if (error == null) continue;
+    if (typeof error === 'string') {
+      messages.push(error);
+      continue;
+    }
+    if (typeof error === 'object') {
+      const record = error as Record<string, unknown>;
+      if (typeof record.message === 'string') {
+        messages.push(record.message);
+        continue;
+      }
+      const pathless = record[''];
+      if (Array.isArray(pathless)) {
+        for (const issue of pathless) {
+          const msg = (issue as { message?: unknown })?.message;
+          if (typeof msg === 'string') messages.push(msg);
+        }
+        continue;
+      }
+      // Path-keyed map with only field-mapped issues — all rendered at their
+      // fields; nothing to show at form level.
+      if (Object.values(record).every((v) => Array.isArray(v))) continue;
+      messages.push(JSON.stringify(error));
+      continue;
+    }
+    messages.push(String(error));
+  }
+  return messages;
+}
+
 function FormErrors({ className, ...props }: React.ComponentProps<'div'>) {
   const form = useFormContext();
+  // Gate on a submit attempt: form-level onChange/onMount validators must not
+  // paint a pristine form red.
+  const hasSubmitted = useStore(form.store, (s) => s.submissionAttempts > 0);
   return (
     <form.Subscribe selector={(state) => state.errors}>
       {(errors) => {
-        if (!errors.length) return null;
+        if (!hasSubmitted) return null;
+        const messages = flattenFormErrors(errors);
+        if (!messages.length) return null;
         return (
           <div
             role='alert'
@@ -182,8 +232,8 @@ function FormErrors({ className, ...props }: React.ComponentProps<'div'>) {
             {...props}
           >
             <ul className='list-disc space-y-1 pl-4'>
-              {errors.map((error, i) => (
-                <li key={i}>{String(error)}</li>
+              {messages.map((message, i) => (
+                <li key={i}>{message}</li>
               ))}
             </ul>
           </div>
@@ -711,6 +761,7 @@ export {
   typedField,
   revalidateLogic,
   scrollToFirstError,
+  flattenFormErrors,
   FieldSet as FormFieldSet,
   Field as FormField,
   FormFieldError,

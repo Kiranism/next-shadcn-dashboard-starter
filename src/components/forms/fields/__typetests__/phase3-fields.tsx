@@ -9,6 +9,7 @@
 import * as React from 'react';
 import { z } from 'zod';
 import { useAppForm, useFormFields } from '@/components/ui/tanstack-form';
+import { DatePickerField } from './date-picker-field';
 
 interface Phase3Values {
   title: string;
@@ -97,6 +98,33 @@ export function Phase3Negative() {
       <FormTextField name='interests' label='Nope' />
       {/* @ts-expect-error P3-N5: orientation is a closed union */}
       <FormTextField name='title' label='Nope' orientation='diagonal' />
+      {/* review-fix: the itemValidators slot is typed to STRING validators */}
+      {/* @ts-expect-error P3-N6: a number schema is rejected */}
+      <FormArrayTextField name='emails' label='Nope' itemValidators={{ onBlur: z.number() }} />
     </>
   );
+}
+
+export function ReviewFixProbes() {
+  const form = useAppForm({ defaultValues: defaults, onSubmit: () => {} });
+  // Positive: typed itemValidators function receives the row string.
+  const { FormArrayTextField } = useFormFields(form);
+  const okFn = (
+    <FormArrayTextField
+      name='emails'
+      label='Emails'
+      itemValidators={{ onChange: ({ value }) => (value.length > 3 ? undefined : 'too short') }}
+    />
+  );
+  void okFn;
+  // Negative: an extras key that shadows a shipped widget is rejected
+  // (silently replacing FormTextField would crash at runtime).
+  const shadowing = { FormTextField: DatePickerField };
+  // @ts-expect-error P3-N7: extras key collision with a shipped field
+  const collision = useFormFields(form, shadowing);
+  void collision;
+  // Positive: non-colliding extras still bind.
+  const { FormDatePickerField } = useFormFields(form, { FormDatePickerField: DatePickerField });
+  void FormDatePickerField;
+  return null;
 }

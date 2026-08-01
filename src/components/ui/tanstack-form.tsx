@@ -73,6 +73,7 @@ import {
 
 function Form({
   children,
+  className,
   ...props
 }: Omit<React.ComponentPropsWithoutRef<'form'>, 'onSubmit' | 'noValidate'> & {
   children?: React.ReactNode;
@@ -87,11 +88,14 @@ function Form({
     },
     [form]
   );
+  // className is destructured OUT of props: a caller's class merges with the
+  // base layout (tailwind-merge resolves conflicts like p-*) instead of the
+  // spread silently replacing it.
   return (
     <form
       onSubmit={handleSubmit}
       aria-busy={isSubmitting}
-      className={cn('mx-auto flex w-full flex-col gap-2 p-2 md:p-5', props.className)}
+      className={cn('mx-auto flex w-full flex-col gap-2 p-2 md:p-5', className)}
       noValidate
       {...props}
     >
@@ -104,24 +108,28 @@ function SubmitButton({
   children,
   className,
   size,
+  disabled,
   ...props
 }: React.ComponentProps<'button'> & VariantProps<typeof buttonVariants>) {
   const form = useFormContext();
+  // Scalar subscriptions (not a fresh tuple selector): the button re-renders
+  // only when canSubmit/isSubmitting actually flip, not on every keystroke.
+  const canSubmit = useStore(form.store, (s) => s.canSubmit);
+  const isSubmitting = useStore(form.store, (s) => s.isSubmitting);
   return (
-    <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting] as const}>
-      {([canSubmit, isSubmitting]) => (
-        <Button
-          className={className}
-          size={size}
-          type='submit'
-          disabled={!canSubmit || isSubmitting}
-          {...props}
-        >
-          {isSubmitting && <Spinner data-icon='inline-start' />}
-          {children}
-        </Button>
-      )}
-    </form.Subscribe>
+    <Button
+      className={className}
+      size={size}
+      {...props}
+      // After the spread: a caller's `disabled` can force-disable but can
+      // never override the canSubmit/isSubmitting safety gate; type stays
+      // 'submit' regardless.
+      type='submit'
+      disabled={disabled || !canSubmit || isSubmitting}
+    >
+      {isSubmitting && <Spinner data-icon='inline-start' />}
+      {children}
+    </Button>
   );
 }
 
@@ -307,7 +315,12 @@ function useFormFields<
   TExtra extends Record<string, FieldComponentFor<any, any>> = Record<never, never>
 >(
   form: FormLike<TValues>,
-  extra?: TExtra
+  // The intersection rejects extras whose key shadows a shipped widget
+  // (the shadowed key's type collapses to never → compile error at the key),
+  // which would otherwise silently replace it in the returned record.
+  extra?: TExtra & {
+    [K in Extract<keyof TExtra, keyof TypedFormFields<Record<string, unknown>>>]: never;
+  }
 ): TypedFormFields<TValues> & BoundExtraFields<TValues, TExtra>;
 /**
  * @deprecated Pass the form instance instead: `useFormFields(form)`. This
@@ -390,6 +403,7 @@ export {
   asArrayField,
   revalidateLogic,
   scrollToFirstError,
+  flattenFormErrors,
   useFieldContext,
   useFormContext,
   FormFieldSet,

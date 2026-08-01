@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useStore } from '@tanstack/react-form';
+import type { StandardSchemaV1 } from '@tanstack/form-core';
 import { Button } from '@/components/ui/button';
 import {
   Field,
@@ -26,14 +27,20 @@ import {
   asArrayField
 } from '@/components/ui/form-context';
 
+/** A per-row validator: a Zod/standard schema for a string, or a validate
+ *  function receiving the row value — same contract as field validators. */
+type ItemValidator =
+  | StandardSchemaV1<string, unknown>
+  | ((ctx: { value: string }) => string | null | undefined);
+
 interface ArrayTextFieldProps {
   label: string;
   description?: string;
   required?: boolean;
   itemPlaceholder?: string;
   itemType?: 'text' | 'email' | 'url' | 'tel';
-  /** Validators for each row (Zod schema or function), e.g. z.email(). */
-  itemValidators?: { onChange?: unknown; onBlur?: unknown };
+  /** Validators for each row, e.g. `{ onBlur: z.string().email() }`. */
+  itemValidators?: { onChange?: ItemValidator; onBlur?: ItemValidator };
   maxItems?: number;
   addLabel?: string;
   disabled?: boolean;

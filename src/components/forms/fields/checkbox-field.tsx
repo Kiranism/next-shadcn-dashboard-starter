@@ -36,7 +36,9 @@ export function CheckboxField({ label, description, required, disabled }: Checkb
         <Checkbox
           id={field.controlId}
           name={field.name}
-          checked={value}
+          // ?? false keeps the control CONTROLLED on undefined paths (Base UI
+          // latches controlled-ness on first render).
+          checked={value ?? false}
           disabled={disabled}
           onCheckedChange={(checked) => {
             field.handleChange(checked as boolean);

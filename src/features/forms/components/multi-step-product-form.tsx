@@ -178,7 +178,7 @@ export default function MultiStepProductForm() {
     isFirstStep,
     handleCancelOrBack,
     handleNextStepOrSubmit
-  } = useFormStepper(stepSchemas);
+  } = useFormStepper(stepSchemas, { fullSchema: productFormSchema });
 
   const form = useAppForm({
     defaultValues: {
@@ -219,7 +219,19 @@ export default function MultiStepProductForm() {
 
   return (
     <form.AppForm>
-      <form.Form className='p-0 md:p-0'>
+      {/* Plain <form> instead of form.Form: EVERY submit (Enter key, the
+          review step's submit button) routes through the stepper gate —
+          form.Form would call form.handleSubmit directly, which on a
+          non-final step validates only that step's schema and submits. */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          void handleNext();
+        }}
+        noValidate
+        className='mx-auto flex w-full flex-col gap-2 p-0'
+      >
         <div className='flex flex-col gap-2 pt-3'>
           <div className='flex flex-col items-center justify-start gap-1'>
             <span className='text-muted-foreground text-sm'>
@@ -295,7 +307,7 @@ export default function MultiStepProductForm() {
             )}
           </div>
         </div>
-      </form.Form>
+      </form>
     </form.AppForm>
   );
 }

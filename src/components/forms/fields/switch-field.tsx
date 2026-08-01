@@ -47,7 +47,9 @@ export function SwitchField({ label, description, disabled }: SwitchFieldProps) 
         <Switch
           id={field.controlId}
           name={field.name}
-          checked={value}
+          // ?? false keeps the control CONTROLLED on undefined paths (Base UI
+          // latches controlled-ness on first render).
+          checked={value ?? false}
           disabled={disabled}
           onCheckedChange={field.handleChange}
           onBlur={field.handleBlur}

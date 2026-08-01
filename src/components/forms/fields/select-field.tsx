@@ -56,7 +56,9 @@ export function SelectField({
     <Select
       items={options}
       name={field.name}
-      value={value}
+      // ?? '' keeps the control CONTROLLED when the path starts undefined —
+      // Base UI latches controlled-ness on first render (useControlled ref).
+      value={value ?? ''}
       disabled={disabled}
       onValueChange={(v) => field.handleChange(v ?? '')}
       onOpenChange={(open) => {

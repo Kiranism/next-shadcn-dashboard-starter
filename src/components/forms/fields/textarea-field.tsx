@@ -47,7 +47,7 @@ export function TextareaField({
       .join(' ') || undefined;
 
   const control = (
-    <div className='w-full'>
+    <div className={orientation === 'vertical' ? 'w-full' : 'min-w-0 flex-1'}>
       <Textarea
         id={field.controlId}
         name={field.name}
