@@ -7,8 +7,26 @@ export { SwitchField } from './switch-field';
 export { RadioGroupField } from './radio-group-field';
 export { SliderField } from './slider-field';
 export { FileUploadField } from './file-upload-field';
+export { CheckboxGroupField } from './checkbox-group-field';
+export { ArrayTextField } from './array-text-field';
+export { DatePickerField } from './date-picker-field';
+export { ComboboxField } from './combobox-field';
 
-// Composed (standalone, for direct use in forms)
+// Per-widget path value contracts (which paths each widget may bind to)
+export type { TextFieldValue } from './text-field';
+export type { TextareaFieldValue } from './textarea-field';
+export type { SelectFieldValue } from './select-field';
+export type { CheckboxFieldValue } from './checkbox-field';
+export type { SwitchFieldValue } from './switch-field';
+export type { RadioGroupFieldValue } from './radio-group-field';
+export type { SliderFieldValue } from './slider-field';
+export type { FileUploadFieldValue } from './file-upload-field';
+export type { CheckboxGroupFieldValue } from './checkbox-group-field';
+export type { ArrayTextFieldValue } from './array-text-field';
+export type { DatePickerFieldValue } from './date-picker-field';
+export type { ComboboxFieldValue } from './combobox-field';
+
+// Composed (deprecated — use useFormFields(form) instead; removed next release)
 export { FormTextField } from './text-field';
 export { FormTextareaField } from './textarea-field';
 export { FormSelectField } from './select-field';

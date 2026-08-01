@@ -186,6 +186,9 @@ bun run lint         # Run ESLint
 bun run lint:fix     # Fix ESLint issues and format
 bun run lint:strict  # Zero warnings tolerance
 
+bun run typecheck    # tsc --noEmit — also runs the self-verifying form type tests (src/components/forms/fields/__typetests__)
+bun run smoke:forms  # Runtime smoke of the form field binding layer
+
 # Formatting
 bun run format       # Format with Prettier
 bun run format:check # Check formatting

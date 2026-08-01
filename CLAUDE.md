@@ -16,6 +16,6 @@ This is a Next.js 16 + shadcn/ui admin dashboard starter kit.
 - **API layer** per feature — `api/types.ts` → `api/service.ts` → `api/queries.ts`; queries use key factories (`entityKeys.all/list/detail`); components import from service and queries, never from mock APIs directly
 - **nuqs** for URL search params — `searchParamsCache` on server, `useQueryStates` on client, use `getSortingStateParser` for sort (same parser as `useDataTable`)
 - **Icons** — only import from `@/components/icons`, never from `@tabler/icons-react` directly
-- **Forms** — use `useAppForm` + `useFormFields<T>()` from `@/components/ui/tanstack-form`
+- **Forms** — use `useAppForm` + `useFormFields(form)` from `@/components/ui/tanstack-form` (pass the form instance — types are inferred from it; the zero-arg `useFormFields<T>()` is deprecated); custom fields join via `fieldFor<V>()` + `useFormFields(form, extras)`
 - **Page headers** — use `PageContainer` props (`pageTitle`, `pageDescription`, `pageHeaderAction`), never import `<Heading>` manually
 - **Formatting** — single quotes, JSX single quotes, no trailing comma, 2-space indent

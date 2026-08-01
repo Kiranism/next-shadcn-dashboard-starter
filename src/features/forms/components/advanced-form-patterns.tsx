@@ -118,7 +118,7 @@ export default function AdvancedFormPatterns() {
     }
   });
 
-  const { FormTextField, FormSelectField } = useFormFields<AdvancedFormValues>();
+  const { FormTextField, FormSelectField } = useFormFields(form);
 
   // Read current country reactively for dependent state field
   const selectedCountry = useStore(form.store, (s) => s.values.country);

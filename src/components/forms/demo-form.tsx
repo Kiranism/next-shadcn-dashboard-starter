@@ -19,16 +19,7 @@ import {
   InputOTPSeparator
 } from '@/components/ui/input-otp';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList
-} from '@/components/ui/command';
 import { Calendar } from '@/components/ui/calendar';
-import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
 import { Icons } from '@/components/icons';
@@ -38,7 +29,7 @@ import { cn } from '@/lib/utils';
 const demoFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.email('Invalid email address'),
-  age: z.number().min(18, 'Must be at least 18 years old'),
+  age: z.number({ error: 'Age is required' }).min(18, 'Must be at least 18 years old'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   phone: z.string().min(10, 'Phone must be at least 10 digits'),
   website: z.string().url('Invalid URL').or(z.literal('')),
@@ -95,71 +86,6 @@ const genderOptions = [
 ];
 
 // ─── Custom field components (no pre-built field component exists) ───
-
-function ComboboxField({
-  value,
-  onChange,
-  onBlur,
-  isTouched,
-  isValid
-}: {
-  value: string;
-  onChange: (val: string) => void;
-  onBlur: () => void;
-  isTouched: boolean;
-  isValid: boolean;
-}) {
-  const [open, setOpen] = React.useState(false);
-  const selected = frameworkOptions.find((o) => o.value === value);
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={
-          <Button
-            variant='outline'
-            role='combobox'
-            aria-controls='framework-listbox'
-            aria-expanded={open}
-            className='w-full justify-between font-normal'
-            aria-invalid={isTouched && !isValid}
-            onBlur={onBlur}
-          />
-        }
-      >
-        {selected?.label ?? 'Search frameworks...'}
-        <Icons.chevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
-      </PopoverTrigger>
-      <PopoverContent className='w-(--anchor-width) p-0'>
-        <Command>
-          <CommandInput placeholder='Search...' />
-          <CommandList>
-            <CommandEmpty>No framework found.</CommandEmpty>
-            <CommandGroup>
-              {frameworkOptions.map((opt) => (
-                <CommandItem
-                  key={opt.value}
-                  value={opt.value}
-                  onSelect={(val) => {
-                    onChange(val);
-                    setOpen(false);
-                  }}
-                >
-                  <Icons.check
-                    className={cn(
-                      'mr-2 h-4 w-4',
-                      value === opt.value ? 'opacity-100' : 'opacity-0'
-                    )}
-                  />
-                  {opt.label}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
-}
 
 function TagsField({
   values,
@@ -234,7 +160,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 type DemoFormValues = {
   name: string;
   email: string;
-  age: number;
+  age?: number;
   password: string;
   phone: string;
   website: string;
@@ -261,7 +187,7 @@ export default function DemoForm() {
     defaultValues: {
       name: '',
       email: '',
-      age: 18,
+      age: undefined,
       password: '',
       phone: '',
       website: '',
@@ -298,8 +224,11 @@ export default function DemoForm() {
     FormSwitchField,
     FormRadioGroupField,
     FormSliderField,
-    FormFileUploadField
-  } = useFormFields<DemoFormValues>();
+    FormFileUploadField,
+    FormCheckboxGroupField,
+    FormComboboxField,
+    FormDatePickerField
+  } = useFormFields(form);
 
   const formValues = useStore(form.store, (s) => s.values);
 
@@ -368,7 +297,9 @@ export default function DemoForm() {
                   max={100}
                   placeholder='18'
                   validators={{
-                    onBlur: z.number().min(18, 'Must be at least 18 years old')
+                    onBlur: z
+                      .number({ error: 'Age is required' })
+                      .min(18, 'Must be at least 18 years old')
                   }}
                 />
                 <FormTextField
@@ -427,74 +358,38 @@ export default function DemoForm() {
                   }}
                 />
 
-                {/* Combobox — custom, needs AppField (type-safe name) */}
-                <form.AppField
+                {/* Combobox — searchable select */}
+                <FormComboboxField
                   name='framework'
-                  children={(field) => (
-                    <field.FieldSet>
-                      <field.Field>
-                        <field.FieldLabel>Framework *</field.FieldLabel>
-                        <ComboboxField
-                          value={field.state.value}
-                          onChange={field.handleChange}
-                          onBlur={field.handleBlur}
-                          isTouched={field.state.meta.isTouched}
-                          isValid={field.state.meta.isValid}
-                        />
-                        <FieldDescription>Searchable dropdown</FieldDescription>
-                      </field.Field>
-                      <field.FieldError />
-                    </field.FieldSet>
-                  )}
+                  label='Framework'
+                  required
+                  description='Searchable dropdown'
+                  options={frameworkOptions}
+                  placeholder='Search frameworks...'
                 />
               </div>
 
               {/* ─── CHECKBOX & RADIO ─── */}
               <SectionTitle>Checkbox & Radio</SectionTitle>
 
-              {/* Checkbox Group — array mode, needs AppField */}
-              <form.AppField
+              {/* Checkbox Group — array field */}
+              <FormCheckboxGroupField
                 name='interests'
-                mode='array'
-                children={(field) => {
-                  const values: string[] = field.state.value || [];
-                  return (
-                    <field.FieldSet>
-                      <field.FieldLabel>Interests *</field.FieldLabel>
-                      <FieldDescription>Select all that apply</FieldDescription>
-                      <div className='grid grid-cols-2 gap-3 md:grid-cols-3'>
-                        {interestOptions.map((opt) => (
-                          <div key={opt.value} className='flex items-center space-x-2'>
-                            <Checkbox
-                              id={`interests-${opt.value}`}
-                              checked={values.includes(opt.value)}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  field.pushValue(opt.value);
-                                } else {
-                                  const idx = values.indexOf(opt.value);
-                                  if (idx > -1) field.removeValue(idx);
-                                }
-                              }}
-                            />
-                            <Label htmlFor={`interests-${opt.value}`}>{opt.label}</Label>
-                          </div>
-                        ))}
-                      </div>
-                      {values.length > 0 && (
-                        <div className='flex flex-wrap gap-2'>
-                          {values.map((v) => (
-                            <Badge key={v} variant='secondary'>
-                              {interestOptions.find((o) => o.value === v)?.label || v}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                      <field.FieldError />
-                    </field.FieldSet>
-                  );
-                }}
+                label='Interests'
+                required
+                description='Select all that apply'
+                options={interestOptions}
+                className='grid grid-cols-2 gap-3 md:grid-cols-3'
               />
+              {formValues.interests.length > 0 && (
+                <div className='flex flex-wrap gap-2'>
+                  {formValues.interests.map((v) => (
+                    <Badge key={v} variant='secondary'>
+                      {interestOptions.find((o) => o.value === v)?.label || v}
+                    </Badge>
+                  ))}
+                </div>
+              )}
 
               {/* Radio Group (flat pattern + onBlur validation) */}
               <FormRadioGroupField
@@ -589,44 +484,10 @@ export default function DemoForm() {
 
               <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
                 {/* Date Picker */}
-                <form.AppField
+                <FormDatePickerField
                   name='birthDate'
-                  children={(field) => (
-                    <field.FieldSet>
-                      <field.Field>
-                        <field.FieldLabel>Birth Date</field.FieldLabel>
-                        <Popover>
-                          <PopoverTrigger
-                            render={
-                              <Button
-                                variant='outline'
-                                className={cn(
-                                  'w-full justify-start text-left font-normal',
-                                  !field.state.value && 'text-muted-foreground'
-                                )}
-                              />
-                            }
-                          >
-                            <Icons.calendar className='mr-2 h-4 w-4' />
-                            {field.state.value ? (
-                              format(field.state.value, 'PPP')
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                          </PopoverTrigger>
-                          <PopoverContent className='w-auto p-0' align='start'>
-                            <Calendar
-                              mode='single'
-                              selected={field.state.value}
-                              onSelect={field.handleChange}
-                              disabled={(date) => date > new Date()}
-                              autoFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </field.Field>
-                    </field.FieldSet>
-                  )}
+                  label='Birth Date'
+                  disabledDates={(date) => date > new Date()}
                 />
 
                 {/* Time Input */}
