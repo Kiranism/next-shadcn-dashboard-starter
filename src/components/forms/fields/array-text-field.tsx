@@ -45,6 +45,10 @@ interface ArrayTextFieldProps {
   maxItems?: number;
   addLabel?: string;
   disabled?: boolean;
+  /** Non-interactive but not dimmed — for view-permission display modes. */
+  readOnly?: boolean;
+  /** Class for the outer field wrapper (grid placement, spans, …). */
+  fieldClassName?: string;
 }
 
 /** Path value type ArrayTextField can edit — a dynamic list of strings. */
@@ -70,7 +74,9 @@ function ArrayTextBase({
   itemValidators,
   maxItems,
   addLabel = 'Add',
-  disabled
+  disabled,
+  readOnly,
+  fieldClassName
 }: ArrayTextFieldProps) {
   const field = useFieldContext();
   const form = useFormContext();
@@ -84,7 +90,11 @@ function ArrayTextBase({
 
   return (
     // data-invalid anchors group-level (array) errors for scrollToFirstError.
-    <FieldSet data-invalid={field.isInvalid}>
+    <FieldSet
+      data-invalid={field.isInvalid}
+      aria-readonly={readOnly || undefined}
+      className={fieldClassName}
+    >
       <FieldLegend variant='label'>
         {label}
         {required && ' *'}
@@ -110,7 +120,10 @@ function ArrayTextBase({
                         id={`${field.controlId}-${index}`}
                         type={itemType}
                         value={(sub.state.value as string) ?? ''}
-                        onChange={(e) => sub.handleChange(e.target.value)}
+                        onChange={(e) => {
+                          if (readOnly) return;
+                          sub.handleChange(e.target.value);
+                        }}
                         onBlur={sub.handleBlur}
                         aria-label={`${label} ${index + 1}`}
                         aria-invalid={rowInvalid}
@@ -124,7 +137,10 @@ function ArrayTextBase({
                             type='button'
                             variant='ghost'
                             size='icon-xs'
-                            onClick={() => arrayApi.removeValue(index)}
+                            onClick={() => {
+                              if (readOnly) return;
+                              arrayApi.removeValue(index);
+                            }}
                             aria-label={`Remove ${label} ${index + 1}`}
                             disabled={disabled}
                           >
@@ -152,7 +168,10 @@ function ArrayTextBase({
           type='button'
           variant='outline'
           size='sm'
-          onClick={() => arrayApi.pushValue('')}
+          onClick={() => {
+            if (readOnly) return;
+            arrayApi.pushValue('');
+          }}
           disabled={disabled || (maxItems !== undefined && values.length >= maxItems)}
         >
           {addLabel}

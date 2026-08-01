@@ -66,6 +66,8 @@ import {
   withItemScope,
   type FormLike,
   type BoundFormField,
+  type BoundFreeTextField,
+  type BoundClearableField,
   type BoundExtraFields,
   type FieldComponentFor,
   type WithTypedName
@@ -214,8 +216,12 @@ const { useAppForm, withForm, withFieldGroup } = createFormHook({
  * only accepts paths whose value it can edit (its XxxFieldValue contract).
  */
 export interface TypedFormFields<TValues> {
-  FormTextField: BoundFormField<TValues, TextFieldValue, React.ComponentProps<typeof TextField>>;
-  FormTextareaField: BoundFormField<
+  FormTextField: BoundFreeTextField<
+    TValues,
+    TextFieldValue,
+    React.ComponentProps<typeof TextField>
+  >;
+  FormTextareaField: BoundFreeTextField<
     TValues,
     TextareaFieldValue,
     React.ComponentProps<typeof TextareaField>
@@ -260,7 +266,7 @@ export interface TypedFormFields<TValues> {
     ArrayTextFieldValue,
     React.ComponentProps<typeof ArrayTextField>
   >;
-  FormDatePickerField: BoundFormField<
+  FormDatePickerField: BoundClearableField<
     TValues,
     DatePickerFieldValue,
     React.ComponentProps<typeof DatePickerField>

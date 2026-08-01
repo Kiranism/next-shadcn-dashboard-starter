@@ -19,6 +19,8 @@ import {
 interface DatePickerFieldProps {
   label: string;
   description?: string;
+  /** Class for the outer field wrapper (grid placement, spans, …). */
+  fieldClassName?: string;
   required?: boolean;
   placeholder?: string;
   disabled?: boolean;
@@ -37,6 +39,7 @@ export type DatePickerFieldValue = Date | null | undefined;
 export function DatePickerField({
   label,
   description,
+  fieldClassName,
   required,
   placeholder = 'Pick a date',
   disabled,
@@ -54,7 +57,7 @@ export function DatePickerField({
       .join(' ') || undefined;
 
   return (
-    <FormFieldSet>
+    <FormFieldSet className={fieldClassName}>
       <FormField>
         <FieldLabel htmlFor={field.controlId} className={labelSrOnly ? 'sr-only' : undefined}>
           {label}

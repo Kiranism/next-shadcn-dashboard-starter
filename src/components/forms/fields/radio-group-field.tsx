@@ -19,6 +19,8 @@ type Option = { value: string; label: string; description?: string; disabled?: b
 interface RadioGroupFieldProps {
   label: string;
   description?: string;
+  /** Class for the outer field wrapper (grid placement, spans, …). */
+  fieldClassName?: string;
   required?: boolean;
   options: Option[];
   disabled?: boolean;
@@ -36,6 +38,7 @@ export type RadioGroupFieldValue = string | null | undefined;
 export function RadioGroupField({
   label,
   description,
+  fieldClassName,
   required,
   options,
   disabled,
@@ -55,7 +58,7 @@ export function RadioGroupField({
   return (
     // A real <fieldset>: this is a semantic GROUP with a legend (canonical
     // Field anatomy reserves fieldset/legend for exactly this).
-    <FieldSet data-invalid={field.isInvalid}>
+    <FieldSet data-invalid={field.isInvalid} className={fieldClassName}>
       <FieldLegend variant='label' id={legendId}>
         {label}
         {required && ' *'}

@@ -14,6 +14,8 @@ import {
 interface CheckboxFieldProps {
   label: string;
   description?: string;
+  /** Class for the outer field wrapper (grid placement, spans, …). */
+  fieldClassName?: string;
   required?: boolean;
   disabled?: boolean;
   /** Non-interactive but not dimmed — for view-permission display modes. */
@@ -26,6 +28,7 @@ export type CheckboxFieldValue = boolean | null | undefined;
 export function CheckboxField({
   label,
   description,
+  fieldClassName,
   required,
   disabled,
   readOnly
@@ -39,7 +42,7 @@ export function CheckboxField({
       .join(' ') || undefined;
 
   return (
-    <FormFieldSet>
+    <FormFieldSet className={fieldClassName}>
       <FormField orientation='horizontal'>
         <Checkbox
           id={field.controlId}

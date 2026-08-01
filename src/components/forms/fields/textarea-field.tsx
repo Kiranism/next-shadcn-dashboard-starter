@@ -17,6 +17,8 @@ interface TextareaFieldProps extends Omit<
 > {
   label: string;
   description?: string;
+  /** Class for the outer field wrapper (grid placement, spans, …). */
+  fieldClassName?: string;
   required?: boolean;
   maxLength?: number;
   showCount?: boolean;
@@ -33,6 +35,7 @@ export type TextareaFieldValue = string | null | undefined;
 export function TextareaField({
   label,
   description,
+  fieldClassName,
   required,
   maxLength,
   showCount = !!maxLength,
@@ -74,7 +77,7 @@ export function TextareaField({
 
   if (orientation !== 'vertical') {
     return (
-      <FormFieldSet>
+      <FormFieldSet className={fieldClassName}>
         <FormField orientation={orientation}>
           <FieldContent>
             <FieldLabel htmlFor={field.controlId} className={labelSrOnly ? 'sr-only' : undefined}>
@@ -93,7 +96,7 @@ export function TextareaField({
   }
 
   return (
-    <FormFieldSet>
+    <FormFieldSet className={fieldClassName}>
       <FormField>
         <FieldLabel htmlFor={field.controlId} className={labelSrOnly ? 'sr-only' : undefined}>
           {label}

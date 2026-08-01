@@ -375,6 +375,9 @@ check('submitButton: caller disabled can force-disable', hasDisabledAttr(disable
 // ---------------------------------------------------------------------------
 import { schemaFor, applyServerErrors, clearServerErrors } from '@/lib/form-helpers';
 
+type Parseable = { safeParse: (v: unknown) => { success: boolean } } | undefined;
+const rule = (s: unknown) => s as Parseable;
+
 const orgSchema = z.object({
   name: z.string().min(2, 'Too short'),
   contact: z.object({ email: z.string().email('Bad email') }),
@@ -383,16 +386,16 @@ const orgSchema = z.object({
 });
 check(
   'schemaFor: nested path resolves and validates',
-  schemaFor(orgSchema, 'contact.email')?.safeParse('nope').success === false &&
-    schemaFor(orgSchema, 'contact.email')?.safeParse('a@b.co').success === true
+  rule(schemaFor(orgSchema, 'contact.email'))?.safeParse('nope').success === false &&
+    rule(schemaFor(orgSchema, 'contact.email'))?.safeParse('a@b.co').success === true
 );
 check(
   'schemaFor: array element path resolves through optional wrapper',
-  schemaFor(orgSchema, 'tags[0]')?.safeParse('').success === false
+  rule(schemaFor(orgSchema, 'tags[0]'))?.safeParse('').success === false
 );
 check(
   'schemaFor: optional leaf unwraps to its inner rule',
-  schemaFor(orgSchema, 'nickname')?.safeParse('ab').success === false
+  rule(schemaFor(orgSchema, 'nickname'))?.safeParse('ab').success === false
 );
 check('schemaFor: unresolvable path degrades to undefined', schemaFor(orgSchema, 'no.such') === undefined);
 
@@ -423,7 +426,7 @@ check(
 
 function NewFieldsProbe() {
   const form = useAppForm({
-    defaultValues: { due: null, assignee: '' } as { due: Date | null; assignee: string },
+    defaultValues: { due: null, assignee: '' } as { due?: Date | null; assignee: string },
     onSubmit: ({ value }) => void value
   });
   const { FormDatePickerField, FormComboboxField } = useFormFields(form);
@@ -452,6 +455,25 @@ check(
     const refs = [...html11.matchAll(/aria-describedby="([^"]+)"/g)].flatMap((m) => m[1].split(' '));
     return refs.every((r) => html11.includes(`id="${r}"`));
   })()
+);
+
+// ---------------------------------------------------------------------------
+// 10. Score-fix pack: stepper dead-click painting, typed server-error keys
+// ---------------------------------------------------------------------------
+import { applyStepIssues } from '@/hooks/use-stepper';
+
+const stepSchema = z.object({ name: z.string().min(2, 'Name too short') });
+const stepForm = new FormApi({ defaultValues: { name: '' } });
+stepForm.mount();
+const parsed = stepSchema.safeParse(stepForm.state.values);
+if (!parsed.success) applyStepIssues(stepForm, parsed.error.issues);
+const stepMeta = stepForm.state.fieldMeta.name as
+  | { isTouched: boolean; errorMap: Record<string, unknown> }
+  | undefined;
+check(
+  'stepper: blocked gate PAINTS step-schema issues on the field (no dead-click)',
+  stepMeta?.isTouched === true && stepMeta?.errorMap.onSubmit === 'Name too short',
+  JSON.stringify(stepMeta)
 );
 
 console.log(failures === 0 ? 'SMOKE: ALL PASS' : `SMOKE: ${failures} FAILURE(S)`);

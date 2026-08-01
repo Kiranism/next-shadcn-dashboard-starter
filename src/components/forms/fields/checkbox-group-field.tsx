@@ -26,6 +26,10 @@ interface CheckboxGroupFieldProps {
   required?: boolean;
   options: Option[];
   disabled?: boolean;
+  /** Non-interactive but not dimmed — for view-permission display modes. */
+  readOnly?: boolean;
+  /** Class for the outer field wrapper (grid placement, spans, …). */
+  fieldClassName?: string;
   /** Lay options out in N columns (default: single column). */
   columns?: number;
   /** Layout class for the options grid — overrides `columns` (e.g.
@@ -42,6 +46,8 @@ function CheckboxGroupBase({
   required,
   options,
   disabled,
+  readOnly,
+  fieldClassName,
   columns,
   className
 }: CheckboxGroupFieldProps) {
@@ -61,6 +67,7 @@ function CheckboxGroupBase({
   const arrayApi = useArrayFieldApi<string>(field);
 
   const toggle = (optValue: string, checked: boolean) => {
+    if (readOnly) return;
     if (checked) {
       arrayApi.pushValue(optValue);
     } else {
@@ -72,7 +79,12 @@ function CheckboxGroupBase({
 
   return (
     // A real <fieldset>: semantic group with a legend (canonical anatomy).
-    <FieldSet data-invalid={field.isInvalid} aria-describedby={describedBy}>
+    <FieldSet
+      data-invalid={field.isInvalid}
+      aria-describedby={describedBy}
+      aria-readonly={readOnly || undefined}
+      className={fieldClassName}
+    >
       <FieldLegend variant='label'>
         {label}
         {required && ' *'}

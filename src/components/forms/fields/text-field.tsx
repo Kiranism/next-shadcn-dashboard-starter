@@ -18,6 +18,8 @@ interface TextFieldProps extends Omit<
 > {
   label: string;
   description?: string;
+  /** Class for the outer field wrapper (grid placement, spans, …). */
+  fieldClassName?: string;
   required?: boolean;
   type?: 'text' | 'email' | 'password' | 'tel' | 'url' | 'number';
   /** Visually hide the label (kept for screen readers) — for dense grids. */
@@ -36,6 +38,7 @@ export type TextFieldValue = string | number | null | undefined;
 export function TextField({
   label,
   description,
+  fieldClassName,
   required,
   type = 'text',
   labelSrOnly,
@@ -88,7 +91,7 @@ export function TextField({
 
   if (orientation !== 'vertical') {
     return (
-      <FormFieldSet>
+      <FormFieldSet className={fieldClassName}>
         <FormField orientation={orientation}>
           <FieldContent>
             <FieldLabel htmlFor={field.controlId} className={labelSrOnly ? 'sr-only' : undefined}>
@@ -107,7 +110,7 @@ export function TextField({
   }
 
   return (
-    <FormFieldSet>
+    <FormFieldSet className={fieldClassName}>
       <FormField>
         <FieldLabel htmlFor={field.controlId} className={labelSrOnly ? 'sr-only' : undefined}>
           {label}

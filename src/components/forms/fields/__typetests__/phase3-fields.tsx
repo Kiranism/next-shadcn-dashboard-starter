@@ -18,7 +18,7 @@ interface Phase3Values {
   interests: string[];
   emails: string[];
   plan: string;
-  due: Date | null;
+  due?: Date | null;
 }
 
 const defaults: Phase3Values = {
@@ -117,6 +117,65 @@ export function Phase3Negative() {
       <FormArrayTextField name='emails' label='Nope' itemValidators={{ onBlur: z.number() }} />
     </>
   );
+}
+
+interface WriteGuardValues {
+  role: 'admin' | 'viewer';
+  bio: string;
+}
+
+export function WriteGuardProbes() {
+  const form = useAppForm({
+    defaultValues: { role: 'viewer', bio: '' } as WriteGuardValues,
+    onSubmit: () => {}
+  });
+  const { FormSelectField, FormTextField } = useFormFields(form);
+  return (
+    <>
+      {/* Positive: literal-union path binds a select with union-valid options */}
+      <FormSelectField
+        name='role'
+        label='Role'
+        options={[
+          { value: 'admin', label: 'Admin' },
+          { value: 'viewer', label: 'Viewer' }
+        ]}
+      />
+      <FormSelectField
+        name='role'
+        label='Role'
+        options={[
+          // @ts-expect-error W3: option value outside the path's union
+          { value: 'superadmin', label: 'Nope' }
+        ]}
+      />
+      {/* @ts-expect-error W4: free-text widget not offered a literal-union path */}
+      <FormTextField name='role' label='Nope' />
+      {/* Positive: plain string paths keep fully-open options and free text */}
+      <FormTextField name='bio' label='Bio' />
+    </>
+  );
+}
+
+import { schemaFor, applyServerErrors } from '@/components/ui/tanstack-form';
+
+export function HelperProbes() {
+  const form = useAppForm({ defaultValues: defaults, onSubmit: () => {} });
+  const { FormTextField } = useFormFields(form);
+  const mounted = (
+    // Positive: schemaFor's result mounts on a TYPED validator slot (the
+    // scorer-found compile break, now guarded).
+    <FormTextField
+      name='title'
+      label='Title'
+      validators={{ onBlur: schemaFor(z.object({ title: z.string().min(2) }), 'title') }}
+    />
+  );
+  void mounted;
+  applyServerErrors(form, { fieldErrors: { title: 'Taken' } });
+  // @ts-expect-error W5: typo'd server-error field key rejected
+  applyServerErrors(form, { fieldErrors: { titel: 'Taken' } });
+  return null;
 }
 
 export function ReviewFixProbes() {

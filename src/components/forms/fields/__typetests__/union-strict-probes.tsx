@@ -95,8 +95,9 @@ export function StrictUnionProbes() {
         validators={{ onChange: z.string().min(1) }}
       />
 
-      {/* U8: discriminator (literal union across branches) still binds
-          string widgets. */}
+      {/* U8: discriminators are literal unions — free-text widgets rejected
+          (write-guard); option widgets with union-checked values bind. */}
+      {/* @ts-expect-error U8: free text on a literal-union path */}
       <FormTextField name='kind' label='U8' />
     </>
   );
@@ -119,6 +120,7 @@ export function StrictAccountUnion() {
       <FormTextField name='ssn' label='SSN' />
       <FormTextField name='companyName' label='Company' />
       <FormTextField name='vat' label='VAT' />
+      {/* @ts-expect-error W2: discriminator not offered to free text under strict+write-guard */}
       <FormTextField name='accountType' label='Type' />
       <FormTextField
         // @ts-expect-error typo still caught under strict

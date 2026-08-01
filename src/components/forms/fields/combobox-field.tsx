@@ -27,6 +27,8 @@ type Option = { value: string; label: string; disabled?: boolean };
 interface ComboboxFieldProps {
   label: string;
   description?: string;
+  /** Class for the outer field wrapper (grid placement, spans, …). */
+  fieldClassName?: string;
   required?: boolean;
   options: Option[];
   placeholder?: string;
@@ -45,6 +47,7 @@ export type ComboboxFieldValue = string | null | undefined;
 export function ComboboxField({
   label,
   description,
+  fieldClassName,
   required,
   options,
   placeholder = 'Select an option',
@@ -65,7 +68,7 @@ export function ComboboxField({
       .join(' ') || undefined;
 
   return (
-    <FormFieldSet>
+    <FormFieldSet className={fieldClassName}>
       <FormField>
         <FieldLabel htmlFor={field.controlId} className={labelSrOnly ? 'sr-only' : undefined}>
           {label}
@@ -114,7 +117,10 @@ export function ComboboxField({
                       disabled={opt.disabled}
                       keywords={[opt.label]}
                       onSelect={(next) => {
-                        field.handleChange(next === value ? '' : next);
+                        // No toggle-to-'': re-selecting keeps the value, so
+                        // the widget never writes a value outside the path's
+                        // type (literal-union paths stay type-true).
+                        field.handleChange(next);
                         setOpen(false);
                       }}
                     >

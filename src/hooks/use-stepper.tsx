@@ -22,6 +22,35 @@ type StepState = {
   isCompleted: boolean;
 };
 
+/**
+ * Paints step-schema issues onto their fields' error state (grouped per
+ * path, TanStack notation: a.b for keys, [i] appended for indices) under the
+ * submit cause — the next successful field validation overwrites them.
+ * Exported for the smoke suite; consumed by the step gate below.
+ */
+export function applyStepIssues(
+  form: Pick<AnyFormApi, 'setFieldMeta'>,
+  issues: ReadonlyArray<{ path: ReadonlyArray<PropertyKey>; message: string }>
+) {
+  const byField = new Map<string, string[]>();
+  for (const issue of issues) {
+    const path = issue.path.reduce<string>(
+      (acc, seg) =>
+        typeof seg === 'number' ? `${acc}[${seg}]` : acc ? `${acc}.${String(seg)}` : String(seg),
+      ''
+    );
+    if (!path) continue;
+    byField.set(path, [...(byField.get(path) ?? []), issue.message]);
+  }
+  for (const [path, messages] of byField) {
+    form.setFieldMeta(path as never, (meta) => ({
+      ...meta,
+      isTouched: true,
+      errorMap: { ...meta?.errorMap, onSubmit: messages.join(' ') }
+    }));
+  }
+}
+
 type UseFormStepperOptions = {
   /** The complete form schema. When provided, the FINAL submit re-validates
    *  the whole form (not just the last step); on failure the wizard jumps to
@@ -74,7 +103,9 @@ export function useFormStepper(schemas: ZodTypeAny[], options?: UseFormStepperOp
   /**
    * Validate the current step: the step schema PLUS every mounted field's
    * validators including async ones (awaited — an async uniqueness check can
-   * fail the gate). Mounted fields are marked touched so their errors render;
+   * fail the gate). Mounted fields are marked touched, and STEP-SCHEMA issues
+   * are painted onto their fields' error state — a blocked Next is never a
+   * silent dead-click, even when all rules live in the step schema.
    * submissionAttempts is NOT incremented, so untouched later steps show no
    * errors when they mount.
    */
@@ -84,6 +115,9 @@ export function useFormStepper(schemas: ZodTypeAny[], options?: UseFormStepperOp
       form.setFieldMeta(name as never, (meta) => ({ ...meta, isTouched: true }));
     }
     const result = currentValidator.safeParse(form.state.values);
+    if (!result.success) {
+      applyStepIssues(form, result.error.issues);
+    }
     const hasFieldErrors = fieldErrors.flat(Infinity).filter(Boolean).length > 0;
     if (!result.success || hasFieldErrors) {
       return { ...result, success: false as const };

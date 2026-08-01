@@ -14,6 +14,8 @@ import {
 interface SwitchFieldProps {
   label: string;
   description?: string;
+  /** Class for the outer field wrapper (grid placement, spans, …). */
+  fieldClassName?: string;
   disabled?: boolean;
   /** Non-interactive but not dimmed — for view-permission display modes. */
   readOnly?: boolean;
@@ -22,7 +24,13 @@ interface SwitchFieldProps {
 /** Path value type SwitchField can edit — matches the `as boolean` cast below. */
 export type SwitchFieldValue = boolean | null | undefined;
 
-export function SwitchField({ label, description, disabled, readOnly }: SwitchFieldProps) {
+export function SwitchField({
+  label,
+  description,
+  fieldClassName,
+  disabled,
+  readOnly
+}: SwitchFieldProps) {
   const field = useFieldContext();
   const value = useStore(field.store, (s) => s.value) as boolean;
 
@@ -32,7 +40,7 @@ export function SwitchField({ label, description, disabled, readOnly }: SwitchFi
       .join(' ') || undefined;
 
   return (
-    <FormFieldSet>
+    <FormFieldSet className={fieldClassName}>
       {/* items-center: the field-content alignment hook flips horizontal
           fields to items-start, and its checkbox/radio optical nudge does not
           cover role=switch — center like the pre-FieldContent layout. */}

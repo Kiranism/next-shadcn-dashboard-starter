@@ -387,14 +387,79 @@ export interface TypedFieldConfig<TValues, TName extends DeepKeys<TValues>> {
   defaultValue?: NoInfer<DeepValue<TValues, TName>>;
 }
 
+/** The option-value type a path admits: the path's own string literals (or
+ *  its ELEMENT's, for array paths) — so a select on a `'admin' | 'viewer'`
+ *  path rejects options with out-of-union values. Plain string paths stay
+ *  fully open. */
+type OptionValueFor<V> = [
+  Extract<NonNullable<V> extends ReadonlyArray<infer E> ? E : NonNullable<V>, string>
+] extends [never]
+  ? string
+  : Extract<NonNullable<V> extends ReadonlyArray<infer E> ? E : NonNullable<V>, string>;
+
+/** Rebinds an options-bearing widget's `options[].value` to the path's
+ *  admissible values at each JSX site (write-side safety). */
+type RemapOptions<TProps, V> = TProps extends { options: ReadonlyArray<infer O> }
+  ? O extends { value: string }
+    ? Omit<TProps, 'options'> & {
+        options: ReadonlyArray<Omit<O, 'value'> & { value: OptionValueFor<V> }>;
+      }
+    : TProps
+  : TProps;
+
+/** Paths whose value admits ARBITRARY text/number input — free-text widgets
+ *  (Text/Textarea) are not offered literal-union paths they could corrupt. */
+export type FreeTextKeys<TValues, TAllowed> =
+  StrictDeepKeysOfType<TValues, TAllowed> extends infer TKey
+    ? TKey extends StrictDeepKeysOfType<TValues, TAllowed>
+      ? [string] extends [DeepValue<TValues, TKey>]
+        ? TKey
+        : [number] extends [DeepValue<TValues, TKey>]
+          ? TKey
+          : never
+      : never
+    : never;
+
+/** Paths that can faithfully store "cleared" (undefined) — clearable widgets
+ *  (DatePicker) are not offered required paths they'd corrupt on clear. */
+export type ClearableKeys<TValues, TAllowed> =
+  StrictDeepKeysOfType<TValues, TAllowed> extends infer TKey
+    ? TKey extends StrictDeepKeysOfType<TValues, TAllowed>
+      ? [undefined] extends [DeepValue<TValues, TKey>]
+        ? TKey
+        : never
+      : never
+    : never;
+
 /**
  * A flat field component bound to one form. TAllowed filters which paths the
  * widget may bind to (a switch only binds to boolean paths); TName is
  * inferred per JSX site from the `name` literal, which pins the types of
- * validators, listeners and defaultValue.
+ * validators, listeners, defaultValue — and, for options-bearing widgets,
+ * the admissible option values.
  */
 export interface BoundFormField<TValues, TAllowed, TProps extends object> {
   <const TName extends StrictDeepKeysOfType<TValues, TAllowed>>(
+    props: Omit<
+      RemapOptions<TProps, DeepValue<TValues, TName>>,
+      keyof TypedFieldConfig<TValues, TName>
+    > &
+      TypedFieldConfig<TValues, TName>
+  ): React.ReactNode;
+  displayName?: string;
+}
+
+/** BoundFormField for free-text widgets — literal-union paths excluded. */
+export interface BoundFreeTextField<TValues, TAllowed, TProps extends object> {
+  <const TName extends FreeTextKeys<TValues, TAllowed>>(
+    props: Omit<TProps, keyof TypedFieldConfig<TValues, TName>> & TypedFieldConfig<TValues, TName>
+  ): React.ReactNode;
+  displayName?: string;
+}
+
+/** BoundFormField for clearable widgets — undefined-rejecting paths excluded. */
+export interface BoundClearableField<TValues, TAllowed, TProps extends object> {
+  <const TName extends ClearableKeys<TValues, TAllowed>>(
     props: Omit<TProps, keyof TypedFieldConfig<TValues, TName>> & TypedFieldConfig<TValues, TName>
   ): React.ReactNode;
   displayName?: string;

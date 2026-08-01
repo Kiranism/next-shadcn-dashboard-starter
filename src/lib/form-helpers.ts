@@ -3,6 +3,7 @@
  * See docs/forms.md ("Deriving field validators" and "Server errors").
  */
 
+import type { DeepKeys, StandardSchemaV1 } from '@tanstack/form-core';
 import type { ZodTypeAny } from 'zod';
 
 /**
@@ -59,7 +60,10 @@ function unwrapSchema(schema: any): any {
  * union or a refine-wrapped object) — passing undefined as a validator is a
  * no-op, so this degrades safely; keep explicit validators for those paths.
  */
-export function schemaFor(schema: ZodTypeAny, path: string): ZodTypeAny | undefined {
+export function schemaFor<TValue = any>(
+  schema: ZodTypeAny,
+  path: string
+): StandardSchemaV1<TValue, unknown> | undefined {
   const segments = path
     .replace(/\[\d*\]/g, '.__element__')
     .split('.')
@@ -75,14 +79,18 @@ export function schemaFor(schema: ZodTypeAny, path: string): ZodTypeAny | undefi
     }
     current = current.shape?.[segment];
   }
-  return unwrapSchema(current);
+  // The traversal is untyped by nature; the `any`-input StandardSchemaV1
+  // return keeps the result assignable to every typed validator slot, and
+  // pinning TValue (schemaFor<string>(...)) restores exactness when wanted.
+  return unwrapSchema(current) as StandardSchemaV1<TValue, unknown> | undefined;
 }
 
-export interface ServerErrors {
+export interface ServerErrors<TValues = Record<string, unknown>> {
   /** Form-level messages (shown by <FormErrors /> after the submit). */
   formErrors?: string[];
-  /** Per-field messages, keyed by field path — rendered at each field. */
-  fieldErrors?: Record<string, string | string[]>;
+  /** Per-field messages, keyed by field path — rendered at each field.
+   *  Keys are checked against the form's value type (typos don't compile). */
+  fieldErrors?: { [K in DeepKeys<TValues> & string]?: string | string[] };
 }
 
 /**
@@ -105,7 +113,10 @@ export interface ServerErrors {
  * });
  * ```
  */
-export function applyServerErrors(form: ServerErrorHost, errors: ServerErrors) {
+export function applyServerErrors<TValues = Record<string, unknown>>(
+  form: ServerErrorHost & { readonly state: { readonly values: TValues } },
+  errors: ServerErrors<TValues>
+) {
   for (const [name, raw] of Object.entries(errors.fieldErrors ?? {})) {
     const message = (Array.isArray(raw) ? raw : [raw]).join(' ');
     // meta can be undefined for a field that never mounted — build it fresh.

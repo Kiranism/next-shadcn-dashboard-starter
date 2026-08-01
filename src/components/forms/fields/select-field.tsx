@@ -23,6 +23,8 @@ type Option = { value: string; label: string; disabled?: boolean };
 interface SelectFieldProps {
   label: string;
   description?: string;
+  /** Class for the outer field wrapper (grid placement, spans, …). */
+  fieldClassName?: string;
   required?: boolean;
   options: Option[];
   placeholder?: string;
@@ -42,6 +44,7 @@ export type SelectFieldValue = string | null | undefined;
 export function SelectField({
   label,
   description,
+  fieldClassName,
   required,
   options,
   placeholder = 'Select an option',
@@ -97,7 +100,7 @@ export function SelectField({
 
   if (orientation !== 'vertical') {
     return (
-      <FormFieldSet>
+      <FormFieldSet className={fieldClassName}>
         <FormField orientation={orientation}>
           <FieldContent>
             <FieldLabel htmlFor={field.controlId} className={labelSrOnly ? 'sr-only' : undefined}>
@@ -116,7 +119,7 @@ export function SelectField({
   }
 
   return (
-    <FormFieldSet>
+    <FormFieldSet className={fieldClassName}>
       <FormField>
         <FieldLabel htmlFor={field.controlId} className={labelSrOnly ? 'sr-only' : undefined}>
           {label}

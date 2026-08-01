@@ -18,7 +18,7 @@ export function UnionAccountForm() {
     onSubmit: ({ value }) => void value
   });
 
-  const { FormTextField, FormCheckboxField } = useFormFields(form);
+  const { FormTextField, FormCheckboxField, FormSelectField } = useFormFields(form);
 
   return (
     <form.AppForm>
@@ -51,8 +51,18 @@ export function UnionAccountForm() {
           label='typo'
         />
 
-        {/* discriminator is a string-literal-union path — widget filter must not drop it */}
+        {/* discriminator paths are literal unions: free-text widgets are NOT
+            offered them (write-guard) — a select with union-checked options is */}
+        {/* @ts-expect-error W1: free text on a literal-union discriminator */}
         <FormTextField name='accountType' label='Account Type' />
+        <FormSelectField
+          name='accountType'
+          label='Account Type'
+          options={[
+            { value: 'individual', label: 'Individual' },
+            { value: 'company', label: 'Company' }
+          ]}
+        />
 
         <form.SubmitButton>Create account</form.SubmitButton>
       </form.Form>

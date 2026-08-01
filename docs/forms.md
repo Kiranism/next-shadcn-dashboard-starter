@@ -61,17 +61,19 @@ src/features/products/
 
 The schema is reusable in API routes, server actions, tables and tests with zero duplication. Always prefer `z.infer<typeof schema>` as the form values type.
 
-**Default values:** prefer `satisfies` over `as` — it enforces completeness (`{} satisfies FormValues` is a compile error; `{} as FormValues` is not):
+**Default values:** `satisfies` enforces completeness (`{} satisfies FormValues` is a compile error; `{} as FormValues` is not) — but under `satisfies`, TypeScript keeps each property's *narrow* inferred type, so widen non-string defaults per field or the inferred `TValues` won't match your widgets:
 
 ```ts
 defaultValues: {
-  name: '',
-  price: undefined,
-  tags: [] as string[]   // annotate empty arrays: bare [] infers never[] under satisfies
+  name: '',                        // strings are fine as-is
+  active: false as boolean,        // widen: bare `false` infers the literal type
+  launchDate: null as Date | null, // widen: bare `null` collapses the path entirely
+  price: undefined as number | undefined,
+  tags: [] as string[]             // widen: bare [] infers never[]
 } satisfies ProductFormValues
 ```
 
-Keep the `as FormValues` cast only where the shape genuinely needs it (discriminated-union defaults).
+Rule of thumb: `satisfies` + per-field widening for object shapes; keep the `as FormValues` cast for discriminated-union defaults (and know it silently permits missing fields).
 
 ---
 
@@ -152,10 +154,11 @@ Native TanStack typing, full field API. Use for one-off custom UI and object-row
   {(field) => (
     <field.FieldSet>
       <field.Field>
-        <field.FieldLabel>Framework *</field.FieldLabel>
-        <MyWidget value={field.state.value} onChange={field.handleChange} onBlur={field.handleBlur} />
+        <field.FieldLabel htmlFor='framework'>Framework *</field.FieldLabel>
+        <MyWidget id='framework' value={field.state.value}
+          onChange={field.handleChange} onBlur={field.handleBlur} />
+        <field.FieldError />
       </field.Field>
-      <field.FieldError />
     </field.FieldSet>
   )}
 </form.AppField>
@@ -183,12 +186,14 @@ Every widget exports a base component (for Pattern 2) and appears in `useFormFie
 | `RadioGroupField`    | `string \| null?`            | Rich options `{value, label, description?, disabled?}`; auto **card variant** when descriptions present          |
 | `SliderField`        | `number \| null?`            | min/max readout, error slot, `disabled`, `readOnly`, `labelSrOnly`                                               |
 | `FileUploadField`    | `File[] \| null?`            | Drag-and-drop, `maxSize`/`maxFiles`, `disabled`                                                                  |
-| `CheckboxGroupField` | `string[] \| null?`          | Multi-select group (canonical `checkbox-group` anatomy), `columns`/`className` layouts. **Array mode automatic** |
-| `ArrayTextField`     | `string[] \| null?`          | Dynamic string list — InputGroup rows, inline remove, per-row `itemValidators`, `maxItems`. **Array mode automatic** |
+| `CheckboxGroupField` | `string[] \| null?`          | Multi-select group (canonical `checkbox-group` anatomy): `options: {value, label, description?, disabled?}[]`, `columns`/`className` layouts, `readOnly`. **Array mode automatic** |
+| `ArrayTextField`     | `string[] \| null?`          | Dynamic string list — InputGroup rows, inline remove, `itemValidators: { onChange?, onBlur? }` (string schema or `({ value }) => …`), `maxItems`, `readOnly`. **Array mode automatic** |
 
 `null?` = `| null | undefined` — optional and nullable schema paths bind everywhere. All widgets render the canonical shadcn Field anatomy: `data-invalid` on the wrapper, `aria-invalid`/`aria-describedby` on the control (always resolvable — ids are namespaced per instance, so two forms with the same field name never collide), errors gated on *touched or submitted*.
 
-**`readOnly` vs `disabled`:** `disabled` dims and skips validation focus; `readOnly` keeps full-contrast display but ignores interaction — use it for view-permission modes.
+**`readOnly` vs `disabled`:** `disabled` dims and skips validation focus; `readOnly` keeps full-contrast display but ignores interaction — use it for view-permission modes. Every widget also takes **`fieldClassName`** for grid placement of the whole field (`col-span-2`, `max-w-sm`, …); `className` on Text/Textarea targets the control itself.
+
+**Write-side guards** (the compiler also checks what widgets could *write*): option widgets' `options[].value` must belong to the path's literal union; free-text widgets (Text/Textarea) are not offered literal-union paths at all (use Select/Combobox/RadioGroup for discriminators); DatePicker only binds paths that admit `undefined` (clearing writes `undefined` — use `.nullish()`/optional date schemas).
 
 **Number fields:** clearing a `type='number'` TextField writes `undefined` (not `''`) — optional number schemas pass, required ones report a missing value.
 
@@ -214,6 +219,7 @@ What the compiler enforces on Pattern 1 (all of it regression-guarded by the typ
 **Known boundaries** (shared with raw TanStack — the composed layer adds none of its own):
 
 - Literal-union paths (discriminators) reject broad `z.string()` — use `z.enum([...])` or a function validator.
+- `satisfies` defaults keep NARROW property types: a bare `null` default collapses a `Date | null` path out of the widgets' offered names — widen per field (`null as Date | null`), see File Structure.
 - `Record<string, T>` paths are open (any key compiles); recursive value types exceed TS instantiation depth — flatten them.
 - Paths *into* atomic values (`File`, `Blob`, `FileList`, `Date`) are never offered. Register your own atomic types via declaration merge:
 

@@ -14,6 +14,8 @@ import {
 interface SliderFieldProps {
   label: string;
   description?: string;
+  /** Class for the outer field wrapper (grid placement, spans, …). */
+  fieldClassName?: string;
   min?: number;
   max?: number;
   step?: number;
@@ -30,6 +32,7 @@ export type SliderFieldValue = number | null | undefined;
 export function SliderField({
   label,
   description,
+  fieldClassName,
   min = 0,
   max = 100,
   step = 1,
@@ -47,7 +50,7 @@ export function SliderField({
       .join(' ') || undefined;
 
   return (
-    <FormFieldSet>
+    <FormFieldSet className={fieldClassName}>
       <FormField>
         <FieldLabel id={labelId} className={labelSrOnly ? 'sr-only' : undefined}>
           {label}
