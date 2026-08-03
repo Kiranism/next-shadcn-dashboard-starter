@@ -43,11 +43,11 @@
     "kbar": "^0.1.0-beta.48",
     "match-sorter": "^8.2.0",
     "motion": "^11.18.2",
-    "next": "16.2.6",
+    "next": "16.2.12",
     "next-themes": "^0.4.6",
     "nextjs-toploader": "^3.9.17",
     "nuqs": "^2.8.9",
-    "postcss": "8.5.14",
+    "postcss": "8.5.25",
     "react": "19.2.4",
     "react-day-picker": "^10.0.1",
     "react-dom": "19.2.4",
@@ -55,7 +55,7 @@
     "react-resizable-panels": "^4.12.2",
     "react-responsive": "^10.0.1",
     "recharts": "3.8.0",
-    "sharp": "^0.33.5",
+    "sharp": "^0.35.3",
     "sonner": "^1.7.4",
     "sort-by": "^1.2.0",
     "tailwind-merge": "^3.5.0",
@@ -83,7 +83,8 @@
   "overrides": {
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
-    "postcss": "8.5.14"
+    "postcss": "8.5.25",
+    "sharp": "^0.35.3"
   },
   "lint-staged": {
     "!(scripts)/**/*.{js,jsx,tsx,ts,css,less,scss,sass}": [
