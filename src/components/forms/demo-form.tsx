@@ -1,14 +1,43 @@
 'use client';
 
 import * as React from 'react';
-import { useAppForm, useFormFields } from '@/components/ui/tanstack-form';
-import { useStore } from '@tanstack/react-form';
+import { useForm, useStore, type AnyFieldApi } from '@tanstack/react-form';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FieldDescription } from '@/components/ui/field';
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet
+} from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Switch } from '@/components/ui/switch';
+import { Slider } from '@/components/ui/slider';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList
+} from '@/components/ui/command';
+import { FileUploader } from '@/components/file-uploader';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -25,7 +54,7 @@ import type { DateRange } from 'react-day-picker';
 import { Icons } from '@/components/icons';
 import { cn } from '@/lib/utils';
 
-// Schema (form-level safety net — onSubmit catches anything field-level missed)
+// Schema — validated on submit, errors display next to each field
 const demoFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.email('Invalid email address'),
@@ -85,9 +114,74 @@ const genderOptions = [
   { value: 'prefer-not-to-say', label: 'Prefer not to say' }
 ];
 
-// ─── Custom field components (no pre-built field component exists) ───
+// ─── Page-local controls (plain UI state, wired to the field in the JSX) ───
 
-function TagsField({
+function FrameworkCombobox({ field, isInvalid }: { field: AnyFieldApi; isInvalid: boolean }) {
+  const [open, setOpen] = React.useState(false);
+  const value = field.state.value as string;
+  const selected = frameworkOptions.find((o) => o.value === value);
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) field.handleBlur();
+      }}
+    >
+      <PopoverTrigger
+        render={
+          <Button
+            id={field.name}
+            variant='outline'
+            role='combobox'
+            aria-controls='framework-listbox'
+            aria-expanded={open}
+            aria-invalid={isInvalid}
+            className={cn(
+              'w-full justify-between font-normal',
+              !selected && 'text-muted-foreground'
+            )}
+          />
+        }
+      >
+        {selected?.label ?? 'Search frameworks...'}
+        <Icons.chevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
+      </PopoverTrigger>
+      <PopoverContent className='w-(--anchor-width) p-0'>
+        <Command>
+          <CommandInput placeholder='Search frameworks...' />
+          <CommandList id='framework-listbox'>
+            <CommandEmpty>No framework found.</CommandEmpty>
+            <CommandGroup>
+              {frameworkOptions.map((opt) => (
+                <CommandItem
+                  key={opt.value}
+                  value={opt.value}
+                  keywords={[opt.label]}
+                  onSelect={(next) => {
+                    field.handleChange(next);
+                    setOpen(false);
+                  }}
+                >
+                  <Icons.check
+                    className={cn(
+                      'mr-2 h-4 w-4',
+                      value === opt.value ? 'opacity-100' : 'opacity-0'
+                    )}
+                  />
+                  {opt.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function TagsInput({
   values,
   onPush,
   onRemove
@@ -119,6 +213,7 @@ function TagsField({
             }
           }}
           placeholder='Type and press Enter...'
+          aria-label='Add a tag'
         />
         <Button type='button' variant='secondary' onClick={addTag}>
           Add
@@ -132,6 +227,7 @@ function TagsField({
               <button
                 type='button'
                 onClick={() => onRemove(idx)}
+                aria-label={`Remove ${tag}`}
                 className='hover:text-destructive ml-0.5'
               >
                 <Icons.close className='h-3 w-3' />
@@ -183,7 +279,7 @@ type DemoFormValues = {
 };
 
 export default function DemoForm() {
-  const form = useAppForm({
+  const form = useForm({
     defaultValues: {
       name: '',
       email: '',
@@ -209,26 +305,12 @@ export default function DemoForm() {
       avatar: []
     } as DemoFormValues,
     validators: {
-      // Form-level safety net — catches anything field-level validators missed
       onSubmit: demoFormSchema
     },
     onSubmit: () => {
       alert('Form submitted successfully!');
     }
   });
-
-  const {
-    FormTextField,
-    FormTextareaField,
-    FormSelectField,
-    FormSwitchField,
-    FormRadioGroupField,
-    FormSliderField,
-    FormFileUploadField,
-    FormCheckboxGroupField,
-    FormComboboxField,
-    FormDatePickerField
-  } = useFormFields(form);
 
   const formValues = useStore(form.store, (s) => s.values);
 
@@ -242,439 +324,711 @@ export default function DemoForm() {
           </p>
         </CardHeader>
         <CardContent>
-          <form.AppForm>
-            <form.Form className='space-y-6'>
-              {/* ─── TEXT INPUTS (flat pattern + field-level onBlur validation) ─── */}
-              <SectionTitle>Text Inputs</SectionTitle>
+          <form
+            className='space-y-6'
+            noValidate
+            onSubmit={(e) => {
+              e.preventDefault();
+              form.handleSubmit();
+            }}
+          >
+            {/* ─── TEXT INPUTS ─── */}
+            <SectionTitle>Text Inputs</SectionTitle>
 
-              <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-                <FormTextField
-                  name='name'
-                  label='Full Name'
-                  required
-                  placeholder='John Doe'
-                  validators={{
-                    onBlur: z.string().min(2, 'Name must be at least 2 characters')
-                  }}
-                />
-                {/* Async validation: simulated server-side email check */}
-                <FormTextField
-                  name='email'
-                  label='Email'
-                  required
-                  type='email'
-                  placeholder='john@example.com'
-                  validators={{
-                    onBlur: z.string().email('Invalid email address'),
-                    onChangeAsync: async ({ value }: { value: string }) => {
-                      if (!value || value.length < 3) return undefined;
-                      // Simulated server check — replace with real API call
-                      await new Promise((r) => setTimeout(r, 500));
-                      if (value === 'taken@example.com') {
-                        return 'This email is already registered';
-                      }
-                      return undefined;
-                    },
-                    onChangeAsyncDebounceMs: 500
-                  }}
-                />
-                <FormTextField
-                  name='password'
-                  label='Password'
-                  required
-                  type='password'
-                  placeholder='Min 8 characters'
-                  validators={{
-                    onBlur: z.string().min(8, 'Password must be at least 8 characters')
-                  }}
-                />
-                <FormTextField
-                  name='age'
-                  label='Age'
-                  required
-                  type='number'
-                  min={18}
-                  max={100}
-                  placeholder='18'
-                  validators={{
-                    onBlur: z
-                      .number({ error: 'Age is required' })
-                      .min(18, 'Must be at least 18 years old')
-                  }}
-                />
-                <FormTextField
-                  name='phone'
-                  label='Phone'
-                  required
-                  type='tel'
-                  placeholder='+1 (555) 000-0000'
-                  validators={{
-                    onBlur: z.string().min(10, 'Phone must be at least 10 digits')
-                  }}
-                />
-                <FormTextField
-                  name='website'
-                  label='Website'
-                  type='url'
-                  placeholder='https://example.com'
-                />
-              </div>
-
-              {/* ─── TEXTAREA (flat pattern + onBlur validation) ─── */}
-              <FormTextareaField
-                name='bio'
-                label='Bio'
-                required
-                placeholder='Tell us about yourself...'
-                maxLength={500}
-                rows={4}
-                validators={{
-                  onBlur: z.string().min(10, 'Bio must be at least 10 characters')
-                }}
-              />
-
-              {/* ─── SELECT & COMBOBOX ─── */}
-              <SectionTitle>Select & Combobox</SectionTitle>
-
-              <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-                {/* Listener: logs country changes (replace with dependent field reset) */}
-                <FormSelectField
-                  name='country'
-                  label='Country'
-                  required
-                  options={countryOptions}
-                  placeholder='Select your country'
-                  validators={{
-                    onBlur: z.string().min(1, 'Please select a country')
-                  }}
-                  listeners={{
-                    onChange: ({ value }) => {
-                      // Side effect example: reset dependent fields when country changes.
-                      // In a real form with state/city fields:
-                      //   fieldApi.form.setFieldValue('state', '');
-                      //   fieldApi.form.setFieldValue('city', '');
-                      void value;
-                    }
-                  }}
-                />
-
-                {/* Combobox — searchable select */}
-                <FormComboboxField
-                  name='framework'
-                  label='Framework'
-                  required
-                  description='Searchable dropdown'
-                  options={frameworkOptions}
-                  placeholder='Search frameworks...'
-                />
-              </div>
-
-              {/* ─── CHECKBOX & RADIO ─── */}
-              <SectionTitle>Checkbox & Radio</SectionTitle>
-
-              {/* Checkbox Group — array field */}
-              <FormCheckboxGroupField
-                name='interests'
-                label='Interests'
-                required
-                description='Select all that apply'
-                options={interestOptions}
-                className='grid grid-cols-2 gap-3 md:grid-cols-3'
-              />
-              {formValues.interests.length > 0 && (
-                <div className='flex flex-wrap gap-2'>
-                  {formValues.interests.map((v) => (
-                    <Badge key={v} variant='secondary'>
-                      {interestOptions.find((o) => o.value === v)?.label || v}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-
-              {/* Radio Group (flat pattern + onBlur validation) */}
-              <FormRadioGroupField
-                name='gender'
-                label='Gender'
-                required
-                options={genderOptions}
-                validators={{
-                  onBlur: z.string().min(1, 'Please select gender')
-                }}
-              />
-
-              {/* ─── TOGGLE & SWITCH ─── */}
-              <SectionTitle>Toggle & Switch</SectionTitle>
-
-              {/* Switch (flat pattern) */}
-              <FormSwitchField
-                name='newsletter'
-                label='Subscribe to Newsletter'
-                description='Receive updates about new features and products'
-              />
-
-              {/* Toggle Group — array mode, needs AppField */}
-              <form.AppField
-                name='formatting'
-                mode='array'
+            <FieldGroup className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+              <form.Field
+                name='name'
                 children={(field) => {
-                  const values: string[] = field.state.value || [];
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
-                    <field.FieldSet>
-                      <field.Field>
-                        <field.FieldLabel>Text Formatting</field.FieldLabel>
-                        <ToggleGroup
-                          multiple
-                          variant='outline'
-                          value={values}
-                          onValueChange={(val) => field.form.setFieldValue('formatting', val)}
-                        >
-                          <ToggleGroupItem value='bold' aria-label='Bold'>
-                            <Icons.bold className='h-4 w-4' />
-                          </ToggleGroupItem>
-                          <ToggleGroupItem value='italic' aria-label='Italic'>
-                            <Icons.italic className='h-4 w-4' />
-                          </ToggleGroupItem>
-                          <ToggleGroupItem value='underline' aria-label='Underline'>
-                            <Icons.underline className='h-4 w-4' />
-                          </ToggleGroupItem>
-                        </ToggleGroup>
-                        <FieldDescription>Multi-select toggle group</FieldDescription>
-                      </field.Field>
-                    </field.FieldSet>
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Full Name *</FieldLabel>
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        placeholder='John Doe'
+                        aria-invalid={isInvalid}
+                      />
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </Field>
                   );
                 }}
               />
 
-              {/* Terms checkbox — custom horizontal layout, needs AppField */}
-              <form.AppField
-                name='terms'
-                children={(field) => (
-                  <field.FieldSet>
-                    <field.Field orientation='horizontal'>
-                      <Checkbox
-                        checked={field.state.value}
-                        onCheckedChange={(checked) => field.handleChange(checked as boolean)}
-                        aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+              {/* Async validation: simulated server-side email check */}
+              <form.Field
+                name='email'
+                asyncDebounceMs={500}
+                validators={{
+                  onChangeAsync: async ({ value }) => {
+                    if (!value || value.length < 3) return undefined;
+                    await new Promise((r) => setTimeout(r, 500));
+                    if (value === 'taken@example.com') {
+                      return { message: 'This email is already registered' };
+                    }
+                    return undefined;
+                  }
+                }}
+                children={(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Email *</FieldLabel>
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        type='email'
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        placeholder='john@example.com'
+                        aria-invalid={isInvalid}
                       />
-                      <field.FieldContent>
-                        <field.FieldLabel className='space-y-1 leading-none'>
-                          I agree to the Terms and Conditions *
-                        </field.FieldLabel>
-                        <field.FieldError />
-                      </field.FieldContent>
-                    </field.Field>
-                  </field.FieldSet>
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </Field>
+                  );
+                }}
+              />
+
+              <form.Field
+                name='password'
+                children={(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Password *</FieldLabel>
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        type='password'
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        placeholder='Min 8 characters'
+                        aria-invalid={isInvalid}
+                      />
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </Field>
+                  );
+                }}
+              />
+
+              <form.Field
+                name='age'
+                children={(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Age *</FieldLabel>
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        type='number'
+                        min={18}
+                        max={100}
+                        value={field.state.value ?? ''}
+                        onBlur={field.handleBlur}
+                        onChange={(e) =>
+                          field.handleChange(
+                            e.target.value === '' ? undefined : Number(e.target.value)
+                          )
+                        }
+                        placeholder='18'
+                        aria-invalid={isInvalid}
+                      />
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </Field>
+                  );
+                }}
+              />
+
+              <form.Field
+                name='phone'
+                children={(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Phone *</FieldLabel>
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        type='tel'
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        placeholder='+1 (555) 000-0000'
+                        aria-invalid={isInvalid}
+                      />
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </Field>
+                  );
+                }}
+              />
+
+              <form.Field
+                name='website'
+                children={(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Website</FieldLabel>
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        type='url'
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        placeholder='https://example.com'
+                        aria-invalid={isInvalid}
+                      />
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </Field>
+                  );
+                }}
+              />
+            </FieldGroup>
+
+            {/* ─── TEXTAREA ─── */}
+            <form.Field
+              name='bio'
+              children={(field) => {
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Bio *</FieldLabel>
+                    <Textarea
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder='Tell us about yourself...'
+                      maxLength={500}
+                      rows={4}
+                      aria-invalid={isInvalid}
+                    />
+                    <FieldDescription>{field.state.value.length} / 500 characters</FieldDescription>
+                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  </Field>
+                );
+              }}
+            />
+
+            {/* ─── SELECT & COMBOBOX ─── */}
+            <SectionTitle>Select & Combobox</SectionTitle>
+
+            <FieldGroup className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+              <form.Field
+                name='country'
+                children={(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Country *</FieldLabel>
+                      <Select
+                        name={field.name}
+                        value={field.state.value}
+                        onValueChange={(value) => field.handleChange(value ?? '')}
+                      >
+                        <SelectTrigger id={field.name} aria-invalid={isInvalid}>
+                          <SelectValue placeholder='Select your country' />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            {countryOptions.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </Field>
+                  );
+                }}
+              />
+
+              <form.Field
+                name='framework'
+                children={(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Framework *</FieldLabel>
+                      <FrameworkCombobox field={field} isInvalid={isInvalid} />
+                      <FieldDescription>Searchable dropdown</FieldDescription>
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </Field>
+                  );
+                }}
+              />
+            </FieldGroup>
+
+            {/* ─── CHECKBOX & RADIO ─── */}
+            <SectionTitle>Checkbox & Radio</SectionTitle>
+
+            {/* Checkbox group — array field with pushValue/removeValue */}
+            <form.Field
+              name='interests'
+              mode='array'
+              children={(field) => {
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <FieldSet>
+                    <FieldLegend variant='label'>Interests *</FieldLegend>
+                    <FieldDescription>Select all that apply</FieldDescription>
+                    <FieldGroup
+                      data-slot='checkbox-group'
+                      className='grid grid-cols-2 gap-3 md:grid-cols-3'
+                    >
+                      {interestOptions.map((opt) => (
+                        <Field key={opt.value} orientation='horizontal' data-invalid={isInvalid}>
+                          <Checkbox
+                            id={`interests-${opt.value}`}
+                            name={field.name}
+                            aria-invalid={isInvalid}
+                            checked={field.state.value.includes(opt.value)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                field.pushValue(opt.value);
+                              } else {
+                                const index = field.state.value.indexOf(opt.value);
+                                if (index > -1) {
+                                  field.removeValue(index);
+                                }
+                              }
+                            }}
+                          />
+                          <FieldLabel htmlFor={`interests-${opt.value}`} className='font-normal'>
+                            {opt.label}
+                          </FieldLabel>
+                        </Field>
+                      ))}
+                    </FieldGroup>
+                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  </FieldSet>
+                );
+              }}
+            />
+            {formValues.interests.length > 0 && (
+              <div className='flex flex-wrap gap-2'>
+                {formValues.interests.map((v) => (
+                  <Badge key={v} variant='secondary'>
+                    {interestOptions.find((o) => o.value === v)?.label || v}
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            {/* Radio group */}
+            <form.Field
+              name='gender'
+              children={(field) => {
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <FieldSet>
+                    <FieldLegend variant='label'>Gender *</FieldLegend>
+                    <RadioGroup
+                      name={field.name}
+                      value={field.state.value}
+                      onValueChange={field.handleChange}
+                      onBlur={field.handleBlur}
+                      className='flex flex-wrap gap-x-6 gap-y-2'
+                    >
+                      {genderOptions.map((opt) => (
+                        <Field
+                          key={opt.value}
+                          orientation='horizontal'
+                          data-invalid={isInvalid}
+                          className='w-auto'
+                        >
+                          <RadioGroupItem
+                            value={opt.value}
+                            id={`gender-${opt.value}`}
+                            aria-invalid={isInvalid}
+                          />
+                          <FieldLabel htmlFor={`gender-${opt.value}`} className='font-normal'>
+                            {opt.label}
+                          </FieldLabel>
+                        </Field>
+                      ))}
+                    </RadioGroup>
+                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  </FieldSet>
+                );
+              }}
+            />
+
+            {/* ─── TOGGLE & SWITCH ─── */}
+            <SectionTitle>Toggle & Switch</SectionTitle>
+
+            {/* Switch */}
+            <form.Field
+              name='newsletter'
+              children={(field) => {
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field orientation='horizontal' data-invalid={isInvalid}>
+                    <FieldContent>
+                      <FieldLabel htmlFor={field.name}>Subscribe to Newsletter</FieldLabel>
+                      <FieldDescription>
+                        Receive updates about new features and products
+                      </FieldDescription>
+                    </FieldContent>
+                    <Switch
+                      id={field.name}
+                      name={field.name}
+                      checked={field.state.value}
+                      onCheckedChange={field.handleChange}
+                      aria-invalid={isInvalid}
+                    />
+                  </Field>
+                );
+              }}
+            />
+
+            {/* Toggle group — multi-select */}
+            <form.Field
+              name='formatting'
+              mode='array'
+              children={(field) => (
+                <Field>
+                  <FieldLabel id='formatting-label'>Text Formatting</FieldLabel>
+                  <ToggleGroup
+                    multiple
+                    variant='outline'
+                    aria-labelledby='formatting-label'
+                    value={field.state.value || []}
+                    onValueChange={(val) => field.handleChange(val)}
+                  >
+                    <ToggleGroupItem value='bold' aria-label='Bold'>
+                      <Icons.bold className='h-4 w-4' />
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value='italic' aria-label='Italic'>
+                      <Icons.italic className='h-4 w-4' />
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value='underline' aria-label='Underline'>
+                      <Icons.underline className='h-4 w-4' />
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                  <FieldDescription>Multi-select toggle group</FieldDescription>
+                </Field>
+              )}
+            />
+
+            {/* Terms checkbox */}
+            <form.Field
+              name='terms'
+              children={(field) => {
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field orientation='horizontal' data-invalid={isInvalid}>
+                    <Checkbox
+                      id={field.name}
+                      name={field.name}
+                      checked={field.state.value}
+                      onCheckedChange={(checked) => field.handleChange(checked === true)}
+                      aria-invalid={isInvalid}
+                    />
+                    <FieldContent>
+                      <FieldLabel htmlFor={field.name} className='font-normal'>
+                        I agree to the Terms and Conditions *
+                      </FieldLabel>
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </FieldContent>
+                  </Field>
+                );
+              }}
+            />
+
+            {/* ─── SLIDER ─── */}
+            <SectionTitle>Slider</SectionTitle>
+
+            <form.Field
+              name='rating'
+              children={(field) => (
+                <Field>
+                  <FieldLabel id='rating-label'>Overall Rating</FieldLabel>
+                  <div className='px-1'>
+                    <Slider
+                      min={0}
+                      max={10}
+                      step={0.5}
+                      value={[field.state.value]}
+                      onValueChange={(v) => field.handleChange(Array.isArray(v) ? v[0] : v)}
+                      onBlur={field.handleBlur}
+                      aria-labelledby='rating-label'
+                    />
+                    <div className='text-muted-foreground mt-1 flex justify-between text-xs tabular-nums'>
+                      <span>0</span>
+                      <span className='text-foreground font-medium'>{field.state.value}</span>
+                      <span>10</span>
+                    </div>
+                  </div>
+                  <FieldDescription>Rate your experience (0-10)</FieldDescription>
+                </Field>
+              )}
+            />
+
+            {/* ─── DATE & TIME ─── */}
+            <SectionTitle>Date & Time</SectionTitle>
+
+            <FieldGroup className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+              {/* Date picker — Popover + Calendar */}
+              <form.Field
+                name='birthDate'
+                children={(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Birth Date</FieldLabel>
+                      <Popover>
+                        <PopoverTrigger
+                          render={
+                            <Button
+                              id={field.name}
+                              variant='outline'
+                              aria-invalid={isInvalid}
+                              className={cn(
+                                'w-full justify-start text-left font-normal',
+                                !field.state.value && 'text-muted-foreground'
+                              )}
+                            />
+                          }
+                        >
+                          <Icons.calendar className='mr-2 h-4 w-4' />
+                          {field.state.value ? (
+                            format(field.state.value, 'PPP')
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                        </PopoverTrigger>
+                        <PopoverContent className='w-auto p-0' align='start'>
+                          <Calendar
+                            mode='single'
+                            selected={field.state.value}
+                            onSelect={(date) => field.handleChange(date)}
+                            disabled={(date) => date > new Date()}
+                            autoFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </Field>
+                  );
+                }}
+              />
+
+              {/* Time input */}
+              <form.Field
+                name='eventTime'
+                children={(field) => (
+                  <Field>
+                    <FieldLabel htmlFor={field.name}>Event Time</FieldLabel>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      type='time'
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                    />
+                  </Field>
                 )}
               />
+            </FieldGroup>
 
-              {/* ─── SLIDER (flat pattern) ─── */}
-              <SectionTitle>Slider</SectionTitle>
-
-              <FormSliderField
-                name='rating'
-                label='Overall Rating'
-                description='Rate your experience (0-10)'
-                min={0}
-                max={10}
-                step={0.5}
-              />
-
-              {/* ─── DATE & TIME (custom, need AppField) ─── */}
-              <SectionTitle>Date & Time</SectionTitle>
-
-              <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-                {/* Date Picker */}
-                <FormDatePickerField
-                  name='birthDate'
-                  label='Birth Date'
-                  disabledDates={(date) => date > new Date()}
-                />
-
-                {/* Time Input */}
-                <form.AppField
-                  name='eventTime'
-                  children={(field) => (
-                    <field.FieldSet>
-                      <field.Field>
-                        <field.FieldLabel htmlFor={field.name}>Event Time</field.FieldLabel>
-                        <Input
-                          id={field.name}
-                          type='time'
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                        />
-                      </field.Field>
-                    </field.FieldSet>
-                  )}
-                />
-              </div>
-
-              {/* Date Range Picker */}
-              <form.AppField
-                name='dateRange'
-                children={(field) => {
-                  const range = field.state.value as DateRange | undefined;
-                  return (
-                    <field.FieldSet>
-                      <field.Field>
-                        <field.FieldLabel>Date Range</field.FieldLabel>
-                        <Popover>
-                          <PopoverTrigger
-                            render={
-                              <Button
-                                variant='outline'
-                                className={cn(
-                                  'w-full justify-start text-left font-normal',
-                                  !range?.from && 'text-muted-foreground'
-                                )}
-                              />
-                            }
-                          >
-                            <Icons.calendar className='mr-2 h-4 w-4' />
-                            {range?.from ? (
-                              range.to ? (
-                                <>
-                                  {format(range.from, 'LLL dd, y')} -{' '}
-                                  {format(range.to, 'LLL dd, y')}
-                                </>
-                              ) : (
-                                format(range.from, 'LLL dd, y')
-                              )
-                            ) : (
-                              <span>Pick a date range</span>
-                            )}
-                          </PopoverTrigger>
-                          <PopoverContent className='w-auto p-0' align='start'>
-                            <Calendar
-                              mode='range'
-                              selected={range}
-                              onSelect={field.handleChange}
-                              numberOfMonths={2}
-                              autoFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </field.Field>
-                    </field.FieldSet>
-                  );
-                }}
-              />
-
-              {/* ─── SPECIAL INPUTS (custom, need AppField) ─── */}
-              <SectionTitle>Special Inputs</SectionTitle>
-
-              <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-                {/* OTP Input */}
-                <form.AppField
-                  name='otp'
-                  children={(field) => (
-                    <field.FieldSet>
-                      <field.Field>
-                        <field.FieldLabel>Verification Code *</field.FieldLabel>
-                        <InputOTP
-                          maxLength={6}
-                          value={field.state.value}
-                          onChange={field.handleChange}
-                        >
-                          <InputOTPGroup>
-                            <InputOTPSlot index={0} />
-                            <InputOTPSlot index={1} />
-                            <InputOTPSlot index={2} />
-                          </InputOTPGroup>
-                          <InputOTPSeparator />
-                          <InputOTPGroup>
-                            <InputOTPSlot index={3} />
-                            <InputOTPSlot index={4} />
-                            <InputOTPSlot index={5} />
-                          </InputOTPGroup>
-                        </InputOTP>
-                        <FieldDescription>6-digit OTP input</FieldDescription>
-                      </field.Field>
-                      <field.FieldError />
-                    </field.FieldSet>
-                  )}
-                />
-
-                {/* Color Picker */}
-                <form.AppField
-                  name='favoriteColor'
-                  children={(field) => (
-                    <field.FieldSet>
-                      <field.Field>
-                        <field.FieldLabel htmlFor={field.name}>Favorite Color</field.FieldLabel>
-                        <div className='flex items-center gap-3'>
-                          <input
+            {/* Date range picker */}
+            <form.Field
+              name='dateRange'
+              children={(field) => {
+                const range = field.state.value;
+                return (
+                  <Field>
+                    <FieldLabel htmlFor={field.name}>Date Range</FieldLabel>
+                    <Popover>
+                      <PopoverTrigger
+                        render={
+                          <Button
                             id={field.name}
-                            aria-label='Favorite color'
-                            type='color'
-                            value={field.state.value}
-                            onChange={(e) => field.handleChange(e.target.value)}
-                            className='h-9 w-12 cursor-pointer rounded-md border p-1'
+                            variant='outline'
+                            className={cn(
+                              'w-full justify-start text-left font-normal',
+                              !range?.from && 'text-muted-foreground'
+                            )}
                           />
-                          <Input
-                            value={field.state.value}
-                            onChange={(e) => field.handleChange(e.target.value)}
-                            className='w-28 font-mono'
-                            placeholder='#000000'
-                          />
-                        </div>
-                        <FieldDescription>Native color picker with hex</FieldDescription>
-                      </field.Field>
-                    </field.FieldSet>
-                  )}
-                />
-              </div>
-
-              {/* Tags Input — array mode, needs AppField */}
-              <form.AppField
-                name='tags'
-                mode='array'
-                children={(field) => {
-                  const values: string[] = field.state.value || [];
-                  return (
-                    <field.FieldSet>
-                      <field.Field>
-                        <field.FieldLabel>Tags *</field.FieldLabel>
-                        <TagsField
-                          values={values}
-                          onPush={(val) => field.pushValue(val)}
-                          onRemove={(idx) => field.removeValue(idx)}
+                        }
+                      >
+                        <Icons.calendar className='mr-2 h-4 w-4' />
+                        {range?.from ? (
+                          range.to ? (
+                            <>
+                              {format(range.from, 'LLL dd, y')} - {format(range.to, 'LLL dd, y')}
+                            </>
+                          ) : (
+                            format(range.from, 'LLL dd, y')
+                          )
+                        ) : (
+                          <span>Pick a date range</span>
+                        )}
+                      </PopoverTrigger>
+                      <PopoverContent className='w-auto p-0' align='start'>
+                        <Calendar
+                          mode='range'
+                          selected={range}
+                          onSelect={field.handleChange}
+                          numberOfMonths={2}
+                          autoFocus
                         />
-                        <FieldDescription>Press Enter or click Add to create tags</FieldDescription>
-                      </field.Field>
-                      <field.FieldError />
-                    </field.FieldSet>
+                      </PopoverContent>
+                    </Popover>
+                  </Field>
+                );
+              }}
+            />
+
+            {/* ─── SPECIAL INPUTS ─── */}
+            <SectionTitle>Special Inputs</SectionTitle>
+
+            <FieldGroup className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+              {/* OTP input */}
+              <form.Field
+                name='otp'
+                children={(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel>Verification Code *</FieldLabel>
+                      <InputOTP
+                        maxLength={6}
+                        value={field.state.value}
+                        onChange={field.handleChange}
+                        aria-label='Verification code'
+                      >
+                        <InputOTPGroup>
+                          <InputOTPSlot index={0} />
+                          <InputOTPSlot index={1} />
+                          <InputOTPSlot index={2} />
+                        </InputOTPGroup>
+                        <InputOTPSeparator />
+                        <InputOTPGroup>
+                          <InputOTPSlot index={3} />
+                          <InputOTPSlot index={4} />
+                          <InputOTPSlot index={5} />
+                        </InputOTPGroup>
+                      </InputOTP>
+                      <FieldDescription>6-digit OTP input</FieldDescription>
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </Field>
                   );
                 }}
               />
 
-              {/* ─── FILE UPLOAD (flat pattern) ─── */}
-              <SectionTitle>File Upload</SectionTitle>
-
-              <FormFileUploadField
-                name='avatar'
-                label='Profile Picture'
-                description='Drag & drop or click to upload (max 5MB)'
-                maxSize={5000000}
-                maxFiles={1}
+              {/* Color picker */}
+              <form.Field
+                name='favoriteColor'
+                children={(field) => (
+                  <Field>
+                    <FieldLabel htmlFor={field.name}>Favorite Color</FieldLabel>
+                    <div className='flex items-center gap-3'>
+                      <input
+                        id={field.name}
+                        aria-label='Favorite color'
+                        type='color'
+                        value={field.state.value}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        className='h-9 w-12 cursor-pointer rounded-md border p-1'
+                      />
+                      <Input
+                        value={field.state.value}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        className='w-28 font-mono'
+                        placeholder='#000000'
+                        aria-label='Favorite color hex value'
+                      />
+                    </div>
+                    <FieldDescription>Native color picker with hex</FieldDescription>
+                  </Field>
+                )}
               />
+            </FieldGroup>
 
-              {/* ─── SUBMIT ─── */}
-              <Separator />
-              <div className='flex gap-4 pt-2'>
-                <Button
-                  type='button'
-                  variant='outline'
-                  onClick={() => form.reset()}
-                  className='flex-1'
-                >
-                  Reset
-                </Button>
-                <form.SubmitButton className='flex-1'>Submit Form</form.SubmitButton>
-              </div>
-            </form.Form>
-          </form.AppForm>
+            {/* Tags input — array field */}
+            <form.Field
+              name='tags'
+              mode='array'
+              children={(field) => {
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel>Tags *</FieldLabel>
+                    <TagsInput
+                      values={field.state.value || []}
+                      onPush={(val) => field.pushValue(val)}
+                      onRemove={(idx) => field.removeValue(idx)}
+                    />
+                    <FieldDescription>Press Enter or click Add to create tags</FieldDescription>
+                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  </Field>
+                );
+              }}
+            />
+
+            {/* ─── FILE UPLOAD ─── */}
+            <SectionTitle>File Upload</SectionTitle>
+
+            <form.Field
+              name='avatar'
+              children={(field) => {
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Profile Picture</FieldLabel>
+                    <FileUploader
+                      value={field.state.value}
+                      onValueChange={(files) =>
+                        field.handleChange(
+                          typeof files === 'function' ? files(field.state.value ?? []) : files
+                        )
+                      }
+                      maxSize={5000000}
+                      maxFiles={1}
+                    />
+                    <FieldDescription>
+                      Drag &amp; drop or click to upload (max 5MB)
+                    </FieldDescription>
+                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  </Field>
+                );
+              }}
+            />
+
+            {/* ─── SUBMIT ─── */}
+            <Separator />
+            <div className='flex gap-4 pt-2'>
+              <Button
+                type='button'
+                variant='outline'
+                onClick={() => form.reset()}
+                className='flex-1'
+              >
+                Reset
+              </Button>
+              <form.Subscribe
+                selector={(state) => state.isSubmitting}
+                children={(isSubmitting) => (
+                  <Button type='submit' disabled={isSubmitting} className='flex-1'>
+                    Submit Form
+                  </Button>
+                )}
+              />
+            </div>
+          </form>
         </CardContent>
       </Card>
 

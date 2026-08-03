@@ -240,7 +240,7 @@ initialState: {
 
 ## 4. Forms
 
-See `docs/forms.md` for the complete form system. Forms use **TanStack Form + Zod** with `useAppForm` + `useFormFields(form)` (pass the form instance — types are inferred from it; the zero-arg `useFormFields<T>()` is deprecated) and `useMutation` for submission. Custom fields join via `fieldFor<V>()` + `useFormFields(form, extras)`.
+See `docs/forms.md` for the form conventions. Forms use **TanStack Form + Zod** exactly per the official shadcn TanStack Form doc: `useForm`, `form.Field` render props with `Field`/`FieldLabel`/`FieldError` anatomy, form-level Zod `onSubmit` validators, and `useMutation` for submission.
 
 ---
 

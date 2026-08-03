@@ -1,10 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import { useAppForm, useFormFields } from '@/components/ui/tanstack-form';
+import { useForm } from '@tanstack/react-form';
 import * as z from 'zod';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Sheet,
   SheetContent,
@@ -27,24 +39,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Icons } from '@/components/icons';
 
 // ---------------------------------------------------------------------------
-// Types
+// Schemas
 // ---------------------------------------------------------------------------
 
-type SheetFormValues = {
-  name: string;
-  category: string;
-  price: number | undefined;
-  description: string;
-};
+const sheetFormSchema = z.object({
+  name: z.string().min(2, 'Product name must be at least 2 characters'),
+  category: z.string().min(1, 'Please select a category'),
+  price: z.number({ error: 'Price is required' }).min(0.01, 'Price must be greater than 0'),
+  description: z.string().min(10, 'Description must be at least 10 characters')
+});
 
-type DialogFormValues = {
-  rating: number;
-  feedback: string;
-};
-
-// ---------------------------------------------------------------------------
-// Options
-// ---------------------------------------------------------------------------
+const dialogFormSchema = z.object({
+  rating: z.number().min(0).max(10),
+  feedback: z.string().min(5, 'Feedback must be at least 5 characters')
+});
 
 const categoryOptions = [
   { value: 'beauty', label: 'Beauty Products' },
@@ -60,13 +68,16 @@ const categoryOptions = [
 function SheetFormSection() {
   const [open, setOpen] = useState(false);
 
-  const form = useAppForm({
+  const form = useForm({
     defaultValues: {
       name: '',
       category: '',
-      price: undefined,
+      price: undefined as number | undefined,
       description: ''
-    } as SheetFormValues,
+    },
+    validators: {
+      onSubmit: sheetFormSchema
+    },
     onSubmit: ({ value }) => {
       toast.success('Product created successfully!', {
         description: `${value.name} has been added.`
@@ -75,8 +86,6 @@ function SheetFormSection() {
       form.reset();
     }
   });
-
-  const { FormTextField, FormSelectField, FormTextareaField } = useFormFields(form);
 
   return (
     <Card>
@@ -102,55 +111,122 @@ function SheetFormSection() {
               </SheetDescription>
             </SheetHeader>
 
-            <form.AppForm>
-              <form.Form id='sheet-form-id' className='space-y-4 p-4 md:p-4'>
-                <FormTextField
+            <form
+              id='sheet-form-id'
+              className='space-y-4 p-4 md:p-4'
+              onSubmit={(e) => {
+                e.preventDefault();
+                form.handleSubmit();
+              }}
+            >
+              <FieldGroup>
+                <form.Field
                   name='name'
-                  label='Product Name'
-                  required
-                  placeholder='Enter product name'
-                  validators={{
-                    onBlur: z.string().min(2, 'Product name must be at least 2 characters')
+                  children={(field) => {
+                    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                    return (
+                      <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>Product Name *</FieldLabel>
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          placeholder='Enter product name'
+                          aria-invalid={isInvalid}
+                        />
+                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                      </Field>
+                    );
                   }}
                 />
 
-                <FormSelectField
+                <form.Field
                   name='category'
-                  label='Category'
-                  required
-                  options={categoryOptions}
-                  placeholder='Select a category'
-                  validators={{
-                    onBlur: z.string().min(1, 'Please select a category')
+                  children={(field) => {
+                    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                    return (
+                      <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>Category *</FieldLabel>
+                        <Select
+                          name={field.name}
+                          value={field.state.value}
+                          onValueChange={(value) => field.handleChange(value ?? '')}
+                        >
+                          <SelectTrigger id={field.name} aria-invalid={isInvalid}>
+                            <SelectValue placeholder='Select a category' />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              {categoryOptions.map((opt) => (
+                                <SelectItem key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                      </Field>
+                    );
                   }}
                 />
 
-                <FormTextField
+                <form.Field
                   name='price'
-                  label='Price'
-                  required
-                  type='number'
-                  min={0}
-                  step='0.01'
-                  placeholder='0.00'
-                  validators={{
-                    onBlur: z.number().min(0.01, 'Price must be greater than 0')
+                  children={(field) => {
+                    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                    return (
+                      <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>Price *</FieldLabel>
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          type='number'
+                          min={0}
+                          step='0.01'
+                          value={field.state.value ?? ''}
+                          onBlur={field.handleBlur}
+                          onChange={(e) =>
+                            field.handleChange(
+                              e.target.value === '' ? undefined : Number(e.target.value)
+                            )
+                          }
+                          placeholder='0.00'
+                          aria-invalid={isInvalid}
+                        />
+                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                      </Field>
+                    );
                   }}
                 />
 
-                <FormTextareaField
+                <form.Field
                   name='description'
-                  label='Description'
-                  required
-                  placeholder='Enter product description'
-                  maxLength={500}
-                  rows={4}
-                  validators={{
-                    onBlur: z.string().min(10, 'Description must be at least 10 characters')
+                  children={(field) => {
+                    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                    return (
+                      <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>Description *</FieldLabel>
+                        <Textarea
+                          id={field.name}
+                          name={field.name}
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          placeholder='Enter product description'
+                          maxLength={500}
+                          rows={4}
+                          aria-invalid={isInvalid}
+                        />
+                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                      </Field>
+                    );
                   }}
                 />
-              </form.Form>
-            </form.AppForm>
+              </FieldGroup>
+            </form>
 
             <SheetFooter className='pt-4'>
               <Button type='button' variant='outline' onClick={() => setOpen(false)}>
@@ -174,11 +250,14 @@ function SheetFormSection() {
 function DialogFormSection() {
   const [open, setOpen] = useState(false);
 
-  const form = useAppForm({
+  const form = useForm({
     defaultValues: {
       rating: 5,
       feedback: ''
-    } as DialogFormValues,
+    },
+    validators: {
+      onSubmit: dialogFormSchema
+    },
     onSubmit: ({ value }) => {
       toast.success('Feedback submitted!', {
         description: `Rating: ${value.rating}/10. Thank you!`
@@ -188,16 +267,12 @@ function DialogFormSection() {
     }
   });
 
-  const { FormSliderField, FormTextareaField } = useFormFields(form);
-
   return (
     <Card>
       <CardHeader>
         <CardTitle>Dialog Form</CardTitle>
         <CardDescription>
-          A quick feedback form inside a Dialog. Uses composed field components from{' '}
-          <code className='bg-muted rounded px-1 text-sm'>useFormFields</code> with the submit
-          button in the DialogFooter.
+          A quick feedback form inside a Dialog with the submit button in the DialogFooter.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -212,30 +287,61 @@ function DialogFormSection() {
               <DialogDescription>Rate your experience and leave a comment.</DialogDescription>
             </DialogHeader>
 
-            <form.AppForm>
-              <form.Form id='dialog-form-id' className='space-y-4 py-2'>
-                <FormSliderField
+            <form
+              id='dialog-form-id'
+              className='space-y-4 py-2'
+              onSubmit={(e) => {
+                e.preventDefault();
+                form.handleSubmit();
+              }}
+            >
+              <FieldGroup>
+                <form.Field
                   name='rating'
-                  label='Rating'
-                  description='Rate your experience (0-10)'
-                  min={0}
-                  max={10}
-                  step={1}
+                  children={(field) => (
+                    <Field>
+                      <FieldLabel id='dialog-form-rating-label'>Rating</FieldLabel>
+                      <Slider
+                        min={0}
+                        max={10}
+                        step={1}
+                        value={[field.state.value]}
+                        onValueChange={(v) => field.handleChange(Array.isArray(v) ? v[0] : v)}
+                        onBlur={field.handleBlur}
+                        aria-labelledby='dialog-form-rating-label'
+                      />
+                      <FieldDescription>
+                        Rate your experience (0-10). Current: {field.state.value}
+                      </FieldDescription>
+                    </Field>
+                  )}
                 />
 
-                <FormTextareaField
+                <form.Field
                   name='feedback'
-                  label='Feedback'
-                  required
-                  placeholder='Tell us what you think...'
-                  maxLength={300}
-                  rows={3}
-                  validators={{
-                    onBlur: z.string().min(5, 'Feedback must be at least 5 characters')
+                  children={(field) => {
+                    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                    return (
+                      <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>Feedback *</FieldLabel>
+                        <Textarea
+                          id={field.name}
+                          name={field.name}
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          placeholder='Tell us what you think...'
+                          maxLength={300}
+                          rows={3}
+                          aria-invalid={isInvalid}
+                        />
+                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                      </Field>
+                    );
                   }}
                 />
-              </form.Form>
-            </form.AppForm>
+              </FieldGroup>
+            </form>
 
             <DialogFooter>
               <Button type='button' variant='outline' onClick={() => setOpen(false)}>

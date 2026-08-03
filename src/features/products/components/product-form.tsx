@@ -1,16 +1,27 @@
 'use client';
 
-import { useAppForm, useFormFields } from '@/components/ui/tanstack-form';
+import { FileUploader } from '@/components/file-uploader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { createProductMutation, updateProductMutation } from '../api/mutations';
-import type { Product } from '../api/types';
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { categoryOptions } from '@/features/products/constants/product-options';
+import { productSchema, type ProductFormValues } from '@/features/products/schemas/product';
+import { useForm } from '@tanstack/react-form';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import * as z from 'zod';
-import { productSchema, type ProductFormValues } from '@/features/products/schemas/product';
-import { categoryOptions } from '@/features/products/constants/product-options';
+import { createProductMutation, updateProductMutation } from '../api/mutations';
+import type { Product } from '../api/types';
 
 export default function ProductForm({
   initialData,
@@ -44,7 +55,7 @@ export default function ProductForm({
     }
   });
 
-  const form = useAppForm({
+  const form = useForm({
     defaultValues: {
       image: undefined,
       name: initialData?.name ?? '',
@@ -71,8 +82,7 @@ export default function ProductForm({
     }
   });
 
-  const { FormTextField, FormSelectField, FormTextareaField, FormFileUploadField } =
-    useFormFields(form);
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <Card className='mx-auto w-full'>
@@ -80,72 +90,156 @@ export default function ProductForm({
         <CardTitle className='text-left text-2xl font-bold'>{pageTitle}</CardTitle>
       </CardHeader>
       <CardContent>
-        <form.AppForm>
-          <form.Form className='space-y-8'>
-            <FormFileUploadField
+        <form
+          className='space-y-8'
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit();
+          }}
+        >
+          <FieldGroup>
+            <form.Field
               name='image'
-              label='Product Image'
-              description='Upload a product image'
-              maxSize={5 * 1024 * 1024}
-              maxFiles={4}
-            />
-
-            <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
-              <FormTextField
-                name='name'
-                label='Product Name'
-                required
-                placeholder='Enter product name'
-                validators={{
-                  onBlur: z.string().min(2, 'Product name must be at least 2 characters.')
-                }}
-              />
-
-              <FormSelectField
-                name='category'
-                label='Category'
-                required
-                options={categoryOptions}
-                placeholder='Select category'
-                validators={{
-                  onBlur: z.string().min(1, 'Please select a category')
-                }}
-              />
-
-              <FormTextField
-                name='price'
-                label='Price'
-                required
-                type='number'
-                min={0}
-                step={0.01}
-                placeholder='Enter price'
-                validators={{
-                  onBlur: z.number({ message: 'Price is required' })
-                }}
-              />
-            </div>
-
-            <FormTextareaField
-              name='description'
-              label='Description'
-              required
-              placeholder='Enter product description'
-              maxLength={500}
-              rows={4}
-              validators={{
-                onBlur: z.string().min(10, 'Description must be at least 10 characters.')
+              children={(field) => {
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Product Image</FieldLabel>
+                    <FileUploader
+                      value={field.state.value}
+                      onValueChange={(files) =>
+                        field.handleChange(
+                          typeof files === 'function' ? files(field.state.value ?? []) : files
+                        )
+                      }
+                      maxSize={5 * 1024 * 1024}
+                      maxFiles={4}
+                    />
+                    <FieldDescription>Upload a product image</FieldDescription>
+                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  </Field>
+                );
               }}
             />
 
-            <div className='flex justify-end gap-2'>
-              <Button type='button' variant='outline' onClick={() => router.back()}>
-                Back
-              </Button>
-              <form.SubmitButton>{isEdit ? 'Update Product' : 'Add Product'}</form.SubmitButton>
+            <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+              <form.Field
+                name='name'
+                children={(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Product Name *</FieldLabel>
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        placeholder='Enter product name'
+                        aria-invalid={isInvalid}
+                      />
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </Field>
+                  );
+                }}
+              />
+
+              <form.Field
+                name='category'
+                children={(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Category *</FieldLabel>
+                      <Select
+                        name={field.name}
+                        value={field.state.value}
+                        onValueChange={(value) => field.handleChange(value ?? '')}
+                      >
+                        <SelectTrigger id={field.name} aria-invalid={isInvalid}>
+                          <SelectValue placeholder='Select category' />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            {categoryOptions.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </Field>
+                  );
+                }}
+              />
+
+              <form.Field
+                name='price'
+                children={(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Price *</FieldLabel>
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        type='number'
+                        min={0}
+                        step={0.01}
+                        value={field.state.value ?? ''}
+                        onBlur={field.handleBlur}
+                        onChange={(e) =>
+                          field.handleChange(
+                            e.target.value === '' ? undefined : Number(e.target.value)
+                          )
+                        }
+                        placeholder='Enter price'
+                        aria-invalid={isInvalid}
+                      />
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </Field>
+                  );
+                }}
+              />
             </div>
-          </form.Form>
-        </form.AppForm>
+
+            <form.Field
+              name='description'
+              children={(field) => {
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Description *</FieldLabel>
+                    <Textarea
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder='Enter product description'
+                      maxLength={500}
+                      rows={4}
+                      aria-invalid={isInvalid}
+                    />
+                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  </Field>
+                );
+              }}
+            />
+          </FieldGroup>
+
+          <div className='flex justify-end gap-2'>
+            <Button type='button' variant='outline' onClick={() => router.back()}>
+              Back
+            </Button>
+            <Button type='submit' disabled={isPending}>
+              {isEdit ? 'Update Product' : 'Add Product'}
+            </Button>
+          </div>
+        </form>
       </CardContent>
     </Card>
   );

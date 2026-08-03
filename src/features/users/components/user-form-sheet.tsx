@@ -1,8 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { useAppForm, useFormFields } from '@/components/ui/tanstack-form';
+import { useForm } from '@tanstack/react-form';
 import { Button } from '@/components/ui/button';
+import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Sheet,
@@ -17,7 +27,6 @@ import { useMutation } from '@tanstack/react-query';
 import { createUserMutation, updateUserMutation } from '../api/mutations';
 import type { User } from '../api/types';
 import { toast } from 'sonner';
-import * as z from 'zod';
 import { userSchema, type UserFormValues } from '../schemas/user';
 import { ROLE_OPTIONS } from './users-table/options';
 
@@ -55,7 +64,7 @@ export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) 
     onError: () => toast.error('Failed to update user')
   });
 
-  const form = useAppForm({
+  const form = useForm({
     defaultValues: {
       first_name: user?.first_name ?? '',
       last_name: user?.last_name ?? '',
@@ -76,8 +85,6 @@ export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) 
     }
   });
 
-  const { FormTextField, FormSelectField } = useFormFields(form);
-
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
@@ -93,74 +100,169 @@ export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) 
         </SheetHeader>
 
         <div className='flex-1 overflow-auto'>
-          <form.AppForm>
-            <form.Form id='user-form-sheet' className='space-y-4 p-4 md:p-4'>
+          <form
+            id='user-form-sheet'
+            className='space-y-4 p-4 md:p-4'
+            onSubmit={(e) => {
+              e.preventDefault();
+              form.handleSubmit();
+            }}
+          >
+            <FieldGroup>
               <div className='grid grid-cols-2 gap-4'>
-                <FormTextField
+                <form.Field
                   name='first_name'
-                  label='First Name'
-                  required
-                  placeholder='John'
-                  validators={{
-                    onBlur: z.string().min(2, 'First name must be at least 2 characters')
+                  children={(field) => {
+                    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                    return (
+                      <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>First Name *</FieldLabel>
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          placeholder='John'
+                          aria-invalid={isInvalid}
+                        />
+                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                      </Field>
+                    );
                   }}
                 />
-                <FormTextField
+                <form.Field
                   name='last_name'
-                  label='Last Name'
-                  required
-                  placeholder='Doe'
-                  validators={{
-                    onBlur: z.string().min(2, 'Last name must be at least 2 characters')
+                  children={(field) => {
+                    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                    return (
+                      <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>Last Name *</FieldLabel>
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          placeholder='Doe'
+                          aria-invalid={isInvalid}
+                        />
+                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                      </Field>
+                    );
                   }}
                 />
               </div>
 
-              <FormTextField
+              <form.Field
                 name='email'
-                label='Email'
-                required
-                type='email'
-                placeholder='john@example.com'
-                validators={{
-                  onBlur: z.string().email('Please enter a valid email')
+                children={(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Email *</FieldLabel>
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        type='email'
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        placeholder='john@example.com'
+                        aria-invalid={isInvalid}
+                      />
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </Field>
+                  );
                 }}
               />
 
-              <FormTextField
+              <form.Field
                 name='phone'
-                label='Phone'
-                required
-                type='tel'
-                placeholder='(555) 123-4567'
-                validators={{
-                  onBlur: z.string().min(1, 'Phone number is required')
+                children={(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Phone *</FieldLabel>
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        type='tel'
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        placeholder='(555) 123-4567'
+                        aria-invalid={isInvalid}
+                      />
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </Field>
+                  );
                 }}
               />
 
-              <FormSelectField
+              <form.Field
                 name='role'
-                label='Role'
-                required
-                options={ROLE_OPTIONS}
-                placeholder='Select role'
-                validators={{
-                  onBlur: z.string().min(1, 'Please select a role')
+                children={(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Role *</FieldLabel>
+                      <Select
+                        name={field.name}
+                        value={field.state.value}
+                        onValueChange={(value) => field.handleChange(value ?? '')}
+                      >
+                        <SelectTrigger id={field.name} aria-invalid={isInvalid}>
+                          <SelectValue placeholder='Select role' />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            {ROLE_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </Field>
+                  );
                 }}
               />
 
-              <FormSelectField
+              <form.Field
                 name='status'
-                label='Status'
-                required
-                options={STATUS_OPTIONS}
-                placeholder='Select status'
-                validators={{
-                  onBlur: z.string().min(1, 'Please select a status')
+                children={(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Status *</FieldLabel>
+                      <Select
+                        name={field.name}
+                        value={field.state.value}
+                        onValueChange={(value) => field.handleChange(value ?? '')}
+                      >
+                        <SelectTrigger id={field.name} aria-invalid={isInvalid}>
+                          <SelectValue placeholder='Select status' />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            {STATUS_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </Field>
+                  );
                 }}
               />
-            </form.Form>
-          </form.AppForm>
+            </FieldGroup>
+          </form>
         </div>
 
         <SheetFooter>
