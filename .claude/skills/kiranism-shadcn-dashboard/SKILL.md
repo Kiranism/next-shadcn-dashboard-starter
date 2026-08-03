@@ -240,7 +240,54 @@ initialState: {
 
 ## 4. Forms
 
-See `docs/forms.md` for the form conventions. Forms use **TanStack Form + Zod** via `useAppForm` from `@/lib/form` (TanStack `createFormHook`): `form.AppField` renders the shared field components (`field.TextField`, `field.SelectField`, …) whose markup is the official shadcn TanStack Form anatomy; raw `form.Field` render props for one-off custom fields; form-level Zod `onSubmit` validators and `useMutation` for submission.
+See `docs/forms.md` for the full guide. Forms use **TanStack Form + Zod** via `useAppForm` from `@/lib/form` (TanStack `createFormHook`). The shadcn TanStack Form doc anatomy lives once per widget in `src/components/forms/fields/`; pages render fields as one-liners:
+
+```tsx
+import { useAppForm } from '@/lib/form';
+import { FieldGroup } from '@/components/ui/field';
+
+const form = useAppForm({
+  defaultValues: { email: '', role: '' },
+  validators: { onSubmit: schema }, // Zod schema — errors paint per field on submit
+  onSubmit: async ({ value }) => {
+    await createMutation.mutateAsync(value); // React Query mutation
+  }
+});
+
+<form
+  onSubmit={(e) => {
+    e.preventDefault();
+    form.handleSubmit();
+  }}
+>
+  <FieldGroup>
+    <form.AppField
+      name='email' // typed against defaultValues — typos are compile errors
+      children={(field) => <field.TextField label='Email' required type='email' />}
+    />
+    <form.AppField
+      name='role'
+      children={(field) => <field.SelectField label='Role' options={ROLE_OPTIONS} />}
+    />
+    <form.AppForm>
+      <form.SubmitButton>Save</form.SubmitButton>
+    </form.AppForm>
+  </FieldGroup>
+</form>
+```
+
+**Available components** (all take `label`, `description?`, `required?`): `TextField` (any input type; number converts at the edge, async-validator spinner built in), `TextareaField` (`showCount`), `SelectField`, `CheckboxField`, `SwitchField`, `RadioGroupField`, `SliderField`, `ComboboxField`, `DatePickerField`, `DateRangeField`, `OtpField`, `ColorField`, `FileUploadField`, `CheckboxGroupField`, `TagsField`, `ToggleGroupField`.
+
+**Rules:**
+
+- Array-valued components (`CheckboxGroupField`, `TagsField`, `ToggleGroupField`) need `mode='array'` on the `form.AppField`.
+- Field-level validators/listeners (async checks, `onChangeListenTo` linked fields) go on the `form.AppField` element; function validators return `{ message: '…' }` objects.
+- One-off custom fields (object-row arrays, bespoke UI) drop down to raw `form.Field` render props composing `Field`/`FieldLabel`/`FieldError` from `@/components/ui/field` — `data-invalid` on Field, `aria-invalid` on the control, `{isInvalid && <FieldError errors={field.state.meta.errors} />}`.
+- Large forms split into typed sections with `withForm` from `@/lib/form` (section receives `form` as a prop; field names stay compile-checked).
+- Sheet/Dialog forms: submit button in the footer via the HTML `form` attribute (`<Button type='submit' form='my-form-id'>`).
+- Multi-step: `useFormStepper(stepSchemas, { fullSchema })` from `@/hooks/use-stepper`; route every submit through `handleNextStepOrSubmit(form)`.
+- Match the widget to the path's value type — the compiler checks the `name` path but NOT the widget/value pairing (a `SwitchField` on a string path compiles and misbehaves).
+- Never call `useState` inside a render prop — extract stateful controls into components.
 
 ---
 

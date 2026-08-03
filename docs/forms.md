@@ -146,6 +146,43 @@ The doc conventions inside any custom field: `data-invalid` on `<Field>`,
 `aria-invalid` on the control, `{isInvalid && <FieldError errors={…} />}`,
 function validators return `{ message: '…' }` objects.
 
+## Scaling to large forms — `withForm` sections
+
+Split a big form into reusable section components with `withForm` (also
+exported from `@/lib/form`). Sections receive the form instance as a prop and
+keep **fully typed field names** — a typo'd `name` inside a section is still a
+compile error:
+
+```tsx
+import { useAppForm, withForm } from '@/lib/form';
+
+const ShippingSection = withForm({
+  defaultValues: checkoutDefaults, // ties the section to the form's shape
+  render: function ShippingRender({ form }) {
+    return (
+      <FieldGroup>
+        <form.AppField
+          name='shipping.street'
+          children={(field) => <field.TextField label='Street' required />}
+        />
+        <form.AppField
+          name='shipping.city'
+          children={(field) => <field.TextField label='City' required />}
+        />
+      </FieldGroup>
+    );
+  }
+});
+
+// In the page:
+const form = useAppForm({ defaultValues: checkoutDefaults, ... });
+<ShippingSection form={form} />
+```
+
+Deep paths (`org.billing.address.city`), array sub-paths
+(`admins[0].prefs.notify`), and union-typed leaves all stay typed, and
+typechecking stays fast at 40+ fields.
+
 ## Template-specific notes
 
 **Submitting with React Query.** `onSubmit` awaits the mutation; success/error
@@ -177,10 +214,24 @@ see `features/forms/components/multi-step-product-form.tsx`.
 **Number inputs.** `TextField type='number'` already converts at the edge;
 give required numbers a human message: `z.number({ error: 'Price is required' })`.
 
-**A caveat to know.** `field.XxxField` components assert their value type via
-`useFieldContext<T>()` — the compiler checks the `name` path exists, but not
-that the widget matches the path's value type (a `SwitchField` on a string
-path compiles and misbehaves). Match widgets to the table above.
+**Caveats to know** (verified by stress testing):
+
+- `field.XxxField` components assert their value type via
+  `useFieldContext<T>()` — the compiler checks the `name` path exists, but
+  not that the widget matches the path's value type (a `SwitchField` on a
+  string path compiles and renders wrong values). Match widgets to the table
+  above.
+- Rendering a field component outside `form.AppField` throws a clear error
+  (`fieldContext only works when within a fieldComponent…`) — it cannot fail
+  silently.
+- Two forms with identical field names mounted at once (a sheet over a page)
+  produce duplicate `id` attributes — the shadcn doc's `id={field.name}`
+  convention. Form *state* stays fully isolated; only label-target ids
+  collide. Rename fields or avoid simultaneous mounting if labels must stay
+  clickable in both.
+- Forgetting `mode='array'` on an AppField using `CheckboxGroupField` /
+  `TagsField` / `ToggleGroupField` still renders and updates — but keep the
+  convention: array mode gives TanStack correct per-item meta tracking.
 
 ## Examples in the dashboard
 
