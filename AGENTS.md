@@ -41,7 +41,7 @@ The project follows a feature-based folder structure designed for scalability in
 
 - Zustand 5.x for local UI state in the stateful demo features
 - Nuqs for URL search params state management
-- TanStack Form + Zod for form handling (via `useAppForm` hook)
+- TanStack Form + Zod for form handling (`createFormHook` + shadcn `Field`-anatomy components)
 
 ### Data Fetching & Caching
 
@@ -102,7 +102,7 @@ The project follows a feature-based folder structure designed for scalability in
 ├── components/
 │   ├── ui/                # shadcn/ui components (50+ components)
 │   ├── layout/            # Layout components (sidebar, header, etc.)
-│   ├── forms/             # Form field wrappers
+│   ├── forms/             # Field components (shadcn TanStack Form anatomy) + demos
 │   ├── themes/            # Theme system components
 │   ├── kbar/              # Command+K search bar
 │   ├── icons.tsx          # Icon registry
@@ -186,8 +186,7 @@ bun run lint         # Run ESLint
 bun run lint:fix     # Fix ESLint issues and format
 bun run lint:strict  # Zero warnings tolerance
 
-bun run typecheck    # tsc --noEmit — also runs the self-verifying form type tests (src/components/forms/fields/__typetests__)
-bun run smoke:forms  # Runtime smoke of the form field binding layer
+bun run typecheck    # tsc --noEmit
 
 # Formatting
 bun run format       # Format with Prettier
@@ -754,6 +753,6 @@ See "Theming System" section above or `docs/themes.md`.
 7. **shadcn components** - don't modify files in `src/components/ui/` directly; extend them instead
 8. **Icons** - NEVER import icons directly from `@tabler/icons-react` or any other icon package. All icons must be registered in `src/components/icons.tsx` and imported as `import { Icons } from '@/components/icons'`. To add a new icon: add the tabler import to `icons.tsx`, add a semantic key to the `Icons` object, then use `Icons.keyName` in your component.
 9. **Page headers** - Always use `PageContainer` props (`pageTitle`, `pageDescription`, `pageHeaderAction`) for page headers. Never import `<Heading>` manually in pages — `PageContainer` handles that internally.
-10. **Forms** - Use TanStack Form via `useAppForm` from `@/components/ui/tanstack-form`. Never use `useState` inside `AppField` render props — extract stateful logic into separate components.
+10. **Forms** - Use `useAppForm` from `@/lib/form` with `form.AppField` rendering the shared field components (`field.TextField`, `field.SelectField`, …) from `@/components/forms/fields`. Each component follows the official shadcn TanStack Form anatomy; drop down to raw `form.Field` render props for one-off custom fields. Never use `useState` inside a render prop — extract stateful controls into components.
 11. **Button loading** - Use `<Button isLoading={isPending}>` for loading states. Uses CSS Grid overlap trick for zero layout shift. When `isLoading` is not passed, button behaves as default shadcn. `SubmitButton` in forms handles this automatically via form `isSubmitting` state.
 12. **Data layer** - Always go through the service layer: `types.ts` → `service.ts` → `queries.ts`. Components import types from `types.ts`, functions from `service.ts`, query options from `queries.ts`. Never import from `@/constants/mock-api*` directly in components.

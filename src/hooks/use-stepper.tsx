@@ -47,10 +47,12 @@ export function applyStepIssues(
     byField.set(path, [...(byField.get(path) ?? []), issue.message]);
   }
   for (const [path, messages] of byField) {
+    // { message } objects, not strings — shadcn's <FieldError> only renders
+    // object entries (same shape Zod issues arrive in).
     form.setFieldMeta(path as never, (meta) => ({
       ...meta,
       isTouched: true,
-      errorMap: { ...meta?.errorMap, onSubmit: messages.join(' ') }
+      errorMap: { ...meta?.errorMap, onSubmit: messages.map((message) => ({ message })) }
     }));
   }
   // Pathless (cross-field) issues have no field to render at — surface them

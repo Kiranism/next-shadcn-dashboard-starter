@@ -1,117 +1,45 @@
 'use client';
 
-import { useStore } from '@tanstack/react-form';
+import * as React from 'react';
+import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
-import { FieldContent, FieldDescription, FieldLabel } from '@/components/ui/field';
-import {
-  useFieldContext,
-  FormFieldSet,
-  FormField,
-  FormFieldError,
-  createFormField
-} from '@/components/ui/form-context';
-
-interface TextareaFieldProps extends Omit<
-  React.ComponentProps<'textarea'>,
-  // id/name/aria-* are wired by the field system (see TextField).
-  'value' | 'onChange' | 'onBlur' | 'id' | 'name' | 'aria-invalid' | 'aria-describedby'
-> {
-  label: string;
-  description?: string;
-  /** Class for the outer field wrapper (grid placement, spans, …). */
-  fieldClassName?: string;
-  required?: boolean;
-  maxLength?: number;
-  showCount?: boolean;
-  /** Visually hide the label (kept for screen readers). */
-  labelSrOnly?: boolean;
-  /** 'horizontal'/'responsive' render label + description + error beside the
-   *  textarea (canonical FieldContent anatomy). Default: stacked. */
-  orientation?: 'vertical' | 'horizontal' | 'responsive';
-}
-
-/** Path value type TextareaField can edit — matches the `as string` cast below. */
-export type TextareaFieldValue = string | null | undefined;
+import { useFieldContext, useFieldInvalid, type BaseFieldProps } from '@/lib/form-context';
 
 export function TextareaField({
   label,
   description,
-  fieldClassName,
   required,
-  maxLength,
-  showCount = !!maxLength,
-  labelSrOnly,
-  orientation = 'vertical',
-  className,
+  showCount,
   ...textareaProps
-}: TextareaFieldProps) {
-  const field = useFieldContext();
-  const value = (useStore(field.store, (s) => s.value) as string) ?? '';
-
-  const describedBy =
-    [description ? field.formDescriptionId : null, field.isInvalid ? field.formMessageId : null]
-      .filter(Boolean)
-      .join(' ') || undefined;
-
-  const control = (
-    <div className={orientation === 'vertical' ? 'w-full' : 'min-w-0 flex-1'}>
-      <Textarea
-        id={field.controlId}
-        name={field.name}
-        value={value}
-        onBlur={field.handleBlur}
-        onChange={(e) => field.handleChange(e.target.value)}
-        maxLength={maxLength}
-        aria-invalid={field.isInvalid}
-        aria-describedby={describedBy}
-        className={className}
-        {...textareaProps}
-      />
-      {showCount && (
-        <div className='text-muted-foreground text-right text-xs tabular-nums'>
-          {value.length}
-          {maxLength ? ` / ${maxLength}` : ''}
-        </div>
-      )}
-    </div>
-  );
-
-  if (orientation !== 'vertical') {
-    return (
-      <FormFieldSet className={fieldClassName}>
-        <FormField orientation={orientation}>
-          <FieldContent>
-            <FieldLabel htmlFor={field.controlId} className={labelSrOnly ? 'sr-only' : undefined}>
-              {label}
-              {required && ' *'}
-            </FieldLabel>
-            {description && (
-              <FieldDescription id={field.formDescriptionId}>{description}</FieldDescription>
-            )}
-            <FormFieldError />
-          </FieldContent>
-          {control}
-        </FormField>
-      </FormFieldSet>
-    );
-  }
+}: BaseFieldProps & {
+  /** Show a character counter (uses `maxLength` as the denominator). */
+  showCount?: boolean;
+} & Omit<React.ComponentProps<typeof Textarea>, 'value' | 'onChange' | 'onBlur'>) {
+  const field = useFieldContext<string>();
+  const isInvalid = useFieldInvalid();
 
   return (
-    <FormFieldSet className={fieldClassName}>
-      <FormField>
-        <FieldLabel htmlFor={field.controlId} className={labelSrOnly ? 'sr-only' : undefined}>
-          {label}
-          {required && ' *'}
-        </FieldLabel>
-        {control}
-        {description && (
-          <FieldDescription id={field.formDescriptionId}>{description}</FieldDescription>
-        )}
-        <FormFieldError />
-      </FormField>
-    </FormFieldSet>
+    <Field data-invalid={isInvalid}>
+      <FieldLabel htmlFor={field.name}>
+        {label}
+        {required && ' *'}
+      </FieldLabel>
+      <Textarea
+        id={field.name}
+        name={field.name}
+        value={field.state.value}
+        onBlur={field.handleBlur}
+        onChange={(e) => field.handleChange(e.target.value)}
+        aria-invalid={isInvalid}
+        {...textareaProps}
+      />
+      {showCount && textareaProps.maxLength && (
+        <div className='text-muted-foreground text-right text-sm'>
+          {field.state.value?.length || 0} / {textareaProps.maxLength}
+        </div>
+      )}
+      {description && <FieldDescription>{description}</FieldDescription>}
+      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+    </Field>
   );
 }
-
-/** @deprecated Use useFormFields(form).FormTextareaField — typed and instance-bound. Removed next release. */
-export const FormTextareaField = createFormField(TextareaField);

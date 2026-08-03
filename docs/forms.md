@@ -1,603 +1,243 @@
-# Form System
+# Forms
 
-Type-safe, composable form handling built on [TanStack Form](https://tanstack.com/form) + shadcn/ui. Supports simple CRUD forms, multi-step wizards, sheet/dialog forms, dynamic arrays, nested objects, async validation, linked fields, cross-field validation, and server-error mapping — with **instance-bound typing**: field names, validators, listeners and default values are all checked against your form's value type, and every widget only accepts paths whose value it can edit.
+Forms follow the **official shadcn TanStack Form conventions**, scaled with
+TanStack's own [`createFormHook`](https://tanstack.com/form/latest/docs/framework/react/guides/form-composition)
+pattern: the doc's `Field` anatomy is written **once per widget** as a reusable
+field component, and pages use them as one-liners inside `form.AppField`.
 
-```tsx
-const form = useAppForm({ defaultValues, validators: { onSubmit: schema }, onSubmit });
-const { FormTextField, FormSwitchField } = useFormFields(form); // types inferred from `form`
-
-<FormTextField name='title' label='Bug Title' placeholder='Concise summary'
-  validators={{ onBlur: z.string().min(5, 'At least 5 characters') }} />
-// name='urgent' (a boolean path) would be a COMPILE error on a text field
-```
-
----
-
-## Table of Contents
-
-- [Architecture](#architecture)
-- [File Structure (per feature)](#file-structure-per-feature)
-- [Quick Start](#quick-start)
-- [Usage Patterns](#usage-patterns)
-- [Available Field Components](#available-field-components)
-- [Type Safety](#type-safety)
-- [Validation](#validation)
-- [Listeners (Side Effects)](#listeners-side-effects)
-- [Custom Fields](#custom-fields)
-- [Form Recipes](#form-recipes)
-- [Server Errors](#server-errors)
-- [Production Utilities](#production-utilities)
-- [Guard Rails (type tests + smoke)](#guard-rails)
-- [Exports Reference](#exports-reference)
-- [Deprecated APIs](#deprecated-apis)
-- [Dashboard Examples](#dashboard-examples)
-
----
+- [shadcn: TanStack Form](https://ui.shadcn.com/docs/forms/tanstack) — the
+  anatomy inside every field component
+- [TanStack Form docs](https://tanstack.com/form/latest) — validators,
+  listeners, arrays, async validation
 
 ## Architecture
 
-| File                                     | What it provides                                                                                                                                                                        |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/components/ui/form-context.tsx`     | Shared primitives — contexts, `useFieldContext` (ids + `isInvalid`), structural components (`FormFieldSet`, `FormField`, `FormFieldError`, `FormErrors`), the typed composition core (`StrictDeepKeysOfType`, `TypedFieldConfig`, `BoundFormField`, `fieldFor`, `asArrayField`, `useArrayFieldApi`, `bindFieldComponent`, `withItemScope`), `scrollToFirstError`, `flattenFormErrors` |
-| `src/components/ui/tanstack-form.tsx`    | Main entry point — `useAppForm`, `useFormFields(form, extras?)`, `Form`, `SubmitButton`, `StepButton`, `withForm`, `withFieldGroup`, re-exports of everything public                       |
-| `src/components/forms/fields/*.tsx`      | 12 field components, each exporting a base component (`TextField`), its path value contract (`TextFieldValue`), and a deprecated legacy composed variant                                  |
-| `src/lib/form-helpers.ts`                | `schemaFor` (derive field validators from the schema), `applyServerErrors` / `clearServerErrors`                                                                                          |
-| `src/hooks/use-stepper.tsx`              | `useFormStepper(schemas, { fullSchema? })` — multi-step navigation with an async-aware validation gate                                                                                    |
+| File | What it provides |
+| --- | --- |
+| `src/lib/form-context.ts` | `createFormHookContexts` — `fieldContext`, `formContext`, `useFieldContext`, `useFieldInvalid`, `BaseFieldProps` |
+| `src/components/forms/fields/*.tsx` | 16 field components, each the exact shadcn doc anatomy for its widget |
+| `src/components/forms/submit-button.tsx` | `SubmitButton` — disables while submitting (`form.Subscribe`) |
+| `src/lib/form.ts` | `createFormHook` — exports `useAppForm` / `withForm` with everything registered |
 
-**Dependency rule:** `fields/*.tsx` imports from `form-context.tsx`; `tanstack-form.tsx` imports from both. Nothing imports back into `form-context.tsx` — no cycles.
+## The pattern
 
----
-
-## File Structure (per feature)
-
-Split every form feature into **schema**, **constants**, and **component**:
-
-```
-src/features/products/
-├── schemas/product.ts          ← Zod schema + inferred FormValues type
-├── constants/product-options.ts ← Select options, enums, static data
-└── components/product-form.tsx  ← Form UI (imports schema + options)
-```
-
-The schema is reusable in API routes, server actions, tables and tests with zero duplication. Use **`FormValuesOf<typeof schema>`** (= `z.input`) as the form values type — NOT `z.infer`: requiredness refines on nullish fields (`.refine((v) => v != null)`) narrow z.infer's output under TS 5.5+ inferred type predicates, and transforms/defaults diverge input from output; the form always holds the INPUT shape.
-
-**Default values:** declare them with a TYPE ANNOTATION — it enforces completeness AND widens every literal automatically (no per-field `as` dance):
-
-```ts
-import type { FormValuesOf } from '@/components/ui/tanstack-form';
-
-const defaultValues: FormValuesOf<typeof productSchema> = {
-  name: '',
-  active: false,
-  launchDate: null,
-  price: undefined,
-  tags: []
-};
-```
-
-`satisfies` also enforces completeness but KEEPS narrow literal types (bare `null`/`false`/enum strings collapse their paths out of the widgets' offered names) — avoid it for mixed shapes. Keep the `as FormValues` cast only for discriminated-union defaults (and know it silently permits missing fields).
-
----
-
-## Quick Start
+One `useAppForm` per form, a Zod schema validated on submit, and one
+`form.AppField` per field rendering the matching component:
 
 ```tsx
 'use client';
 
-import { useAppForm, useFormFields, type FormValuesOf } from '@/components/ui/tanstack-form';
+import { useAppForm } from '@/lib/form';
+import { FieldGroup } from '@/components/ui/field';
 import * as z from 'zod';
 
-const schema = z.object({
-  name: z.string().min(2, 'Name is required'),
-  email: z.string().email('Invalid email')
+const formSchema = z.object({
+  title: z.string().min(5, 'Title must be at least 5 characters.'),
+  severity: z.string().min(1, 'Select a severity.')
 });
 
-export default function MyForm() {
+export function BugReportForm() {
   const form = useAppForm({
-    defaultValues: { name: '', email: '' } as FormValuesOf<typeof schema>,
-    validators: { onSubmit: schema },
+    defaultValues: { title: '', severity: '' },
+    validators: { onSubmit: formSchema },
     onSubmit: ({ value }) => console.log(value)
   });
 
-  const { FormTextField } = useFormFields(form);
-
   return (
-    <form.AppForm>
-      <form.Form>
-        <FormTextField name='name' label='Name' required
-          validators={{ onBlur: z.string().min(2, 'Name is required') }} />
-        <FormTextField name='email' label='Email' required type='email'
-          validators={{ onBlur: z.string().email('Invalid email') }} />
-        <form.SubmitButton>Save</form.SubmitButton>
-      </form.Form>
-    </form.AppForm>
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        form.handleSubmit();
+      }}
+    >
+      <FieldGroup>
+        <form.AppField
+          name='title'
+          children={(field) => (
+            <field.TextField label='Bug Title' required placeholder='Login button broken' />
+          )}
+        />
+        <form.AppField
+          name='severity'
+          children={(field) => (
+            <field.SelectField
+              label='Severity'
+              options={[
+                { value: 'low', label: 'Low' },
+                { value: 'high', label: 'High' }
+              ]}
+            />
+          )}
+        />
+        <form.AppForm>
+          <form.SubmitButton>Submit</form.SubmitButton>
+        </form.AppForm>
+      </FieldGroup>
+    </form>
   );
 }
 ```
 
-> **Submit buttons must be explicit.** The `Button` component (Base UI) renders `type="button"` when `type` is omitted — a bare `<Button>Save</Button>` inside a form will NOT submit it. Use `form.SubmitButton` (children, not a `label` prop) or pass `type='submit'`.
+`form.AppField`'s `name` is fully typed against `defaultValues` — typos are
+compile errors. Field-level validators/listeners go on the `form.AppField`
+element (async checks, `onChangeListenTo` linked fields).
 
----
+## Available field components
 
-## Usage Patterns
+All render inside `form.AppField` as `field.XxxField`; every one takes
+`label`, `description?`, `required?`.
 
-### Pattern 1: `useFormFields(form)` — instance-bound flat fields (recommended)
+| Component | Value type | Notes |
+| --- | --- | --- |
+| `TextField` | `string` / `number` | Any input `type` (text, email, password, tel, url, time, number). Number inputs convert at the edge — clearing writes `undefined`. Shows a spinner while async validators run. |
+| `TextareaField` | `string` | `showCount` renders a character counter against `maxLength` |
+| `SelectField` | `string` | `options` array |
+| `CheckboxField` | `boolean` | Single checkbox (terms, consent) |
+| `SwitchField` | `boolean` | Label/description left, switch right |
+| `RadioGroupField` | `string` | `FieldSet` + `FieldLegend` semantics |
+| `SliderField` | `number` | `min`/`max`/`step` + value readout |
+| `ComboboxField` | `string` | Searchable select (Popover + Command) |
+| `DatePickerField` | `Date \| undefined` | Popover + Calendar, `disabledDates` |
+| `DateRangeField` | `DateRange \| undefined` | Two-month range calendar |
+| `OtpField` | `string` | 6-digit code (3 + 3) |
+| `ColorField` | `string` | Native picker + hex input |
+| `FileUploadField` | `File[]` | Wraps `FileUploader`, `maxSize`/`maxFiles` |
+| `CheckboxGroupField` | `string[]` | Needs `mode='array'` on the AppField |
+| `TagsField` | `string[]` | Needs `mode='array'`; Enter/Add pushes, badges remove |
+| `ToggleGroupField` | `string[]` | Needs `mode='array'`; pass `ToggleGroupItem`s as children |
 
-Pass the form instance — **all types are inferred from it**. The returned components are bound to that form at runtime too (they render *its* fields, even under another form's provider). Use for most forms.
+## One-off custom fields — drop down to `form.Field`
+
+For anything the components don't cover (object-row arrays, bespoke UI), use
+the raw doc pattern directly — it composes freely with the components:
 
 ```tsx
-const form = useAppForm({ ... });
-const { FormTextField, FormSelectField } = useFormFields(form);
-
-<FormTextField name='email' label='Email' />   // ✅ string-valued paths only
-<FormTextField name='urgent' label='Urgent' /> // ❌ boolean path — compile error
-<FormTextField name='emial' label='Email' />   // ❌ typo — compile error with suggestion
-```
-
-**Props available on every bound `FormXxxField`:**
-
-| Prop              | Type                                  | Notes                                                                    |
-| ----------------- | ------------------------------------- | ------------------------------------------------------------------------ |
-| `name`            | paths whose value the widget can edit | e.g. a switch only offers `boolean` paths                                |
-| `validators`      | `TypedFieldValidators`                | Zod schemas and functions checked against the path's value type          |
-| `listeners`       | TanStack `FieldListeners`             | `value` typed; cross-field `fieldApi.form.setFieldValue` is path-checked |
-| `asyncDebounceMs` | `number`                              | Default debounce for async validators                                    |
-| `defaultValue`    | the path's value type                 | For dynamically added fields                                             |
-| …component props  | per widget                            | `label`, `required`, `disabled`, `readOnly`, `orientation`, …            |
-
-### Pattern 2: `form.AppField` render prop — full control
-
-Native TanStack typing, full field API. Use for one-off custom UI and object-row arrays.
-
-```tsx
-<form.AppField name='framework' validators={{ onBlur: z.string().min(1, 'Required') }}>
-  {(field) => (
-    <field.FieldSet>
-      <field.Field>
-        <field.FieldLabel htmlFor='framework'>Framework *</field.FieldLabel>
-        <MyWidget id='framework' value={field.state.value}
-          onChange={field.handleChange} onBlur={field.handleBlur} />
-        <field.FieldError />
-      </field.Field>
-    </field.FieldSet>
+<form.Field
+  name='members'
+  mode='array'
+  children={(field) => (
+    <>
+      {field.state.value.map((_, i) => (
+        <form.Field
+          name={`members[${i}].name`}
+          children={(subField) => {
+            const isInvalid = subField.state.meta.isTouched && !subField.state.meta.isValid;
+            return (
+              <Field data-invalid={isInvalid}>
+                <Input
+                  value={subField.state.value}
+                  onChange={(e) => subField.handleChange(e.target.value)}
+                  onBlur={subField.handleBlur}
+                  aria-invalid={isInvalid}
+                />
+                {isInvalid && <FieldError errors={subField.state.meta.errors} />}
+              </Field>
+            );
+          }}
+        />
+      ))}
+      <Button type='button' onClick={() => field.pushValue({ name: '' })}>Add</Button>
+    </>
   )}
-</form.AppField>
+/>
 ```
 
-Pre-built base widgets are available inside the render prop (`field.TextField`, `field.SelectField`, …) alongside structural pieces (`field.FieldSet`, `field.Field`, `field.FieldLabel`, `field.FieldError`, `field.FieldContent`, `field.FieldDescription`). Bound Pattern-1 components can be used *inside* Pattern-2 render props freely (e.g. composed fields inside array rows).
+The doc conventions inside any custom field: `data-invalid` on `<Field>`,
+`aria-invalid` on the control, `{isInvalid && <FieldError errors={…} />}`,
+function validators return `{ message: '…' }` objects.
 
-**When to use which:** Pattern 1 for everything the 12 widgets cover (including checkbox groups, string-list arrays, dates, comboboxes). Pattern 2 for object-row arrays and truly custom one-off UI.
+## Scaling to large forms — `withForm` sections
 
----
-
-## Available Field Components
-
-Every widget exports a base component (for Pattern 2) and appears in `useFormFields(form)` as `FormXxxField` (Pattern 1). Each widget binds only to paths of its **value contract** (exported next to each component, e.g. `TextFieldValue`).
-
-| Widget               | Binds to paths of type       | Highlights                                                                                                     |
-| -------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `TextField`          | `string \| number \| null?`  | `type` text/email/password/tel/url/number, async-validation spinner, `orientation`, `labelSrOnly`, native props (`placeholder`, `autoComplete`, `readOnly`, …) |
-| `TextareaField`      | `string \| null?`            | `maxLength` + character counter, `orientation`, `labelSrOnly`                                                    |
-| `SelectField`        | `string \| null?`            | `options: {value, label, disabled?}`, `orientation`, `disabled`, `readOnly`, `labelSrOnly`                       |
-| `ComboboxField`      | `string \| null?`            | Searchable dropdown (Command in Popover), `options`, `disabled`, `readOnly`, `labelSrOnly`                       |
-| `DatePickerField`    | `Date \| undefined` (+null ok) | Calendar popover, `disabledDates`, `disabled`, `readOnly`, `labelSrOnly`. Stores a real `Date`                   |
-| `CheckboxField`      | `boolean \| null?`           | `disabled`, `readOnly`                                                                                           |
-| `SwitchField`        | `boolean \| null?`           | Renders errors (inside `FieldContent`), `disabled`, `readOnly`                                                   |
-| `RadioGroupField`    | `string \| null?`            | Rich options `{value, label, description?, disabled?}`; auto **card variant** when descriptions present          |
-| `SliderField`        | `number \| null?`            | min/max readout, error slot, `disabled`, `readOnly`, `labelSrOnly`                                               |
-| `FileUploadField`    | `File[] \| null?`            | Drag-and-drop, `maxSize`/`maxFiles`, `disabled`, `readOnly`                                                                  |
-| `CheckboxGroupField` | `string[] \| null?`          | Multi-select group (canonical `checkbox-group` anatomy): `options: {value, label, description?, disabled?}[]`, `columns`/`className` layouts, `readOnly`. **Array mode automatic** |
-| `ArrayTextField`     | `string[] \| null?`          | Dynamic string list — InputGroup rows, inline remove, `itemValidators: { onChange?, onBlur? }` (string schema or `({ value }) => …`), `maxItems`, `readOnly`. **Array mode automatic** |
-
-`null?` = `| null | undefined` — optional and nullable schema paths bind everywhere. All widgets render the canonical shadcn Field anatomy: `data-invalid` on the wrapper, `aria-invalid`/`aria-describedby` on the control (always resolvable — ids are namespaced per instance, so two forms with the same field name never collide), errors gated on *touched or submitted*.
-
-**`readOnly` vs `disabled`:** `disabled` dims and skips validation focus; `readOnly` keeps full-contrast display but ignores interaction — use it for view-permission modes. Every widget also takes **`fieldClassName`** for grid placement of the whole field (`col-span-2`, `max-w-sm`, …); `className` on Text/Textarea targets the control itself.
-
-**Write-side guards** (the compiler also checks what widgets could *write*): option widgets' `options[].value` must belong to the path's literal union; free-text widgets (Text/Textarea — and ArrayText rows, per element) are not offered literal-union paths at all (use Select/Combobox/RadioGroup/CheckboxGroup for those); DatePicker only binds paths that admit `undefined` (clearing writes `undefined` — use `.nullish()`/optional date schemas). Option constants for literal-union paths need narrow values — add `as const` in the constants file (`const roleOptions = [{ value: 'admin', label: 'Admin' }] as const;`), or a widened plain array fails the guard. Known boundary: SliderField accepts numeric-literal-union paths (discrete scales are its primary use — pair `step` with the scale).
-
-**Number fields:** clearing a `type='number'` TextField writes `undefined` (not `''`) — optional number schemas pass; give REQUIRED number fields a human message or users see Zod's raw type error: `z.number({ error: 'Age is required' }).min(18, '…')`. You do NOT need `z.coerce` — widgets emit real numbers (coercing an empty value can silently produce `0`).
-
----
-
-## Type Safety
-
-What the compiler enforces on Pattern 1 (all of it regression-guarded by the type-test suite):
-
-| Checked                                            | Example error                                                       |
-| -------------------------------------------------- | ------------------------------------------------------------------- |
-| Field name exists                                  | typo → error with did-you-mean suggestion                           |
-| Name's value matches the widget                    | `FormSwitchField name='price'` (number path) → error                |
-| Validator value type                               | `validators={{ onBlur: z.number() }}` on a string path → error      |
-| Validator functions                                | `({ value }) => …` — `value` is the path's type, no cast            |
-| `defaultValue` type                                | `defaultValue={42}` on a string path → error                        |
-| `onChangeListenTo` targets                         | typo'd source field → error                                         |
-| Listener cross-field writes                        | `fieldApi.form.setFieldValue('typo', …)` → error                    |
-| Custom-field registry                              | unbranded components rejected; extras keys that shadow shipped widgets rejected |
-
-**Reading a rejection:** when a correctly-spelled path is rejected, it simply *vanishes from the offered union* — the error lists only the paths the widget can edit. If a path you expect isn't offered, check its **value type** first.
-
-**Known boundaries** (shared with raw TanStack — the composed layer adds none of its own):
-
-- Literal-union paths (discriminators) reject broad `z.string()` — use `z.enum([...])` or a function validator.
-- `satisfies` defaults keep NARROW property types: a bare `null` default collapses a `Date | null` path out of the widgets' offered names — widen per field (`null as Date | null`), see File Structure.
-- `Record<string, T>` paths are open (any key compiles); recursive value types exceed TS instantiation depth — flatten them.
-- Paths *into* atomic values (`File`, `Blob`, `FileList`, `Date`) are never offered. Register your own atomic types via declaration merge:
-
-```ts
-declare module '@/components/ui/form-context' {
-  interface AtomicFieldValues { money: Money }
-}
-```
-
----
-
-## Validation
-
-### Recommended strategy
-
-Field-level `onBlur` for instant feedback + form-level `onSubmit` schema as the safety net. Form-level schema issues are mapped onto the right fields automatically; pathless issues render in `<FormErrors />`.
-
-### Deriving field validators from the schema
-
-Don't restate schema rules per field — pick them out of the single source of truth:
+Split a big form into reusable section components with `withForm` (also
+exported from `@/lib/form`). Sections receive the form instance as a prop and
+keep **fully typed field names** — a typo'd `name` inside a section is still a
+compile error:
 
 ```tsx
-import { schemaFor } from '@/components/ui/tanstack-form';
+import { useAppForm, withForm } from '@/lib/form';
 
-<FormTextField name='contact.email' label='Email' required
-  validators={{ onBlur: schemaFor(orgSchema, 'contact.email') }} />
-```
-
-`schemaFor`'s path argument is TYPE-CHECKED against the schema's input shape (typos are compile errors) and its return is typed to the path's value (mounting it on the wrong field is a compile error). Wrappers (`optional`/`nullable`/`default`) are unwrapped only to TRAVERSE — the resolved leaf KEEPS them, so a derived validator accepts exactly what the schema accepts (clearing an optional field never fails a derived required check). It returns `undefined` for paths it can't traverse (unions) — a no-op validator — so keep explicit validators there.
-
-### Validator timing
-
-| Validator       | When it runs                | Use for                            |
-| --------------- | --------------------------- | ---------------------------------- |
-| `onChange`      | Every keystroke             | Instant feedback (use sparingly)   |
-| `onBlur`        | Focus leaves the field      | Required checks, format validation |
-| `onChangeAsync` | Debounced on keystroke      | Server-side uniqueness checks      |
-| `onBlurAsync`   | Debounced on blur           | Expensive server validation        |
-| `onSubmit`      | On form submission          | Final catch-all                    |
-| `onDynamic`     | Per `revalidateLogic()`     | Multi-step forms                   |
-
-### Async validation
-
-```tsx
-<FormTextField name='username' label='Username'
-  validators={{
-    onBlur: z.string().min(3, 'Too short'),
-    onChangeAsync: async ({ value, signal }) => {
-      const res = await fetch(`/api/check?u=${value}`, { signal });
-      return (await res.json()).taken ? 'Username is taken' : undefined;
-    },
-    onChangeAsyncDebounceMs: 500
-  }} />
-```
-
-`TextField` shows a spinner while validating. Let aborts propagate — form-core discards aborted validation results.
-
-### Linked / dependent fields
-
-```tsx
-<FormTextField name='confirmPassword' label='Confirm Password' type='password'
-  validators={{
-    onChangeListenTo: ['password'],
-    onChange: ({ value, fieldApi }) =>
-      value !== fieldApi.form.getFieldValue('password') ? 'Passwords do not match' : undefined
-  }} />
-```
-
-### Cross-field (form-level) validation
-
-```tsx
-const schema = z.object({ start: z.date(), end: z.date() })
-  .refine((v) => v.end > v.start, { message: 'End must be after start' }); // pathless
-
-const form = useAppForm({ validators: { onSubmit: schema }, ... });
-
-<form.Form>
-  <FormErrors />   {/* renders pathless issues + function-validator strings, after a submit attempt */}
-  ...
-</form.Form>
-```
-
-Field-pathed issues from a form-level schema display at their fields; **pathless** `refine`/`superRefine` issues display in `<FormErrors />`. The box never paints a pristine form.
-
----
-
-## Listeners (Side Effects)
-
-```tsx
-<FormSelectField name='country' label='Country' options={countries}
-  listeners={{
-    onChange: ({ value, fieldApi }) => {        // value: string — typed
-      fieldApi.form.setFieldValue('state', ''); // path-checked
-    }
-  }} />
-```
-
-`onChange` / `onBlur` / `onMount` / `onSubmit`, each with an optional `*DebounceMs`.
-
----
-
-## Custom Fields
-
-Three steps — no template-owned files are edited:
-
-```tsx
-import {
-  useFieldContext, FormFieldSet, FormField, FormFieldError,
-  FieldLabel, fieldFor, useFormFields
-} from '@/components/ui/tanstack-form';
-
-// 1. Base component: read useFieldContext, render the shared anatomy
-function RatingBase({ label }: { label: string }) {
-  const field = useFieldContext();     // controlId, isInvalid, formMessageId, handleChange, …
-  const value = useStore(field.store, (s) => s.value) as number | undefined;
-  return (
-    <FormFieldSet>
-      <FormField>
-        <FieldLabel htmlFor={field.controlId}>{label}</FieldLabel>
-        <Stars id={field.controlId} value={value ?? 0} onChange={field.handleChange}
-          aria-invalid={field.isInvalid} />
-      </FormField>
-      <FormFieldError />
-    </FormFieldSet>
-  );
-}
-
-// 2. Brand it with the value type it edits (AFTER any wrapping: fieldFor<V>()(React.memo(Base)))
-const RatingField = fieldFor<number | null | undefined>()(RatingBase);
-
-// 3. Join the typed registry per form
-const { FormRatingField } = useFormFields(form, { FormRatingField: RatingField });
-<FormRatingField name='rating' label='Rating' />   // number paths only
-```
-
-Custom fields inherit error gating, resolvable aria ids, and `scrollToFirstError` for free. Extras must be **module-scope components** (an inline-defined map would remount fields), and extras keys may not shadow shipped widget names (compile error).
-
-**Custom array fields:** mark the component with `asArrayField(Base)` so it mounts in array mode, and use the typed array API:
-
-```tsx
-const array = useArrayFieldApi<string>(field);  // pushValue/removeValue/insertValue/…
-```
-
----
-
-## Form Recipes
-
-### Simple CRUD form
-
-```tsx
-const form = useAppForm({
-  defaultValues: { name: '', email: '' } satisfies FormValues,
-  validators: { onSubmit: schema },
-  onSubmit: async ({ value }) => {
-    await mutation.mutateAsync(value);
-    toast.success('Saved!');
+const ShippingSection = withForm({
+  defaultValues: checkoutDefaults, // ties the section to the form's shape
+  render: function ShippingRender({ form }) {
+    return (
+      <FieldGroup>
+        <form.AppField
+          name='shipping.street'
+          children={(field) => <field.TextField label='Street' required />}
+        />
+        <form.AppField
+          name='shipping.city'
+          children={(field) => <field.TextField label='City' required />}
+        />
+      </FieldGroup>
+    );
   }
 });
-const { FormTextField } = useFormFields(form);
+
+// In the page:
+const form = useAppForm({ defaultValues: checkoutDefaults, ... });
+<ShippingSection form={form} />
 ```
 
-### Form in a Sheet or Dialog
+Deep paths (`org.billing.address.city`), array sub-paths
+(`admins[0].prefs.notify`), and union-typed leaves all stay typed, and
+typechecking stays fast at 40+ fields.
 
-Connect an external submit button with the HTML `form` attribute:
+## Template-specific notes
+
+**Submitting with React Query.** `onSubmit` awaits the mutation; success/error
+handling lives on the mutation (see `features/products/components/product-form.tsx`):
 
 ```tsx
-<form.Form id='sheet-form'>...</form.Form>
-...
+onSubmit: async ({ value }) => {
+  await createMutation.mutateAsync(value);
+};
+```
+
+**Sheet / Dialog forms.** The submit button lives in the footer, outside the
+`<form>` element, connected via the HTML `form` attribute
+(`features/users/components/user-form-sheet.tsx`):
+
+```tsx
+<form id='user-form-sheet' onSubmit={…}>…</form>
 <SheetFooter>
-  <Button type='submit' form='sheet-form'>Save</Button>
+  <Button type='submit' form='user-form-sheet'>Save</Button>
 </SheetFooter>
 ```
 
-### Multi-step wizard
+**Multi-step forms.** `useFormStepper(stepSchemas, { fullSchema })` from
+`@/hooks/use-stepper` gates step navigation: `Next` validates the current
+step's schema and paints its errors; the final submit re-validates the whole
+schema and never submits invalid data. Route every submit through the gate —
+see `features/forms/components/multi-step-product-form.tsx`.
 
-```tsx
-import { useFormStepper } from '@/hooks/use-stepper';
+**Number inputs.** `TextField type='number'` already converts at the edge;
+give required numbers a human message: `z.number({ error: 'Price is required' })`.
 
-const stepSchemas = [
-  fullSchema.pick({ name: true, category: true }),
-  fullSchema.pick({ description: true }),
-  z.object({})                                    // review step
-];
+**Caveats to know** (verified by stress testing):
 
-const { currentValidator, currentStep, handleNextStepOrSubmit, handleCancelOrBack } =
-  useFormStepper(stepSchemas, { fullSchema });    // fullSchema re-validates EVERYTHING on final submit
+- `field.XxxField` components assert their value type via
+  `useFieldContext<T>()` — the compiler checks the `name` path exists, but
+  not that the widget matches the path's value type (a `SwitchField` on a
+  string path compiles and renders wrong values). Match widgets to the table
+  above.
+- Rendering a field component outside `form.AppField` throws a clear error
+  (`fieldContext only works when within a fieldComponent…`) — it cannot fail
+  silently.
+- Two forms with identical field names mounted at once (a sheet over a page)
+  produce duplicate `id` attributes — the shadcn doc's `id={field.name}`
+  convention. Form *state* stays fully isolated; only label-target ids
+  collide. Rename fields or avoid simultaneous mounting if labels must stay
+  clickable in both.
+- Forgetting `mode='array'` on an AppField using `CheckboxGroupField` /
+  `TagsField` / `ToggleGroupField` still renders and updates — but keep the
+  convention: array mode gives TanStack correct per-item meta tracking.
 
-const form = useAppForm({
-  defaultValues,
-  validationLogic: revalidateLogic(),
-  validators: { onDynamic: currentValidator as typeof fullSchema },
-  onSubmit: ({ value }) => { ... }
-});
-
-// Route EVERY submit through the gate (Enter key included) — do not use
-// form.Form here, it would submit the current step directly:
-<form.AppForm>
-  <form onSubmit={(e) => { e.preventDefault(); void handleNextStepOrSubmit(form); }} noValidate>
-    ...step content via withFieldGroup...
-  </form>
-</form.AppForm>
-```
-
-The step gate awaits **async** field validators (uniqueness checks block Next), marks only the current step touched (later steps stay pristine), Back works from every step including review, and a failing final submit jumps to the first invalid step. See `src/features/forms/components/multi-step-product-form.tsx`.
-
-### Nested objects
-
-Dot paths just work, fully typed: `<FormTextField name='contact.address.city' … />`.
-
-### Arrays
-
-- **Multi-select from a list** → `FormCheckboxGroupField` (string[] paths).
-- **Dynamic list of strings** (emails, tags) → `FormArrayTextField` with `itemValidators`.
-- **Object rows** (invoice line items) → Pattern 2 array container; bound fields work inside rows:
-
-```tsx
-<form.AppField name='items' mode='array'>
-  {(itemsField) => (
-    <>
-      {itemsField.state.value.map((_, i) => (
-        <div key={i} className='flex gap-2'>
-          <FormTextField name={`items[${i}].description`} label={`Item ${i + 1}`} labelSrOnly />
-          <FormTextField name={`items[${i}].qty`} label='Qty' labelSrOnly type='number' />
-          <Button variant='ghost' size='icon' onClick={() => itemsField.removeValue(i)}>
-            <Icons.close />
-          </Button>
-        </div>
-      ))}
-      <Button variant='outline' size='sm'
-        onClick={() => itemsField.pushValue({ description: '', qty: 1 })}>
-        Add Item
-      </Button>
-      <itemsField.FieldError />   {/* array-level errors, e.g. z.array(...).min(1) */}
-    </>
-  )}
-</form.AppField>
-```
-
-Array paths must be template literals (`` `items[${i}].qty` `` — string concatenation defeats the typing). Two-level nesting (`items[i].discounts[j]`) works the same way.
-
-### Dependent dropdowns (country → state)
-
-```tsx
-const country = useStore(form.store, (s) => s.values.country);
-<FormSelectField name='country' options={countries}
-  listeners={{ onChange: ({ fieldApi }) => fieldApi.form.setFieldValue('state', '') }} />
-<FormSelectField name='state' options={statesByCountry[country] ?? []} />
-```
-
-### Conditional sections
-
-Render-gate the section, and gate its *requiredness inside the schema* — an unconditionally-required hidden field blocks submit invisibly:
-
-```tsx
-const schema = z.object({
-  billing: z.object({ enabled: z.boolean(), plan: z.string(), vat: z.string() })
-    .superRefine((v, ctx) => {
-      if (!v.enabled) return;                    // hidden → nothing required
-      if (!v.plan) ctx.addIssue({ path: ['plan'], code: 'custom', message: 'Select a plan' });
-    })
-});
-
-{billingEnabled && <FormSelectField name='billing.plan' … />}
-```
-
-Don't clear hidden values in toggle listeners — that destroys user input on a round-trip toggle. Filter at submit instead (`onSubmit: ({ value }) => save(pickVisible(value))`).
-
-### Edit forms (async defaults, dirty state, reset)
-
-```tsx
-// 1. Async defaults: fetch first, then mount the form with real values —
-//    do NOT form.reset() in an effect (the form re-imposes defaults over
-//    untouched fields every render).
-const { data } = useSuspenseQuery(productQueryOptions(id));
-const form = useAppForm({ defaultValues: toFormValues(data), ... });
-
-// 2. Dirty state: isDefaultValue compares against defaults ('meta.isDirty'
-//    means "ever changed", not "differs from default").
-const isDirty = useStore(form.store, (s) => !s.isDefaultValue);
-
-// 3. After save: align the query cache and the form baseline together.
-onSuccess: (saved) => {
-  queryClient.setQueryData(key, saved);
-  form.reset(toFormValues(saved));
-}
-```
-
-Caveat: a background refetch that feeds new `defaultValues` shifts the dirty baseline mid-edit — key the form component by record id/updatedAt if that matters.
-
----
-
-## Server Errors
-
-Map a failed mutation (e.g. 409 "email taken") back onto the form:
-
-```tsx
-import { applyServerErrors } from '@/components/ui/tanstack-form';
-
-const mutation = useMutation({
-  mutationFn: createUser,
-  onError: (e) =>
-    applyServerErrors(form, {
-      fieldErrors: { email: 'This email is already registered' },  // renders AT the field
-      formErrors: ['Account limit reached']                        // renders in <FormErrors />
-    })
-});
-```
-
-Server errors persist until the next `applyServerErrors`, `clearServerErrors(form)`, or `form.reset()` — clear on edit with a field listener if you want that behavior.
-
----
-
-## Production Utilities
-
-| Utility                        | Purpose                                                                                     |
-| ------------------------------ | ------------------------------------------------------------------------------------------- |
-| `<FormErrors />`               | Form-level error box — pathless schema issues + function-validator strings, submit-gated    |
-| `scrollToFirstError()`         | Wire to `onSubmitInvalid` — scrolls to and focuses the first `[data-invalid]` field         |
-| `schemaFor(schema, path)`      | Derive a field validator from the form schema                                               |
-| `applyServerErrors(form, e)`   | Map server field/form errors onto the form                                                  |
-| `flattenFormErrors(errors)`    | The display normalization `FormErrors` uses (exported for custom error UIs)                 |
-
----
-
-## Guard Rails
-
-Two self-verifying suites protect the system — run both before upgrading `@tanstack/react-form` or editing the core:
-
-- **`bun run typecheck`** — includes `src/components/forms/fields/__typetests__/`: every must-fail probe sits under `@ts-expect-error`, so a type-safety regression fails the build as an unused directive (TS2578). See its README.
-- **`bun run smoke:forms`** — renders the binding layer headlessly: prop forwarding, wrong-form isolation, id collision-freedom, resolvable `aria-describedby`, a real failed submit through `flattenFormErrors`, server-error round-trip.
-
----
-
-## Exports Reference
-
-From `@/components/ui/tanstack-form`:
-
-| Export | Kind | Purpose |
-| --- | --- | --- |
-| `useAppForm` | hook | Create a form instance |
-| `useFormFields(form, extras?)` | hook | Typed, instance-bound flat field components |
-| `withForm` / `withFieldGroup` | HOC | Form context wrapper / multi-step field groups |
-| `useFormContext` / `useFieldContext` | hook | Context access (fields get `controlId`, `isInvalid`, message ids) |
-| `fieldFor<V>()` | util | Brand a custom base field with its value contract |
-| `asArrayField` | util | Mark a custom base field as array-mode |
-| `useArrayFieldApi<TItem>` | util | Typed array field API for custom array widgets |
-| `schemaFor` / `applyServerErrors` / `clearServerErrors` | util | See above |
-| `revalidateLogic` / `scrollToFirstError` / `flattenFormErrors` | util | — |
-| `FormFieldSet` / `FormField` / `FormFieldError` / `FormErrors` | component | Structural anatomy (div wrapper / `data-invalid` anchor / gated errors / form-level box) |
-| `TypedFormFields` / `TypedFieldConfig` / `TypedFieldValidators` / `BoundFormField` / `FieldComponentFor` / `FormLike` / `AtomicFieldValues` / `StrictDeepKeysOfType` | type | The typed core |
-
-From `@/components/forms/fields`: the 12 base widgets + their `XxxFieldValue` contracts.
-
-From `@/hooks/use-stepper`: `useFormStepper(schemas, { fullSchema? })`.
-
----
-
-## Deprecated APIs
-
-Kept working for **one release** with `@deprecated` markers, then removed:
-
-| Deprecated | Use instead |
-| --- | --- |
-| `useFormFields<T>()` (zero-arg) | `useFormFields(form)` — inferred AND runtime-bound |
-| `createFormField(Component)` | `fieldFor<V>()(Component)` + `useFormFields(form, extras)` |
-| `typedField<T>()` | same as above (`typedField` never compiled against real fields) |
-| Module-level `FormTextField` etc. imports | the components returned by `useFormFields(form)` |
-| `FieldConfig` / `FieldValidatorConfig` / `FieldListenerConfig` / `WithTypedName` types | `TypedFieldConfig` / `TypedFieldValidators` |
-
----
-
-## Dashboard Examples
+## Examples in the dashboard
 
 | Page | Route | Demonstrates |
 | --- | --- | --- |
-| Basic Form | `/dashboard/forms/basic` | All widgets incl. combobox, date picker, checkbox group; validators; live preview |
-| Multi-Step | `/dashboard/forms/multi-step` | `withFieldGroup`, per-step schemas, async-aware gate, full-schema final validation |
-| Sheet & Dialog | `/dashboard/forms/sheet-form` | External submit button, close + reset on success |
-| Advanced | `/dashboard/forms/advanced` | Async validation, linked fields, nested objects, object-row arrays, dependent dropdowns, `FormErrors`, `scrollToFirstError` |
-| Product CRUD | `src/features/products/components/product-form.tsx` | Pattern 1, split schema files |
-| Users Sheet | `src/features/users/components/user-form-sheet.tsx` | Edit-vs-create in a sheet |
+| Basic Form | `/dashboard/forms/basic` | All 16 field components incl. array-mode groups, pickers, OTP, tags, upload |
+| Advanced | `/dashboard/forms/advanced` | Async validation, linked fields (`onChangeListenTo`), nested paths, raw `form.Field` object-row arrays, listener side effects |
+| Multi-Step | `/dashboard/forms/multi-step` | Per-step schemas, validation gate, review step |
+| Sheet Form | `/dashboard/forms/sheet-form` | Sheet + Dialog forms with external submit buttons |

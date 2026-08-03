@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useAppForm, useFormFields } from '@/components/ui/tanstack-form';
 import { Button } from '@/components/ui/button';
+import { FieldGroup } from '@/components/ui/field';
+import { useAppForm } from '@/lib/form';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Sheet,
@@ -17,7 +18,6 @@ import { useMutation } from '@tanstack/react-query';
 import { createUserMutation, updateUserMutation } from '../api/mutations';
 import type { User } from '../api/types';
 import { toast } from 'sonner';
-import * as z from 'zod';
 import { userSchema, type UserFormValues } from '../schemas/user';
 import { ROLE_OPTIONS } from './users-table/options';
 
@@ -76,8 +76,6 @@ export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) 
     }
   });
 
-  const { FormTextField, FormSelectField } = useFormFields(form);
-
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
@@ -93,74 +91,74 @@ export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) 
         </SheetHeader>
 
         <div className='flex-1 overflow-auto'>
-          <form.AppForm>
-            <form.Form id='user-form-sheet' className='space-y-4 p-4 md:p-4'>
+          <form
+            id='user-form-sheet'
+            className='space-y-4 p-4 md:p-4'
+            onSubmit={(e) => {
+              e.preventDefault();
+              form.handleSubmit();
+            }}
+          >
+            <FieldGroup>
               <div className='grid grid-cols-2 gap-4'>
-                <FormTextField
+                <form.AppField
                   name='first_name'
-                  label='First Name'
-                  required
-                  placeholder='John'
-                  validators={{
-                    onBlur: z.string().min(2, 'First name must be at least 2 characters')
-                  }}
+                  children={(field) => (
+                    <field.TextField label='First Name' required placeholder='John' />
+                  )}
                 />
-                <FormTextField
+                <form.AppField
                   name='last_name'
-                  label='Last Name'
-                  required
-                  placeholder='Doe'
-                  validators={{
-                    onBlur: z.string().min(2, 'Last name must be at least 2 characters')
-                  }}
+                  children={(field) => (
+                    <field.TextField label='Last Name' required placeholder='Doe' />
+                  )}
                 />
               </div>
 
-              <FormTextField
+              <form.AppField
                 name='email'
-                label='Email'
-                required
-                type='email'
-                placeholder='john@example.com'
-                validators={{
-                  onBlur: z.string().email('Please enter a valid email')
-                }}
+                children={(field) => (
+                  <field.TextField
+                    label='Email'
+                    required
+                    type='email'
+                    placeholder='john@example.com'
+                  />
+                )}
               />
 
-              <FormTextField
+              <form.AppField
                 name='phone'
-                label='Phone'
-                required
-                type='tel'
-                placeholder='(555) 123-4567'
-                validators={{
-                  onBlur: z.string().min(1, 'Phone number is required')
-                }}
+                children={(field) => (
+                  <field.TextField label='Phone' required type='tel' placeholder='(555) 123-4567' />
+                )}
               />
 
-              <FormSelectField
+              <form.AppField
                 name='role'
-                label='Role'
-                required
-                options={ROLE_OPTIONS}
-                placeholder='Select role'
-                validators={{
-                  onBlur: z.string().min(1, 'Please select a role')
-                }}
+                children={(field) => (
+                  <field.SelectField
+                    label='Role'
+                    required
+                    options={ROLE_OPTIONS}
+                    placeholder='Select role'
+                  />
+                )}
               />
 
-              <FormSelectField
+              <form.AppField
                 name='status'
-                label='Status'
-                required
-                options={STATUS_OPTIONS}
-                placeholder='Select status'
-                validators={{
-                  onBlur: z.string().min(1, 'Please select a status')
-                }}
+                children={(field) => (
+                  <field.SelectField
+                    label='Status'
+                    required
+                    options={STATUS_OPTIONS}
+                    placeholder='Select status'
+                  />
+                )}
               />
-            </form.Form>
-          </form.AppForm>
+            </FieldGroup>
+          </form>
         </div>
 
         <SheetFooter>

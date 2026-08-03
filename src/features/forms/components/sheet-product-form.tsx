@@ -1,8 +1,9 @@
 'use client';
 
-import { useAppForm } from '@/components/ui/tanstack-form';
+import { useAppForm } from '@/lib/form';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
+import { FieldGroup } from '@/components/ui/field';
 import {
   Sheet,
   SheetContent,
@@ -12,23 +13,13 @@ import {
   SheetTitle,
   SheetTrigger
 } from '@/components/ui/sheet';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
 import { Icons } from '@/components/icons';
 import { useState } from 'react';
 
 const productSchema = z.object({
   name: z.string().min(2, 'Product name must be at least 2 characters'),
   category: z.string().min(1, 'Please select a category'),
-  price: z.number().min(0.01, 'Price must be greater than 0'),
+  price: z.number({ error: 'Price is required' }).min(0.01, 'Price must be greater than 0'),
   description: z.string().min(10, 'Description must be at least 10 characters')
 });
 
@@ -50,8 +41,7 @@ export default function SheetProductForm() {
       description: ''
     },
     validators: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TanStack Form validator type mismatch with Zod
-      onSubmit: productSchema as any
+      onSubmit: productSchema
     },
     onSubmit: () => {
       alert('Product created successfully!');
@@ -73,142 +63,63 @@ export default function SheetProductForm() {
         </SheetHeader>
 
         <div className='flex-1 overflow-auto'>
-          <form.AppForm>
-            <form.Form id='sheet-product-form' className='space-y-4 p-4 md:p-4'>
+          <form
+            id='sheet-product-form'
+            className='space-y-4 p-4 md:p-4'
+            onSubmit={(e) => {
+              e.preventDefault();
+              form.handleSubmit();
+            }}
+          >
+            <FieldGroup>
               <form.AppField
                 name='name'
-                children={(field) => {
-                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <field.FieldSet>
-                      <field.Field>
-                        <field.FieldLabel htmlFor={field.name}>Product Name *</field.FieldLabel>
-                        <Input
-                          id={field.name}
-                          name={field.name}
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          placeholder='Enter product name'
-                          aria-invalid={isInvalid}
-                          aria-describedby={
-                            isInvalid ? `${field.name}-form-item-message` : undefined
-                          }
-                        />
-                      </field.Field>
-                      <field.FieldError />
-                    </field.FieldSet>
-                  );
-                }}
+                children={(field) => (
+                  <field.TextField label='Product Name' required placeholder='Enter product name' />
+                )}
               />
 
               <form.AppField
                 name='category'
-                children={(field) => {
-                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <field.FieldSet>
-                      <field.Field>
-                        <field.FieldLabel htmlFor={field.name}>Category *</field.FieldLabel>
-                        <Select
-                          items={categoryOptions}
-                          name={field.name}
-                          value={field.state.value}
-                          onValueChange={(value) => field.handleChange(value ?? '')}
-                        >
-                          <SelectTrigger
-                            id={field.name}
-                            aria-label='Category'
-                            aria-invalid={isInvalid}
-                            aria-describedby={
-                              isInvalid ? `${field.name}-form-item-message` : undefined
-                            }
-                          >
-                            <SelectValue placeholder='Select category' />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectGroup>
-                              {categoryOptions.map((opt) => (
-                                <SelectItem key={opt.value} value={opt.value}>
-                                  {opt.label}
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
-                      </field.Field>
-                      <field.FieldError />
-                    </field.FieldSet>
-                  );
-                }}
+                children={(field) => (
+                  <field.SelectField
+                    label='Category'
+                    required
+                    options={categoryOptions}
+                    placeholder='Select category'
+                  />
+                )}
               />
 
               <form.AppField
                 name='price'
-                children={(field) => {
-                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <field.FieldSet>
-                      <field.Field>
-                        <field.FieldLabel htmlFor={field.name}>Price *</field.FieldLabel>
-                        <Input
-                          id={field.name}
-                          name={field.name}
-                          type='number'
-                          min={0}
-                          step='0.01'
-                          value={field.state.value ?? ''}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            field.handleChange(v === '' ? undefined : parseFloat(v));
-                          }}
-                          placeholder='Enter price'
-                          aria-invalid={isInvalid}
-                          aria-describedby={
-                            isInvalid ? `${field.name}-form-item-message` : undefined
-                          }
-                        />
-                      </field.Field>
-                      <field.FieldError />
-                    </field.FieldSet>
-                  );
-                }}
+                children={(field) => (
+                  <field.TextField
+                    label='Price'
+                    required
+                    type='number'
+                    min={0}
+                    step='0.01'
+                    placeholder='Enter price'
+                  />
+                )}
               />
 
               <form.AppField
                 name='description'
-                children={(field) => {
-                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <field.FieldSet>
-                      <field.Field>
-                        <field.FieldLabel htmlFor={field.name}>Description *</field.FieldLabel>
-                        <Textarea
-                          id={field.name}
-                          name={field.name}
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          placeholder='Enter product description'
-                          maxLength={500}
-                          rows={4}
-                          aria-invalid={isInvalid}
-                          aria-describedby={
-                            isInvalid ? `${field.name}-form-item-message` : undefined
-                          }
-                        />
-                        <div className='text-muted-foreground text-right text-sm'>
-                          {field.state.value?.length || 0} / 500
-                        </div>
-                      </field.Field>
-                      <field.FieldError />
-                    </field.FieldSet>
-                  );
-                }}
+                children={(field) => (
+                  <field.TextareaField
+                    label='Description'
+                    required
+                    placeholder='Enter product description'
+                    maxLength={500}
+                    rows={4}
+                    showCount
+                  />
+                )}
               />
-            </form.Form>
-          </form.AppForm>
+            </FieldGroup>
+          </form>
         </div>
 
         <SheetFooter>
