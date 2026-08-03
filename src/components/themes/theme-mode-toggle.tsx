@@ -7,6 +7,7 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Kbd } from '@/components/ui/kbd';
+import { startThemeTransition } from '@/lib/theme-transition';
 
 export function ThemeModeToggle() {
   const { setTheme, resolvedTheme } = useTheme();
@@ -14,22 +15,9 @@ export function ThemeModeToggle() {
   const handleThemeToggle = React.useCallback(
     (e?: React.MouseEvent) => {
       const newMode = resolvedTheme === 'dark' ? 'light' : 'dark';
-      const root = document.documentElement;
-
-      if (!document.startViewTransition) {
-        setTheme(newMode);
-        return;
-      }
-
-      // Set coordinates from the click event
-      if (e) {
-        root.style.setProperty('--x', `${e.clientX}px`);
-        root.style.setProperty('--y', `${e.clientY}px`);
-      }
-
-      document.startViewTransition(() => {
-        setTheme(newMode);
-      });
+      // Circular reveal from the click point (falls back to center for the
+      // keyboard shortcut, which passes no event).
+      startThemeTransition(() => setTheme(newMode), e);
     },
     [resolvedTheme, setTheme]
   );
