@@ -85,7 +85,6 @@ const DOC_RULES = {
       ]
     },
     { file: 'CLAUDE.md', lines: ['nav-rbac.md', 'clerk_setup.md'] },
-    { file: 'docs/forms.md', lines: ['user-auth-form.tsx'] },
     {
       file: 'env.example.txt',
       envSections: [
@@ -136,17 +135,15 @@ const DOC_RULES = {
   examples: [
     { file: 'README.md', lines: ['| [React Query Demo](', '── react-query'] },
     // No '── forms' / '── elements' anchors: the only tree line matching
-    // those is src/components/forms/ (shared field wrappers), which
+    // those is src/components/forms/ (the shared field components), which
     // survives examples removal.
     { file: 'AGENTS.md', lines: ['── react-query'], sections: ['### Icon Showcase Page'] },
     {
       file: 'docs/forms.md',
-      lines: [
-        'multi-step-product-form.tsx',
-        'sheet-product-form.tsx',
-        'for the full working example'
-      ],
-      sections: ['### Form Pages (`/dashboard/forms/...`)']
+      // The multi-step paragraph references the removed demo + use-stepper;
+      // the examples table references the removed /dashboard/forms routes.
+      blocks: [{ start: '**Multi-step forms.**', end: 'multi-step-product-form.tsx' }],
+      sections: ['## Examples in the dashboard']
     }
   ]
 };
@@ -226,7 +223,11 @@ const FEATURES = {
       'src/features/elements',
       'src/features/react-query-demo'
     ],
-    files: [],
+    // demo-form is the basic-forms page's component; use-stepper is only
+    // consumed by the multi-step demo — both orphaned once the pages go.
+    // The shared field components (src/components/forms/fields, src/lib/form)
+    // stay: the product and user forms use them.
+    files: ['src/components/forms/demo-form.tsx', 'src/hooks/use-stepper.tsx'],
     dependencies: [],
     navItemsToRemove: [
       '/dashboard/forms/basic',

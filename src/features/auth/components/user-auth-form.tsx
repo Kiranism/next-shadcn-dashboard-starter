@@ -16,7 +16,7 @@ export default function UserAuthForm() {
 
   const form = useAppForm({
     defaultValues: {
-      email: 'demo@gmail.com'
+      email: ''
     },
     validators: {
       onSubmit: formSchema
