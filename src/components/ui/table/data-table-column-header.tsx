@@ -7,6 +7,7 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
@@ -50,7 +51,7 @@ export function DataTableColumnHeader<TData, TValue>({
       </DropdownMenuTrigger>
       <DropdownMenuContent align='start' className='w-28'>
         {column.getCanSort() && (
-          <>
+          <DropdownMenuGroup>
             <DropdownMenuCheckboxItem
               closeOnClick
               className='[&_svg]:text-muted-foreground relative pr-8 pl-2 [&>span:first-child]:right-2 [&>span:first-child]:left-auto'
@@ -78,7 +79,7 @@ export function DataTableColumnHeader<TData, TValue>({
                 Reset
               </DropdownMenuItem>
             )}
-          </>
+          </DropdownMenuGroup>
         )}
         {column.getCanHide() && (
           <DropdownMenuCheckboxItem

@@ -23,6 +23,7 @@ export function CheckboxField({ label, description, required }: BaseFieldProps) 
         checked={field.state.value}
         onCheckedChange={(checked) => field.handleChange(checked === true)}
         aria-invalid={isInvalid}
+        aria-describedby={isInvalid ? `${field.name}-error` : undefined}
       />
       <FieldContent>
         <FieldLabel htmlFor={field.name} className='font-normal'>
@@ -30,7 +31,7 @@ export function CheckboxField({ label, description, required }: BaseFieldProps) 
           {required && ' *'}
         </FieldLabel>
         {description && <FieldDescription>{description}</FieldDescription>}
-        {isInvalid && <FieldError errors={field.state.meta.errors} />}
+        {isInvalid && <FieldError id={`${field.name}-error`} errors={field.state.meta.errors} />}
       </FieldContent>
     </Field>
   );

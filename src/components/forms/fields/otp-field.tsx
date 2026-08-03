@@ -39,7 +39,7 @@ export function OtpField({ label, description, required }: BaseFieldProps) {
         </InputOTPGroup>
       </InputOTP>
       {description && <FieldDescription>{description}</FieldDescription>}
-      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+      {isInvalid && <FieldError id={`${field.name}-error`} errors={field.state.meta.errors} />}
     </Field>
   );
 }

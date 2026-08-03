@@ -37,6 +37,7 @@ export function DatePickerField({
               id={field.name}
               variant='outline'
               aria-invalid={isInvalid}
+              aria-describedby={isInvalid ? `${field.name}-error` : undefined}
               className={cn(
                 'w-full justify-start text-left font-normal',
                 !field.state.value && 'text-muted-foreground'
@@ -58,7 +59,7 @@ export function DatePickerField({
         </PopoverContent>
       </Popover>
       {description && <FieldDescription>{description}</FieldDescription>}
-      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+      {isInvalid && <FieldError id={`${field.name}-error`} errors={field.state.meta.errors} />}
     </Field>
   );
 }
@@ -87,6 +88,7 @@ export function DateRangeField({
               id={field.name}
               variant='outline'
               aria-invalid={isInvalid}
+              aria-describedby={isInvalid ? `${field.name}-error` : undefined}
               className={cn(
                 'w-full justify-start text-left font-normal',
                 !range?.from && 'text-muted-foreground'
@@ -118,7 +120,7 @@ export function DateRangeField({
         </PopoverContent>
       </Popover>
       {description && <FieldDescription>{description}</FieldDescription>}
-      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+      {isInvalid && <FieldError id={`${field.name}-error`} errors={field.state.meta.errors} />}
     </Field>
   );
 }

@@ -146,6 +146,7 @@ export default function DemoForm() {
   });
 
   const formValues = useStore(form.store, (s) => s.values);
+  const isSubmitting = useStore(form.store, (s) => s.isSubmitting);
 
   return (
     <div className='grid grid-cols-1 gap-6 xl:grid-cols-[1fr_320px]'>
@@ -160,6 +161,7 @@ export default function DemoForm() {
           <form
             className='space-y-6'
             noValidate
+            aria-busy={isSubmitting}
             onSubmit={(e) => {
               e.preventDefault();
               form.handleSubmit();

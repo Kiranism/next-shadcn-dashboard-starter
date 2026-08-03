@@ -22,7 +22,7 @@ export function SwitchField({ label, description, required }: BaseFieldProps) {
           {required && ' *'}
         </FieldLabel>
         {description && <FieldDescription>{description}</FieldDescription>}
-        {isInvalid && <FieldError errors={field.state.meta.errors} />}
+        {isInvalid && <FieldError id={`${field.name}-error`} errors={field.state.meta.errors} />}
       </FieldContent>
       <Switch
         id={field.name}
@@ -30,6 +30,7 @@ export function SwitchField({ label, description, required }: BaseFieldProps) {
         checked={field.state.value}
         onCheckedChange={field.handleChange}
         aria-invalid={isInvalid}
+        aria-describedby={isInvalid ? `${field.name}-error` : undefined}
       />
     </Field>
   );

@@ -50,6 +50,7 @@ export function TagsField({
           placeholder={placeholder}
           aria-label={`Add a ${label.toLowerCase().replace(/ \*$/, '')}`}
           aria-invalid={isInvalid}
+          aria-describedby={isInvalid ? `${field.name}-error` : undefined}
         />
         <Button type='button' variant='secondary' onClick={addTag}>
           Add
@@ -73,7 +74,7 @@ export function TagsField({
         </div>
       )}
       {description && <FieldDescription>{description}</FieldDescription>}
-      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+      {isInvalid && <FieldError id={`${field.name}-error`} errors={field.state.meta.errors} />}
     </Field>
   );
 }

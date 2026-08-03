@@ -48,6 +48,7 @@ export function RadioGroupField({
               id={`${field.name}-${opt.value}`}
               disabled={opt.disabled}
               aria-invalid={isInvalid}
+              aria-describedby={isInvalid ? `${field.name}-error` : undefined}
             />
             <FieldLabel htmlFor={`${field.name}-${opt.value}`} className='font-normal'>
               {opt.label}
@@ -55,7 +56,7 @@ export function RadioGroupField({
           </Field>
         ))}
       </RadioGroup>
-      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+      {isInvalid && <FieldError id={`${field.name}-error`} errors={field.state.meta.errors} />}
     </FieldSet>
   );
 }

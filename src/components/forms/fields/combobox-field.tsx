@@ -59,6 +59,7 @@ export function ComboboxField({
               aria-controls={listboxId}
               aria-expanded={open}
               aria-invalid={isInvalid}
+              aria-describedby={isInvalid ? `${field.name}-error` : undefined}
               className={cn(
                 'w-full justify-between font-normal',
                 !selected && 'text-muted-foreground'
@@ -101,7 +102,7 @@ export function ComboboxField({
         </PopoverContent>
       </Popover>
       {description && <FieldDescription>{description}</FieldDescription>}
-      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+      {isInvalid && <FieldError id={`${field.name}-error`} errors={field.state.meta.errors} />}
     </Field>
   );
 }

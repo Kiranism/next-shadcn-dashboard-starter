@@ -267,8 +267,14 @@ export default function AdvancedFormPatterns() {
                               onBlur={subField.handleBlur}
                               aria-label={`Member ${i + 1} name`}
                               aria-invalid={isSubInvalid}
+                              aria-describedby={isSubInvalid ? `member-name-${i}-error` : undefined}
                             />
-                            {isSubInvalid && <FieldError errors={subField.state.meta.errors} />}
+                            {isSubInvalid && (
+                              <FieldError
+                                id={`member-name-${i}-error`}
+                                errors={subField.state.meta.errors}
+                              />
+                            )}
                           </Field>
                         );
                       }}
@@ -289,8 +295,14 @@ export default function AdvancedFormPatterns() {
                               onBlur={subField.handleBlur}
                               aria-label={`Member ${i + 1} role`}
                               aria-invalid={isSubInvalid}
+                              aria-describedby={isSubInvalid ? `member-role-${i}-error` : undefined}
                             />
-                            {isSubInvalid && <FieldError errors={subField.state.meta.errors} />}
+                            {isSubInvalid && (
+                              <FieldError
+                                id={`member-role-${i}-error`}
+                                errors={subField.state.meta.errors}
+                              />
+                            )}
                           </Field>
                         );
                       }}

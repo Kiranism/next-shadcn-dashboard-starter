@@ -35,7 +35,11 @@ export function SelectField({
         value={field.state.value}
         onValueChange={(value) => field.handleChange(value ?? '')}
       >
-        <SelectTrigger id={field.name} aria-invalid={isInvalid}>
+        <SelectTrigger
+          id={field.name}
+          aria-invalid={isInvalid}
+          aria-describedby={isInvalid ? `${field.name}-error` : undefined}
+        >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
@@ -49,7 +53,7 @@ export function SelectField({
         </SelectContent>
       </Select>
       {description && <FieldDescription>{description}</FieldDescription>}
-      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+      {isInvalid && <FieldError id={`${field.name}-error`} errors={field.state.meta.errors} />}
     </Field>
   );
 }

@@ -51,6 +51,7 @@ export function CheckboxGroupField({
               name={field.name}
               disabled={opt.disabled}
               aria-invalid={isInvalid}
+              aria-describedby={isInvalid ? `${field.name}-error` : undefined}
               checked={field.state.value.includes(opt.value)}
               onCheckedChange={(checked) => {
                 if (checked) {
@@ -69,7 +70,7 @@ export function CheckboxGroupField({
           </Field>
         ))}
       </FieldGroup>
-      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+      {isInvalid && <FieldError id={`${field.name}-error`} errors={field.state.meta.errors} />}
     </FieldSet>
   );
 }

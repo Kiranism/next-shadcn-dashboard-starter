@@ -31,6 +31,7 @@ export function TextareaField({
         onBlur={field.handleBlur}
         onChange={(e) => field.handleChange(e.target.value)}
         aria-invalid={isInvalid}
+        aria-describedby={isInvalid ? `${field.name}-error` : undefined}
         {...textareaProps}
       />
       {showCount && textareaProps.maxLength && (
@@ -39,7 +40,7 @@ export function TextareaField({
         </div>
       )}
       {description && <FieldDescription>{description}</FieldDescription>}
-      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+      {isInvalid && <FieldError id={`${field.name}-error`} errors={field.state.meta.errors} />}
     </Field>
   );
 }

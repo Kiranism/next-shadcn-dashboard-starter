@@ -34,6 +34,26 @@ export function ThemeModeToggle() {
     [resolvedTheme, setTheme]
   );
 
+  // Cmd/Ctrl+Shift+D toggles the theme; kbar separately handles the 'D D' sequence
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== 'd' || !e.shiftKey || !(e.metaKey || e.ctrlKey)) return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        target?.isContentEditable
+      ) {
+        return;
+      }
+      e.preventDefault();
+      handleThemeToggle();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleThemeToggle]);
+
   return (
     <Tooltip>
       <TooltipTrigger
@@ -50,7 +70,7 @@ export function ThemeModeToggle() {
         <span className='sr-only'>Toggle theme</span>
       </TooltipTrigger>
       <TooltipContent>
-        Toggle theme <Kbd>D D</Kbd>
+        Toggle theme <Kbd>⌘⇧D</Kbd> <Kbd>D D</Kbd>
       </TooltipContent>
     </Tooltip>
   );

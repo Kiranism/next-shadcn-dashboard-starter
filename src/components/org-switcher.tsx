@@ -184,45 +184,49 @@ export function OrgSwitcher() {
                 Organizations
               </DropdownMenuLabel>
             </DropdownMenuGroup>
-            {userMemberships.data.map((membership, index) => {
-              const isActive = membership.organization.id === orgId;
-              return (
-                <DropdownMenuItem
-                  key={membership.id}
-                  onClick={() => handleOrganizationSwitch(membership.organization.id)}
-                  className='gap-2 p-2'
-                >
-                  <div className='flex size-6 items-center justify-center overflow-hidden rounded-md border'>
-                    {membership.organization.hasImage && membership.organization.imageUrl ? (
-                      <Image
-                        src={membership.organization.imageUrl}
-                        alt={membership.organization.name}
-                        width={24}
-                        height={24}
-                        className='size-full object-cover'
-                      />
-                    ) : (
-                      <Icons.galleryVerticalEnd className='size-3.5 shrink-0' />
-                    )}
-                  </div>
-                  {membership.organization.name}
-                  {isActive && <Icons.check className='ml-auto size-4' />}
-                  {!isActive && <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>}
-                </DropdownMenuItem>
-              );
-            })}
+            <DropdownMenuGroup>
+              {userMemberships.data.map((membership, index) => {
+                const isActive = membership.organization.id === orgId;
+                return (
+                  <DropdownMenuItem
+                    key={membership.id}
+                    onClick={() => handleOrganizationSwitch(membership.organization.id)}
+                    className='gap-2 p-2'
+                  >
+                    <div className='flex size-6 items-center justify-center overflow-hidden rounded-md border'>
+                      {membership.organization.hasImage && membership.organization.imageUrl ? (
+                        <Image
+                          src={membership.organization.imageUrl}
+                          alt={membership.organization.name}
+                          width={24}
+                          height={24}
+                          className='size-full object-cover'
+                        />
+                      ) : (
+                        <Icons.galleryVerticalEnd className='size-3.5 shrink-0' />
+                      )}
+                    </div>
+                    {membership.organization.name}
+                    {isActive && <Icons.check className='ml-auto size-4' />}
+                    {!isActive && <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className='gap-2 p-2'
-              onClick={() => {
-                router.push('/dashboard/workspaces');
-              }}
-            >
-              <div className='flex size-6 items-center justify-center rounded-md border bg-transparent'>
-                <Icons.add className='size-4' />
-              </div>
-              <div className='text-muted-foreground font-medium'>Add organization</div>
-            </DropdownMenuItem>
+            <DropdownMenuGroup>
+              <DropdownMenuItem
+                className='gap-2 p-2'
+                onClick={() => {
+                  router.push('/dashboard/workspaces');
+                }}
+              >
+                <div className='flex size-6 items-center justify-center rounded-md border bg-transparent'>
+                  <Icons.add className='size-4' />
+                </div>
+                <div className='text-muted-foreground font-medium'>Add organization</div>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
