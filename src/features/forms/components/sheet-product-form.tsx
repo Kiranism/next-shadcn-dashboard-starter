@@ -1,9 +1,9 @@
 'use client';
 
-import { useForm } from '@tanstack/react-form';
+import { useAppForm } from '@/lib/form';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
-import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { FieldGroup } from '@/components/ui/field';
 import {
   Sheet,
   SheetContent,
@@ -13,16 +13,6 @@ import {
   SheetTitle,
   SheetTrigger
 } from '@/components/ui/sheet';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
 import { Icons } from '@/components/icons';
 import { useState } from 'react';
 
@@ -43,7 +33,7 @@ const categoryOptions = [
 export default function SheetProductForm() {
   const [open, setOpen] = useState(false);
 
-  const form = useForm({
+  const form = useAppForm({
     defaultValues: {
       name: '',
       category: '',
@@ -82,113 +72,51 @@ export default function SheetProductForm() {
             }}
           >
             <FieldGroup>
-              <form.Field
+              <form.AppField
                 name='name'
-                children={(field) => {
-                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Product Name *</FieldLabel>
-                      <Input
-                        id={field.name}
-                        name={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder='Enter product name'
-                        aria-invalid={isInvalid}
-                      />
-                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                    </Field>
-                  );
-                }}
+                children={(field) => (
+                  <field.TextField label='Product Name' required placeholder='Enter product name' />
+                )}
               />
 
-              <form.Field
+              <form.AppField
                 name='category'
-                children={(field) => {
-                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Category *</FieldLabel>
-                      <Select
-                        name={field.name}
-                        value={field.state.value}
-                        onValueChange={(value) => field.handleChange(value ?? '')}
-                      >
-                        <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                          <SelectValue placeholder='Select category' />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectGroup>
-                            {categoryOptions.map((opt) => (
-                              <SelectItem key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                    </Field>
-                  );
-                }}
+                children={(field) => (
+                  <field.SelectField
+                    label='Category'
+                    required
+                    options={categoryOptions}
+                    placeholder='Select category'
+                  />
+                )}
               />
 
-              <form.Field
+              <form.AppField
                 name='price'
-                children={(field) => {
-                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Price *</FieldLabel>
-                      <Input
-                        id={field.name}
-                        name={field.name}
-                        type='number'
-                        min={0}
-                        step='0.01'
-                        value={field.state.value ?? ''}
-                        onBlur={field.handleBlur}
-                        onChange={(e) =>
-                          field.handleChange(
-                            e.target.value === '' ? undefined : Number(e.target.value)
-                          )
-                        }
-                        placeholder='Enter price'
-                        aria-invalid={isInvalid}
-                      />
-                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                    </Field>
-                  );
-                }}
+                children={(field) => (
+                  <field.TextField
+                    label='Price'
+                    required
+                    type='number'
+                    min={0}
+                    step='0.01'
+                    placeholder='Enter price'
+                  />
+                )}
               />
 
-              <form.Field
+              <form.AppField
                 name='description'
-                children={(field) => {
-                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Description *</FieldLabel>
-                      <Textarea
-                        id={field.name}
-                        name={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder='Enter product description'
-                        maxLength={500}
-                        rows={4}
-                        aria-invalid={isInvalid}
-                      />
-                      <div className='text-muted-foreground text-right text-sm'>
-                        {field.state.value?.length || 0} / 500
-                      </div>
-                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                    </Field>
-                  );
-                }}
+                children={(field) => (
+                  <field.TextareaField
+                    label='Description'
+                    required
+                    placeholder='Enter product description'
+                    maxLength={500}
+                    rows={4}
+                    showCount
+                  />
+                )}
               />
             </FieldGroup>
           </form>

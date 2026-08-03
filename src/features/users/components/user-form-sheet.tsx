@@ -1,18 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from '@tanstack/react-form';
 import { Button } from '@/components/ui/button';
-import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
+import { FieldGroup } from '@/components/ui/field';
+import { useAppForm } from '@/lib/form';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Sheet,
@@ -64,7 +55,7 @@ export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) 
     onError: () => toast.error('Failed to update user')
   });
 
-  const form = useForm({
+  const form = useAppForm({
     defaultValues: {
       first_name: user?.first_name ?? '',
       last_name: user?.last_name ?? '',
@@ -110,156 +101,61 @@ export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) 
           >
             <FieldGroup>
               <div className='grid grid-cols-2 gap-4'>
-                <form.Field
+                <form.AppField
                   name='first_name'
-                  children={(field) => {
-                    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                    return (
-                      <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>First Name *</FieldLabel>
-                        <Input
-                          id={field.name}
-                          name={field.name}
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          placeholder='John'
-                          aria-invalid={isInvalid}
-                        />
-                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                      </Field>
-                    );
-                  }}
+                  children={(field) => (
+                    <field.TextField label='First Name' required placeholder='John' />
+                  )}
                 />
-                <form.Field
+                <form.AppField
                   name='last_name'
-                  children={(field) => {
-                    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                    return (
-                      <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>Last Name *</FieldLabel>
-                        <Input
-                          id={field.name}
-                          name={field.name}
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          placeholder='Doe'
-                          aria-invalid={isInvalid}
-                        />
-                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                      </Field>
-                    );
-                  }}
+                  children={(field) => (
+                    <field.TextField label='Last Name' required placeholder='Doe' />
+                  )}
                 />
               </div>
 
-              <form.Field
+              <form.AppField
                 name='email'
-                children={(field) => {
-                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Email *</FieldLabel>
-                      <Input
-                        id={field.name}
-                        name={field.name}
-                        type='email'
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder='john@example.com'
-                        aria-invalid={isInvalid}
-                      />
-                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                    </Field>
-                  );
-                }}
+                children={(field) => (
+                  <field.TextField
+                    label='Email'
+                    required
+                    type='email'
+                    placeholder='john@example.com'
+                  />
+                )}
               />
 
-              <form.Field
+              <form.AppField
                 name='phone'
-                children={(field) => {
-                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Phone *</FieldLabel>
-                      <Input
-                        id={field.name}
-                        name={field.name}
-                        type='tel'
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder='(555) 123-4567'
-                        aria-invalid={isInvalid}
-                      />
-                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                    </Field>
-                  );
-                }}
+                children={(field) => (
+                  <field.TextField label='Phone' required type='tel' placeholder='(555) 123-4567' />
+                )}
               />
 
-              <form.Field
+              <form.AppField
                 name='role'
-                children={(field) => {
-                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Role *</FieldLabel>
-                      <Select
-                        name={field.name}
-                        value={field.state.value}
-                        onValueChange={(value) => field.handleChange(value ?? '')}
-                      >
-                        <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                          <SelectValue placeholder='Select role' />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectGroup>
-                            {ROLE_OPTIONS.map((opt) => (
-                              <SelectItem key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                    </Field>
-                  );
-                }}
+                children={(field) => (
+                  <field.SelectField
+                    label='Role'
+                    required
+                    options={ROLE_OPTIONS}
+                    placeholder='Select role'
+                  />
+                )}
               />
 
-              <form.Field
+              <form.AppField
                 name='status'
-                children={(field) => {
-                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Status *</FieldLabel>
-                      <Select
-                        name={field.name}
-                        value={field.state.value}
-                        onValueChange={(value) => field.handleChange(value ?? '')}
-                      >
-                        <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                          <SelectValue placeholder='Select status' />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectGroup>
-                            {STATUS_OPTIONS.map((opt) => (
-                              <SelectItem key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                    </Field>
-                  );
-                }}
+                children={(field) => (
+                  <field.SelectField
+                    label='Status'
+                    required
+                    options={STATUS_OPTIONS}
+                    placeholder='Select status'
+                  />
+                )}
               />
             </FieldGroup>
           </form>

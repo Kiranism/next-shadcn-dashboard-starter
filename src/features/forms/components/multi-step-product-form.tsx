@@ -1,23 +1,14 @@
 'use client';
 
 import * as React from 'react';
-import { revalidateLogic, useForm, useStore } from '@tanstack/react-form';
+import { revalidateLogic, useStore } from '@tanstack/react-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
 import { Icons } from '@/components/icons';
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+import { FieldDescription, FieldGroup } from '@/components/ui/field';
 import { Progress } from '@/components/ui/progress';
 import { motion, AnimatePresence } from 'motion/react';
+import { useAppForm } from '@/lib/form';
 import { useFormStepper } from '@/hooks/use-stepper';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -103,7 +94,7 @@ export default function MultiStepProductForm() {
     handleNextStepOrSubmit
   } = useFormStepper(stepSchemas, { fullSchema: productFormSchema });
 
-  const form = useForm({
+  const form = useAppForm({
     defaultValues: {
       name: '',
       category: '',
@@ -164,86 +155,41 @@ export default function MultiStepProductForm() {
                 <h3 className='text-lg font-semibold'>Basic Info</h3>
                 <FieldDescription>Enter the product name, category, and price.</FieldDescription>
 
-                <form.Field
+                <form.AppField
                   name='name'
-                  children={(field) => {
-                    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                    return (
-                      <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>Product Name *</FieldLabel>
-                        <Input
-                          id={field.name}
-                          name={field.name}
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          placeholder='Enter product name'
-                          aria-invalid={isInvalid}
-                        />
-                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                      </Field>
-                    );
-                  }}
+                  children={(field) => (
+                    <field.TextField
+                      label='Product Name'
+                      required
+                      placeholder='Enter product name'
+                    />
+                  )}
                 />
 
-                <form.Field
+                <form.AppField
                   name='category'
-                  children={(field) => {
-                    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                    return (
-                      <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>Category *</FieldLabel>
-                        <Select
-                          name={field.name}
-                          value={field.state.value}
-                          onValueChange={(value) => field.handleChange(value ?? '')}
-                        >
-                          <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                            <SelectValue placeholder='Select category' />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectGroup>
-                              {categoryOptions.map((opt) => (
-                                <SelectItem key={opt.value} value={opt.value}>
-                                  {opt.label}
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
-                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                      </Field>
-                    );
-                  }}
+                  children={(field) => (
+                    <field.SelectField
+                      label='Category'
+                      required
+                      options={categoryOptions}
+                      placeholder='Select category'
+                    />
+                  )}
                 />
 
-                <form.Field
+                <form.AppField
                   name='price'
-                  children={(field) => {
-                    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                    return (
-                      <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>Price *</FieldLabel>
-                        <Input
-                          id={field.name}
-                          name={field.name}
-                          type='number'
-                          min={0}
-                          step={0.01}
-                          value={field.state.value ?? ''}
-                          onBlur={field.handleBlur}
-                          onChange={(e) =>
-                            field.handleChange(
-                              e.target.value === '' ? undefined : Number(e.target.value)
-                            )
-                          }
-                          placeholder='Enter price'
-                          aria-invalid={isInvalid}
-                        />
-                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                      </Field>
-                    );
-                  }}
+                  children={(field) => (
+                    <field.TextField
+                      label='Price'
+                      required
+                      type='number'
+                      min={0}
+                      step={0.01}
+                      placeholder='Enter price'
+                    />
+                  )}
                 />
               </FieldGroup>
             )}
@@ -253,28 +199,17 @@ export default function MultiStepProductForm() {
                 <h3 className='text-lg font-semibold'>Details</h3>
                 <FieldDescription>Add a detailed product description.</FieldDescription>
 
-                <form.Field
+                <form.AppField
                   name='description'
-                  children={(field) => {
-                    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                    return (
-                      <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>Description *</FieldLabel>
-                        <Textarea
-                          id={field.name}
-                          name={field.name}
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          placeholder='Enter product description'
-                          maxLength={500}
-                          rows={5}
-                          aria-invalid={isInvalid}
-                        />
-                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                      </Field>
-                    );
-                  }}
+                  children={(field) => (
+                    <field.TextareaField
+                      label='Description'
+                      required
+                      placeholder='Enter product description'
+                      maxLength={500}
+                      rows={5}
+                    />
+                  )}
                 />
               </FieldGroup>
             )}

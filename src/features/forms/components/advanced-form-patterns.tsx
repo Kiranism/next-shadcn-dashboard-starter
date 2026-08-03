@@ -1,25 +1,17 @@
 'use client';
 
 import * as React from 'react';
-import { useForm, useStore } from '@tanstack/react-form';
+import { useStore } from '@tanstack/react-form';
 import { z } from 'zod';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { Field, FieldError, FieldGroup } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Icons } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
-import { Spinner } from '@/components/ui/spinner';
 import { toast } from 'sonner';
+import { useAppForm } from '@/lib/form';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -97,7 +89,7 @@ const advancedSchema = z.object({
 // ---------------------------------------------------------------------------
 
 export default function AdvancedFormPatterns() {
-  const form = useForm({
+  const form = useAppForm({
     defaultValues: {
       username: '',
       email: '',
@@ -147,8 +139,8 @@ export default function AdvancedFormPatterns() {
           </div>
 
           <FieldGroup className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-            {/* Username — async validation */}
-            <form.Field
+            {/* Username — async validation (spinner built into TextField) */}
+            <form.AppField
               name='username'
               asyncDebounceMs={500}
               validators={{
@@ -161,81 +153,37 @@ export default function AdvancedFormPatterns() {
                   return undefined;
                 }
               }}
-              children={(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Username *</FieldLabel>
-                    <div className='relative'>
-                      <Input
-                        id={field.name}
-                        name={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder='Choose a username'
-                        aria-invalid={isInvalid}
-                      />
-                      {field.state.meta.isValidating && (
-                        <Spinner className='absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2' />
-                      )}
-                    </div>
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                  </Field>
-                );
-              }}
+              children={(field) => (
+                <field.TextField label='Username' required placeholder='Choose a username' />
+              )}
             />
 
-            {/* Email */}
-            <form.Field
+            <form.AppField
               name='email'
-              children={(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Email *</FieldLabel>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      type='email'
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder='you@example.com'
-                      aria-invalid={isInvalid}
-                    />
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                  </Field>
-                );
-              }}
+              children={(field) => (
+                <field.TextField
+                  label='Email'
+                  required
+                  type='email'
+                  placeholder='you@example.com'
+                />
+              )}
             />
 
-            {/* Password */}
-            <form.Field
+            <form.AppField
               name='password'
-              children={(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Password *</FieldLabel>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      type='password'
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder='Min 8 characters'
-                      aria-invalid={isInvalid}
-                    />
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                  </Field>
-                );
-              }}
+              children={(field) => (
+                <field.TextField
+                  label='Password'
+                  required
+                  type='password'
+                  placeholder='Min 8 characters'
+                />
+              )}
             />
 
             {/* Confirm Password — linked validation via onChangeListenTo */}
-            <form.Field
+            <form.AppField
               name='confirmPassword'
               validators={{
                 onChangeListenTo: ['password'],
@@ -247,25 +195,14 @@ export default function AdvancedFormPatterns() {
                   return undefined;
                 }
               }}
-              children={(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Confirm Password *</FieldLabel>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      type='password'
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder='Confirm password'
-                      aria-invalid={isInvalid}
-                    />
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                  </Field>
-                );
-              }}
+              children={(field) => (
+                <field.TextField
+                  label='Confirm Password'
+                  required
+                  type='password'
+                  placeholder='Confirm password'
+                />
+              )}
             />
           </FieldGroup>
 
@@ -278,60 +215,30 @@ export default function AdvancedFormPatterns() {
           </div>
 
           <FieldGroup className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-            <form.Field
+            <form.AppField
               name='team.name'
-              children={(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor='team-name'>Team Name *</FieldLabel>
-                    <Input
-                      id='team-name'
-                      name={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder='e.g. Alpha Squad'
-                      aria-invalid={isInvalid}
-                    />
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                  </Field>
-                );
-              }}
+              children={(field) => (
+                <field.TextField label='Team Name' required placeholder='e.g. Alpha Squad' />
+              )}
             />
-            <form.Field
+            <form.AppField
               name='team.size'
-              children={(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor='team-size'>Team Size *</FieldLabel>
-                    <Input
-                      id='team-size'
-                      name={field.name}
-                      type='number'
-                      min={1}
-                      max={100}
-                      value={field.state.value ?? ''}
-                      onBlur={field.handleBlur}
-                      onChange={(e) =>
-                        field.handleChange(
-                          e.target.value === '' ? undefined! : Number(e.target.value)
-                        )
-                      }
-                      placeholder='1-100'
-                      aria-invalid={isInvalid}
-                    />
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                  </Field>
-                );
-              }}
+              children={(field) => (
+                <field.TextField
+                  label='Team Size'
+                  required
+                  type='number'
+                  min={1}
+                  max={100}
+                  placeholder='1-100'
+                />
+              )}
             />
           </FieldGroup>
 
           <Separator />
 
-          {/* ─── Section 3: Members (dynamic array rows) ─── */}
+          {/* ─── Section 3: Members (dynamic array rows — raw form.Field) ─── */}
           <div className='space-y-1'>
             <h3 className='text-lg font-semibold'>Members</h3>
             <p className='text-muted-foreground text-sm'>Dynamic array rows with add / remove</p>
@@ -434,72 +341,32 @@ export default function AdvancedFormPatterns() {
           </div>
 
           <FieldGroup className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-            <form.Field
+            <form.AppField
               name='country'
               listeners={{
                 onChange: ({ fieldApi }) => {
                   fieldApi.form.setFieldValue('state', '');
                 }
               }}
-              children={(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Country *</FieldLabel>
-                    <Select
-                      name={field.name}
-                      value={field.state.value}
-                      onValueChange={(value) => field.handleChange(value ?? '')}
-                    >
-                      <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                        <SelectValue placeholder='Select a country' />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          {countryOptions.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                  </Field>
-                );
-              }}
+              children={(field) => (
+                <field.SelectField
+                  label='Country'
+                  required
+                  options={countryOptions}
+                  placeholder='Select a country'
+                />
+              )}
             />
-            <form.Field
+            <form.AppField
               name='state'
-              children={(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>State / Region *</FieldLabel>
-                    <Select
-                      name={field.name}
-                      value={field.state.value}
-                      onValueChange={(value) => field.handleChange(value ?? '')}
-                    >
-                      <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                        <SelectValue
-                          placeholder={selectedCountry ? 'Select state' : 'Select a country first'}
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          {stateOptions.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                  </Field>
-                );
-              }}
+              children={(field) => (
+                <field.SelectField
+                  label='State / Region'
+                  required
+                  options={stateOptions}
+                  placeholder={selectedCountry ? 'Select state' : 'Select a country first'}
+                />
+              )}
             />
           </FieldGroup>
 
@@ -510,14 +377,9 @@ export default function AdvancedFormPatterns() {
             <Button type='button' variant='outline' onClick={() => form.reset()} className='flex-1'>
               Reset
             </Button>
-            <form.Subscribe
-              selector={(state) => state.isSubmitting}
-              children={(isSubmitting) => (
-                <Button type='submit' disabled={isSubmitting} className='flex-1'>
-                  Register Team
-                </Button>
-              )}
-            />
+            <form.AppForm>
+              <form.SubmitButton className='flex-1'>Register Team</form.SubmitButton>
+            </form.AppForm>
           </div>
         </form>
       </CardContent>

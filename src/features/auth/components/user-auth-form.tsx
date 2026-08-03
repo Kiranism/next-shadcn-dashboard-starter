@@ -1,8 +1,7 @@
 'use client';
 import { Button } from '@/components/ui/button';
-import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { useForm } from '@tanstack/react-form';
+import { FieldGroup } from '@/components/ui/field';
+import { useAppForm } from '@/lib/form';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
 import * as z from 'zod';
@@ -15,7 +14,7 @@ const formSchema = z.object({
 export default function UserAuthForm() {
   const [loading, startTransition] = useTransition();
 
-  const form = useForm({
+  const form = useAppForm({
     defaultValues: {
       email: 'demo@gmail.com'
     },
@@ -39,28 +38,16 @@ export default function UserAuthForm() {
         }}
       >
         <FieldGroup>
-          <form.Field
+          <form.AppField
             name='email'
-            children={(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-              return (
-                <Field data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Email</FieldLabel>
-                  <Input
-                    id={field.name}
-                    name={field.name}
-                    type='email'
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    placeholder='Enter your email...'
-                    disabled={loading}
-                    aria-invalid={isInvalid}
-                  />
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              );
-            }}
+            children={(field) => (
+              <field.TextField
+                label='Email'
+                type='email'
+                placeholder='Enter your email...'
+                disabled={loading}
+              />
+            )}
           />
         </FieldGroup>
         <Button disabled={loading} className='mt-2 ml-auto w-full' type='submit'>
