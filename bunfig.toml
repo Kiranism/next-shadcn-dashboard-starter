@@ -10,7 +10,7 @@
 # Need a fresh release sooner (e.g. an urgent security patch)? Add the package
 # to `minimumReleaseAgeExcludes`, or run a one-off `bun add <pkg> --minimum-release-age 0`.
 [install]
-minimumReleaseAge = 259200 # 3 days, in seconds (raise to 604800 for 7 days)
+minimumReleaseAge = 604800 # 7 days, in seconds (259200 = 3 days)
 
 # Package names exempt from the cooldown above.
 minimumReleaseAgeExcludes = []
