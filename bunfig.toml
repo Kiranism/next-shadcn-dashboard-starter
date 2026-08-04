@@ -1,0 +1,16 @@
+# Bun configuration — https://bun.sh/docs/runtime/bunfig
+#
+# Supply-chain hardening: refuse to install npm package versions published less
+# than `minimumReleaseAge` seconds ago. When a package is compromised and a
+# malicious version is published, this cooldown gives the ecosystem time to
+# detect and yank it before it can reach your install. Only affects NEW version
+# resolution — existing bun.lock entries are untouched, so CI installs with a
+# frozen lockfile are unaffected.
+#
+# Need a fresh release sooner (e.g. an urgent security patch)? Add the package
+# to `minimumReleaseAgeExcludes`, or run a one-off `bun add <pkg> --minimum-release-age 0`.
+[install]
+minimumReleaseAge = 259200 # 3 days, in seconds (raise to 604800 for 7 days)
+
+# Package names exempt from the cooldown above.
+minimumReleaseAgeExcludes = []
