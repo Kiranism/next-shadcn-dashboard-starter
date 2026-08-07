@@ -20,6 +20,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@ai-sdk/react": "^4.0.47",
     "@base-ui/react": "^1.6.0",
     "@clerk/nextjs": "^7.3.5",
     "@dnd-kit/core": "^6.3.1",
@@ -27,6 +28,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@sentry/nextjs": "^10.45.0",
+    "@shadcn/helpers": "^0.1.0",
     "@shadcn/react": "^0.2.1",
     "@tabler/icons-react": "^3.40.0",
     "@tailwindcss/postcss": "^4.2.2",
@@ -34,6 +36,7 @@
     "@tanstack/react-query": "^5.95.2",
     "@tanstack/react-query-devtools": "^5.95.2",
     "@tanstack/react-table": "^8.21.3",
+    "ai": "^7.0.44",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

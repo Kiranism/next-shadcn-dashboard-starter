@@ -1,5 +1,5 @@
 'use client';
-import { Button } from '@/components/ui/button';
+import { LoadingButton } from '@/components/ui/loading-button';
 import { FieldGroup } from '@/components/ui/field';
 import { useAppForm } from '@/lib/form';
 import { useTransition } from 'react';
@@ -50,9 +50,9 @@ export default function UserAuthForm() {
             )}
           />
         </FieldGroup>
-        <Button disabled={loading} className='mt-2 ml-auto w-full' type='submit'>
+        <LoadingButton loading={loading} type='submit' className='mt-2 ml-auto w-full'>
           Continue With Email
-        </Button>
+        </LoadingButton>
       </form>
       <div className='relative'>
         <div className='absolute inset-0 flex items-center'>

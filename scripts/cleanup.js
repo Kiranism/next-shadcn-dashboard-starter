@@ -127,6 +127,10 @@ const DOC_RULES = {
     { file: 'README.md', lines: ['| [Chat](', '── chat'] },
     { file: 'AGENTS.md', lines: ['── chat', '# Remove messaging UI'] }
   ],
+  'ai-chat': [
+    { file: 'README.md', lines: ['| [AI Chat](', '── ai-chat'] },
+    { file: 'AGENTS.md', lines: ['── ai-chat', '# Remove AI chat demo'] }
+  ],
   notifications: [
     { file: 'README.md', lines: ['| [Notifications](', '── notifications'] },
     { file: 'AGENTS.md', lines: ['── notifications', '# Remove notification center'] }
@@ -205,6 +209,13 @@ const FEATURES = {
     files: ['src/components/ui/file-preview.tsx'],
     dependencies: [],
     navItemsToRemove: ['/dashboard/chat']
+  },
+  'ai-chat': {
+    name: 'AI Chat (scripted useChat streaming demo)',
+    folders: ['src/app/dashboard/ai-chat', 'src/features/ai-chat'],
+    files: [],
+    dependencies: ['ai', '@ai-sdk/react', '@shadcn/helpers'],
+    navItemsToRemove: ['/dashboard/ai-chat']
   },
   notifications: {
     name: 'Notifications (Notification center & page)',

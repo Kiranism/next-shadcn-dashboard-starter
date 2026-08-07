@@ -1,6 +1,6 @@
 <h1 align="center">Admin Dashboard Template with Next.js &amp; Shadcn UI</h1>
 
-<div align="center">Free, open source admin dashboard starter built with Next.js 16, shadcn/ui, Tailwind CSS, and TypeScript</div>
+<div align="center">Free, open source, AI-friendly admin dashboard starter built with Next.js 16, shadcn/ui, Tailwind CSS, and TypeScript</div>
 
 <div align="center">
   <a href="https://dub.sh/shadcn-dashboard"><strong>View Demo</strong></a>
@@ -28,6 +28,8 @@ A free, open source (MIT) admin dashboard starter built with Next.js 16, shadcn/
 
 Every feature is a working, production-ready implementation, not static demo UI. Tables search, filter, sort, and paginate for real. Forms validate and mutate with cache invalidation.
 Auth, organizations, and billing function end-to-end.
+
+It's AI-friendly out of the box — an AI SDK streaming chat ships as a working example (a scripted conversation streamed through the real `useChat` lifecycle with the shadcn chat components), so you can build AI apps on the same production-ready base.
 Clone it, strip what you don't need with the built-in cleanup script, and start building on patterns you'd write yourself. It works well as a base for SaaS apps, internal tools, and admin panels.
 
 ### Why This Template
@@ -99,6 +101,7 @@ A few things you can build with it:
 | [Profile](https://shadcn-dashboard.kiranism.dev/dashboard/profile)                                                                                                   | Clerk's account management UI for profile and security settings. |
 | [Kanban Board](https://shadcn-dashboard.kiranism.dev/dashboard/kanban)                                                                                                | Drag-and-drop task board built with dnd-kit and Zustand. Column sorting, priority badges, assignees, and due dates. |
 | [Chat](https://shadcn-dashboard.kiranism.dev/dashboard/chat)                                                                                                          | Messaging UI with a conversation list, message bubbles, quick replies, attachments, and an auto-reply demo. Multi-panel layout that works on mobile. |
+| [AI Chat](https://shadcn-dashboard.kiranism.dev/dashboard/ai-chat)                                                                                                    | Scripted AI chat that streams a predefined conversation through the real `useChat` lifecycle — no model, API route, or key. Built with the shadcn chat components (MessageScroller, Bubble, Marker). |
 | [Notifications](https://shadcn-dashboard.kiranism.dev/dashboard/notifications)                                                                                        | Notification center with a header badge, popover preview, and a full page with All / Unread / Read tabs. Includes mark-as-read and mark-all-as-read. |
 | [Workspaces](https://shadcn-dashboard.kiranism.dev/dashboard/workspaces)                                                                                              | Organization management using Clerk's `<OrganizationList />`. View, create, and switch between organizations. |
 | [Team Management](https://shadcn-dashboard.kiranism.dev/dashboard/workspaces/team)                                                                                    | Team management using Clerk's `<OrganizationProfile />`. Manage members, roles, permissions, security, and org details. Needs an active organization. |
@@ -120,6 +123,7 @@ src/
 │   │   ├── react-query/           # React Query demo page
 │   │   ├── kanban/                # Task board page
 │   │   ├── chat/                  # Messaging page
+│   │   ├── ai-chat/               # AI chat streaming demo
 │   │   ├── notifications/         # Notifications page
 │   │   ├── workspaces/            # Org management & teams
 │   │   ├── billing/               # Billing & plans
@@ -140,6 +144,7 @@ src/
 │   ├── react-query-demo/          # React Query demo (Pokemon API)
 │   ├── kanban/                    # Drag-drop task board
 │   ├── chat/                      # Messaging (conversations, bubbles, composer)
+│   ├── ai-chat/                   # Scripted useChat streaming demo (shadcn chat UI)
 │   ├── notifications/             # Notification center & store
 │   ├── auth/                      # Auth components
 │   └── profile/                   # Profile form schemas

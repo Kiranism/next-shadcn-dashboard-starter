@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { LoadingButton } from '@/components/ui/loading-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FieldGroup } from '@/components/ui/field';
 import { useAppForm } from '@/lib/form';
@@ -25,22 +26,22 @@ export default function ProductForm({
   const createMutation = useMutation({
     ...createProductMutation,
     onSuccess: () => {
-      toast.success('Product created successfully');
+      toast.success('Product created');
       router.push('/dashboard/product');
     },
     onError: () => {
-      toast.error('Failed to create product');
+      toast.error("Couldn't create product. Try again.");
     }
   });
 
   const updateMutation = useMutation({
     ...updateProductMutation,
     onSuccess: () => {
-      toast.success('Product updated successfully');
+      toast.success('Product updated');
       router.push('/dashboard/product');
     },
     onError: () => {
-      toast.error('Failed to update product');
+      toast.error("Couldn't update product. Try again.");
     }
   });
 
@@ -74,7 +75,7 @@ export default function ProductForm({
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <Card className='mx-auto w-full'>
+    <Card className='mx-auto w-full max-w-3xl'>
       <CardHeader>
         <CardTitle className='text-left text-2xl font-bold'>{pageTitle}</CardTitle>
       </CardHeader>
@@ -150,11 +151,11 @@ export default function ProductForm({
 
           <div className='flex justify-end gap-2'>
             <Button type='button' variant='outline' onClick={() => router.back()}>
-              Back
+              Cancel
             </Button>
-            <Button type='submit' disabled={isPending}>
+            <LoadingButton loading={isPending} type='submit'>
               {isEdit ? 'Update Product' : 'Add Product'}
-            </Button>
+            </LoadingButton>
           </div>
         </form>
       </CardContent>
