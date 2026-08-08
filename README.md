@@ -29,7 +29,6 @@ A free, open source (MIT) admin dashboard starter built with Next.js 16, shadcn/
 Every feature is a working, production-ready implementation, not static demo UI. Tables search, filter, sort, and paginate for real. Forms validate and mutate with cache invalidation.
 Auth, organizations, and billing function end-to-end.
 
-It's AI-friendly out of the box — an AI SDK streaming chat ships as a working example (a scripted conversation streamed through the real `useChat` lifecycle with the shadcn chat components), so you can build AI apps on the same production-ready base.
 Clone it, strip what you don't need with the built-in cleanup script, and start building on patterns you'd write yourself. It works well as a base for SaaS apps, internal tools, and admin panels.
 
 ### Why This Template
@@ -75,7 +74,6 @@ _Looking for a TanStack Start version? Here's the [repo](https://git.new/tanstac
 - shadcn/ui components on Base UI primitives, styled with Tailwind CSS
 - Six-plus themes with a theme switcher
 - Feature-based folder structure
-- AI-ready: ships AGENTS.md, CLAUDE.md, and a bundled Claude Code skill so coding agents follow the template's patterns
 - A starting point for SaaS dashboards, internal tools, and client admin panels
 
 ## Use Cases
