@@ -1,3 +1,4 @@
+import { auth } from '@clerk/nextjs/server';
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
 import { getQueryClient } from '@/lib/query-client';
 import { productByIdOptions } from '@/features/products/api/queries';
@@ -11,6 +12,8 @@ export const metadata = {
 type PageProps = { params: Promise<{ productId: string }> };
 
 export default async function Page(props: PageProps) {
+  await auth.protect();
+
   const params = await props.params;
   const queryClient = getQueryClient();
 

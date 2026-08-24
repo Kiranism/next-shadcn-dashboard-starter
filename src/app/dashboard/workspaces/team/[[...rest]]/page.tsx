@@ -1,17 +1,7 @@
-'use client';
+import { auth } from '@clerk/nextjs/server';
+import TeamView from './team-view';
 
-import PageContainer from '@/components/layout/page-container';
-import { OrganizationProfile } from '@clerk/nextjs';
-import { teamInfoContent } from '@/config/infoconfig';
-
-export default function TeamPage() {
-  return (
-    <PageContainer
-      pageTitle='Team Management'
-      pageDescription='Manage your workspace team, members, roles, security and more.'
-      infoContent={teamInfoContent}
-    >
-      <OrganizationProfile />
-    </PageContainer>
-  );
+export default async function Page() {
+  await auth.protect();
+  return <TeamView />;
 }

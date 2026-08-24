@@ -1,3 +1,4 @@
+import { auth } from '@clerk/nextjs/server';
 import PageContainer from '@/components/layout/page-container';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -11,7 +12,7 @@ import {
 import { Icons } from '@/components/icons';
 import React from 'react';
 
-export default function OverViewLayout({
+export default async function OverViewLayout({
   sales,
   pie_stats,
   bar_stats,
@@ -22,6 +23,8 @@ export default function OverViewLayout({
   bar_stats: React.ReactNode;
   area_stats: React.ReactNode;
 }) {
+  await auth.protect();
+
   return (
     <PageContainer>
       <div className='flex flex-1 flex-col gap-4'>

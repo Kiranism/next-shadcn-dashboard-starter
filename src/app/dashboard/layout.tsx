@@ -18,7 +18,8 @@ export const metadata: Metadata = {
 };
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  // Gate the whole /dashboard segment: redirect to sign-in when signed out.
+  // Defense in depth: every /dashboard page also calls auth.protect() itself,
+  // because layouts don't always re-render when pages do (Clerk guidance).
   await auth.protect();
   // Persisting the sidebar state in the cookie.
   const cookieStore = await cookies();

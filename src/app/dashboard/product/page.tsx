@@ -1,3 +1,4 @@
+import { auth } from '@clerk/nextjs/server';
 import PageContainer from '@/components/layout/page-container';
 import { buttonVariants } from '@/components/ui/button';
 import ProductListingPage from '@/features/products/components/product-listing';
@@ -17,6 +18,8 @@ type pageProps = {
 };
 
 export default async function Page(props: pageProps) {
+  await auth.protect();
+
   const searchParams = await props.searchParams;
   searchParamsCache.parse(searchParams);
 

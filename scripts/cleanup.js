@@ -179,6 +179,9 @@ const FEATURES = {
       'CLERK_SECRET_KEY',
       'NEXT_PUBLIC_CLERK_SIGN_IN_URL',
       'NEXT_PUBLIC_CLERK_SIGN_UP_URL',
+      'NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL',
+      'NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL',
+      // legacy names, still stripped for forks created before the rename
       'NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL',
       'NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL',
       'WEBHOOK_SECRET'
@@ -373,6 +376,7 @@ class FeatureCleanup {
       this.featuresToRemove.includes('clerk') || !pkgNow?.dependencies?.['@clerk/nextjs'];
     if (clerkGone) {
       this.cleanNextConfig();
+      this.stripClerkAuthChecks();
     }
 
     this.remapNotificationLinks(allNavItemsToRemove);
@@ -601,6 +605,54 @@ class FeatureCleanup {
         this.log(`✅ Cleaned ${envFile}`);
       }
     }
+  }
+
+  // Every dashboard page/layout and API handler carries its own Clerk check
+  // (resource-based auth per Clerk's guidance). Those one-liners live in files
+  // that survive clerk removal, so strip them by content match here — same
+  // content-anchored approach as DOC_RULES, no marker comments in source.
+  stripClerkAuthChecks() {
+    const AUTH_LINE_TOKENS = [
+      "from '@clerk/nextjs/server'",
+      'auth.protect()',
+      'const { userId } = await auth();',
+      'if (!userId) return NextResponse.json',
+      '(Clerk guidance)'
+    ];
+
+    const removedFolders = this.featuresToRemove
+      .flatMap((name) => FEATURES[name]?.folders || [])
+      .map((folder) => path.join(ROOT, folder) + path.sep);
+    const removedFiles = new Set(
+      this.featuresToRemove
+        .flatMap((name) => FEATURES[name]?.files || [])
+        .map((file) => path.join(ROOT, file))
+    );
+
+    const walk = (dir) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          walk(full);
+          continue;
+        }
+        if (!/\.(ts|tsx)$/.test(entry.name)) continue;
+        if (removedFolders.some((folder) => full.startsWith(folder))) continue;
+        if (removedFiles.has(full)) continue;
+
+        const original = fs.readFileSync(full, 'utf8');
+        const kept = original
+          .split('\n')
+          .filter((line) => !AUTH_LINE_TOKENS.some((token) => line.includes(token)))
+          .join('\n');
+        if (kept !== original) {
+          if (!this.dryRun) fs.writeFileSync(full, kept, 'utf8');
+          this.log(`✅ Stripped Clerk auth checks: ${path.relative(ROOT, full)}`);
+        }
+      }
+    };
+    const appRoot = path.join(ROOT, 'src/app');
+    if (fs.existsSync(appRoot)) walk(appRoot);
   }
 
   cleanNextConfig() {
