@@ -1,5 +1,4 @@
 'use client';
-import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { LoadingButton } from '@/components/ui/loading-button';
@@ -23,16 +22,6 @@ export function AlertModal({
   description = 'This action cannot be undone.',
   confirmLabel = 'Continue'
 }: AlertModalProps) {
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  if (!isMounted) {
-    return null;
-  }
-
   return (
     <Modal title={title} description={description} isOpen={isOpen} onClose={onClose}>
       <div className='flex w-full items-center justify-end space-x-2 pt-6'>

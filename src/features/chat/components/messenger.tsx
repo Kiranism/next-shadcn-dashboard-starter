@@ -23,13 +23,19 @@ export function Messenger() {
   } = useChatStore();
 
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  // Clear attachments when switching conversations (adjusting state during render, per React docs)
+  const [attachmentsConversationId, setAttachmentsConversationId] =
+    useState(selectedConversationId);
+  if (attachmentsConversationId !== selectedConversationId) {
+    setAttachmentsConversationId(selectedConversationId);
+    setAttachments([]);
+  }
   const shouldReduceMotion = useReducedMotion();
   const replyTimeoutRef = useRef<number | null>(null);
   const selectedRef = useRef(selectedConversationId);
 
   useEffect(() => {
     selectedRef.current = selectedConversationId;
-    setAttachments([]);
   }, [selectedConversationId]);
 
   useEffect(() => {

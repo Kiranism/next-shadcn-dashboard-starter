@@ -42,6 +42,7 @@ interface FacetedController {
 
 interface FacetedStore {
   controller: FacetedController;
+  setController: (controller: FacetedController) => void;
   subscribe: (callback: () => void) => () => void;
   getState: () => FacetedStoreState;
   notify: () => void;
@@ -108,6 +109,9 @@ function createFacetedStore(state: FacetedStoreState): FacetedStore {
     controller: {
       isValueControlled: false,
       setOpen: () => {}
+    },
+    setController: (controller) => {
+      store.controller = controller;
     },
     subscribe: (callback) => {
       listeners.add(callback);
@@ -199,8 +203,9 @@ function Faceted<Multiple extends boolean = false>({
     createFacetedStore({ value: value ?? defaultValue, items, multiple })
   );
 
+  // Local patch: set through a store method; assigning to a useState value trips react/immutability
   useIsoLayoutEffect(() => {
-    store.controller = {
+    store.setController({
       isValueControlled: value !== undefined,
       onValueChange(nextValue) {
         if (!getIsFacetedSelectedValue(nextValue, multiple)) return;
@@ -210,7 +215,7 @@ function Faceted<Multiple extends boolean = false>({
         onOpenChange?.(nextOpen);
         if (openProp === undefined) setInternalOpen(nextOpen);
       }
-    };
+    });
   });
 
   const wasValueControlledRef = React.useRef(value !== undefined);
@@ -445,7 +450,7 @@ function FacetedCommandItem({
   return (
     <CommandPrimitive.Item
       className={cn(
-        "group/command-item relative flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-selected:bg-muted data-selected:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-selected:*:[svg]:text-foreground",
+        "group/command-item relative flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-[selected=true]:bg-muted data-[selected=true]:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[selected=true]:*:[svg]:text-foreground",
         className
       )}
       {...mergeProps<'div'>(

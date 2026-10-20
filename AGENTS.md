@@ -9,9 +9,9 @@ This file provides essential information for AI coding agents working on this pr
 **Next.js Admin Dashboard Starter** is a production-ready admin dashboard template built with:
 
 - **Framework**: Next.js 16 (App Router)
-- **Language**: TypeScript 5.7
+- **Language**: TypeScript 7
 - **Styling**: Tailwind CSS v4
-- **UI Components**: shadcn/ui (New York style)
+- **UI Components**: shadcn/ui (base-nova style, Base UI primitives)
 - **Authentication**: Clerk (with Organizations/Billing support)
 - **Error Tracking**: Sentry
 - **Charts**: Recharts
@@ -26,15 +26,15 @@ The project follows a feature-based folder structure designed for scalability in
 
 ### Core Framework & Runtime
 
-- Next.js 16.0.10 with App Router
-- React 19.2.0
-- TypeScript 5.7.2 with strict mode enabled
+- Next.js 16.4 with App Router
+- React 19.3
+- TypeScript 7 (native compiler) with strict mode enabled
 
 ### Styling & UI
 
 - Tailwind CSS v4 (using `@import 'tailwindcss'` syntax)
 - PostCSS with `@tailwindcss/postcss` plugin
-- shadcn/ui component library (Radix UI primitives)
+- shadcn/ui component library (Base UI primitives)
 - CSS custom properties for theming (OKLCH color format)
 
 ### State Management
