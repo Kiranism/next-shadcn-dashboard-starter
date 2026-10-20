@@ -42,7 +42,7 @@ export function DataTableSkeleton({
     <div
       data-slot='data-table-skeleton'
       role='status'
-      className={cn('flex w-full flex-col gap-2.5 overflow-auto', className)}
+      className={cn('flex flex-1 flex-col space-y-4', className)}
       {...props}
     >
       <span className='sr-only'>Loading table…</span>
@@ -61,7 +61,7 @@ export function DataTableSkeleton({
           <Skeleton className='ms-auto hidden h-8 w-18 rounded-lg lg:flex' />
         ) : null}
       </div>
-      <div aria-hidden='true' className='rounded-md border'>
+      <div aria-hidden='true' className='flex-1 rounded-lg border'>
         <Table>
           <TableHeader>
             {Array.from({ length: 1 }).map((_, i) => (

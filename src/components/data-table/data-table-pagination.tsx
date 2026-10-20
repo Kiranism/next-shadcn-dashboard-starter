@@ -92,20 +92,20 @@ function DataTablePaginationContent<TData extends RowData>({
     <div
       data-slot='data-table-pagination'
       className={cn(
-        'flex w-full flex-col-reverse items-center justify-between gap-4 overflow-auto p-1 sm:flex-row sm:gap-8',
+        'flex w-full flex-wrap items-center justify-between gap-2 overflow-auto p-1 sm:gap-8',
         className
       )}
       {...props}
     >
-      <div role='status' className='flex-1 text-sm whitespace-nowrap text-muted-foreground'>
+      <div role='status' className='text-sm whitespace-nowrap text-muted-foreground'>
         {selectedRowCount} {selectedRowCount === 1 ? 'row' : 'rows'} selected
         {selectedRowCount > visibleSelectedRowCount
           ? ` (${selectedRowCount - visibleSelectedRowCount} not shown)`
           : ''}
         .
       </div>
-      <div className='flex flex-col-reverse items-center gap-4 sm:flex-row sm:gap-6 lg:gap-8'>
-        <div className='flex items-center gap-2'>
+      <div className='flex items-center gap-2 sm:gap-6 lg:gap-8'>
+        <div className='hidden items-center gap-2 sm:flex'>
           <p id={pageSizeLabelId} className='text-sm font-medium whitespace-nowrap'>
             Rows per page
           </p>
@@ -116,7 +116,10 @@ function DataTablePaginationContent<TData extends RowData>({
               table.setPageSize(Number(value));
             }}
           >
-            <SelectTrigger aria-labelledby={pageSizeLabelId} className='w-18'>
+            <SelectTrigger
+              aria-labelledby={pageSizeLabelId}
+              className='h-8 w-18 [&[data-size]]:h-8'
+            >
               <SelectValue placeholder={pageSize} />
             </SelectTrigger>
             <SelectContent side='top' dir={dir}>
@@ -130,15 +133,18 @@ function DataTablePaginationContent<TData extends RowData>({
             </SelectContent>
           </Select>
         </div>
-        <div role='status' className='flex items-center justify-center text-sm font-medium'>
+        <div
+          role='status'
+          className='flex items-center justify-center text-sm font-medium whitespace-nowrap'
+        >
           Page {pageIndex + 1} of {pageCount}
         </div>
-        <div className='flex items-center gap-2'>
+        <div className='flex items-center gap-1'>
           <Button
             aria-label='Go to first page'
             variant='outline'
             size='icon'
-            className='hidden lg:flex'
+            className='hidden size-8 lg:flex'
             onClick={() => table.setPageIndex(0)}
             disabled={!canPreviousPage}
           >
@@ -148,6 +154,7 @@ function DataTablePaginationContent<TData extends RowData>({
             aria-label='Go to previous page'
             variant='outline'
             size='icon'
+            className='size-8'
             onClick={() => table.previousPage()}
             disabled={!canPreviousPage}
           >
@@ -157,6 +164,7 @@ function DataTablePaginationContent<TData extends RowData>({
             aria-label='Go to next page'
             variant='outline'
             size='icon'
+            className='size-8'
             onClick={() => table.nextPage()}
             disabled={!canNextPage}
           >
@@ -166,7 +174,7 @@ function DataTablePaginationContent<TData extends RowData>({
             aria-label='Go to last page'
             variant='outline'
             size='icon'
-            className='hidden lg:flex'
+            className='hidden size-8 lg:flex'
             onClick={() => table.setPageIndex(pageCount - 1)}
             disabled={!canNextPage}
           >

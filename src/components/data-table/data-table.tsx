@@ -23,6 +23,7 @@ import {
 } from '@/lib/data-table-utils';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { useDirection } from '@/components/ui/direction';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
   Table,
   TableBody,
@@ -52,15 +53,22 @@ export function DataTable<TData extends RowData>({
     <div
       data-slot='data-table'
       dir={dir}
-      className={cn('flex w-full flex-col gap-2.5 overflow-auto', className)}
+      className={cn('flex flex-1 flex-col space-y-4', className)}
       {...props}
     >
       {children}
-      <div className='isolate overflow-hidden rounded-md border'>
-        <DataTableLayout table={table} aria-label={ariaLabel} aria-labelledby={ariaLabelledBy}>
-          <DataTableHeader table={table} />
-          <DataTableBody table={table} />
-        </DataTableLayout>
+      {/* Local layout patch: table fills the remaining page height and scrolls on both axes */}
+      <div className='relative flex flex-1'>
+        <div className='absolute inset-0 isolate flex overflow-hidden rounded-lg border'>
+          {/* ui/table's overflow-x wrapper would trap the sticky header; let ScrollArea own both axes */}
+          <ScrollArea className='h-full w-full [&_[data-slot=table-container]]:overflow-visible'>
+            <DataTableLayout table={table} aria-label={ariaLabel} aria-labelledby={ariaLabelledBy}>
+              <DataTableHeader table={table} />
+              <DataTableBody table={table} />
+            </DataTableLayout>
+            <ScrollBar orientation='horizontal' />
+          </ScrollArea>
+        </div>
       </div>
       <div className='flex flex-col gap-2.5'>
         <DataTablePagination table={table} />
@@ -93,7 +101,7 @@ function DataTableLayout<TData extends RowData>({
       })}
     >
       {() => (
-        <Table className='table-fixed' style={getColumnSizingStyle(table)} {...props}>
+        <Table style={getColumnSizingStyle(table)} {...props}>
           {children}
         </Table>
       )}
@@ -115,7 +123,8 @@ function DataTableHeader<TData extends RowData>({ table }: DataTableHeaderProps<
       })}
     >
       {() => (
-        <TableHeader>
+        // z-30 keeps the sticky header above pinned body cells (z-20) while scrolling
+        <TableHeader className='sticky top-0 z-30 bg-muted'>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id} className='group/row'>
               {headerGroup.headers.map((header) => (
@@ -151,7 +160,7 @@ function DataTableHeadCell<TData extends RowData>({
         <TableHead
           aria-sort={ariaSort}
           colSpan={header.colSpan}
-          className={getCellClassName(pinned)}
+          className={cn('overflow-hidden', pinned && 'bg-muted')}
           style={getColumnPinningStyle(header.column)}
         >
           {header.isPlaceholder ? null : <FlexRender header={header} />}
