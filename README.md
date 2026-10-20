@@ -52,7 +52,7 @@ Most dashboard templates are static demo boilerplates: screens that look finishe
 - Data fetching - [TanStack React Query](https://tanstack.com/query)
 - State management - [Zustand](https://zustand-demo.pmnd.rs)
 - Search param state - [Nuqs](https://nuqs.47ng.com/)
-- Tables - [TanStack Data Tables](https://ui.shadcn.com/docs/components/data-table) • [Dice Table](https://www.diceui.com/docs/components/data-table)
+- Tables - [TanStack Data Tables](https://ui.shadcn.com/docs/components/data-table) • [Dice Table](https://diceui.com/docs/components/data-table)
 - Forms - [TanStack Form](https://tanstack.com/form) + [Zod](https://zod.dev)
 - Command+K interface - [kbar](https://kbar.vercel.app/)
 - Linter / Formatter - [OxLint](https://oxc.rs/docs/guide/usage/linter) • [Oxfmt](https://oxc.rs/docs/guide/usage/formatter)
