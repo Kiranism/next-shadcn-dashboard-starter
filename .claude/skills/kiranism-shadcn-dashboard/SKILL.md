@@ -24,7 +24,7 @@ This skill encodes the exact patterns and conventions used in this Next.js 16 + 
 | Theme registry   | `src/components/themes/theme.config.ts`             |
 | Custom hook      | `src/hooks/`                                        |
 | Form components  | `src/components/forms/`                             |
-| Table components | `src/components/ui/table/`                          |
+| Table components | `src/components/data-table/`                          |
 | Icons registry   | `src/components/icons.tsx`                          |
 
 ---
@@ -120,7 +120,7 @@ export function EntityTable() {
     pageCount: Math.ceil((data?.total_items ?? 0) / pageSize),
     shallow: true, // URL changes stay client-side — React Query handles fetching
     debounceMs: 500,
-    initialState: { columnPinning: { right: ['actions'] } }
+    initialState: { columnPinning: { start: [], end: ['actions'] } }
   });
 
   if (isLoading) return <DataTableSkeleton columnCount={5} rowCount={10} filterCount={2} />;
@@ -198,16 +198,16 @@ export default async function Page(props: PageProps) {
 
 ## 3. Data Tables
 
-Tables use TanStack Table v8 with `useDataTable` hook and `nuqs` for URL state.
+Tables use TanStack Table v9 (DiceUI data table) with `useDataTable` hook and `nuqs` for URL state. Type columns with `DataTableFeatures` from `@/lib/data-table-features`.
 
 ### Column Definitions
 
 ```tsx
-export const columns: ColumnDef<YourType>[] = [
+export const columns: ColumnDef<DataTableFeatures, YourType>[] = [
   {
     id: 'name',
     accessorKey: 'name',
-    header: ({ column }) => <DataTableColumnHeader column={column} title='Name' />,
+    header: ({ column }) => <DataTableColumnHeader column={column} label='Name' />,
     meta: { label: 'Name', placeholder: 'Search...', variant: 'text', icon: Icons.text },
     enableColumnFilter: true
   },
@@ -228,9 +228,7 @@ export const columns: ColumnDef<YourType>[] = [
 
 ```tsx
 initialState: {
-  columnPinning: {
-    right: ['actions'];
-  }
+  columnPinning: { start: [], end: ['actions'] }
 }
 ```
 

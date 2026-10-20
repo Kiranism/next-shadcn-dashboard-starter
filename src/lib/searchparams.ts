@@ -5,6 +5,8 @@ import {
   parseAsString
 } from 'nuqs/server';
 
+import { getSortingStateParser } from '@/lib/data-table-parsers';
+
 export const searchParams = {
   page: parseAsInteger.withDefault(1),
   perPage: parseAsInteger.withDefault(10),
@@ -12,10 +14,7 @@ export const searchParams = {
   gender: parseAsString,
   category: parseAsString,
   role: parseAsString,
-  sort: parseAsString
-  // advanced filter
-  // filters: getFiltersStateParser().withDefault([]),
-  // joinOperator: parseAsStringEnum(['and', 'or']).withDefault('and')
+  sort: getSortingStateParser().withDefault([])
 };
 
 export const searchParamsCache = createSearchParamsCache(searchParams);

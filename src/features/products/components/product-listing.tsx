@@ -16,7 +16,7 @@ export default function ProductListingPage() {
     limit: pageLimit,
     ...(search && { search }),
     ...(categories && { categories }),
-    ...(sort && { sort })
+    ...(sort.length > 0 && { sort: JSON.stringify(sort) })
   };
 
   const queryClient = getQueryClient();

@@ -22,6 +22,7 @@
   "dependencies": {
     "@ai-sdk/react": "^4.0.47",
     "@base-ui/react": "^1.6.0",
+    "@base-ui/utils": "0.3.1",
     "@clerk/nextjs": "^7.8.1",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/modifiers": "^9.0.0",
@@ -35,7 +36,7 @@
     "@tanstack/react-form": "^1.28.5",
     "@tanstack/react-query": "^5.95.2",
     "@tanstack/react-query-devtools": "^5.95.2",
-    "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-table": "^9.2.8",
     "ai": "^7.0.44",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

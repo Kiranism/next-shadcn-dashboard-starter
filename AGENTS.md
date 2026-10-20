@@ -513,12 +513,13 @@ Use `nuqs` for search params state:
 
 ### Data Tables
 
-Tables use TanStack Table with React Query:
+Tables use TanStack Table v9 (DiceUI data table) with React Query:
 
 - Query options in `features/*/api/queries.ts`
-- Column definitions in `features/*/components/*-tables/columns.tsx`
-- Table component in `src/components/ui/table/data-table.tsx`
-- Column pinning via `initialState.columnPinning` in `useDataTable`
+- Column definitions in `features/*/components/*-tables/columns.tsx`, typed `ColumnDef<DataTableFeatures, T>[]`
+- Table component in `src/components/data-table/data-table.tsx`
+- Feature set + `DataTableFeatures` type in `src/lib/data-table-features.ts`; URL parsers in `src/lib/data-table-parsers.ts`
+- Column pinning via `initialState.columnPinning` (`{ start: [], end: ['actions'] }`) in `useDataTable`
 
 ---
 
