@@ -347,13 +347,32 @@ The `useFilteredNavItems()` hook in `src/hooks/use-nav.ts` filters navigation cl
 
 ### Protected Routes
 
-Dashboard routes use Clerk's middleware pattern. Pages that require organization:
+Route protection is resource-based (Clerk's recommended pattern): `src/proxy.ts` runs a bare `clerkMiddleware()` to attach the auth context, and every dashboard `layout`/`page` and API route handler performs its own check.
 
 ```tsx
-import { auth } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
+
+export default async function Page() {
+  await auth.protect(); // redirects signed-out users to sign-in
+  // ...
+}
+```
+
+API route handlers return 401 instead of redirecting:
+
+```tsx
+const { userId } = await auth();
+if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+```
+
+Pages that require an organization:
+
+```tsx
+import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 
 export default async function Page() {
+  await auth.protect();
   const { orgId } = await auth();
   if (!orgId) redirect('/dashboard/workspaces');
   // ...
@@ -362,20 +381,20 @@ export default async function Page() {
 
 ### Plan/Feature Protection
 
-Use Clerk's `<Protect>` component for client-side:
+Use Clerk's `<Show>` component for client-side:
 
 ```tsx
-import { Protect } from '@clerk/nextjs';
+import { Show } from '@clerk/nextjs';
 
-<Protect plan='pro' fallback={<UpgradePrompt />}>
+<Show when={{ plan: 'pro' }} fallback={<UpgradePrompt />}>
   <PremiumContent />
-</Protect>;
+</Show>;
 ```
 
 Use `has()` function for server-side checks:
 
 ```tsx
-import { auth } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 
 const { has } = await auth();
 const hasFeature = has({ feature: 'premium_access' });
@@ -494,12 +513,13 @@ Use `nuqs` for search params state:
 
 ### Data Tables
 
-Tables use TanStack Table with React Query:
+Tables use TanStack Table v9 (DiceUI data table) with React Query:
 
 - Query options in `features/*/api/queries.ts`
-- Column definitions in `features/*/components/*-tables/columns.tsx`
-- Table component in `src/components/ui/table/data-table.tsx`
-- Column pinning via `initialState.columnPinning` in `useDataTable`
+- Column definitions in `features/*/components/*-tables/columns.tsx`, typed `ColumnDef<DataTableFeatures, T>[]`
+- Table component in `src/components/data-table/data-table.tsx`
+- Feature set + `DataTableFeatures` type in `src/lib/data-table-features.ts`; URL parsers in `src/lib/data-table-parsers.ts`
+- Column pinning via `initialState.columnPinning` (`{ start: [], end: ['actions'] }`) in `useDataTable`
 
 ---
 

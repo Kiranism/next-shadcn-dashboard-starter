@@ -45,7 +45,7 @@ This starter kit includes **Clerk Billing for B2B** to manage organization-level
 ### Key Features:
 
 - Organization-level subscription management
-- Plan-based access control using `<Protect>` component
+- Plan-based access control using the `<Show>` component
 - Feature-based authorization
 - Integrated Stripe payment processing
 - Server-side plan/feature checks using `has()` function
@@ -94,24 +94,24 @@ const hasPremiumAccess = has({ feature: 'widgets' });
 
 The `has()` method is available on the auth object and checks if the Organization has been granted a specific type of access control (Role, Permission, Feature, or Plan) and returns a boolean value.
 
-**Client-side protection using `<Protect>`:**
+**Client-side protection using `<Show>`:**
 
 ```tsx
-<Protect
-  plan='bronze'
+<Show
+  when={{ plan: 'bronze' }}
   fallback={<p>Only subscribers to the Bronze plan can access this content.</p>}
 >
   <h1>Exclusive Bronze Content</h1>
-</Protect>
+</Show>
 ```
 
 Or protect by Feature:
 
 ```tsx
-<Protect
-  feature='premium_access'
+<Show
+  when={{ feature: 'premium_access' }}
   fallback={<p>Only subscribers with the Premium Access feature can access this content.</p>}
 >
   <h1>Exclusive Premium Content</h1>
-</Protect>
+</Show>
 ```

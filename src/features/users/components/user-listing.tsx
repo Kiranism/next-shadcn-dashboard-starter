@@ -16,7 +16,7 @@ export default function UserListingPage() {
     limit: pageLimit,
     ...(search && { search }),
     ...(roles && { roles }),
-    ...(sort && { sort })
+    ...(sort.length > 0 && { sort: JSON.stringify(sort) })
   };
 
   const queryClient = getQueryClient();

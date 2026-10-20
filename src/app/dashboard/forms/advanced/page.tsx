@@ -1,3 +1,4 @@
+import { auth } from '@clerk/nextjs/server';
 import PageContainer from '@/components/layout/page-container';
 import AdvancedFormPatterns from '@/features/forms/components/advanced-form-patterns';
 
@@ -5,7 +6,9 @@ export const metadata = {
   title: 'Dashboard: Advanced Form Patterns'
 };
 
-export default function Page() {
+export default async function Page() {
+  await auth.protect();
+
   return (
     <PageContainer
       pageTitle='Advanced Form Patterns'

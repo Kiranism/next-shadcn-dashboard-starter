@@ -217,7 +217,7 @@ export default function OrderListingPage() {
     page,
     limit: pageLimit,
     ...(search && { search }),
-    ...(sort && { sort })
+    ...(sort.length > 0 && { sort: JSON.stringify(sort) })
   };
 
   const queryClient = getQueryClient();
@@ -239,22 +239,20 @@ export default function OrderListingPage() {
 'use client';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
-import { getSortingStateParser } from '@/lib/parsers';
+import { getSortingStateParser } from '@/lib/data-table-parsers';
 import { useDataTable } from '@/hooks/use-data-table';
-import { DataTable } from '@/components/ui/table/data-table';
-import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
+import { DataTable } from '@/components/data-table/data-table';
+import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ordersQueryOptions } from '../../api/queries';
 import { columns } from './columns';
-
-const columnIds = columns.map((c) => c.id).filter(Boolean) as string[];
 
 export function OrderTable() {
   const [params] = useQueryStates({
     page: parseAsInteger.withDefault(1),
     perPage: parseAsInteger.withDefault(10),
     name: parseAsString,
-    sort: getSortingStateParser(columnIds).withDefault([])
+    sort: getSortingStateParser().withDefault([]) // same parser as searchParamsCache
   });
 
   const filters = {
@@ -272,7 +270,7 @@ export function OrderTable() {
     pageCount: Math.ceil(data.total_items / params.perPage),
     shallow: true,
     debounceMs: 500,
-    initialState: { columnPinning: { right: ['actions'] } }
+    initialState: { columnPinning: { start: [], end: ['actions'] } }
   });
 
   return (
@@ -294,21 +292,21 @@ export function OrderTableSkeleton() {
 
 **Column definitions** (`orders-table/columns.tsx`):
 
-Each column needs `id`, `accessorKey` (or `accessorFn`), `header` with `DataTableColumnHeader`, and optionally `meta` for filtering + `enableColumnFilter: true`.
+Each column needs `id`, `accessorKey` (or `accessorFn`), `header` with `DataTableColumnHeader`, and optionally `meta` for filtering + `enableColumnFilter: true`. Type columns as `ColumnDef<DataTableFeatures, Order>[]` (TanStack Table v9; `DataTableFeatures` from `@/lib/data-table-features` types `meta`).
 
 ```tsx
-export const columns: ColumnDef<Order>[] = [
+export const columns: ColumnDef<DataTableFeatures, Order>[] = [
   {
     id: 'customer',
     accessorKey: 'customer',
-    header: ({ column }) => <DataTableColumnHeader column={column} title='Customer' />,
+    header: ({ column }) => <DataTableColumnHeader column={column} label='Customer' />,
     meta: { label: 'Customer', placeholder: 'Search...', variant: 'text', icon: Icons.text },
     enableColumnFilter: true
   },
   {
     id: 'status',
     accessorKey: 'status',
-    header: ({ column }) => <DataTableColumnHeader column={column} title='Status' />,
+    header: ({ column }) => <DataTableColumnHeader column={column} label='Status' />,
     cell: ({ cell }) => (
       <Badge variant='outline' className='capitalize'>
         {cell.getValue<string>()}
@@ -611,5 +609,5 @@ See [references/theming-guide.md](references/theming-guide.md) for the complete 
 - **Icons** — only from `@/components/icons`, never from `@tabler/icons-react` directly
 - **Forms** — `useAppForm` + `useFormFields<T>()` from `@/components/ui/tanstack-form`
 - **Page headers** — `PageContainer` props, never import `<Heading>` manually
-- **Sort parser** — use `getSortingStateParser` from `@/lib/parsers` (same parser as `useDataTable`)
+- **Sort parser** — use `getSortingStateParser` from `@/lib/data-table-parsers` (same parser as `useDataTable`)
 - **Formatting** — single quotes, JSX single quotes, no trailing comma, 2-space indent

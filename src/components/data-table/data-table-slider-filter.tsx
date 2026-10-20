@@ -1,17 +1,19 @@
 'use client';
 
-import type { Column } from '@tanstack/react-table';
+import { type Column, type RowData, Subscribe } from '@tanstack/react-table';
+import { cn } from '@/lib/utils';
 import * as React from 'react';
 
+import type { DataTableFeatures } from '@/lib/data-table-features';
+
 import { Button } from '@/components/ui/button';
+import { useDirection } from '@/components/ui/direction';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { Slider } from '@/components/ui/slider';
-import { cn } from '@/lib/utils';
-import { Icons } from '@/components/icons';
-import { DataTableFilterClear } from '@/components/ui/table/data-table-filter-clear';
+import { IconCircleX, IconCirclePlus } from '@tabler/icons-react';
 
 interface Range {
   min: number;
@@ -29,17 +31,51 @@ function getIsValidRange(value: unknown): value is RangeValue {
   );
 }
 
-interface DataTableSliderFilterProps<TData> {
-  column: Column<TData, unknown>;
+function parseRangeBounds(value: unknown): [number | undefined, number | undefined] | undefined {
+  if (!Array.isArray(value) || value.length !== 2) return undefined;
+
+  const [start, end] = value.map(parseRangeBound);
+  if (start === null || end === null) return undefined;
+  if (start === undefined && end === undefined) return undefined;
+
+  return [start, end];
+}
+
+function parseRangeBound(value: unknown) {
+  if (value === undefined || value === '') return undefined;
+  if (typeof value !== 'number' && typeof value !== 'string') return null;
+
+  const number = Number(value);
+  return Number.isNaN(number) ? null : number;
+}
+
+interface DataTableSliderFilterProps<TData extends RowData> {
+  column: Column<DataTableFeatures, TData>;
   title?: string;
 }
 
-export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderFilterProps<TData>) {
-  const id = React.useId();
+export function DataTableSliderFilter<TData extends RowData>({
+  column,
+  ...props
+}: DataTableSliderFilterProps<TData>) {
+  return (
+    <Subscribe source={column.table.atoms.columnFilters} selector={() => column.getFilterValue()}>
+      {(filterValue) => (
+        <DataTableSliderFilterContent column={column} columnFilterValue={filterValue} {...props} />
+      )}
+    </Subscribe>
+  );
+}
 
-  const columnFilterValue = getIsValidRange(column.getFilterValue())
-    ? (column.getFilterValue() as RangeValue)
-    : undefined;
+function DataTableSliderFilterContent<TData extends RowData>({
+  column,
+  title = column.columnDef.meta?.label ?? column.id,
+  columnFilterValue: columnFilterValueProp
+}: DataTableSliderFilterProps<TData> & {
+  columnFilterValue: unknown;
+}) {
+  const dir = useDirection();
+  const id = React.useId();
 
   const defaultRange = column.columnDef.meta?.range;
   const unit = column.columnDef.meta?.unit;
@@ -72,12 +108,15 @@ export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderF
     return { min: minValue, max: maxValue, step };
   }, [column, defaultRange]);
 
-  const range = React.useMemo((): RangeValue => {
-    return columnFilterValue ?? [min, max];
-  }, [columnFilterValue, min, max]);
+  // An open-ended bound, like `estimatedHours=,8`, shows as the column limit.
+  const bounds = parseRangeBounds(columnFilterValueProp);
+  const columnFilterValue: RangeValue | undefined = bounds
+    ? [bounds[0] ?? min, bounds[1] ?? max]
+    : undefined;
+  const range: RangeValue = columnFilterValue ?? [min, max];
 
   const formatValue = React.useCallback((value: number) => {
-    return value.toLocaleString(undefined, { maximumFractionDigits: 0 });
+    return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
   }, []);
 
   const onFromInputChange = React.useCallback(
@@ -110,7 +149,7 @@ export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderF
   );
 
   const onReset = React.useCallback(
-    (event: React.MouseEvent | React.KeyboardEvent) => {
+    (event: React.MouseEvent) => {
       event.stopPropagation();
       column.setFilterValue(undefined);
     },
@@ -119,22 +158,36 @@ export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderF
 
   return (
     <Popover>
-      <PopoverTrigger render={<Button variant='outline' size='sm' className='border-dashed' />}>
+      <PopoverTrigger render={<Button variant='outline' className='border-dashed' />}>
         {columnFilterValue ? (
-          <DataTableFilterClear title={title} onReset={onReset} />
+          <span
+            aria-hidden='true'
+            className='rounded-sm opacity-70 transition-opacity hover:opacity-100'
+            onClick={onReset}
+          >
+            <IconCircleX />
+          </span>
         ) : (
-          <Icons.plusCircle />
+          <IconCirclePlus />
         )}
         <span>{title}</span>
         {columnFilterValue ? (
           <>
-            <Separator orientation='vertical' className='mx-0.5 data-[orientation=vertical]:h-4' />
+            <Separator
+              orientation='vertical'
+              className='mx-0.5 data-vertical:h-4 data-vertical:self-center'
+            />
             {formatValue(columnFilterValue[0])} - {formatValue(columnFilterValue[1])}
             {unit ? ` ${unit}` : ''}
           </>
         ) : null}
       </PopoverTrigger>
-      <PopoverContent align='start' className='flex w-auto flex-col gap-4'>
+      <PopoverContent
+        aria-label={`${title} filter`}
+        dir={dir}
+        align='start'
+        className='flex w-auto flex-col gap-4'
+      >
         <div className='flex flex-col gap-3'>
           <p className='leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70'>
             {title}
@@ -156,10 +209,10 @@ export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderF
                 max={max}
                 value={range[0]?.toString()}
                 onChange={onFromInputChange}
-                className={cn('h-8 w-24', unit && 'pr-8')}
+                className={cn('w-24', unit && 'pe-8')}
               />
               {unit && (
-                <span className='bg-accent text-muted-foreground absolute top-0 right-0 bottom-0 flex items-center rounded-r-md px-2 text-sm'>
+                <span className='absolute inset-e-0 top-0 bottom-0 flex items-center rounded-e-md bg-accent px-2 text-sm text-muted-foreground'>
                   {unit}
                 </span>
               )}
@@ -180,10 +233,10 @@ export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderF
                 max={max}
                 value={range[1]?.toString()}
                 onChange={onToInputChange}
-                className={cn('h-8 w-24', unit && 'pr-8')}
+                className={cn('w-24', unit && 'pe-8')}
               />
               {unit && (
-                <span className='bg-accent text-muted-foreground absolute top-0 right-0 bottom-0 flex items-center rounded-r-md px-2 text-sm'>
+                <span className='absolute inset-e-0 top-0 bottom-0 flex items-center rounded-e-md bg-accent px-2 text-sm text-muted-foreground'>
                   {unit}
                 </span>
               )}
@@ -201,7 +254,7 @@ export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderF
             onValueChange={onSliderValueChange}
           />
         </div>
-        <Button aria-label={`Clear ${title} filter`} variant='outline' size='sm' onClick={onReset}>
+        <Button aria-label={`Clear ${title} filter`} variant='outline' onClick={onReset}>
           Clear
         </Button>
       </PopoverContent>

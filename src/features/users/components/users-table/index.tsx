@@ -1,15 +1,13 @@
 'use client';
 
-import { DataTable } from '@/components/ui/table/data-table';
-import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
+import { DataTable } from '@/components/data-table/data-table';
+import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
 import { useDataTable } from '@/hooks/use-data-table';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
-import { getSortingStateParser } from '@/lib/parsers';
+import { getSortingStateParser } from '@/lib/data-table-parsers';
 import { usersQueryOptions } from '../../api/queries';
 import { columns } from './columns';
-
-const columnIds = columns.map((c) => c.id).filter(Boolean) as string[];
 
 export function UsersTable() {
   const [params] = useQueryStates({
@@ -17,7 +15,8 @@ export function UsersTable() {
     perPage: parseAsInteger.withDefault(10),
     name: parseAsString,
     role: parseAsString,
-    sort: getSortingStateParser(columnIds).withDefault([])
+    // Same parser as the server searchParamsCache, so the prefetched query key matches
+    sort: getSortingStateParser().withDefault([])
   });
 
   const filters = {
@@ -39,7 +38,7 @@ export function UsersTable() {
     shallow: true,
     debounceMs: 500,
     initialState: {
-      columnPinning: { right: ['actions'] }
+      columnPinning: { start: [], end: ['actions'] }
     }
   });
 
