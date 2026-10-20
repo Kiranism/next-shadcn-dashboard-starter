@@ -5,7 +5,10 @@ export function useDebouncedCallback<T extends (...args: never[]) => unknown>(
   delay: number
 ) {
   const callbackRef = React.useRef(callback);
-  callbackRef.current = callback;
+  // Local patch: write the ref after render, not during it (react/refs)
+  React.useLayoutEffect(() => {
+    callbackRef.current = callback;
+  });
 
   const debounceTimerRef = React.useRef(0);
 

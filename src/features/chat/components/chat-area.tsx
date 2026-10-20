@@ -44,7 +44,7 @@ export function ChatArea({
     } else {
       scrollToBottom();
     }
-  }, [conversation.messages, conversation.id, shouldReduceMotion]);
+  }, [conversation.messages, shouldReduceMotion]);
 
   useEffect(() => {
     if (!liveRegionRef.current) return;
