@@ -21,7 +21,7 @@ export type DemoUIMessage = UIMessage<unknown, Record<string, never>, Tools>;
  * via `transport()` — no model, API route, network request, or API key. The
  * script shows off reasoning, a tool call, and streamed text across two turns.
  */
-export const demoChat = createChat<unknown, Record<string, never>, Tools>()
+export const demoChat = createChat<DemoUIMessage>()
   .user('How did revenue do last month, and what should I focus on next?')
   .sleep(500)
   .assistant(({ writer }) => {
