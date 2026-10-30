@@ -17,8 +17,7 @@ This skill encodes the exact patterns and conventions used in this Next.js 16 + 
 | Feature components    | `src/features/<name>/components/`       |
 | API types             | `src/features/<name>/api/types.ts`      |
 | Service layer         | `src/features/<name>/api/service.ts`    |
-| Query options         | `src/features/<name>/api/queries.ts`    |
-| Mutation options      | `src/features/<name>/api/mutations.ts`  |
+| Query + mutation opts | `src/features/<name>/api/queries.ts`    |
 | Zod schemas           | `src/features/<name>/schemas/<name>.ts` |
 | Filter/select options | `src/features/<name>/constants/`        |
 | Nav config            | `src/config/nav-config.ts`              |
@@ -117,67 +116,47 @@ export async function deleteOrder(id: number) {
 }
 ```
 
-**Queries** (`api/queries.ts`) — query key factory + query options:
+**Queries** (`api/queries.ts`) — one object for reads (keys + `queryOptions`) and one for writes (`mutationOptions` with **only** `mutationFn`). Same shape as `todosQueries` / `todosMutations` in TanStack's official [Next.js optimistic updates example](https://github.com/TanStack/query/blob/main/examples/react/nextjs-app-optimistic-updates/services/todos/queries.ts):
 
 ```tsx
-import { queryOptions } from '@tanstack/react-query';
-import { getOrders, getOrderById } from './service';
-import type { Order, OrderFilters } from './types';
+import { mutationOptions, queryOptions } from '@tanstack/react-query';
+import { createOrder, deleteOrder, getOrderById, getOrders, updateOrder } from './service';
+import type { Order, OrderFilters, OrderMutationPayload } from './types';
 
 export type { Order };
 
-export const orderKeys = {
-  all: ['orders'] as const,
-  list: (filters: OrderFilters) => [...orderKeys.all, 'list', filters] as const,
-  detail: (id: number) => [...orderKeys.all, 'detail', id] as const
+export const orderQueries = {
+  all: () => ['orders'] as const,
+  list: (filters: OrderFilters) =>
+    queryOptions({
+      queryKey: [...orderQueries.all(), 'list', filters] as const,
+      queryFn: () => getOrders(filters)
+    }),
+  detail: (id: number) =>
+    queryOptions({
+      queryKey: [...orderQueries.all(), 'detail', id] as const,
+      queryFn: () => getOrderById(id)
+    })
 };
 
-export const ordersQueryOptions = (filters: OrderFilters) =>
-  queryOptions({
-    queryKey: orderKeys.list(filters),
-    queryFn: () => getOrders(filters)
-  });
-
-export const orderByIdOptions = (id: number) =>
-  queryOptions({
-    queryKey: orderKeys.detail(id),
-    queryFn: () => getOrderById(id)
-  });
+export const orderMutations = {
+  create: () =>
+    mutationOptions({
+      mutationFn: (data: OrderMutationPayload) => createOrder(data)
+    }),
+  update: () =>
+    mutationOptions({
+      mutationFn: ({ id, values }: { id: number; values: OrderMutationPayload }) =>
+        updateOrder(id, values)
+    }),
+  delete: () =>
+    mutationOptions({
+      mutationFn: (id: number) => deleteOrder(id)
+    })
+};
 ```
 
-**Mutations** (`api/mutations.ts`) — use `mutationOptions` + `getQueryClient()` (not custom hooks with `useQueryClient()`):
-
-```tsx
-import { mutationOptions } from '@tanstack/react-query';
-import { getQueryClient } from '@/lib/query-client';
-import { createOrder, updateOrder, deleteOrder } from './service';
-import { orderKeys } from './queries';
-import type { OrderMutationPayload } from './types';
-
-export const createOrderMutation = mutationOptions({
-  mutationFn: (data: OrderMutationPayload) => createOrder(data),
-  onSuccess: () => {
-    getQueryClient().invalidateQueries({ queryKey: orderKeys.all });
-  }
-});
-
-export const updateOrderMutation = mutationOptions({
-  mutationFn: ({ id, values }: { id: number; values: OrderMutationPayload }) =>
-    updateOrder(id, values),
-  onSuccess: () => {
-    getQueryClient().invalidateQueries({ queryKey: orderKeys.all });
-  }
-});
-
-export const deleteOrderMutation = mutationOptions({
-  mutationFn: (id: number) => deleteOrder(id),
-  onSuccess: () => {
-    getQueryClient().invalidateQueries({ queryKey: orderKeys.all });
-  }
-});
-```
-
-`mutationOptions` is the right abstraction because it works outside React (event handlers, tests, utilities), composes via spread at the call site, and uses `getQueryClient()` which handles both SSR (fresh per request) and client (singleton) correctly. See [references/query-abstractions.md](references/query-abstractions.md) for the full rationale.
+**No callbacks in `orderMutations`.** The component owns everything that happens after a mutation (invalidation, toast, navigation) in one `useMutation` block. Putting `onSuccess` here breaks as soon as a component adds its own: `useMutation({ ...options, onSuccess })` is plain object spread, so the component's `onSuccess` replaces this one. See [references/query-abstractions.md](references/query-abstractions.md).
 
 ### Step 3: Zod Schema (`src/features/<name>/schemas/<name>.ts`)
 
@@ -221,7 +200,7 @@ export default function OrderListingPage() {
   };
 
   const queryClient = getQueryClient();
-  void queryClient.prefetchQuery(ordersQueryOptions(filters));
+  void queryClient.prefetchQuery(orderQueries.list(filters));
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
@@ -262,7 +241,7 @@ export function OrderTable() {
     ...(params.sort.length > 0 && { sort: JSON.stringify(params.sort) })
   };
 
-  const { data } = useSuspenseQuery(ordersQueryOptions(filters));
+  const { data } = useSuspenseQuery(orderQueries.list(filters));
 
   const { table } = useDataTable({
     data: data.items,
@@ -326,16 +305,18 @@ Filter `meta.variant` options: `text`, `number`, `range`, `date`, `dateRange`, `
 Pattern: `DropdownMenu` with edit/delete items + `AlertModal` for delete confirmation + `useMutation` for the delete API call.
 
 ```tsx
-import { deleteOrderMutation } from '../../api/mutations';
+import { orderMutations, orderQueries } from '../../api/queries';
 
 export const CellAction: React.FC<{ data: Order }> = ({ data }) => {
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const queryClient = useQueryClient();
   const deleteMutation = useMutation({
-    ...deleteOrderMutation,
+    ...orderMutations.delete(),
     onSuccess: () => {
       toast.success('Deleted');
       setDeleteOpen(false);
-    }
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: orderQueries.all() })
   });
   return (
     <>
@@ -423,12 +404,12 @@ export default async function Page(props: PageProps) {
 'use client';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { notFound } from 'next/navigation';
-import { orderByIdOptions } from '../api/queries';
+import { orderQueries } from '../api/queries';
 import OrderForm from './order-form';
 
 export default function OrderViewPage({ orderId }: { orderId: string }) {
   if (orderId === 'new') return <OrderForm initialData={null} pageTitle='Create Order' />;
-  const { data } = useSuspenseQuery(orderByIdOptions(Number(orderId)));
+  const { data } = useSuspenseQuery(orderQueries.detail(Number(orderId)));
   if (!data) notFound();
   return <OrderForm initialData={data} pageTitle='Edit Order' />;
 }
@@ -469,8 +450,8 @@ The full pattern is shown in Steps 1-4 above. The key structure:
 
 1. **Schema** — Zod schema + inferred type in `schemas/<name>.ts`
 2. **Form component** — `useAppForm({ defaultValues, validators: { onSubmit: schema }, onSubmit })` + `useFormFields<T>()` for typed fields
-3. **Mutations** — `useMutation({ ...createOrderMutation, onSuccess: () => { toast(); router.push() } })`, spread shared mutation options from `api/mutations.ts` and layer on UI callbacks
-4. **View page** — client component that checks `id === 'new'` for create vs `useSuspenseQuery(byIdOptions)` for edit
+3. **Mutations** — `useMutation({ ...orderMutations.create(), onSuccess: () => { toast(); router.push() }, onSettled: () => queryClient.invalidateQueries({ queryKey: orderQueries.all() }) })`: spread the `mutationFn`-only options from `api/queries.ts`, and keep invalidation and UI callbacks together in the component
+4. **View page** — client component that checks `id === 'new'` for create vs `useSuspenseQuery(orderQueries.detail(id))` for edit
 
 ### Sheet Form (Inline create/edit in a side panel)
 
@@ -490,11 +471,13 @@ export function OrderFormSheet({
   onOpenChange: (open: boolean) => void;
 }) {
   const isEdit = !!order;
+  const queryClient = useQueryClient();
   const mutation = useMutation({
-    ...(isEdit ? updateOrderMutation : createOrderMutation),
+    ...(isEdit ? orderMutations.update() : orderMutations.create()),
     onSuccess: () => {
       onOpenChange(false);
-    }
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: orderQueries.all() })
   });
   const form = useAppForm({
     defaultValues: { customer: order?.customer ?? '' /* ... */ } as OrderFormValues,
@@ -550,21 +533,20 @@ The pattern is: server prefetch → HydrationBoundary → client useSuspenseQuer
 
 **Why `useSuspenseQuery` not `useQuery`:** `useQuery` doesn't integrate with Suspense — it shows loading even when data is prefetched. `useSuspenseQuery` picks up the dehydrated pending query. Once cached (within `staleTime: 60s`), subsequent visits are instant.
 
-**Mutations** use `mutationOptions` + `getQueryClient()` in `mutations.ts`, composed via spread at the call site:
+**Mutations** use `mutationOptions` with only a `mutationFn` (in `queries.ts`), spread at the call site; the component owns invalidation and UI:
 
 ```tsx
-// In mutations.ts — shared config
-export const createOrderMutation = mutationOptions({
-  mutationFn: (data) => createOrder(data),
-  onSuccess: () => {
-    getQueryClient().invalidateQueries({ queryKey: orderKeys.all });
-  }
-});
+// In queries.ts — shared config, no callbacks
+export const orderMutations = {
+  create: () => mutationOptions({ mutationFn: (data: OrderMutationPayload) => createOrder(data) })
+};
 
-// In component — spread + layer UI callbacks
+// In component — everything that happens after the mutation, in one block
+const queryClient = useQueryClient();
 const mutation = useMutation({
-  ...createOrderMutation,
-  onSuccess: () => toast.success('Created')
+  ...orderMutations.create(),
+  onSuccess: () => toast.success('Created'),
+  onSettled: () => queryClient.invalidateQueries({ queryKey: orderQueries.all() })
 });
 ```
 
@@ -604,7 +586,7 @@ See [references/theming-guide.md](references/theming-guide.md) for the complete 
 - **`cn()`** for class merging — never concatenate className strings
 - **Server components by default** — only add `'use client'` when needed
 - **React Query** — `void prefetchQuery()` on server + `useSuspenseQuery` on client
-- **API layer** — `types.ts` → `service.ts` → `queries.ts` → `mutations.ts` per feature; `queryOptions`/`mutationOptions` as base abstractions (not custom hooks); `getQueryClient()` in mutations (not `useQueryClient()`); key factories (`entityKeys.all/list/detail`); components never import mock APIs directly
+- **API layer** — `types.ts` → `service.ts` → `queries.ts` per feature; `queries.ts` exports `entityQueries` (keys + `queryOptions`) and `entityMutations` (`mutationOptions`, `mutationFn` only); components spread them and invalidate with `useQueryClient()` in `onSettled`; components never import mock APIs directly
 - **nuqs** — `searchParamsCache` on server, `useQueryStates` on client with `shallow: true`
 - **Icons** — only from `@/components/icons`, never from `@tabler/icons-react` directly
 - **Forms** — `useAppForm` + `useFormFields<T>()` from `@/components/ui/tanstack-form`

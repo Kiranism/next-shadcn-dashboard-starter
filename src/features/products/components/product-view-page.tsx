@@ -4,7 +4,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import type { Product } from '../api/types';
 import { notFound } from 'next/navigation';
 import ProductForm from './product-form';
-import { productByIdOptions } from '../api/queries';
+import { productQueries } from '../api/queries';
 
 type TProductViewPageProps = {
   productId: string;
@@ -19,7 +19,7 @@ export default function ProductViewPage({ productId }: TProductViewPageProps) {
 }
 
 function EditProductView({ productId }: { productId: number }) {
-  const { data } = useSuspenseQuery(productByIdOptions(productId));
+  const { data } = useSuspenseQuery(productQueries.detail(productId));
 
   if (!data?.success || !data?.product) {
     notFound();

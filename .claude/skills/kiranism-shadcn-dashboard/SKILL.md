@@ -70,7 +70,7 @@ export const entitiesQueryOptions = (filters: { page?: number; limit?: number; s
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
 import { getQueryClient } from '@/lib/query-client';
 import { searchParamsCache } from '@/lib/searchparams';
-import { entitiesQueryOptions } from '../api/queries';
+import { entityQueries } from '../api/queries';
 import { EntityTable, EntityTableSkeleton } from './entity-table';
 import { Suspense } from 'react';
 
@@ -82,7 +82,7 @@ export default function EntityListingPage() {
   const filters = { page, limit: pageLimit, ...(search && { search }) };
 
   const queryClient = getQueryClient();
-  void queryClient.prefetchQuery(entitiesQueryOptions(filters));
+  void queryClient.prefetchQuery(entityQueries.list(filters));
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
@@ -102,7 +102,7 @@ export default function EntityListingPage() {
 import { useQuery } from '@tanstack/react-query';
 import { parseAsInteger, useQueryState } from 'nuqs';
 import { useDataTable } from '@/hooks/use-data-table';
-import { entitiesQueryOptions } from '../../api/queries';
+import { entityQueries } from '../../api/queries';
 import { columns } from './columns';
 
 export function EntityTable() {
@@ -112,7 +112,7 @@ export function EntityTable() {
 
   const filters = { page, limit: pageSize, ...(search && { search }) };
 
-  const { data, isLoading } = useQuery(entitiesQueryOptions(filters));
+  const { data, isLoading } = useQuery(entityQueries.list(filters));
 
   const { table } = useDataTable({
     data: data?.items ?? [],
@@ -144,16 +144,22 @@ export function EntityTable() {
 ### Mutations (Forms)
 
 ```tsx
+// api/queries.ts: shared mutationOptions hold only the mutationFn
+export const entityMutations = {
+  create: () => mutationOptions({ mutationFn: (data: Payload) => createEntity(data) })
+};
+
+// component: everything after the mutation lives here, in one block
 const queryClient = useQueryClient();
 
 const createMutation = useMutation({
-  mutationFn: (data: Payload) => fakeEntities.createEntity(data),
+  ...entityMutations.create(),
   onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['entities'] });
     toast.success('Created successfully');
     router.push('/dashboard/entities');
   },
-  onError: () => toast.error('Failed to create')
+  onError: () => toast.error('Failed to create'),
+  onSettled: () => queryClient.invalidateQueries({ queryKey: entityQueries.all() })
 });
 
 // In useAppForm onSubmit:

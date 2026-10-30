@@ -1,7 +1,7 @@
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
 import { getQueryClient } from '@/lib/query-client';
 import { searchParamsCache } from '@/lib/searchparams';
-import { productsQueryOptions } from '../api/queries';
+import { productQueries } from '../api/queries';
 import { ProductTable } from './product-tables';
 
 export default function ProductListingPage() {
@@ -21,7 +21,7 @@ export default function ProductListingPage() {
 
   const queryClient = getQueryClient();
 
-  void queryClient.prefetchQuery(productsQueryOptions(filters));
+  void queryClient.prefetchQuery(productQueries.list(filters));
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

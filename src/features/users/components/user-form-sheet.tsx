@@ -14,8 +14,8 @@ import {
   SheetTitle
 } from '@/components/ui/sheet';
 import { Icons } from '@/components/icons';
-import { useMutation } from '@tanstack/react-query';
-import { createUserMutation, updateUserMutation } from '../api/mutations';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { userMutations, userQueries } from '../api/queries';
 import type { User } from '../api/types';
 import { toast } from 'sonner';
 import { userSchema, type UserFormValues } from '../schemas/user';
@@ -35,24 +35,27 @@ interface UserFormSheetProps {
 
 export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) {
   const isEdit = !!user;
+  const queryClient = useQueryClient();
 
   const createMutation = useMutation({
-    ...createUserMutation,
+    ...userMutations.create(),
     onSuccess: () => {
       toast.success('User created');
       onOpenChange(false);
       form.reset();
     },
-    onError: () => toast.error("Couldn't create user. Try again.")
+    onError: () => toast.error("Couldn't create user. Try again."),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: userQueries.all() })
   });
 
   const updateMutation = useMutation({
-    ...updateUserMutation,
+    ...userMutations.update(),
     onSuccess: () => {
       toast.success('User updated');
       onOpenChange(false);
     },
-    onError: () => toast.error("Couldn't update user. Try again.")
+    onError: () => toast.error("Couldn't update user. Try again."),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: userQueries.all() })
   });
 
   const form = useAppForm({

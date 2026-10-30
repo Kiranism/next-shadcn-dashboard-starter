@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
 import { getQueryClient } from '@/lib/query-client';
-import { productByIdOptions } from '@/features/products/api/queries';
+import { productQueries } from '@/features/products/api/queries';
 import PageContainer from '@/components/layout/page-container';
 import ProductViewPage from '@/features/products/components/product-view-page';
 
@@ -18,7 +18,7 @@ export default async function Page(props: PageProps) {
   const queryClient = getQueryClient();
 
   if (params.productId !== 'new') {
-    void queryClient.prefetchQuery(productByIdOptions(Number(params.productId)));
+    void queryClient.prefetchQuery(productQueries.detail(Number(params.productId)));
   }
 
   return (

@@ -7,10 +7,10 @@ import { FieldGroup } from '@/components/ui/field';
 import { useAppForm } from '@/lib/form';
 import { categoryOptions } from '@/features/products/constants/product-options';
 import { productSchema, type ProductFormValues } from '@/features/products/schemas/product';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { createProductMutation, updateProductMutation } from '../api/mutations';
+import { productMutations, productQueries } from '../api/queries';
 import type { Product } from '../api/types';
 
 export default function ProductForm({
@@ -21,28 +21,31 @@ export default function ProductForm({
   pageTitle: string;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const isEdit = !!initialData;
 
   const createMutation = useMutation({
-    ...createProductMutation,
+    ...productMutations.create(),
     onSuccess: () => {
       toast.success('Product created');
       router.push('/dashboard/product');
     },
     onError: () => {
       toast.error("Couldn't create product. Try again.");
-    }
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: productQueries.all() })
   });
 
   const updateMutation = useMutation({
-    ...updateProductMutation,
+    ...productMutations.update(),
     onSuccess: () => {
       toast.success('Product updated');
       router.push('/dashboard/product');
     },
     onError: () => {
       toast.error("Couldn't update product. Try again.");
-    }
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: productQueries.all() })
   });
 
   const form = useAppForm({

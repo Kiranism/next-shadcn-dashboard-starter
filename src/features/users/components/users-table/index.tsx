@@ -6,7 +6,7 @@ import { useDataTable } from '@/hooks/use-data-table';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
 import { getSortingStateParser } from '@/lib/data-table-parsers';
-import { usersQueryOptions } from '../../api/queries';
+import { userQueries } from '../../api/queries';
 import { columns } from './columns';
 
 export function UsersTable() {
@@ -27,7 +27,7 @@ export function UsersTable() {
     ...(params.sort.length > 0 && { sort: JSON.stringify(params.sort) })
   };
 
-  const { data } = useSuspenseQuery(usersQueryOptions(filters));
+  const { data } = useSuspenseQuery(userQueries.list(filters));
 
   const pageCount = Math.ceil(data.total_users / params.perPage);
 

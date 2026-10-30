@@ -1,6 +1,6 @@
 # TanStack Query Abstractions (v5)
 
-The core insight: **`queryOptions` and `mutationOptions` are the right abstraction — not custom hooks.**
+The core insight: **`queryOptions` and `mutationOptions` are the right abstraction — not custom hooks.** This starter follows TanStack's official Next.js examples: one `queries.ts` per feature exporting `entityQueries` and `entityMutations`.
 
 ---
 
@@ -98,46 +98,40 @@ function useInvoiceWithSuspense(id: number) {
 
 ### The Pattern
 
+Shared `mutationOptions` contain **only the `mutationFn`**. This is how TanStack's official [Next.js optimistic updates example](https://github.com/TanStack/query/blob/main/examples/react/nextjs-app-optimistic-updates/services/todos/queries.ts) defines `todosMutations`:
+
 ```ts
-// mutations/invoice.ts
+// features/invoices/api/queries.ts (next to invoiceQueries)
 import { mutationOptions } from '@tanstack/react-query';
-import { getQueryClient } from '@/lib/query-client';
 
-export const createInvoiceMutation = mutationOptions({
-  mutationFn: (data: CreateInvoiceInput) => createInvoice(data),
-  onSuccess: () => {
-    getQueryClient().invalidateQueries({ queryKey: ['invoices'] });
-  }
-});
-
-export const updateInvoiceMutation = mutationOptions({
-  mutationFn: ({ id, ...data }: UpdateInvoiceInput) => updateInvoice(id, data),
-  onSuccess: (updated) => {
-    const qc = getQueryClient();
-    qc.setQueryData(invoiceOptions(updated.id).queryKey, updated);
-    qc.invalidateQueries({ queryKey: ['invoices'] });
-  }
-});
+export const invoiceMutations = {
+  create: () =>
+    mutationOptions({
+      mutationFn: (data: CreateInvoiceInput) => createInvoice(data)
+    }),
+  update: () =>
+    mutationOptions({
+      mutationFn: ({ id, ...data }: UpdateInvoiceInput) => updateInvoice(id, data)
+    })
+};
 ```
 
-> **Note on queryClient**: Import `getQueryClient()` directly — do NOT pass `queryClient` as a function argument. The `getQueryClient()` pattern handles both SSR (fresh per request) and client (singleton) correctly.
-
-### Usage
+### Usage — the component owns everything after the mutation
 
 ```ts
-// basic
-const { mutate } = useMutation(createInvoiceMutation);
+const queryClient = useQueryClient();
 
-// composed — add per-usage callbacks on top
 const { mutate } = useMutation({
-  ...createInvoiceMutation,
+  ...invoiceMutations.create(),
+  onSuccess: (data) => router.push(`/invoices/${data.id}`),
   onError: (err) => toast.error(err.message),
-  onSuccess: (data) => {
-    // this runs AFTER the shared onSuccess above
-    router.push(`/invoices/${data.id}`);
-  }
+  onSettled: () => queryClient.invalidateQueries({ queryKey: invoiceQueries.all() })
 });
 ```
+
+### Why no callbacks in shared `mutationOptions`
+
+`useMutation({ ...options, onSuccess })` is plain object spread. A component's `onSuccess` **replaces** the shared one; it does not run after it. If invalidation lives in the shared options, it silently disappears the moment a component adds a toast, and tables stay stale until a reload. Keeping callbacks out of the shared options means there is exactly one owner for "what happens after": the component.
 
 ---
 
@@ -148,6 +142,7 @@ const { mutate } = useMutation({
 | Use `queryOptions()` not custom hooks as the base abstraction | Works everywhere — loaders, server, imperative calls                   |
 | Keep options factories lean — no extra config params          | Best abstractions are not configurable                                 |
 | Compose extra options at the call site via spread             | Full TS inference without manual generics                              |
-| Import `getQueryClient()` in mutation files                   | Handles SSR/client correctly without prop drilling                     |
+| Shared `mutationOptions` hold only `mutationFn`               | A component's `onSuccess` would replace shared callbacks via spread    |
+| Invalidate in the component (`useQueryClient()`, `onSettled`) | One visible owner for everything after the mutation                    |
 | Co-locate `queryKey` inside `queryOptions`                    | Typed key reuse in `invalidateQueries`, `setQueryData`, `getQueryData` |
 | Custom hooks are fine — but built ON TOP of `queryOptions`    | Hooks for component convenience, `queryOptions` for sharing config     |
