@@ -226,30 +226,36 @@ export async function createOrder(data: OrderMutationPayload) {
 }
 ```
 
-**queries.ts** imports from service, uses key factories:
+**queries.ts** imports from service and exports one object for reads and one for writes:
 
 ```tsx
-import { getOrders } from './service';
-import type { OrderFilters } from './types';
+import { mutationOptions, queryOptions } from '@tanstack/react-query';
+import { createOrder, getOrders } from './service';
+import type { OrderFilters, OrderMutationPayload } from './types';
 
-export const orderKeys = {
-  all: ['orders'] as const,
-  list: (filters: OrderFilters) => [...orderKeys.all, 'list', filters] as const,
-  detail: (id: number) => [...orderKeys.all, 'detail', id] as const
+export const orderQueries = {
+  all: () => ['orders'] as const,
+  list: (filters: OrderFilters) =>
+    queryOptions({
+      queryKey: [...orderQueries.all(), 'list', filters] as const,
+      queryFn: () => getOrders(filters)
+    })
 };
 
-export const ordersQueryOptions = (filters: OrderFilters) =>
-  queryOptions({ queryKey: orderKeys.list(filters), queryFn: () => getOrders(filters) });
+export const orderMutations = {
+  create: () => mutationOptions({ mutationFn: (data: OrderMutationPayload) => createOrder(data) })
+};
 ```
 
-**Mutations** in components use service functions + key factories:
+**Mutations** in components spread the options and own invalidation:
 
 ```tsx
-import { createOrder } from '../api/service';
-import { orderKeys } from '../api/queries';
+import { orderMutations, orderQueries } from '../api/queries';
 
+const queryClient = useQueryClient();
 const mutation = useMutation({
-  mutationFn: (data) => createOrder(data),
-  onSuccess: () => queryClient.invalidateQueries({ queryKey: orderKeys.all })
+  ...orderMutations.create(),
+  onSuccess: () => toast.success('Order created'),
+  onSettled: () => queryClient.invalidateQueries({ queryKey: orderQueries.all() })
 });
 ```

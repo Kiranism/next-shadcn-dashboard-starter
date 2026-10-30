@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { pokemonOptions } from '../api/queries';
+import { pokemonQueries } from '../api/queries';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -19,7 +19,7 @@ const POKEMON_IDS = [25, 1, 4, 7, 6, 150, 133, 39, 143, 94];
 
 export function PokemonInfo() {
   const [pokemonId, setPokemonId] = useState(25);
-  const { data } = useSuspenseQuery(pokemonOptions(pokemonId));
+  const { data } = useSuspenseQuery(pokemonQueries.detail(pokemonId));
 
   return (
     <div className='space-y-6'>

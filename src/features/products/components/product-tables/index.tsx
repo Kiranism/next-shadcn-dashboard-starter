@@ -6,7 +6,7 @@ import { useDataTable } from '@/hooks/use-data-table';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
 import { getSortingStateParser } from '@/lib/data-table-parsers';
-import { productsQueryOptions } from '../../api/queries';
+import { productQueries } from '../../api/queries';
 import { columns } from './columns';
 
 export function ProductTable() {
@@ -27,7 +27,7 @@ export function ProductTable() {
     ...(params.sort.length > 0 && { sort: JSON.stringify(params.sort) })
   };
 
-  const { data } = useSuspenseQuery(productsQueryOptions(filters));
+  const { data } = useSuspenseQuery(productQueries.list(filters));
 
   const pageCount = Math.ceil(data.total_products / params.perPage);
 
