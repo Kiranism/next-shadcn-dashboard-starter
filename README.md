@@ -238,9 +238,9 @@ Deploy to Vercel out of the box, or use the included Docker setups: a Node.js Do
 
 ### Support
 
-If this template saved you some time, a star is appreciated. You can also [buy me a coffee](https://buymeacoffee.com/kir4n) if you'd like.
+If this template saved you some time, a star is appreciated. You can also [buy me a coffee](https://buymeacoffee.com/kiranism) if you'd like.
 
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?style=flat-square&logo=buymeacoffee)](https://buymeacoffee.com/kir4n)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?style=flat-square&logo=buymeacoffee)](https://buymeacoffee.com/kiranism)
 
 <!--
 
