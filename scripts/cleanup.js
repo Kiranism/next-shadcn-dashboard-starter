@@ -389,6 +389,7 @@ class FeatureCleanup {
     }
 
     if (this.featuresToRemove.includes('sentry')) {
+      this.stripSentryCalls();
       this.cleanLaunchJson();
     }
 
@@ -653,6 +654,40 @@ class FeatureCleanup {
     };
     const appRoot = path.join(ROOT, 'src/app');
     if (fs.existsSync(appRoot)) walk(appRoot);
+  }
+
+  // Error boundaries (global-error and the overview ones) report through a
+  // Sentry import plus one Sentry.captureException(error) call. Rewrite both
+  // by content match instead of shipping template copies, which drift: the
+  // boundaries keep their UI and log to the console instead.
+  stripSentryCalls() {
+    const IMPORT_TOKEN = "from '@sentry/nextjs'";
+    const walk = (dir) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          walk(full);
+          continue;
+        }
+        if (!/\.(ts|tsx)$/.test(entry.name)) continue;
+
+        const original = fs.readFileSync(full, 'utf8');
+        if (!original.includes(IMPORT_TOKEN)) continue;
+        const kept = original
+          .split('\n')
+          .filter((line) => !line.includes(IMPORT_TOKEN))
+          .join('\n')
+          .replaceAll('Sentry.captureException(', 'console.error(');
+        const rel = path.relative(ROOT, full);
+        if (!this.dryRun) fs.writeFileSync(full, kept, 'utf8');
+        this.log(`✅ Replaced Sentry reporting with console.error: ${rel}`);
+        if (kept.includes('Sentry.')) {
+          this.log(`⚠️  Sentry calls left in ${rel}; remove them by hand`);
+        }
+      }
+    };
+    const srcRoot = path.join(ROOT, 'src');
+    if (fs.existsSync(srcRoot)) walk(srcRoot);
   }
 
   cleanNextConfig() {
