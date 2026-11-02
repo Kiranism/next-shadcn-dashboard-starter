@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useRef } from 'react';
+import { SubmitEvent, useEffect, useRef } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import type { Attachment, Conversation } from '../utils/types';
 import { ChatHeader } from './chat-header';
@@ -11,7 +11,7 @@ interface ChatAreaProps {
   conversation: Conversation;
   draft: string;
   onDraftChange: (text: string) => void;
-  onSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  onSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
   attachments: Attachment[];
   onAddAttachments: (files: FileList) => void;
   onRemoveAttachment: (id: string) => void;

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { revalidateLogic, useStore } from '@tanstack/react-form';
+import { revalidateLogic, useSelector } from '@tanstack/react-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
 import { Icons } from '@/components/icons';
@@ -111,8 +111,8 @@ export default function MultiStepProductForm() {
     }
   });
 
-  const isDefault = useStore(form.store, (state) => state.isDefaultValue);
-  const formValues = useStore(form.store, (state) => state.values);
+  const isDefault = useSelector(form.store, (state) => state.isDefaultValue);
+  const formValues = useSelector(form.store, (state) => state.values);
 
   const handleNext = async () => {
     await handleNextStepOrSubmit(form);

@@ -45,7 +45,7 @@ const { data } = useQuery({
 });
 
 // prefetch in a route loader (works outside React — this is why hooks are wrong)
-await queryClient.prefetchQuery(invoiceOptions(id));
+await queryClient.query(invoiceOptions(id)).catch(noop);
 
 // read from cache imperatively — queryKey is typed via DataTag symbol
 const invoice = queryClient.getQueryData(invoiceOptions(id).queryKey);

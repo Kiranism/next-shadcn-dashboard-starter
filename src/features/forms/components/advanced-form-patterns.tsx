@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useStore } from '@tanstack/react-form';
+import { useSelector } from '@tanstack/react-form';
 import { z } from 'zod';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -65,7 +65,7 @@ const countryOptions = [
 
 const advancedSchema = z.object({
   username: z.string().min(3, 'Username must be at least 3 characters'),
-  email: z.string().email('Invalid email'),
+  email: z.email('Invalid email'),
   password: z.string().min(8, 'Must be at least 8 characters'),
   confirmPassword: z.string().min(1, 'Please confirm your password'),
   team: z.object({
@@ -112,7 +112,7 @@ export default function AdvancedFormPatterns() {
   });
 
   // Read current country reactively for dependent state field
-  const selectedCountry = useStore(form.store, (s) => s.values.country);
+  const selectedCountry = useSelector(form.store, (s) => s.values.country);
   const stateOptions = countryStateMap[selectedCountry] ?? [];
 
   return (

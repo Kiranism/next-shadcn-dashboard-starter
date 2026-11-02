@@ -67,7 +67,7 @@ export const entitiesQueryOptions = (filters: { page?: number; limit?: number; s
 ### Server Prefetch + Client Hydration (Listing Component)
 
 ```tsx
-import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
+import { HydrationBoundary, dehydrate, noop } from '@tanstack/react-query';
 import { getQueryClient } from '@/lib/query-client';
 import { searchParamsCache } from '@/lib/searchparams';
 import { entityQueries } from '../api/queries';
@@ -82,7 +82,7 @@ export default function EntityListingPage() {
   const filters = { page, limit: pageLimit, ...(search && { search }) };
 
   const queryClient = getQueryClient();
-  void queryClient.prefetchQuery(entityQueries.list(filters));
+  void queryClient.query(entityQueries.list(filters)).catch(noop);
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

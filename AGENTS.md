@@ -184,19 +184,22 @@ bun run build
 bun run start
 
 # Linting
-bun run lint         # Run ESLint
-bun run lint:fix     # Fix ESLint issues and format
-bun run lint:strict  # Zero warnings tolerance
+bun run lint            # oxlint + lint:deprecated
+bun run lint:deprecated # Fails on any use of a @deprecated API (type-aware oxlint)
+bun run lint:fix        # Fix oxlint issues and format
+bun run lint:strict     # Zero warnings tolerance
 
-bun run typecheck    # tsc --noEmit
+bun run typecheck       # tsc --noEmit
 
 # Formatting
-bun run format       # Format with Prettier
-bun run format:check # Check formatting
+bun run format          # Format with oxfmt
+bun run format:check    # Check formatting
 
 # Git hooks
 bun run prepare      # Install Husky hooks
 ```
+
+`lint:deprecated` skips `src/components/ui/**`, `src/components/data-table/**` and `src/hooks/use-data-table.ts`: those are kept identical to upstream shadcn/DiceUI and pick up fixes when re-pulled from their registries (today `ui/chart.tsx` still uses Recharts' deprecated `verticalAlign` and `use-data-table.ts` uses nuqs' deprecated `throttleMs`, both exactly as upstream).
 
 ---
 
@@ -438,7 +441,7 @@ This mirrors TanStack's official Next.js examples ([nextjs-app-prefetching](http
 
 Route handlers at `src/app/api/` are ready for patterns 2 and 3. `src/lib/api-client.ts` provides a typed `fetch` wrapper.
 
-**Direct external API with cookie auth:** call the API with `fetch(url, { credentials: 'include' })` so the browser sends the cookie; never import `next/headers` in `service.ts` (client components import it). Only the server prefetch has no browser cookies, so override `queryFn` at the prefetch site, as TanStack's [optimistic updates example](https://github.com/TanStack/query/blob/main/examples/react/nextjs-app-optimistic-updates/app/page.tsx) does: `prefetchQuery({ ...entityQueries.list(filters), queryFn: () => getEntities(filters, { headers: { cookie: (await cookies()).toString() } }) })`.
+**Direct external API with cookie auth:** call the API with `fetch(url, { credentials: 'include' })` so the browser sends the cookie; never import `next/headers` in `service.ts` (client components import it). Only the server prefetch has no browser cookies, so override `queryFn` at the prefetch site, as TanStack's [optimistic updates example](https://github.com/TanStack/query/blob/main/examples/react/nextjs-app-optimistic-updates/app/page.tsx) does: `query({ ...entityQueries.list(filters), queryFn: () => getEntities(filters, { headers: { cookie: (await cookies()).toString() } }) })`.
 
 ### Query Factories (`queries.ts`)
 
@@ -465,7 +468,7 @@ export const entityMutations = {
 };
 
 // Prefetch / read
-queryClient.prefetchQuery(entityQueries.list(filters));
+void queryClient.query(entityQueries.list(filters)).catch(noop);
 useSuspenseQuery(entityQueries.detail(id));
 
 // Invalidate every entity query (lists + details)
@@ -477,14 +480,14 @@ queryClient.invalidateQueries({ queryKey: entityQueries.all() });
 The project uses TanStack React Query with server-side prefetching and client-side cache management:
 
 1. **Query options** defined in `queries.ts` (`entityQueries.list()`) — shared between server prefetch and client hooks
-2. **Server prefetch** using `void queryClient.prefetchQuery()` + `HydrationBoundary` + `dehydrate` — `void` (fire-and-forget) is the standard TanStack pattern for Next.js App Router
+2. **Server prefetch** using `void queryClient.query(...).catch(noop)` + `HydrationBoundary` + `dehydrate` — `void` (fire-and-forget) is the standard TanStack pattern for Next.js App Router. `query()` replaces the deprecated `prefetchQuery()`; unlike it, `query()` rejects on a failed fetch, so the `.catch(noop)` (`noop` from `@tanstack/react-query`) is required to avoid an unhandled rejection on the server
 3. **Client fetch** using `useSuspenseQuery()` — integrates with React Suspense so prefetched data streams in without showing a loading skeleton on first load
 4. **Suspense boundary** wraps the client component — shows a fallback skeleton only on subsequent client-side navigations when cache is empty
 
 ```tsx
 // Server component: prefetch + dehydrate
 const queryClient = getQueryClient();
-void queryClient.prefetchQuery(entityQueries.list(filters)); // void, not await
+void queryClient.query(entityQueries.list(filters)).catch(noop); // void, not await
 
 return (
   <HydrationBoundary state={dehydrate(queryClient)}>

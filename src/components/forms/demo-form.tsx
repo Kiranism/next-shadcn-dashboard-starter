@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useStore } from '@tanstack/react-form';
+import { useSelector } from '@tanstack/react-form';
 import * as z from 'zod';
 import { useAppForm } from '@/lib/form';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,7 @@ const demoFormSchema = z.object({
   age: z.number({ error: 'Age is required' }).min(18, 'Must be at least 18 years old'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   phone: z.string().min(10, 'Phone must be at least 10 digits'),
-  website: z.string().url('Invalid URL').or(z.literal('')),
+  website: z.url('Invalid URL').or(z.literal('')),
   bio: z.string().min(10, 'Bio must be at least 10 characters'),
   country: z.string().min(1, 'Please select a country'),
   framework: z.string().min(1, 'Please select a framework'),
@@ -145,8 +145,8 @@ export default function DemoForm() {
     }
   });
 
-  const formValues = useStore(form.store, (s) => s.values);
-  const isSubmitting = useStore(form.store, (s) => s.isSubmitting);
+  const formValues = useSelector(form.store, (s) => s.values);
+  const isSubmitting = useSelector(form.store, (s) => s.isSubmitting);
 
   return (
     <div className='grid grid-cols-1 gap-6 xl:grid-cols-[1fr_320px]'>

@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { SubmitEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useReducedMotion } from 'motion/react';
 import { useChatStore } from '../utils/store';
 import type { Attachment, Message } from '../utils/types';
@@ -61,7 +61,7 @@ export function Messenger() {
   }, []);
 
   const handleSubmit = useCallback(
-    (e: FormEvent<HTMLFormElement>) => {
+    (e: SubmitEvent<HTMLFormElement>) => {
       e.preventDefault();
       const active = getActiveConversation();
       if ((!draft.trim() && attachments.length === 0) || !active) return;

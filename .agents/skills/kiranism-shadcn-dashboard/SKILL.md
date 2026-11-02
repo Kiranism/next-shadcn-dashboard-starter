@@ -179,7 +179,7 @@ Create `src/features/<name>/components/` with:
 **Listing page** (server component — `<name>-listing.tsx`):
 
 ```tsx
-import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
+import { HydrationBoundary, dehydrate, noop } from '@tanstack/react-query';
 import { getQueryClient } from '@/lib/query-client';
 import { searchParamsCache } from '@/lib/searchparams';
 import { ordersQueryOptions } from '../api/queries';
@@ -200,7 +200,7 @@ export default function OrderListingPage() {
   };
 
   const queryClient = getQueryClient();
-  void queryClient.prefetchQuery(orderQueries.list(filters));
+  void queryClient.query(orderQueries.list(filters)).catch(noop);
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
@@ -526,7 +526,7 @@ For cell actions, add `const [editOpen, setEditOpen] = useState(false)` and rend
 
 The pattern is: server prefetch → HydrationBoundary → client useSuspenseQuery.
 
-1. **Server**: `void queryClient.prefetchQuery(options)` — fire-and-forget during SSR streaming
+1. **Server**: `void queryClient.query(options).catch(noop)` — fire-and-forget during SSR streaming (`prefetchQuery` is deprecated; `query()` rejects on error, hence the `.catch(noop)`)
 2. **Client**: `useSuspenseQuery(options)` — picks up dehydrated data, suspends until resolved
 3. **HydrationBoundary + dehydrate**: bridges server cache → client cache
 4. **Suspense fallback**: skeleton shown while data streams
@@ -585,7 +585,7 @@ See [references/theming-guide.md](references/theming-guide.md) for the complete 
 
 - **`cn()`** for class merging — never concatenate className strings
 - **Server components by default** — only add `'use client'` when needed
-- **React Query** — `void prefetchQuery()` on server + `useSuspenseQuery` on client
+- **React Query** — `void queryClient.query(...).catch(noop)` on server + `useSuspenseQuery` on client
 - **API layer** — `types.ts` → `service.ts` → `queries.ts` per feature; `queries.ts` exports `entityQueries` (keys + `queryOptions`) and `entityMutations` (`mutationOptions`, `mutationFn` only); components spread them and invalidate with `useQueryClient()` in `onSettled`; components never import mock APIs directly
 - **nuqs** — `searchParamsCache` on server, `useQueryStates` on client with `shallow: true`
 - **Icons** — only from `@/components/icons`, never from `@tabler/icons-react` directly

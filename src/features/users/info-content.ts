@@ -17,7 +17,7 @@ export const usersInfoContent: InfobarContent = {
     {
       title: 'Server Prefetch + Client Hydration',
       description:
-        'The server component reads search params via searchParamsCache, builds filters, and calls queryClient.prefetchQuery(). The dehydrated state is passed to HydrationBoundary so the client starts with cached data. The client component reads the same search params via useQueryState and calls useSuspenseQuery with matching filters.',
+        'The server component reads search params via searchParamsCache, builds filters, and calls queryClient.query(). The dehydrated state is passed to HydrationBoundary so the client starts with cached data. The client component reads the same search params via useQueryState and calls useSuspenseQuery with matching filters.',
       links: []
     },
     {

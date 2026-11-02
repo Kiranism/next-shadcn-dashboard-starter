@@ -1,6 +1,6 @@
 import type { AnyFormApi } from '@tanstack/react-form';
 import { useCallback, useState } from 'react';
-import type { ZodTypeAny } from 'zod';
+import type { ZodType } from 'zod';
 
 /**
  * Options for handling cancel/back actions
@@ -68,7 +68,7 @@ type UseFormStepperOptions = {
   /** The complete form schema. When provided, the FINAL submit re-validates
    *  the whole form (not just the last step); on failure the wizard jumps to
    *  the first failing step and surfaces its errors. */
-  fullSchema?: ZodTypeAny;
+  fullSchema?: ZodType;
 };
 
 /**
@@ -82,7 +82,7 @@ type UseFormStepperOptions = {
  * @param schemas - Array of Zod schemas, one per step
  * @param options - Optional fullSchema for final-submit re-validation
  */
-export function useFormStepper(schemas: ZodTypeAny[], options?: UseFormStepperOptions) {
+export function useFormStepper(schemas: ZodType[], options?: UseFormStepperOptions) {
   const stepCount = schemas.length;
   const [currentStep, setCurrentStep] = useState(1); // Start from 1
 

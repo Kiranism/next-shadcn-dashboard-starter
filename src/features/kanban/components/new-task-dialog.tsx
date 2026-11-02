@@ -20,7 +20,7 @@ export default function NewTaskDialog() {
   const [open, setOpen] = useState(false);
   const [titleError, setTitleError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const form = e.currentTarget;

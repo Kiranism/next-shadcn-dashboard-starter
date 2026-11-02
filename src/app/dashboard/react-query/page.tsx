@@ -1,5 +1,5 @@
 import { auth } from '@clerk/nextjs/server';
-import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
+import { HydrationBoundary, dehydrate, noop } from '@tanstack/react-query';
 import { getQueryClient } from '@/lib/query-client';
 import { pokemonQueries } from '@/features/react-query-demo/api/queries';
 import { PokemonInfo } from '@/features/react-query-demo/components/pokemon-info';
@@ -18,7 +18,7 @@ export default async function ReactQueryPage() {
   const queryClient = getQueryClient();
 
   // Prefetch on the server — data is ready before client JS loads
-  void queryClient.prefetchQuery(pokemonQueries.detail(25));
+  void queryClient.query(pokemonQueries.detail(25)).catch(noop);
 
   return (
     <PageContainer

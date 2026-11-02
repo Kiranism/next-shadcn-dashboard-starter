@@ -107,7 +107,7 @@ import { FormTextField } from '@/components/ui/tanstack-form';
   name='email'
   label='Email'
   validators={{
-    onBlur: z.string().email('Invalid email') // Validates when field loses focus
+    onBlur: z.email('Invalid email') // Validates when field loses focus
   }}
 />
 ```

@@ -1,4 +1,4 @@
-import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
+import { HydrationBoundary, dehydrate, noop } from '@tanstack/react-query';
 import { getQueryClient } from '@/lib/query-client';
 import { searchParamsCache } from '@/lib/searchparams';
 import { productQueries } from '../api/queries';
@@ -21,7 +21,7 @@ export default function ProductListingPage() {
 
   const queryClient = getQueryClient();
 
-  void queryClient.prefetchQuery(productQueries.list(filters));
+  void queryClient.query(productQueries.list(filters)).catch(noop);
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

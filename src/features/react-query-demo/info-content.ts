@@ -6,7 +6,7 @@ export const reactQueryInfoContent: InfobarContent = {
     {
       title: 'Server Prefetch',
       description:
-        'Data is prefetched on the server using getQueryClient().prefetchQuery(). The dehydrated state is passed to HydrationBoundary so the client starts with cached data — no loading spinners on first load.',
+        'Data is prefetched on the server using getQueryClient().query(). The dehydrated state is passed to HydrationBoundary so the client starts with cached data — no loading spinners on first load.',
       links: [
         {
           title: 'TanStack Query SSR Docs',
