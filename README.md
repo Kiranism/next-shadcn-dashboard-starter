@@ -9,6 +9,10 @@
 <br />
 
 <div align="center">
+  <a href="https://dashboard.pandastack.io/deploy?repo=Kiranism/next-shadcn-dashboard-starter&type=container"><img src="https://dashboard.pandastack.io/deploy-button.svg" alt="Deploy to PandaStack" height="36" /></a>
+</div>
+<br />
+<div align="center">
   <img src="/public/shadcn-dashboard.png" alt="Shadcn Dashboard Cover" style="max-width: 100%; border-radius: 8px;" />
 </div>
 
