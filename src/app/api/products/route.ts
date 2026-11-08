@@ -1,21 +1,13 @@
 // ============================================================
 // Route Handler — Products (list + create)
 // ============================================================
-// Used with Pattern 2 (Route Handlers + ORM) or Pattern 3 (BFF).
-//
-// Fullstack (ORM): Replace fakeProducts calls with your ORM
-//   const products = await db.query.products.findMany({ ... })
-//
-// BFF (proxy): Replace with fetch to your external backend
-//   const res = await fetch(`${BACKEND_URL}/products?${searchParams}`, {
-//     headers: { Authorization: `Bearer ${token}` }
-//   })
-//   return NextResponse.json(await res.json())
-//
-// Current: Mock (in-memory fake data for demo/prototyping)
+// The browser's API for products (called from features/products/api/service.ts).
+// Each handler checks auth, then calls the server data layer in
+// features/products/api/data.ts. Connect your database or backend there,
+// not here.
 // ============================================================
 
-import { fakeProducts } from '@/constants/mock-api';
+import { createProduct, getProducts } from '@/features/products/api/data';
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 
@@ -31,7 +23,7 @@ export async function GET(request: NextRequest) {
   const search = searchParams.get('search') ?? undefined;
   const sort = searchParams.get('sort') ?? undefined;
 
-  const data = await fakeProducts.getProducts({
+  const data = await getProducts({
     page,
     limit,
     categories,
@@ -47,6 +39,6 @@ export async function POST(request: NextRequest) {
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const data = await fakeProducts.createProduct(body);
+  const data = await createProduct(body);
   return NextResponse.json(data, { status: 201 });
 }

@@ -1,10 +1,10 @@
 // ============================================================
-// Route Handler — Single Product (get + update)
+// Route Handler: Single Product (get, update, delete)
 // ============================================================
-// See src/app/api/products/route.ts for pattern documentation.
+// Calls the server data layer in features/products/api/data.ts.
 // ============================================================
 
-import { fakeProducts } from '@/constants/mock-api';
+import { deleteProduct, getProductById, updateProduct } from '@/features/products/api/data';
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest, { params }: Params) {
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const data = await fakeProducts.getProductById(Number(id));
+  const data = await getProductById(Number(id));
 
   if (!data.success) {
     return NextResponse.json(data, { status: 404 });
@@ -30,7 +30,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
   const { id } = await params;
   const body = await request.json();
-  const data = await fakeProducts.updateProduct(Number(id), body);
+  const data = await updateProduct(Number(id), body);
 
   if (!data.success) {
     return NextResponse.json(data, { status: 404 });
@@ -44,7 +44,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const data = await fakeProducts.deleteProduct(Number(id));
+  const data = await deleteProduct(Number(id));
 
   if (!data.success) {
     return NextResponse.json(data, { status: 404 });
