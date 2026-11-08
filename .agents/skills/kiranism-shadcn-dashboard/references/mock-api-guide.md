@@ -46,7 +46,7 @@ export type Order = {
 };
 
 // 2. Create the fake database object
-export const fakeOrders = {
+const fakeOrdersStore = {
   records: [] as Order[],
 
   // 3. Initialize with faker data
@@ -158,7 +158,15 @@ export const fakeOrders = {
 };
 
 // 10. Auto-initialize on import
-fakeOrders.initialize();
+// Route handlers and pages are separate server bundles, each with its own copy of
+// this module. One store per server process on globalThis keeps them in sync.
+const globalForMock = globalThis as typeof globalThis & { fakeOrders?: typeof fakeOrdersStore };
+if (!globalForMock.fakeOrders) {
+  fakeOrdersStore.initialize();
+  globalForMock.fakeOrders = fakeOrdersStore;
+}
+
+export const fakeOrders = globalForMock.fakeOrders;
 ```
 
 ---
@@ -204,25 +212,69 @@ List methods must return `{ items, total_items }` (or `{ products, total }` etc.
 
 ## Integrating with the API Layer
 
-The mock API is only imported in `service.ts`. Queries and components import from the service and types files:
+The mock API is only imported in the server-only `data.ts`. The browser reaches it through route handlers; server prefetches call `data.ts` directly (the layout of TanStack's [Next.js optimistic updates example](https://github.com/TanStack/query/tree/main/examples/react/nextjs-app-optimistic-updates)):
 
 ```
-mock-api-orders.ts  →  api/service.ts  →  api/queries.ts  →  components
-(data source)          (data access)       (key factory +     (useSuspenseQuery
-                                            queryOptions)       + useMutation)
+browser:  components → api/queries.ts → api/service.ts → fetch('/api/orders') → app/api/orders/route.ts → api/data.ts → mock-api-orders.ts
+server:   <name>-listing.tsx prefetch (same query key, queryFn from data.ts)                         → api/data.ts → mock-api-orders.ts
 ```
 
-**service.ts** imports from the mock API:
+**data.ts** is server-only and imports from the mock API. It's the one file to change when connecting a real backend:
 
 ```tsx
+import 'server-only';
 import { fakeOrders } from '@/constants/mock-api-orders';
-import type { OrderFilters, OrdersResponse } from './types';
+import type { OrderFilters, OrderMutationPayload, OrdersResponse } from './types';
 
 export async function getOrders(filters: OrderFilters): Promise<OrdersResponse> {
   return fakeOrders.getOrders(filters);
 }
 export async function createOrder(data: OrderMutationPayload) {
   return fakeOrders.createOrder(data);
+}
+```
+
+**Route handlers** (`src/app/api/orders/route.ts`) check auth and call `data.ts`:
+
+```tsx
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
+import { createOrder, getOrders } from '@/features/orders/api/data';
+
+export async function GET(request: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { searchParams } = request.nextUrl;
+  return NextResponse.json(
+    await getOrders({
+      page: Number(searchParams.get('page') ?? 1),
+      limit: Number(searchParams.get('limit') ?? 10),
+      search: searchParams.get('search') ?? undefined,
+      sort: searchParams.get('sort') ?? undefined
+    })
+  );
+}
+
+export async function POST(request: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  return NextResponse.json(await createOrder(await request.json()), { status: 201 });
+}
+```
+
+**service.ts** is the browser side: it calls the route handlers with `apiClient`:
+
+```tsx
+import { apiClient, toSearchParams } from '@/lib/api-client';
+import type { OrderFilters, OrderMutationPayload, OrdersResponse } from './types';
+
+export async function getOrders(filters: OrderFilters): Promise<OrdersResponse> {
+  return apiClient<OrdersResponse>(`/orders?${toSearchParams(filters)}`);
+}
+export async function createOrder(data: OrderMutationPayload) {
+  return apiClient('/orders', { method: 'POST', body: JSON.stringify(data) });
 }
 ```
 
