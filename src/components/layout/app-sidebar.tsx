@@ -45,7 +45,7 @@ const itemClass =
 const branchActiveClass =
   'font-medium text-sidebar-foreground [&>svg:first-child]:text-sidebar-primary';
 const subItemClass =
-  'text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground data-active:bg-sidebar-accent data-active:font-medium data-active:text-sidebar-accent-foreground data-active:hover:bg-sidebar-accent';
+  'text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground data-active:bg-sidebar-accent data-active:font-medium data-active:text-sidebar-accent-foreground data-active:hover:bg-sidebar-accent';
 // 4px horizontal padding on the icon rail lets 32px buttons fit the 2.375rem rail
 const railPadding = 'group-data-[collapsible=icon]:px-1';
 
