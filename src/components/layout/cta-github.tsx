@@ -5,7 +5,7 @@ export default function CtaGithub() {
   return (
     <Button
       variant='ghost'
-      size='sm'
+      size='icon'
       className='group hidden sm:flex'
       nativeButton={false}
       aria-label='View on GitHub'
