@@ -27,7 +27,7 @@
   --sidebar-foreground: oklch(0.3485 0 0);
   --sidebar-primary: oklch(0.4891 0 0);
   --sidebar-primary-foreground: oklch(0.9551 0 0);
-  --sidebar-accent: oklch(0.9354 0.0456 94.8549);
+  --sidebar-accent: oklch(0.915 0.06 94.8549);
   --sidebar-accent-foreground: oklch(0.4015 0.0436 37.9587);
   --sidebar-border: oklch(0.8078 0 0);
   --sidebar-ring: oklch(0.7058 0 0);
@@ -82,8 +82,8 @@
   --sidebar-foreground: oklch(0.8945 0 0);
   --sidebar-primary: oklch(0.7572 0 0);
   --sidebar-primary-foreground: oklch(0.2478 0 0);
-  --sidebar-accent: oklch(0.9067 0 0);
-  --sidebar-accent-foreground: oklch(0.3211 0 0);
+  --sidebar-accent: oklch(0.34 0 0);
+  --sidebar-accent-foreground: oklch(0.9551 0 0);
   --sidebar-border: oklch(0.4276 0 0);
   --sidebar-ring: oklch(0.8078 0 0);
   --font-sans: 'Architects Daughter', sans-serif;

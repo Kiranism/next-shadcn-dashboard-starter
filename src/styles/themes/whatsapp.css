@@ -23,13 +23,13 @@
   --chart-3: oklch(0.5762 0.0995 182.3964);
   --chart-4: oklch(0.7356 0.137 232.8053);
   --chart-5: oklch(0.6509 0.1283 170.4258);
-  --sidebar: oklch(1 0 0);
+  --sidebar: oklch(0.935 0.0066 258.3248);
   --sidebar-foreground: oklch(0.2153 0.0187 235.1251);
   --sidebar-primary: oklch(0.4335 0.0754 182.2315);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.9644 0.0208 166.1014);
+  --sidebar-accent: oklch(0.895 0.03 166.1014);
   --sidebar-accent-foreground: oklch(0.4335 0.0754 182.2315);
-  --sidebar-border: oklch(0.9436 0.0051 228.8204);
+  --sidebar-border: oklch(0.9 0.008 228.8204);
   --sidebar-ring: oklch(0.761 0.2015 149.7403);
   --font-sans:
     'Segoe UI', 'Helvetica Neue', Helvetica, 'Lucida Grande', Arial, Ubuntu, Cantarell, 'Fira Sans',
@@ -85,7 +85,7 @@
   --sidebar-primary: oklch(0.6509 0.1283 170.4258);
   --sidebar-primary-foreground: oklch(0.2153 0.0187 235.1251);
   --sidebar-accent: oklch(0.2933 0.0423 172.8195);
-  --sidebar-accent-foreground: oklch(0.6509 0.1283 170.4258);
+  --sidebar-accent-foreground: oklch(0.75 0.12 170.4258);
   --sidebar-border: oklch(0.3351 0.0253 234.8586);
   --sidebar-ring: oklch(0.6509 0.1283 170.4258);
   --font-sans:
