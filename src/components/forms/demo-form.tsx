@@ -481,13 +481,13 @@ export default function DemoForm() {
       </Card>
 
       {/* Form Data Preview - sticky sidebar */}
-      <div className='xl:sticky xl:top-16 xl:self-start'>
+      <div className='xl:sticky xl:top-0 xl:self-start'>
         <Card>
           <CardHeader>
             <CardTitle>Form Data Preview</CardTitle>
           </CardHeader>
           <CardContent>
-            <pre className='bg-muted max-h-[calc(100vh-8rem)] overflow-auto rounded-lg p-4 text-xs'>
+            <pre className='bg-muted max-h-[70vh] overflow-auto rounded-lg p-4 text-xs'>
               {JSON.stringify(formValues, null, 2)}
             </pre>
           </CardContent>

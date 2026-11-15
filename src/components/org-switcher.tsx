@@ -12,7 +12,6 @@ import {
   DropdownMenuGroup,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import {
@@ -25,6 +24,8 @@ import { useEffect } from 'react';
 
 export function OrgSwitcher() {
   const { isMobile, state } = useSidebar();
+  // Side menus open to the right: 8px from the expanded sidebar, 16px off the icon rail
+  const railMenu = state === 'collapsed' && !isMobile;
   const router = useRouter();
   const { isLoaded, setActive, userMemberships } = useOrganizationList({
     userMemberships: {
@@ -108,7 +109,7 @@ export function OrgSwitcher() {
               <span className='text-muted-foreground truncate text-xs'>Get started</span>
             </div>
             <Icons.chevronsUpDown
-              className={`ml-auto transition-all duration-200 ease-in-out ${
+              className={`text-muted-foreground ml-auto transition-all duration-200 ease-in-out ${
                 state === 'collapsed'
                   ? 'invisible max-w-0 opacity-0'
                   : 'visible max-w-full opacity-100'
@@ -159,14 +160,16 @@ export function OrgSwitcher() {
                   : 'visible max-w-full opacity-100'
               }`}
             >
-              <span className='truncate font-medium'>{displayOrganization.name}</span>
+              <span className='truncate font-medium' title={displayOrganization.name}>
+                {displayOrganization.name}
+              </span>
               <span className='text-muted-foreground truncate text-xs'>
                 {userMemberships.data.find((m) => m.organization.id === displayOrganization.id)
                   ?.role || 'Organization'}
               </span>
             </div>
             <Icons.chevronsUpDown
-              className={`ml-auto transition-all duration-200 ease-in-out ${
+              className={`text-muted-foreground ml-auto transition-all duration-200 ease-in-out ${
                 state === 'collapsed'
                   ? 'invisible max-w-0 opacity-0'
                   : 'visible max-w-full opacity-100'
@@ -174,41 +177,42 @@ export function OrgSwitcher() {
             />
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className='w-(--anchor-width) min-w-56 rounded-lg'
+            className='w-72 max-w-[calc(100vw-2rem)]'
             align='start'
             side={isMobile ? 'bottom' : 'right'}
-            sideOffset={4}
+            sideOffset={isMobile ? 4 : railMenu ? 16 : 8}
           >
             <DropdownMenuGroup>
-              <DropdownMenuLabel className='text-muted-foreground text-xs'>
-                Organizations
-              </DropdownMenuLabel>
-            </DropdownMenuGroup>
-            <DropdownMenuGroup>
-              {userMemberships.data.map((membership, index) => {
+              <DropdownMenuLabel>Organizations</DropdownMenuLabel>
+              {userMemberships.data.map((membership) => {
                 const isActive = membership.organization.id === orgId;
                 return (
                   <DropdownMenuItem
                     key={membership.id}
                     onClick={() => handleOrganizationSwitch(membership.organization.id)}
-                    className='gap-2 p-2'
+                    className='items-start gap-2 p-1.5'
                   >
-                    <div className='flex size-6 items-center justify-center overflow-hidden rounded-md border'>
+                    <div className='flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-md border'>
                       {membership.organization.hasImage && membership.organization.imageUrl ? (
                         <Image
                           src={membership.organization.imageUrl}
                           alt={membership.organization.name}
-                          width={24}
-                          height={24}
+                          width={28}
+                          height={28}
                           className='size-full object-cover'
                         />
                       ) : (
                         <Icons.galleryVerticalEnd className='size-3.5 shrink-0' />
                       )}
                     </div>
-                    {membership.organization.name}
-                    {isActive && <Icons.check className='ml-auto size-4' />}
-                    {!isActive && <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>}
+                    {/* Names wrap instead of truncating so similar org names stay distinguishable */}
+                    <div className='grid min-w-0 flex-1 leading-tight'>
+                      <span className='text-pretty wrap-break-word'>
+                        {membership.organization.name}
+                      </span>
+                      <span className='text-muted-foreground text-xs'>{membership.role}</span>
+                    </div>
+                    {isActive && <Icons.check className='mt-1.5 ml-auto size-4' />}
                   </DropdownMenuItem>
                 );
               })}
@@ -216,12 +220,12 @@ export function OrgSwitcher() {
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem
-                className='gap-2 p-2'
+                className='gap-2 p-1.5'
                 onClick={() => {
                   router.push('/dashboard/workspaces');
                 }}
               >
-                <div className='flex size-6 items-center justify-center rounded-md border bg-transparent'>
+                <div className='flex size-7 items-center justify-center rounded-md border bg-transparent'>
                   <Icons.add className='size-4' />
                 </div>
                 <div className='text-muted-foreground font-medium'>Add organization</div>

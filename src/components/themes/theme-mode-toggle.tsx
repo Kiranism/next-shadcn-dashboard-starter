@@ -47,15 +47,15 @@ export function ThemeModeToggle() {
       <TooltipTrigger
         render={
           <Button
-            variant='secondary'
+            variant='ghost'
             size='icon'
-            className='group/toggle size-8'
+            className='group/toggle text-muted-foreground hover:text-foreground'
             onClick={handleThemeToggle}
           />
         }
       >
         <Icons.brightness />
-        <span className='sr-only'>Toggle theme</span>
+        <span className='sr-only'>Toggle dark mode</span>
       </TooltipTrigger>
       <TooltipContent>
         Toggle theme <Kbd>⌘⇧D</Kbd> <Kbd>D D</Kbd>
