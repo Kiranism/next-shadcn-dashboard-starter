@@ -104,12 +104,12 @@ function NavMainItem({ item, pathname }: { item: NavItem; pathname: string }) {
               href={item.url}
               aria-label={item.title}
               aria-current={active ? 'page' : undefined}
-              onClick={closeMobile}
             />
           }
           tooltip={item.title}
           isActive={active}
           className={itemClass}
+          onClick={closeMobile}
         >
           <Icon />
           <span>{item.title}</span>
@@ -216,11 +216,11 @@ function NavMainItem({ item, pathname }: { item: NavItem; pathname: string }) {
                       href={child.url}
                       aria-label={child.title}
                       aria-current={active ? 'page' : undefined}
-                      onClick={closeMobile}
                     />
                   }
                   isActive={active}
                   className={subItemClass}
+                  onClick={closeMobile}
                 >
                   <span>{child.title}</span>
                 </SidebarMenuSubButton>
