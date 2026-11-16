@@ -16,7 +16,9 @@ This skill encodes the exact patterns and conventions used in this Next.js 16 + 
 | New feature module    | `src/features/<name>/`                  |
 | Feature components    | `src/features/<name>/components/`       |
 | API types             | `src/features/<name>/api/types.ts`      |
-| Service layer         | `src/features/<name>/api/service.ts`    |
+| Server data access    | `src/features/<name>/api/data.ts`       |
+| Route handlers        | `src/app/api/<name>/route.ts`           |
+| Browser API calls     | `src/features/<name>/api/service.ts`    |
 | Query + mutation opts | `src/features/<name>/api/queries.ts`    |
 | Zod schemas           | `src/features/<name>/schemas/<name>.ts` |
 | Filter/select options | `src/features/<name>/constants/`        |
@@ -54,7 +56,7 @@ export type Order = {
   updated_at: string;
 };
 
-export const fakeOrders = {
+const fakeOrdersStore = {
   records: [] as Order[],
   initialize() {
     /* generate with faker */
@@ -75,14 +77,21 @@ export const fakeOrders = {
     /* filter out */
   }
 };
-fakeOrders.initialize();
+
+// Route handlers and pages are separate server bundles: share one store via globalThis
+const globalForMock = globalThis as typeof globalThis & { fakeOrders?: typeof fakeOrdersStore };
+if (!globalForMock.fakeOrders) {
+  fakeOrdersStore.initialize();
+  globalForMock.fakeOrders = fakeOrdersStore;
+}
+export const fakeOrders = globalForMock.fakeOrders;
 ```
 
 Every method should call `await delay(800)` to simulate network latency. Use `matchSorter` for search. Return `{ items, total_items }` from list methods.
 
 ### Step 2: API Layer (`src/features/<name>/api/`)
 
-Each feature has 4 API files: **types** → **service** → **queries** → **mutations**.
+The layout of TanStack's [Next.js optimistic updates example](https://github.com/TanStack/query/tree/main/examples/react/nextjs-app-optimistic-updates): the browser calls this app's route handlers, the route handlers and server prefetches call a server-only `data.ts`. Files: **types** → **data** (server) → **route handlers** → **service** (browser) → **queries**. See [references/mock-api-guide.md](references/mock-api-guide.md) for full route handler code.
 
 **Types** (`api/types.ts`) — re-export the entity type from mock API, plus filter/response/payload types:
 
@@ -93,9 +102,10 @@ export type OrdersResponse = { items: Order[]; total_items: number };
 export type OrderMutationPayload = { customer: string; status: string; total: number };
 ```
 
-**Service** (`api/service.ts`) — data access layer. One exported function per operation:
+**Data** (`api/data.ts`): server-only data access, the one file to swap for a real backend (ORM, or an external API with `Authorization: Bearer` from `(await auth()).getToken()`). One exported function per operation:
 
 ```tsx
+import 'server-only';
 import { fakeOrders } from '@/constants/mock-api-orders';
 import type { OrderFilters, OrdersResponse, OrderMutationPayload } from './types';
 
@@ -113,6 +123,31 @@ export async function updateOrder(id: number, data: OrderMutationPayload) {
 }
 export async function deleteOrder(id: number) {
   return fakeOrders.deleteOrder(id);
+}
+```
+
+**Route handlers** (`src/app/api/orders/route.ts` for GET list + POST, `[id]/route.ts` for GET/PUT/DELETE): check `auth()`, return 401 without a user, then call `data.ts`.
+
+**Service** (`api/service.ts`): browser calls to the route handlers. Same-origin, so Clerk's cookie authenticates them; no token code here:
+
+```tsx
+import { apiClient, toSearchParams } from '@/lib/api-client';
+import type { OrderFilters, OrdersResponse, OrderMutationPayload } from './types';
+
+export async function getOrders(filters: OrderFilters): Promise<OrdersResponse> {
+  return apiClient<OrdersResponse>(`/orders?${toSearchParams(filters)}`);
+}
+export async function getOrderById(id: number) {
+  return apiClient(`/orders/${id}`);
+}
+export async function createOrder(data: OrderMutationPayload) {
+  return apiClient('/orders', { method: 'POST', body: JSON.stringify(data) });
+}
+export async function updateOrder(id: number, data: OrderMutationPayload) {
+  return apiClient(`/orders/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+}
+export async function deleteOrder(id: number) {
+  return apiClient(`/orders/${id}`, { method: 'DELETE' });
 }
 ```
 
@@ -182,7 +217,8 @@ Create `src/features/<name>/components/` with:
 import { HydrationBoundary, dehydrate, noop } from '@tanstack/react-query';
 import { getQueryClient } from '@/lib/query-client';
 import { searchParamsCache } from '@/lib/searchparams';
-import { ordersQueryOptions } from '../api/queries';
+import { getOrders } from '../api/data';
+import { orderQueries } from '../api/queries';
 import { OrderTable, OrderTableSkeleton } from './orders-table';
 import { Suspense } from 'react';
 
@@ -200,7 +236,10 @@ export default function OrderListingPage() {
   };
 
   const queryClient = getQueryClient();
-  void queryClient.query(orderQueries.list(filters)).catch(noop);
+  // Same key as the browser, server queryFn from data.ts (the browser's calls /api/orders)
+  void queryClient
+    .query({ ...orderQueries.list(filters), queryFn: () => getOrders(filters) })
+    .catch(noop);
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
@@ -223,7 +262,7 @@ import { useDataTable } from '@/hooks/use-data-table';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ordersQueryOptions } from '../../api/queries';
+import { orderQueries } from '../../api/queries';
 import { columns } from './columns';
 
 export function OrderTable() {
@@ -526,7 +565,7 @@ For cell actions, add `const [editOpen, setEditOpen] = useState(false)` and rend
 
 The pattern is: server prefetch → HydrationBoundary → client useSuspenseQuery.
 
-1. **Server**: `void queryClient.query(options).catch(noop)` — fire-and-forget during SSR streaming (`prefetchQuery` is deprecated; `query()` rejects on error, hence the `.catch(noop)`)
+1. **Server**: `void queryClient.query({ ...options, queryFn: <data.ts function> }).catch(noop)`: fire-and-forget during SSR streaming, same key as the client with the server-only fetcher from `data.ts` (`prefetchQuery` is deprecated; `query()` rejects on error, hence the `.catch(noop)`)
 2. **Client**: `useSuspenseQuery(options)` — picks up dehydrated data, suspends until resolved
 3. **HydrationBoundary + dehydrate**: bridges server cache → client cache
 4. **Suspense fallback**: skeleton shown while data streams
@@ -586,7 +625,7 @@ See [references/theming-guide.md](references/theming-guide.md) for the complete 
 - **`cn()`** for class merging — never concatenate className strings
 - **Server components by default** — only add `'use client'` when needed
 - **React Query** — `void queryClient.query(...).catch(noop)` on server + `useSuspenseQuery` on client
-- **API layer** — `types.ts` → `service.ts` → `queries.ts` per feature; `queries.ts` exports `entityQueries` (keys + `queryOptions`) and `entityMutations` (`mutationOptions`, `mutationFn` only); components spread them and invalidate with `useQueryClient()` in `onSettled`; components never import mock APIs directly
+- **API layer**: per feature: `data.ts` (server-only, the swap point) called by `src/app/api/<name>` route handlers and server prefetches; `service.ts` (browser `apiClient` calls to `/api/<name>`) → `queries.ts`; `queries.ts` exports `entityQueries` (keys + `queryOptions`) and `entityMutations` (`mutationOptions`, `mutationFn` only); components spread them and invalidate with `useQueryClient()` in `onSettled`; components never import mock APIs directly
 - **nuqs** — `searchParamsCache` on server, `useQueryStates` on client with `shallow: true`
 - **Icons** — only from `@/components/icons`, never from `@tabler/icons-react` directly
 - **Forms** — `useAppForm` + `useFormFields<T>()` from `@/components/ui/tanstack-form`

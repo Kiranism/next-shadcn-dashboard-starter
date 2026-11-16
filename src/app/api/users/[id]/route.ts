@@ -1,10 +1,10 @@
 // ============================================================
 // Route Handler — Single User (update + delete)
 // ============================================================
-// See src/app/api/users/route.ts for pattern documentation.
+// Calls the server data layer in features/users/api/data.ts.
 // ============================================================
 
-import { fakeUsers } from '@/constants/mock-api-users';
+import { deleteUser, updateUser } from '@/features/users/api/data';
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 
@@ -16,7 +16,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
   const { id } = await params;
   const body = await request.json();
-  const data = await fakeUsers.updateUser(Number(id), body);
+  const data = await updateUser(Number(id), body);
 
   if (!data.success) {
     return NextResponse.json(data, { status: 404 });
@@ -30,7 +30,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const data = await fakeUsers.deleteUser(Number(id));
+  const data = await deleteUser(Number(id));
 
   if (!data.success) {
     return NextResponse.json(data, { status: 404 });

@@ -49,19 +49,21 @@ The project uses **TanStack React Query** for data fetching with server-side pre
 
 ### Query Options (`api/queries.ts`)
 
-Define reusable query options shared between server prefetch and client hooks:
+Define query options once; the client hooks use them as is, the server prefetch reuses the key with a server-only fetcher. The browser `queryFn` calls this app's route handlers through `service.ts`; route handlers and server prefetches call the server-only `data.ts` (TanStack's Next.js optimistic updates example layout):
 
 ```tsx
 import { queryOptions } from '@tanstack/react-query';
-import { fakeEntities, type Entity } from '@/constants/mock-api-entities';
+import { getEntities } from './service'; // apiClient(`/entities?...`), the browser side
+import type { EntityFilters } from './types';
 
-export type { Entity };
-
-export const entitiesQueryOptions = (filters: { page?: number; limit?: number; search?: string }) =>
-  queryOptions({
-    queryKey: ['entities', filters],
-    queryFn: () => fakeEntities.getEntities(filters)
-  });
+export const entityQueries = {
+  all: () => ['entities'] as const,
+  list: (filters: EntityFilters) =>
+    queryOptions({
+      queryKey: [...entityQueries.all(), 'list', filters] as const,
+      queryFn: () => getEntities(filters)
+    })
+};
 ```
 
 ### Server Prefetch + Client Hydration (Listing Component)
@@ -70,6 +72,7 @@ export const entitiesQueryOptions = (filters: { page?: number; limit?: number; s
 import { HydrationBoundary, dehydrate, noop } from '@tanstack/react-query';
 import { getQueryClient } from '@/lib/query-client';
 import { searchParamsCache } from '@/lib/searchparams';
+import { getEntities } from '../api/data'; // server-only
 import { entityQueries } from '../api/queries';
 import { EntityTable, EntityTableSkeleton } from './entity-table';
 import { Suspense } from 'react';
@@ -82,7 +85,9 @@ export default function EntityListingPage() {
   const filters = { page, limit: pageLimit, ...(search && { search }) };
 
   const queryClient = getQueryClient();
-  void queryClient.query(entityQueries.list(filters)).catch(noop);
+  void queryClient
+    .query({ ...entityQueries.list(filters), queryFn: () => getEntities(filters) })
+    .catch(noop);
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

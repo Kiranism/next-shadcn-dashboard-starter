@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { HydrationBoundary, dehydrate, noop } from '@tanstack/react-query';
 import { getQueryClient } from '@/lib/query-client';
+import { getProductById } from '@/features/products/api/data';
 import { productQueries } from '@/features/products/api/queries';
 import PageContainer from '@/components/layout/page-container';
 import ProductViewPage from '@/features/products/components/product-view-page';
@@ -18,7 +19,11 @@ export default async function Page(props: PageProps) {
   const queryClient = getQueryClient();
 
   if (params.productId !== 'new') {
-    void queryClient.query(productQueries.detail(Number(params.productId))).catch(noop);
+    const id = Number(params.productId);
+    // Same query key as the browser, read from the server data layer directly
+    void queryClient
+      .query({ ...productQueries.detail(id), queryFn: () => getProductById(id) })
+      .catch(noop);
   }
 
   return (

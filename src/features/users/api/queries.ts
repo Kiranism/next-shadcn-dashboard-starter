@@ -4,7 +4,8 @@ import type { User, UserFilters, UserMutationPayload } from './types';
 
 export type { User };
 
-// Reads: query key + fetcher in one place, shared by server prefetch and client hooks.
+// Reads: query key + browser fetcher in one place. Server prefetches reuse the key
+// and swap in the server fetcher from data.ts: query({ ...userQueries.list(f), queryFn: ... }).
 // Invalidate everything for this entity with userQueries.all().
 export const userQueries = {
   all: () => ['users'] as const,

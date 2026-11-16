@@ -10,7 +10,8 @@ import type { Product, ProductFilters, ProductMutationPayload } from './types';
 
 export type { Product };
 
-// Reads: query key + fetcher in one place, shared by server prefetch and client hooks.
+// Reads: query key + browser fetcher in one place. Server prefetches reuse the key
+// and swap in the server fetcher from data.ts: query({ ...productQueries.list(f), queryFn: ... }).
 // Invalidate everything for this entity with productQueries.all().
 export const productQueries = {
   all: () => ['products'] as const,

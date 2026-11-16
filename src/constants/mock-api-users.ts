@@ -37,7 +37,7 @@ function generateRandomUserData(id: number): User {
 }
 
 // Mock user data store
-export const fakeUsers = {
+const fakeUsersStore = {
   records: [] as User[],
 
   initialize() {
@@ -188,4 +188,13 @@ export const fakeUsers = {
   }
 };
 
-fakeUsers.initialize();
+// Route handlers and pages are separate server bundles, each with its own copy of
+// this module. Keep one store per server process on globalThis so they share data
+// (the same singleton pattern Prisma documents for its client in Next.js).
+const globalForMock = globalThis as typeof globalThis & { fakeUsers?: typeof fakeUsersStore };
+if (!globalForMock.fakeUsers) {
+  fakeUsersStore.initialize();
+  globalForMock.fakeUsers = fakeUsersStore;
+}
+
+export const fakeUsers = globalForMock.fakeUsers;

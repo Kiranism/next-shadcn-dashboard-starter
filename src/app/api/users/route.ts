@@ -1,21 +1,13 @@
 // ============================================================
 // Route Handler — Users (list + create)
 // ============================================================
-// Used with Pattern 2 (Route Handlers + ORM) or Pattern 3 (BFF).
-//
-// Fullstack (ORM): Replace fakeUsers calls with your ORM
-//   const users = await db.query.users.findMany({ ... })
-//
-// BFF (proxy): Replace with fetch to your external backend
-//   const res = await fetch(`${BACKEND_URL}/users?${searchParams}`, {
-//     headers: { Authorization: `Bearer ${token}` }
-//   })
-//   return NextResponse.json(await res.json())
-//
-// Current: Mock (in-memory fake data for demo/prototyping)
+// The browser's API for users (called from features/users/api/service.ts).
+// Each handler checks auth, then calls the server data layer in
+// features/users/api/data.ts. Connect your database or backend there,
+// not here.
 // ============================================================
 
-import { fakeUsers } from '@/constants/mock-api-users';
+import { createUser, getUsers } from '@/features/users/api/data';
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 
@@ -31,7 +23,7 @@ export async function GET(request: NextRequest) {
   const search = searchParams.get('search') ?? undefined;
   const sort = searchParams.get('sort') ?? undefined;
 
-  const data = await fakeUsers.getUsers({
+  const data = await getUsers({
     page,
     limit,
     roles,
@@ -47,6 +39,6 @@ export async function POST(request: NextRequest) {
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const data = await fakeUsers.createUser(body);
+  const data = await createUser(body);
   return NextResponse.json(data, { status: 201 });
 }

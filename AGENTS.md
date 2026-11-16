@@ -63,10 +63,10 @@ The project follows a feature-based folder structure designed for scalability in
 - TanStack Table for data tables
 - TanStack React Query for data fetching and mutations
 - Recharts for analytics/charts
-- Service layer per feature (`api/types.ts` → `api/service.ts` → `api/queries.ts`)
-- Route handlers at `src/app/api/` (for Route Handler or BFF patterns)
-- Mock data in `src/constants/mock-api*.ts` (default, swap via service layer)
-- API client utility in `src/lib/api-client.ts` (for fetch-based patterns)
+- API layer per feature (`api/types.ts`, `api/data.ts` on the server, `api/service.ts` in the browser, `api/queries.ts`)
+- Route handlers at `src/app/api/` are the browser's API; they call the feature's `data.ts`
+- Mock data in `src/constants/mock-api*.ts` (default, used only by `data.ts`)
+- API client utility in `src/lib/api-client.ts` (browser `fetch` wrapper for `/api/*`)
 
 ### Development Tools
 
@@ -115,13 +115,14 @@ The project follows a feature-based folder structure designed for scalability in
 │   ├── products/          # Product management (React Query + nuqs)
 │   │   ├── api/
 │   │   │   ├── types.ts   # Type contract (response shapes, filters, payloads)
-│   │   │   ├── service.ts # Data access layer (swap for your backend)
+│   │   │   ├── data.ts    # Server-only data access (swap for your backend)
+│   │   │   ├── service.ts # Browser calls to /api/products
 │   │   │   └── queries.ts # entityQueries (reads) + entityMutations (writes)
 │   │   ├── components/    # Listing, form, table components
 │   │   ├── schemas/       # Zod schemas
 │   │   └── constants/     # Filter options
 │   ├── users/             # User management (React Query + nuqs)
-│   │   ├── api/           # Same pattern: types.ts → service.ts → queries.ts
+│   │   ├── api/           # Same pattern: types.ts, data.ts, service.ts, queries.ts
 │   │   └── components/    # Listing, table components
 │   ├── react-query-demo/  # React Query showcase (Pokemon API)
 │   ├── kanban/            # Kanban board with dnd-kit
@@ -409,39 +410,60 @@ const hasFeature = has({ feature: 'premium_access' });
 
 ### Service Layer Architecture
 
-Each feature has a three-file API layer:
+Each feature has a four-file API layer, plus route handlers:
 
 ```
 src/features/<name>/api/
   types.ts      ← Type contract (response shapes, filters, payloads)
-  service.ts    ← Data access functions (the ONE file to swap for your backend)
+  data.ts       ← Server-only data access (the ONE file to swap for your backend)
+  service.ts    ← Browser calls to this app's route handlers (/api/<name>)
   queries.ts    ← entityQueries (keys + queryOptions) and entityMutations (mutationOptions)
+src/app/api/<name>/route.ts   ← Route handlers: check auth, call data.ts
 ```
 
-This mirrors TanStack's official Next.js examples ([nextjs-app-prefetching](https://github.com/TanStack/query/tree/main/examples/react/nextjs-app-prefetching), [nextjs-app-optimistic-updates](https://github.com/TanStack/query/tree/main/examples/react/nextjs-app-optimistic-updates)), where `services/<name>/api.ts` is our `service.ts`.
+Requests flow like this:
 
-| File         | Owns                                                                                                         | Never contains                     |
-| ------------ | ------------------------------------------------------------------------------------------------------------ | ---------------------------------- |
-| `types.ts`   | Data shapes                                                                                                  | Logic                              |
-| `service.ts` | How to talk to the backend (fetch, ORM, mock)                                                                | TanStack Query, React, UI          |
-| `queries.ts` | What the cache knows: query keys, `queryOptions` (key + fetcher), `mutationOptions` (**`mutationFn` only**) | Callbacks, invalidation, toasts    |
-| Component    | What happens after a mutation: invalidation, toast, navigation, closing dialogs                             | Fetch logic                        |
+```
+Browser (useSuspenseQuery / useMutation) → service.ts → fetch('/api/<name>') → route handler → data.ts → database or backend
+Server prefetch (server component)                                                         → data.ts → database or backend
+```
 
-**`service.ts` is the only file you modify when connecting to a real backend.** Queries and components import from it — they never change.
+This is TanStack's official [Next.js optimistic updates example](https://github.com/TanStack/query/tree/main/examples/react/nextjs-app-optimistic-updates): `services/todos/api.ts` (browser `fetch('/api/todos')`) is our `service.ts`, `app/api/todos/data.ts` (used by the route handler and by the page prefetch) is our `data.ts`, and `services/todos/queries.ts` is our `queries.ts`.
 
-#### Backend Patterns
+| File            | Owns                                                                                                         | Never contains                     |
+| --------------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------------- |
+| `types.ts`      | Data shapes                                                                                                  | Logic                              |
+| `data.ts`       | How the server gets data (mock, ORM, external API with a token). Starts with `import 'server-only'`          | React, TanStack Query, UI          |
+| route handlers  | Auth check, request parsing, status codes                                                                    | Data access logic (call `data.ts`) |
+| `service.ts`    | Browser `fetch` calls to `/api/<name>` via `apiClient`                                                       | Tokens, secrets, database clients  |
+| `queries.ts`    | What the cache knows: query keys, `queryOptions` (key + browser fetcher), `mutationOptions` (**`mutationFn` only**) | Callbacks, invalidation, toasts    |
+| Component       | What happens after a mutation: invalidation, toast, navigation, closing dialogs                             | Fetch logic                        |
 
-| Pattern                                            | How to implement                                                                            |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| **Server Actions + ORM** (Prisma/Drizzle/Supabase) | Add `'use server'` at top of `service.ts`, call ORM directly                                |
-| **Route Handlers + ORM**                           | `service.ts` calls `/api/` routes via `apiClient`, route handlers call ORM                  |
-| **BFF** (Next.js proxies to Laravel/Go/etc.)       | `service.ts` calls `/api/` routes via `apiClient`, route handlers proxy to external backend |
-| **Direct external API** (frontend-only)            | `service.ts` calls external URL via `fetch()`                                               |
-| **Mock** (default)                                 | `service.ts` calls in-memory fake data stores                                               |
+**`data.ts` is the only file you modify when connecting to a real backend.** Route handlers, `service.ts`, queries, and components don't change.
 
-Route handlers at `src/app/api/` are ready for patterns 2 and 3. `src/lib/api-client.ts` provides a typed `fetch` wrapper.
+#### Server prefetch uses `data.ts` directly
 
-**Direct external API with cookie auth:** call the API with `fetch(url, { credentials: 'include' })` so the browser sends the cookie; never import `next/headers` in `service.ts` (client components import it). Only the server prefetch has no browser cookies, so override `queryFn` at the prefetch site, as TanStack's [optimistic updates example](https://github.com/TanStack/query/blob/main/examples/react/nextjs-app-optimistic-updates/app/page.tsx) does: `query({ ...entityQueries.list(filters), queryFn: () => getEntities(filters, { headers: { cookie: (await cookies()).toString() } }) })`.
+The browser's `queryFn` calls `/api/<name>`, a relative URL that server code can't fetch with the user's session. So server prefetches reuse the query key and swap in the server function, exactly as TanStack's example page does (`query({ ...todosQueries.list(), queryFn: getTodos })`):
+
+```tsx
+import { getEntities } from '../api/data';
+
+void queryClient
+  .query({ ...entityQueries.list(filters), queryFn: () => getEntities(filters) })
+  .catch(noop);
+```
+
+#### Connecting a backend (edit `data.ts` only)
+
+| Backend                                      | `data.ts` body                                                                                         |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| **Mock** (default)                           | Calls the in-memory stores in `src/constants/mock-api*.ts`                                             |
+| **ORM** (Prisma/Drizzle/Supabase)            | `return db.query.products.findMany({ ... })`                                                           |
+| **External API with a token** (Laravel/Go/…) | `fetch` your backend with an `Authorization: Bearer <token>` header (example in the `data.ts` header comment) |
+
+**Auth tokens:** the browser only talks to this app, so Clerk's session cookie authenticates `/api/*` (same-origin requests need no token code, per [Clerk's docs](https://clerk.com/docs/guides/development/making-requests)). `data.ts` attaches the backend token on the server: with Clerk, `const { getToken } = await auth(); const token = await getToken();`. With your own backend's login, keep its token in an HttpOnly cookie and read it in `data.ts` with `(await cookies()).get('<name>')`, so browser JavaScript never sees it. Either way, browser code never handles tokens.
+
+**Don't use Server Actions as a `queryFn`.** TanStack advises against it (Next runs a client's actions one at a time, always as POST). They're fine as a `mutationFn`.
 
 ### Query Factories (`queries.ts`)
 
@@ -453,7 +475,7 @@ export const entityQueries = {
   list: (filters: EntityFilters) =>
     queryOptions({
       queryKey: [...entityQueries.all(), 'list', filters] as const,
-      queryFn: () => getEntities(filters)
+      queryFn: () => getEntities(filters) // from service.ts: fetch('/api/entities?...')
     }),
   detail: (id: number) =>
     queryOptions({
@@ -467,8 +489,10 @@ export const entityMutations = {
   delete: () => mutationOptions({ mutationFn: (id: number) => deleteEntity(id) })
 };
 
-// Prefetch / read
-void queryClient.query(entityQueries.list(filters)).catch(noop);
+// Prefetch on the server (same key, server queryFn from data.ts) / read in the browser
+void queryClient
+  .query({ ...entityQueries.list(filters), queryFn: () => getEntities(filters) }) // getEntities from data.ts
+  .catch(noop);
 useSuspenseQuery(entityQueries.detail(id));
 
 // Invalidate every entity query (lists + details)
@@ -479,7 +503,7 @@ queryClient.invalidateQueries({ queryKey: entityQueries.all() });
 
 The project uses TanStack React Query with server-side prefetching and client-side cache management:
 
-1. **Query options** defined in `queries.ts` (`entityQueries.list()`) — shared between server prefetch and client hooks
+1. **Query options** defined in `queries.ts` (`entityQueries.list()`): the client hooks use them as is; the server prefetch reuses the key with a `data.ts` `queryFn`
 2. **Server prefetch** using `void queryClient.query(...).catch(noop)` + `HydrationBoundary` + `dehydrate` — `void` (fire-and-forget) is the standard TanStack pattern for Next.js App Router. `query()` replaces the deprecated `prefetchQuery()`; unlike it, `query()` rejects on a failed fetch, so the `.catch(noop)` (`noop` from `@tanstack/react-query`) is required to avoid an unhandled rejection on the server
 3. **Client fetch** using `useSuspenseQuery()` — integrates with React Suspense so prefetched data streams in without showing a loading skeleton on first load
 4. **Suspense boundary** wraps the client component — shows a fallback skeleton only on subsequent client-side navigations when cache is empty
@@ -487,7 +511,9 @@ The project uses TanStack React Query with server-side prefetching and client-si
 ```tsx
 // Server component: prefetch + dehydrate
 const queryClient = getQueryClient();
-void queryClient.query(entityQueries.list(filters)).catch(noop); // void, not await
+void queryClient
+  .query({ ...entityQueries.list(filters), queryFn: () => getEntities(filters) }) // getEntities from data.ts
+  .catch(noop); // void, not await
 
 return (
   <HydrationBoundary state={dehydrate(queryClient)}>
@@ -737,19 +763,20 @@ Browse all available icons at `/dashboard/elements/icons` — a searchable grid 
 ### Adding a New Feature (End-to-End)
 
 1. Create `src/features/<name>/api/types.ts` — response types, filter types, mutation payloads
-2. Create `src/features/<name>/api/service.ts` — data access functions (mock by default)
-3. Create `src/features/<name>/api/queries.ts` — `<name>Queries` (keys + `queryOptions`) and `<name>Mutations` (`mutationOptions`, `mutationFn` only)
-4. Create page route: `src/app/dashboard/<name>/page.tsx`
-5. Create feature components in `src/features/<name>/components/`
-6. Add navigation item in `src/config/nav-config.ts`
-7. (Optional) Add route handlers in `src/app/api/<name>/` for REST API patterns
-8. (Optional) Register new icon in `src/components/icons.tsx`
+2. Create `src/features/<name>/api/data.ts`: `import 'server-only'` + data access functions (mock by default)
+3. Create route handlers in `src/app/api/<name>/` (`route.ts`, `[id]/route.ts`): check auth, call `data.ts`
+4. Create `src/features/<name>/api/service.ts`: browser calls to `/api/<name>` via `apiClient`
+5. Create `src/features/<name>/api/queries.ts`: `<name>Queries` (keys + `queryOptions`) and `<name>Mutations` (`mutationOptions`, `mutationFn` only)
+6. Create page route: `src/app/dashboard/<name>/page.tsx` (prefetch with the `data.ts` function as `queryFn`)
+7. Create feature components in `src/features/<name>/components/`
+8. Add navigation item in `src/config/nav-config.ts`
+9. (Optional) Register new icon in `src/components/icons.tsx`
 
 ### Adding a New API Route
 
 1. Create: `src/app/api/my-route/route.ts`
 2. Export HTTP method handlers: `GET`, `POST`, etc.
-3. For BFF pattern: proxy requests to your external backend
+3. Check auth, then call a server-only `data.ts` function; keep data access out of the handler
 
 ### Adding a shadcn Component
 
@@ -813,4 +840,4 @@ See "Theming System" section above or `docs/themes.md`.
 9. **Page headers** - Always use `PageContainer` props (`pageTitle`, `pageDescription`, `pageHeaderAction`) for page headers. Never import `<Heading>` manually in pages — `PageContainer` handles that internally.
 10. **Forms** - Use `useAppForm` from `@/lib/form` with `form.AppField` rendering the shared field components (`field.TextField`, `field.SelectField`, …) from `@/components/forms/fields`. Each component follows the official shadcn TanStack Form anatomy; drop down to raw `form.Field` render props for one-off custom fields. Never use `useState` inside a render prop — extract stateful controls into components.
 11. **Button loading** - Use `<Button isLoading={isPending}>` for loading states. Uses CSS Grid overlap trick for zero layout shift. When `isLoading` is not passed, button behaves as default shadcn. `SubmitButton` in forms handles this automatically via form `isSubmitting` state.
-12. **Data layer** - Always go through the service layer: `types.ts` → `service.ts` → `queries.ts`. Components import types from `types.ts` and query/mutation options from `queries.ts`; mutation components own invalidation in `onSettled`. Never import from `@/constants/mock-api*` directly in components.
+12. **Data layer** - Browser code goes `queries.ts` → `service.ts` → `/api/<name>` route handlers → `data.ts`; server prefetches call `data.ts` directly with the same query key. Components import types from `types.ts` and query/mutation options from `queries.ts`; mutation components own invalidation in `onSettled`. Only `data.ts` imports from `@/constants/mock-api*`.
